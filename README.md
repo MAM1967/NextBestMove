@@ -1,0 +1,213 @@
+# NextBestMove
+
+> Your daily revenue rhythm — simplified.
+
+NextBestMove gives solopreneurs and fractional executives a small set of high-leverage actions each day so they can stay consistent, follow up reliably, and book more calls without CRM overwhelm.
+
+---
+
+## 🚀 Quick Start
+
+This repository contains all documentation, specifications, and code for NextBestMove v0.1.
+
+### Repository Structure
+
+```
+NextBestMove/
+├── README.md                          # This file
+├── docs/                              # Documentation
+│   ├── PRD/                          # Product Requirements
+│   ├── UI-UX/                        # Design specifications
+│   ├── Architecture/                 # Technical specifications
+│   └── Planning/                     # User stories & planning
+├── [code/]                           # Application code (coming soon)
+│   ├── app/                         # Next.js app directory
+│   ├── components/                  # React components
+│   ├── lib/                         # Utilities & services
+│   └── ...
+└── .gitignore
+```
+
+---
+
+## 📚 Documentation
+
+### Product Requirements
+- **[PRD v0.1](docs/PRD/NextBestMove_PRD_v1.md)** - Complete product requirements document
+- **[Implementation Guide](docs/Architecture/Implementation_Guide.md)** - Development roadmap
+
+### Design & UX
+- **[UI Specifications](docs/UI-UX/UI_Specifications.md)** - Complete design system
+- **[Component Specifications](docs/Architecture/Component_Specifications.md)** - React component architecture
+- **[Product Mockups](docs/UI-UX/Product_Screenshot_Mock_Copy_v2.md)** - Screen-by-screen mockups
+
+### Architecture
+- **[Database Schema](docs/Architecture/Database_Schema.md)** - Complete PostgreSQL schema
+- **[Calendar API Specifications](docs/Architecture/Calendar_API_Specifications.md)** - Calendar integration specs
+- **[Calendar Integration Summary](docs/Architecture/Calendar_Integration_Summary.md)** - Integration overview
+
+### Planning
+- **[User Stories](docs/Planning/User_Stories.md)** - Complete user stories for sprint planning
+- **[Gap Analysis](docs/PRD/PRD_Mockup_Gap_Analysis.md)** - PRD vs Mockup alignment
+
+---
+
+## 🎯 What Is NextBestMove?
+
+NextBestMove is an actions-first workflow app that answers the question every solo operator struggles with:
+
+**"What should I do today to move revenue forward?"**
+
+Instead of managing a CRM or juggling spreadsheets, you simply:
+1. **Pin** people you don't want to lose track of
+2. **Get** a short, realistic daily plan (3–8 actions), sized to your actual calendar
+3. **Mark** actions as done / got reply / snooze
+4. **Receive** a weekly summary with an insight and 1–2 content prompts
+
+---
+
+## 🔑 Core Features (v0.1)
+
+### Actions-First Daily Plan
+- A short list of high-impact actions each morning
+- Automatically sized based on your calendar availability
+- Includes one Fast Win to build momentum in under 5 minutes
+
+### Pin, Don't Manage
+- Add simple "Pins" (name + URL) for people you don't want to forget
+- No CRM fields, no enrichment, no complexity
+- Snooze Pins when timing isn't right; archive when done
+
+### Follow-Up Done Right
+- One-tap "Got a reply" handling
+- Smart defaults for snoozing
+- Automatic next steps when the conversation heats up
+
+### Weekly Rhythm
+- Automatic weekly summary
+- 2–3 sentence narrative (AI-assisted)
+- Simple insight ("Your follow-ups convert best within 3 days")
+- Suggested Weekly Focus for the next week
+- 1–2 content prompts based on your real actions
+
+### Calendar-Aware Capacity
+- Connect your Google/Outlook calendar
+- Daily plans adjust so you never feel overloaded
+- If no calendar connected → fixed lightweight plan
+
+---
+
+## 🧱 Technology Stack
+
+- **Frontend:** React + TypeScript, Next.js 14+ (App Router)
+- **Styling:** Tailwind CSS
+- **Backend:** Next.js API Routes / Node.js
+- **Database:** PostgreSQL (Supabase)
+- **Authentication:** Supabase Auth
+- **Calendar Integration:** 
+  - Google Calendar API (read-only free/busy)
+  - Microsoft Graph API (Outlook)
+  - NextAuth.js for OAuth
+- **AI:** OpenAI GPT-4 for weekly summaries
+- **Hosting:** Vercel + Supabase
+
+---
+
+## 📦 Data Model
+
+### Core Entities
+
+**PersonPin**
+- name, url, notes (optional)
+- status: ACTIVE | SNOOZED | ARCHIVED
+
+**Action**
+- type: OUTREACH | FOLLOW_UP | NURTURE | CALL_PREP | POST_CALL | CONTENT | FAST_WIN
+- state: NEW | SENT | REPLIED | SNOOZED | DONE | ARCHIVED
+- due_date, notes (optional), linked to PersonPin
+
+**DailyPlan**
+- date, capacity level, action list (ordered)
+- Fast Win + regular actions
+
+**WeeklySummary**
+- metrics, narrative, insight, next_week_focus
+- content_prompts
+
+See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
+
+---
+
+## 🗺️ Development Roadmap
+
+### v0.1 — MVP (Current)
+- ✅ PRD completed
+- ✅ UI/UX specifications
+- ✅ Component architecture
+- ✅ Database schema
+- ✅ API specifications
+- ✅ User stories
+- 🚧 Code implementation in progress
+
+### v0.2 (Future)
+- Manual "Busy / Light day" override
+- "Why this action?" explanation tooltips
+- Improved templates
+- Cleanup mode for stale Pins
+- Daily email plan (opt-in)
+
+### v1.0 (Future)
+- Multi-channel actions (email / LinkedIn / DM)
+- Team/assistant support
+- Personalized "coaching mode" insights
+
+---
+
+## 📖 Documentation Quick Links
+
+### For Product/Design
+- [PRD v0.1](docs/PRD/NextBestMove_PRD_v1.md)
+- [UI Specifications](docs/UI-UX/UI_Specifications.md)
+- [Product Mockups](docs/UI-UX/Product_Screenshot_Mock_Copy_v2.md)
+
+### For Developers
+- [Component Specifications](docs/Architecture/Component_Specifications.md)
+- [Database Schema](docs/Architecture/Database_Schema.md)
+- [Calendar API Specifications](docs/Architecture/Calendar_API_Specifications.md)
+- [Implementation Guide](docs/Architecture/Implementation_Guide.md)
+
+### For Planning
+- [User Stories](docs/Planning/User_Stories.md)
+- [Gap Analysis](docs/PRD/PRD_Mockup_Gap_Analysis.md)
+
+---
+
+## 🧪 Development Status
+
+🚧 **Early Development**
+- ✅ Complete documentation and specifications
+- 🚧 Code implementation starting
+- 📋 80+ user stories ready for sprint planning
+
+---
+
+## 🤝 Contributing
+
+This project is currently in active development. Future roadmap may include open-source components.
+
+---
+
+## 📬 Contact
+
+For collaboration inquiries: mcddsl at icloud dot com
+
+---
+
+## 📄 License
+
+[Add license information here]
+
+---
+
+**Built for solopreneurs who value consistency over complexity.**
+
