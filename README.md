@@ -210,4 +210,3 @@ For collaboration inquiries: mcddsl at icloud dot com
 ---
 
 **Built for solopreneurs who value consistency over complexity.**
-
