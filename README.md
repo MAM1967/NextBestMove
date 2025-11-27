@@ -10,6 +10,18 @@ NextBestMove gives solopreneurs and fractional executives a small set of high-le
 
 This repository contains all documentation, specifications, and code for NextBestMove v0.1.
 
+### Environment Variables
+
+Copy `.env.local.example` to `.env.local` and set:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `OUTLOOK_CLIENT_ID` / `OUTLOOK_CLIENT_SECRET`
+- `CALENDAR_ENCRYPTION_KEY` (32-byte base64 or hex string for encrypting OAuth tokens)
+
+Additional variables may be required for Stripe/webhook testing; see component READMEs where applicable.
+
 ### Repository Structure
 
 ```

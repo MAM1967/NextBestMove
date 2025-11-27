@@ -75,10 +75,11 @@ export async function GET(request: Request) {
 
     if (planActions) {
       for (const planAction of planActions) {
-        if (planAction.actions) {
+        const actionData = planAction.actions as any;
+        if (actionData) {
           const action = {
-            ...planAction.actions,
-            person_pins: planAction.actions.person_pins,
+            ...actionData,
+            person_pins: actionData.person_pins || [],
           };
           
           if (planAction.is_fast_win) {

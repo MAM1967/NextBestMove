@@ -92,6 +92,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Data export endpoint**  
        _Download JSON of pins/actions/plans/summaries + button in Settings_
 
+- [ ] **Email preferences & account deletion controls**  
+       _Add placeholder UI + backend hooks for unsubscribe, weekly insights report opt-in, productivity tips toggle (future), and “Delete my account”. High P1 – required to meet compliance expectations._
+
 ### Background Jobs & Observability
 
 - [ ] **Background jobs**  

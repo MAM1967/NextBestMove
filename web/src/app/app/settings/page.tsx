@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { fetchCalendarStatus } from "@/lib/calendar/status";
+import { CalendarConnectionSection } from "./CalendarConnectionSection";
 
 type CalendarConnection = {
   provider: string;
@@ -87,23 +89,16 @@ export default async function SettingsPage() {
     redirect("/auth/sign-in?redirect=/app/settings");
   }
 
-  const [{ data: profile }, { data: calendarConnections }] = await Promise.all([
+  const [{ data: profile }, calendarStatus] = await Promise.all([
     supabase
       .from("users")
       .select("email, name, timezone, streak_count, calendar_connected")
       .eq("id", user.id)
       .single(),
-    supabase
-      .from("calendar_connections")
-      .select("provider, status, last_sync_at, error_message")
-      .eq("user_id", user.id),
+    fetchCalendarStatus(supabase, user.id),
   ]);
 
-  const connections: CalendarConnection[] = calendarConnections || [];
-  const activeConnection = connections.find((c) => c.status === "active");
-  const connectionLabel = activeConnection
-    ? `${activeConnection.provider} calendar connected`
-    : "No calendar connected";
+  const connections: CalendarConnection[] = calendarStatus.connections || [];
 
   return (
     <div className="space-y-6">
@@ -153,76 +148,11 @@ export default async function SettingsPage() {
           title="Calendar connection"
           description="Used to size your daily plan once OAuth flows are enabled."
         >
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-zinc-900">
-                  {connectionLabel}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {profile?.calendar_connected
-                    ? "Capacity will adapt once free/busy sync ships."
-                    : "We’ll default to 6 actions/day until a calendar is connected."}
-                </p>
-              </div>
-              <CalendarStatusBadge
-                status={
-                  activeConnection?.status ||
-                  connections[0]?.status ||
-                  "disconnected"
-                }
-              />
-            </div>
-
-            {connections.length > 0 ? (
-              <div className="space-y-2 text-xs text-zinc-600">
-                {connections.map((conn) => (
-                  <div
-                    key={`${conn.provider}-${conn.status}`}
-                    className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2"
-                  >
-                    <p className="font-medium capitalize text-zinc-900">
-                      {conn.provider}
-                    </p>
-                    <p>Status: {conn.status}</p>
-                    <p>
-                      Last sync:{" "}
-                      {conn.last_sync_at
-                        ? new Date(conn.last_sync_at).toLocaleString()
-                        : "never"}
-                    </p>
-                    {conn.error_message && (
-                      <p className="text-red-600">
-                        Error: {conn.error_message}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-3 text-xs text-zinc-600">
-                OAuth flows will land here (Google + Outlook). For now this is a
-                static status card.
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled
-                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-600"
-              >
-                Connect Google (soon)
-              </button>
-              <button
-                type="button"
-                disabled
-                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-600"
-              >
-                Connect Outlook (soon)
-              </button>
-            </div>
-          </div>
+          <CalendarConnectionSection
+            connections={connections}
+            connected={calendarStatus.connected}
+            status={calendarStatus.status || "disconnected"}
+          />
         </SectionCard>
       </div>
 
