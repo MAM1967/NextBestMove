@@ -16,9 +16,11 @@
 6. [Epic 5: Daily Plan Generation](#epic-5-daily-plan-generation)
 7. [Epic 6: Calendar Integration](#epic-6-calendar-integration)
 8. [Epic 7: Weekly Summary](#epic-7-weekly-summary)
-8. [Epic 8: Onboarding](#epic-8-onboarding)
-9. [Epic 9: Settings & Preferences](#epic-9-settings--preferences)
-10. [Sprint Recommendations](#sprint-recommendations)
+9. [Epic 8: Onboarding](#epic-8-onboarding)
+10. [Epic 9: Settings & Preferences](#epic-9-settings--preferences)
+11. [Epic 10: Background Jobs & Automation](#epic-10-background-jobs--automation)
+12. [Epic 11: Billing & Monetization](#epic-11-billing--monetization)
+13. [Sprint Recommendations](#sprint-recommendations)
 
 ---
 
@@ -1598,6 +1600,123 @@
 
 ---
 
+## Epic 11: Billing & Monetization
+
+### US-11.1: Stripe Checkout Session
+**Epic:** Billing & Monetization  
+**Priority:** 🔴 P0  
+**Size:** S  
+**Story Points:** 3
+
+**As a** prospective subscriber  
+**I want** to start a Stripe Checkout session from inside the app  
+**So that** I can pay for the Solo plan without leaving the flow
+
+**Acceptance Criteria:**
+- [ ] API endpoint `POST /api/billing/create-checkout-session` returns checkout URL
+- [ ] Endpoint verifies user auth and uses configured `price_id`
+- [ ] Success & cancel URLs return user to app with messaging
+- [ ] Errors are surfaced via toast (“Checkout unavailable, try again”)
+- [ ] Works in test and production Stripe modes (env driven)
+
+**Technical Notes:**
+- Use Stripe SDK server-side; never expose secret key to client.
+- Include metadata (user_id) on session for webhook correlation.
+
+---
+
+### US-11.2: Billing Webhook & Subscription Sync
+**Epic:** Billing & Monetization  
+**Priority:** 🔴 P0  
+**Size:** M  
+**Story Points:** 5
+
+**As a** system  
+**I want** to update subscription status whenever Stripe sends events  
+**So that** the app knows who should have access
+
+**Acceptance Criteria:**
+- [ ] Webhook endpoint `POST /api/billing/webhook` verifies Stripe signature
+- [ ] Handles events: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [ ] Upserts `billing_customers` and `billing_subscriptions` tables
+- [ ] Stores raw event payload in `billing_events` for auditing
+- [ ] Idempotent: duplicate events do not create duplicates
+- [ ] Updates user session/metadata with subscription status
+
+**Technical Notes:**
+- Use Stripe `event.id` for idempotency.
+- Webhook handler runs with Supabase service key (server-only).
+
+---
+
+### US-11.3: Paywall & Feature Gating
+**Epic:** Billing & Monetization  
+**Priority:** 🔴 P0  
+**Size:** M  
+**Story Points:** 5
+
+**As a** product owner  
+**I want** daily plan + weekly summary to require an active subscription  
+**So that** core value is tied to paid access
+
+**Acceptance Criteria:**
+- [ ] When subscription status ≠ active/trialing, show PaywallOverlay on Daily Plan and Weekly Summary pages
+- [ ] Pins + onboarding remain available (freemium preview)
+- [ ] Past due state blocks actions and shows warning copy
+- [ ] Paywall CTA triggers checkout or billing portal depending on status
+- [ ] Analytics event logged when paywall displayed and CTA clicked
+
+**Technical Notes:**
+- Read subscription status from user session or `/api/billing/subscription`.
+- Ensure paywall gating also enforced server-side (API returns 402-style error).
+
+---
+
+### US-11.4: Billing Settings Section
+**Epic:** Billing & Monetization  
+**Priority:** 🔴 P0  
+**Size:** S  
+**Story Points:** 3
+
+**As a** subscriber  
+**I want** to view my plan status and manage billing from Settings  
+**So that** I can update cards or cancel without contacting support
+
+**Acceptance Criteria:**
+- [ ] Settings screen shows plan name, status badge, renewal date, and footnote (“Payments by Stripe”)
+- [ ] “Manage billing” button opens Stripe customer portal URL via `POST /api/billing/customer-portal`
+- [ ] Past due state surfaces “Update payment method” CTA
+- [ ] Canceled state shows “Reactivate plan” CTA leading to checkout
+- [ ] Loading skeleton displayed while fetching subscription data
+
+**Technical Notes:**
+- Cache portal/checkout URLs server-side (short-lived) to avoid exposing secrets.
+- Use BillingSection component spec from Architecture docs.
+
+---
+
+### US-11.5: Past Due & Cancelation Nudges
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** XS  
+**Story Points:** 2
+
+**As a** user returning after a payment issue  
+**I want** clear messaging and next steps  
+**So that** I know how to restore access quickly
+
+**Acceptance Criteria:**
+- [ ] Banner appears on dashboard when status = past_due (“Payment failed — Update card”)
+- [ ] Banner CTA opens billing portal directly
+- [ ] If cancel_at_period_end = true, show reminder banner (“Access ends Mar 21 — Resume plan”)
+- [ ] Banners dismissible once per session but reappear if status unchanged
+
+**Technical Notes:**
+- Use shared notification component.
+- Track dismiss state in local store (not persisted) to avoid noisy loops.
+
+---
+
 ## Sprint Recommendations
 
 ### Sprint 1: Foundation (Weeks 1-2)
@@ -1609,6 +1728,8 @@
 - US-1.4: State Management Setup
 - US-2.1: User Authentication
 - US-2.2: User Profile Creation
+- US-11.1: Stripe Checkout Session
+- US-11.2: Billing Webhook & Subscription Sync
 
 **Deliverable:** Working authentication, base components, database
 
@@ -1716,6 +1837,9 @@
 - US-10.2: Weekly Summary Generation Job
 - US-10.3: Auto-Archive Old Actions Job
 - US-10.4: Auto-Unsnooze Job
+- US-11.3: Paywall & Feature Gating
+- US-11.4: Billing Settings Section
+- US-11.5: Past Due & Cancelation Nudges
 
 **Deliverable:** Settings page complete, automation working
 
@@ -1738,11 +1862,11 @@
 
 ## Story Estimation Summary
 
-**Total Story Points:** ~180-200 points
+**Total Story Points:** ~198-218 points
 
 **By Priority:**
-- 🔴 P0 (Critical): ~140 points
-- 🟠 P1 (High): ~30 points
+- 🔴 P0 (Critical): ~156 points
+- 🟠 P1 (High): ~32 points
 - 🟡 P2 (Medium): ~20 points
 
 **By Epic:**
@@ -1756,6 +1880,7 @@
 - Epic 8 (Onboarding): ~24 points
 - Epic 9 (Settings): ~12 points
 - Epic 10 (Automation): ~17 points
+- Epic 11 (Billing & Monetization): ~18 points
 
 ---
 

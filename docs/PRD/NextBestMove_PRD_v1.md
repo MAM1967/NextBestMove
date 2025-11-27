@@ -60,6 +60,7 @@ Goals (v0.1)
 	•	Make warm conversations and follow-ups hard to forget.
 	•	Provide weekly summaries that reinforce progress and suggest simple adjustments.
 	•	Provide simple, template-based content prompts grounded in real activity.
+	•	Be monetization-ready with Stripe-powered subscriptions even while pricing details evolve.
 
 Non-Goals (v0.1)
 	•	Replace CRMs or become a full lead database
@@ -67,6 +68,7 @@ Non-Goals (v0.1)
 	•	Act as a full content scheduler / social tool
 	•	Support teams / multi-user workflows
 	•	Predictive lead scoring or multi-step AI agents
+	•	Launch with complex tiered billing or coupon logic (single paid plan first)
 
 ⸻
 
@@ -143,6 +145,14 @@ Each day starts with a Fast Win:
 	•	High probability of response or clear impact
 	•	Reduces activation friction
 
+6.6 Billing & Access Control
+
+NextBestMove needs a simple way to accept payment and gate premium workflows:
+	•	Stripe Checkout handles card capture; Stripe Billing Portal lets users update/cancel.
+	•	App maintains `subscription_status` (TRIALING, ACTIVE, PAST_DUE, CANCELED) to toggle access to action engine + AI features.
+	•	Pre-subscription users can pin people and preview the daily plan UX but see a paywall overlay when attempting core actions.
+	•	Pricing (amount/plan name) is configured in Stripe so marketing can change it without redeploying.
+
 ⸻
 
 7. Data Inputs (v0.1)
@@ -169,6 +179,11 @@ Each day starts with a Fast Win:
 	•	No enrichment APIs
 
 All “replies” are user-marked via a one-tap “Got a reply” action.
+
+7.4 Billing Signals
+	•	Stripe Checkout session + webhook events (checkout.session.completed, invoice.paid, customer.subscription.updated) update subscription records.
+	•	App reads subscription status + plan metadata to decide whether to show paywall overlays or allow action completion.
+	•	Because pricing is TBD, amounts live exclusively in Stripe; product metadata (plan label, description) syncs on startup.
 
 ⸻
 
@@ -546,6 +561,16 @@ WeeklySummary
 	•	content_prompts[]
 	•	generated_at
 
+Subscription
+	•	id, user_id
+	•	stripe_customer_id
+	•	stripe_subscription_id
+	•	status: TRIALING | ACTIVE | PAST_DUE | CANCELED
+	•	current_plan (text label, e.g., SOLO)
+	•	renewal_date (date)
+	•	cancel_at_period_end (bool)
+	•	created_at, updated_at
+
 ⸻
 
 17. Technical Constraints & AI Costs
@@ -557,6 +582,7 @@ Stack (proposed):
 	•	Calendar: Google Calendar API (read-only free/busy)
 	•	AI: OpenAI GPT-4 (or equivalent)
 	•	Hosting: Vercel + Supabase
+	•	Payments: Stripe Checkout + Billing Portal (webhook-verified)
 
 Performance:
 	•	Daily plan generation: < 500 ms
@@ -572,6 +598,11 @@ Fallback if OpenAI fails:
 	•	Use template-only weekly summaries (no AI phrasing)
 	•	Use static content templates.
 	•	No user-facing error, just simpler copy.
+
+Billing Constraints:
+	•	Webhook endpoint must verify Stripe signatures + enforce idempotency.
+	•	App stores subscription + plan metadata locally so paywall can work offline if Stripe is delayed.
+	•	Past-due status should show paywall but keep data accessible/read-only.
 
 ⸻
 
@@ -598,6 +629,8 @@ v0.1: Single Fast Win per day. If they complete it quickly, task #2 naturally fo
 v0.1: No. In-app only. Consider opt-in email in v0.2.
 	•	Auto-archiving pins?
 v0.1: No auto-archive. Only explicit user archive. Add “Cleanup mode” later.
+	•	Pricing / plans?
+	Launch with one paid plan (monitored via Stripe Product/Price). Marketing can adjust the actual amount later; engineering just needs plan metadata + messaging hooks.
 
 ⸻
 
@@ -613,6 +646,7 @@ Must-have:
 	•	Weekly Focus suggestion
 	•	1–2 content prompts per week (template + optional AI phrasing)
 	•	Onboarding: first pin, optional calendar connect, first Fast Win
+	•	Stripe-powered checkout + webhook to activate subscriptions and gate access
 
 Deferred (v0.2+):
 	•	Manual “Busy today / Light day” override

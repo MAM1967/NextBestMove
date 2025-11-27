@@ -133,6 +133,7 @@ Import stories into your project management tool (Jira, Linear, GitHub Projects,
 - **Database:** PostgreSQL (Supabase)
 - **Auth:** Supabase Auth
 - **Calendar:** Google Calendar API, Microsoft Graph API
+- **Payments:** Stripe Checkout + Billing Portal
 - **AI:** OpenAI GPT-4
 - **Hosting:** Vercel + Supabase
 

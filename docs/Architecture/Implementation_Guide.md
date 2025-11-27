@@ -23,6 +23,8 @@ Component_Specifications.md
 [Implementation]
 ```
 
+For team-wide agreements (definition of done, environments, testing strategy), see `docs/decisions.md`.
+
 ---
 
 ## 1. Product Requirements Document (PRD)
@@ -216,6 +218,13 @@ Detailed specs for:
 - [ ] Create database migrations
 - [ ] Set up Supabase client
 
+#### 1.4 Billing Foundation
+- [ ] Configure Stripe account with placeholder Product/Price (amount can change later)
+- [ ] Store `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` env vars
+- [ ] Implement `/api/billing/create-checkout-session` (returns Checkout URL) and `/api/billing/customer-portal`
+- [ ] Build webhook handler (`/api/billing/webhook`) that verifies signatures and upserts `billing_customers` + `billing_subscriptions`
+- [ ] Add paywall-aware auth middleware (read-only experience until subscription status = active/trialing)
+
 ### Phase 2: Core Features (Week 3-4)
 
 #### 2.1 Authentication
@@ -302,6 +311,7 @@ Detailed specs for:
 - [ ] Timezone settings
 - [ ] Data export functionality
 - [ ] Streak display
+- [ ] Billing & Subscription section (plan status, manage billing button, paywall copy)
 
 #### 6.3 Notifications
 - [ ] Push notification setup
@@ -322,6 +332,7 @@ Detailed specs for:
 - [ ] Documentation
 - [ ] User feedback mechanism
 - [ ] Production deployment
+- [ ] Stripe production smoke test (checkout + webhook + gating)
 
 ---
 
@@ -347,6 +358,7 @@ Detailed specs for:
 ### External Services
 - **Calendar:** Google Calendar API
 - **AI:** OpenAI GPT-4
+- **Payments:** Stripe Checkout + Billing Portal
 - **Hosting:** Vercel
 - **Error Tracking:** Sentry (recommended)
 - **Analytics:** PostHog or Mixpanel (recommended)
@@ -371,7 +383,8 @@ nextbestmove/
 │   │   ├── daily-plans/
 │   │   ├── pins/
 │   │   ├── actions/
-│   │   └── weekly-summaries/
+│   │   ├── weekly-summaries/
+│   │   └── billing/
 │   ├── layout.tsx
 │   └── page.tsx
 ├── components/
@@ -443,6 +456,11 @@ Track and enforce (Section 13.2):
 - 1 Pin created
 - Weekly Focus set
 - Fast Win completed
+
+### 6. Billing & Access Control
+- Stripe Checkout + Portal endpoints live under `/api/billing/*` and require auth.
+- Webhook handler should upsert `billing_customers` / `billing_subscriptions` and mark `subscription_status` on the user session payload.
+- Core workflows (daily plan, weekly summary) check subscription status; unpaid users see a consistent paywall overlay but keep read-only access to their data.
 
 ---
 

@@ -95,6 +95,11 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - Daily plans adjust so you never feel overloaded
 - If no calendar connected → fixed lightweight plan
 
+### Billing Readiness
+- Stripe-powered checkout and customer portal
+- Subscription status gates access to core workflows
+- Pricing tier TBD, but billing infrastructure is ready for launch
+
 ---
 
 ## 🧱 Technology Stack
@@ -104,6 +109,7 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - **Backend:** Next.js API Routes / Node.js
 - **Database:** PostgreSQL (Supabase)
 - **Authentication:** Supabase Auth
+- **Payments:** Stripe Checkout + Billing Portal (subscription + invoices)
 - **Calendar Integration:** 
   - Google Calendar API (read-only free/busy)
   - Microsoft Graph API (Outlook)
@@ -133,6 +139,12 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 **WeeklySummary**
 - metrics, narrative, insight, next_week_focus
 - content_prompts
+
+**Subscription**
+- status: TRIALING | ACTIVE | PAST_DUE | CANCELED
+- current_plan (text, e.g., SOLO)
+- renewal_date, cancel_at_period_end
+- stripe_customer_id / subscription_id references
 
 See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 

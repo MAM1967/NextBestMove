@@ -37,6 +37,9 @@ This document defines the complete database schema for NextBestMove v0.1, includ
 7. **content_prompts** - Saved content prompts
 8. **calendar_connections** - Calendar OAuth connections
 9. **calendar_sync_logs** - Calendar sync audit log (optional)
+10. **billing_customers** - Stripe customer mapping
+11. **billing_subscriptions** - Subscription lifecycle tracking
+12. **billing_events** - Stripe webhook audit log (optional)
 
 ### Enums
 
@@ -46,6 +49,7 @@ This document defines the complete database schema for NextBestMove v0.1, includ
 - `calendar_provider` - google, outlook
 - `calendar_connection_status` - active, expired, error, disconnected
 - `capacity_level` - micro, light, standard, heavy, default
+- `subscription_status` - trialing, active, past_due, canceled
 
 ---
 
@@ -531,6 +535,105 @@ CREATE INDEX idx_calendar_sync_logs_status ON calendar_sync_logs(status);
 
 ---
 
+### 10. billing_customers
+
+Maps each user to a Stripe customer object.
+
+```sql
+CREATE TABLE billing_customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  stripe_customer_id TEXT NOT NULL UNIQUE,
+  default_payment_method TEXT,
+  currency TEXT NOT NULL DEFAULT 'usd',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_billing_customers_user_id ON billing_customers(user_id);
+
+CREATE TRIGGER update_billing_customers_updated_at
+  BEFORE UPDATE ON billing_customers
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+**Fields:**
+- `user_id`: One-to-one relationship with users table
+- `stripe_customer_id`: Stripe-generated ID (`cus_...`)
+- `default_payment_method`: Optional default payment method ID
+- `currency`: Stored for display/reference
+
+---
+
+### 11. billing_subscriptions
+
+Tracks subscription status pulled from Stripe webhooks.
+
+```sql
+CREATE TYPE subscription_status AS ENUM ('trialing', 'active', 'past_due', 'canceled');
+
+CREATE TABLE billing_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  billing_customer_id UUID NOT NULL REFERENCES billing_customers(id) ON DELETE CASCADE,
+  stripe_subscription_id TEXT NOT NULL UNIQUE,
+  stripe_price_id TEXT NOT NULL,
+  status subscription_status NOT NULL DEFAULT 'trialing',
+  current_period_end TIMESTAMPTZ NOT NULL,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT false,
+  trial_ends_at TIMESTAMPTZ,
+  latest_invoice_url TEXT,
+  metadata JSONB, -- copy of plan nickname, amount, etc.
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_billing_subscriptions_customer ON billing_subscriptions(billing_customer_id);
+CREATE INDEX idx_billing_subscriptions_status ON billing_subscriptions(status);
+
+CREATE TRIGGER update_billing_subscriptions_updated_at
+  BEFORE UPDATE ON billing_subscriptions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+**Fields:**
+- `billing_customer_id`: Foreign key to billing_customers
+- `stripe_subscription_id`: Stripe subscription identifier (`sub_...`)
+- `stripe_price_id`: Price/plan reference
+- `status`: Mirrors Stripe status for gating (trialing, active, etc.)
+- `current_period_end`: Used to show renewal/grace date
+- `cancel_at_period_end`: Controls UI copy for pending cancellations
+- `metadata`: Cached plan nickname/amount to render paywall without hitting Stripe
+
+---
+
+### 12. billing_events (Optional)
+
+Stores raw webhook payloads for auditing/idempotency.
+
+```sql
+CREATE TABLE billing_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  stripe_event_id TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  processed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_billing_events_type ON billing_events(type);
+CREATE INDEX idx_billing_events_created_at ON billing_events(created_at DESC);
+```
+
+**Fields:**
+- `stripe_event_id`: Stripe event identifier
+- `type`: Event type (e.g., `checkout.session.completed`)
+- `payload`: Raw JSON body (after signature verification)
+- `processed_at`: Timestamp when business logic completed
+
+---
+
 ## Helper Functions
 
 ### Update Updated At Column
@@ -651,6 +754,8 @@ ALTER TABLE daily_plan_actions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_prompts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE billing_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Helper function to get current user ID (via Supabase auth)
 CREATE OR REPLACE FUNCTION auth.uid()
@@ -691,6 +796,18 @@ CREATE POLICY "Users can view own calendar connections" ON calendar_connections
 
 CREATE POLICY "Users can manage own calendar connections" ON calendar_connections
   FOR ALL USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own billing customer" ON billing_customers
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Billing records are generally mutated server-side via service role.
+
+CREATE POLICY "Users can view own subscriptions" ON billing_subscriptions
+  FOR SELECT USING (
+    auth.uid() = (
+      SELECT user_id FROM billing_customers WHERE id = billing_customer_id
+    )
+  );
 ```
 
 **Note:** Adjust RLS policies based on your Supabase auth setup. The `auth.uid()` function may need to be adapted to your authentication implementation.
@@ -762,6 +879,11 @@ Calendar tokens should be encrypted before storage:
 ### Password Hashing
 
 User passwords handled by Supabase Auth (not stored in `users` table).
+
+### Stripe Secrets
+- Store Stripe secret key + webhook signing secret outside database (environment variables).
+- Webhook handler should verify signatures and log payloads in `billing_events`.
+- Never expose Stripe customer/subscription IDs directly to the client without auth checks.
 
 ### Data Retention
 

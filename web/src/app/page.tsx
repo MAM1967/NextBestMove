@@ -14,21 +14,24 @@ export default function MarketingHome() {
             .
           </h1>
           <p className="max-w-2xl text-lg text-zinc-600">
-            A focused workspace that looks at your time, commitments, and
-            energy so you don&apos;t have to juggle priorities alone.
+            A focused workspace that looks at your time, commitments, and energy
+            so you don&apos;t have to juggle priorities alone.
           </p>
         </header>
 
         <div className="flex flex-wrap items-center gap-4">
           <a
-            href="/app"
+            href="/auth/sign-in"
             className="inline-flex items-center justify-center rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800"
           >
-            Open dashboard
+            Sign in
           </a>
-          <span className="text-sm text-zinc-500">
-            No real auth yet – this just jumps into the prototype.
-          </span>
+          <a
+            href="/auth/sign-up"
+            className="inline-flex items-center justify-center rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 shadow-sm transition hover:bg-zinc-50"
+          >
+            Get started
+          </a>
         </div>
 
         <section className="grid gap-6 border-t border-zinc-200 pt-8 sm:grid-cols-3">
@@ -55,8 +58,8 @@ export default function MarketingHome() {
               Weekly insight
             </h2>
             <p className="text-sm text-zinc-600">
-              See how you actually spent your time and gently course-correct
-              for the week ahead.
+              See how you actually spent your time and gently course-correct for
+              the week ahead.
             </p>
           </div>
         </section>
@@ -64,5 +67,3 @@ export default function MarketingHome() {
     </main>
   );
 }
-
-

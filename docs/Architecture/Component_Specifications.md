@@ -116,6 +116,16 @@ type ContentPrompt = {
   saved: boolean;
 };
 
+type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled';
+
+type Subscription = {
+  status: SubscriptionStatus;
+  planName: string;
+  renewsOn?: string;
+  cancelAtPeriodEnd: boolean;
+  managePortalUrl?: string;
+};
+
 // Settings Types
 type NotificationPreferences = {
   morning_plan: boolean;
@@ -175,6 +185,7 @@ App
 │   │
 │   └── SettingsPage
 │       ├── SettingsSection[]
+│       ├── BillingSection
 │       └── SettingsRow[]
 │
 ├── Onboarding
@@ -210,7 +221,8 @@ App
     ├── DatePicker
     ├── Toast
     ├── LoadingSpinner
-    └── EmptyState
+    ├── EmptyState
+    └── PaywallOverlay
 ```
 
 ---
@@ -420,6 +432,37 @@ interface ModalProps {
 - Focus trap
 - Portal rendering
 - Animation transitions
+
+---
+
+#### PaywallOverlay Component
+
+```typescript
+interface PaywallOverlayProps {
+  status: SubscriptionStatus;
+  headline?: string;
+  description?: string;
+  ctaLabel: string;
+  onPrimaryAction: () => void;
+  onSecondaryAction?: () => void;
+  secondaryLabel?: string;
+  showClose?: boolean;
+}
+```
+
+**Usage:**
+- Wraps primary content when subscription is inactive/past due.
+- Displays badge for `status` (trialing, active, etc.).
+- Primary CTA triggers checkout or billing portal depending on status.
+
+**States:**
+- `trialing`: highlight renewal date
+- `past_due`: show warning variant
+- `canceled`: show “reactivate” messaging
+
+**Accessibility:**
+- Trap focus inside overlay when blocking interaction.
+- Announce reason via `aria-live="polite"` (e.g., “Subscription required”).
 
 ---
 
@@ -809,6 +852,63 @@ const PinManagementPage: React.FC<PinManagementPageProps> = () => {
 - CRUD operations
 - Modal management
 - Floating action button
+
+---
+
+#### BillingSection Component
+
+```typescript
+interface BillingSectionProps {
+  subscription: Subscription | null;
+  onCheckout: () => Promise<void>;
+  onManageBilling: () => Promise<void>;
+}
+
+const BillingSection: React.FC<BillingSectionProps> = ({
+  subscription,
+  onCheckout,
+  onManageBilling,
+}) => {
+  const status = subscription?.status ?? 'canceled';
+  const isActive = status === 'active' || status === 'trialing';
+
+  return (
+    <Card variant="elevated" className="billing-section">
+      <BillingStatusBadge status={status} />
+      <h3>{isActive ? 'Your plan' : 'Start your plan'}</h3>
+      <p>{subscription?.planName ?? 'Daily plan + summaries + AI insights'}</p>
+      <div className="billing-actions">
+        <Button
+          variant="primary"
+          onClick={isActive ? onManageBilling : onCheckout}
+        >
+          {isActive ? 'Manage billing' : 'Subscribe'}
+        </Button>
+        {!isActive && (
+          <Button variant="ghost" onClick={onManageBilling}>
+            View plan details
+          </Button>
+        )}
+      </div>
+      {subscription?.renewsOn && (
+        <p className="billing-footnote">
+          Renews on {formatDate(subscription.renewsOn)}
+          {subscription.cancelAtPeriodEnd && ' (canceling at period end)'}
+        </p>
+      )}
+    </Card>
+  );
+};
+```
+
+**States:**
+- `trialing`: purple accent + copy “Trial ends on …”
+- `past_due`: warning banner with secondary “Update payment” CTA
+- `canceled`: show paywall summary + subscribe button
+
+**Data Requirements:**
+- `Subscription` pulled via `/api/me` or dedicated billing endpoint.
+- Portal URL and checkout URL retrieved lazily to avoid leaking secrets.
 
 ---
 
@@ -1206,6 +1306,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 - Form state
 - Onboarding progress
 - Toast notifications
+- Billing state (subscription status, paywall modal)
 
 ### Example Store Structure
 
@@ -1231,6 +1332,13 @@ interface UIState {
   setPinFilter: (filter: PinFilter) => void;
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
+  
+  // Billing
+  subscriptionStatus: SubscriptionStatus;
+  setSubscriptionStatus: (status: SubscriptionStatus) => void;
+  showPaywall: boolean;
+  openPaywall: () => void;
+  closePaywall: () => void;
 }
 ```
 
@@ -1265,6 +1373,16 @@ export const actionsApi = {
   addNote: (id: string, note: string) => 
     fetch(`/api/actions/${id}/notes`, { method: 'POST', body: JSON.stringify({ note }) }),
 };
+
+// api/billing.ts
+export const billingApi = {
+  createCheckoutSession: () =>
+    fetch('/api/billing/create-checkout-session', { method: 'POST' }).then((res) => res.json()),
+  openCustomerPortal: () =>
+    fetch('/api/billing/customer-portal', { method: 'POST' }).then((res) => res.json()),
+  getSubscription: () =>
+    fetch('/api/billing/subscription').then((res) => res.json()),
+};
 ```
 
 ---
@@ -1276,6 +1394,8 @@ export const actionsApi = {
 - Input validation
 - Badge rendering
 - Modal open/close behavior
+- PaywallOverlay messaging per subscription status
+- BillingSection CTA logic (subscribe vs manage billing)
 
 ### Integration Tests
 - Daily plan loading and display

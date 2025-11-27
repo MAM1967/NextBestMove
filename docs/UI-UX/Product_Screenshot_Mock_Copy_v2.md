@@ -587,6 +587,28 @@ Settings
 
 ---
 
+## Billing & Plan (NEW)
+
+### Status Badge:
+Trialing / Active / Past Due / Canceled
+
+### Copy Examples:
+- Active: “You’re on the Solo plan. Renews Mar 21.”
+- Trialing: “Trial ends in 5 days. Keep your streak going.”
+- Past due: “Payment failed on Mar 8 — update card to keep access.”
+
+### CTAs:
+- Primary button:
+  - Active/Trialing → “Manage billing”
+  - Past Due/Canceled → “Subscribe now”
+- Secondary link:
+  - “See what’s included” (opens mini pricing modal)
+
+### Footnote:
+“Payments handled securely by Stripe.”
+
+---
+
 ## Calendar
 
 ### Status:
@@ -679,6 +701,35 @@ On / Off
 
 ### Timezone:
 [User's timezone]
+
+---
+
+## Paywall Overlay (NEW)
+
+### Triggered when:
+- Subscription is inactive or payment is past due.
+- User tries to access daily plan/weekly summary without an active plan.
+
+### Headline Options:
+- “Unlock your NextBestMove”
+- “Update billing to keep your streak alive”
+
+### Body Copy:
+“Daily plans, AI summaries, and streak tracking are part of the Solo plan. Subscribe in under 60 seconds via Stripe.”
+
+### Buttons:
+- Primary (full width): “Subscribe now” or “Update payment method”
+- Secondary (ghost): “Maybe later” (hidden in past-due state)
+
+### Status Microcopy:
+- Trialing: “Trial ends in 5 days — keep momentum going.”
+- Past due: “Payment failed on Mar 8. Update card to avoid losing access.”
+- Canceled: “Your plan is paused. Reactivate anytime — your data stays safe.”
+
+### Visual Treatment:
+- Lock icon with colored badge for status
+- Dimming overlay with 4px blur, card width 480px max
+- Footnote: “Payments handled securely by Stripe.”
 
 ---
 

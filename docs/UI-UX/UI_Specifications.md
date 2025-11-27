@@ -445,6 +445,43 @@
 
 ---
 
+### Billing & Plan (Settings Screen)
+
+- **Container:** Elevated card, max width 480px desktop, full width mobile, padding 20px, border radius 16px.
+- **Status Badge Colors:**
+  - Trialing: `#8B5CF6`
+  - Active: `#10B981`
+  - Past Due: `#F59E0B`
+  - Canceled: `#9CA3AF`
+- **Content Stack:**
+  1. Status badge + caption (“Trial ends in 5 days”)
+  2. Plan name (H3) + short subtext (“Daily plan + AI summaries”)
+  3. Renewal/cancel info (Caption) e.g., “Renews Mar 21” or “Access ends Mar 21”
+  4. CTA row
+- **Primary CTA:** 
+  - Active/Trialing → Secondary button “Manage billing”
+  - Past Due/Canceled → Primary button “Subscribe now”
+- **Secondary CTA:** Ghost button “See what’s included” linking to marketing page.
+- **Alert State:** When `past_due`, show warning banner (#F59E0B background, white text) with message “Payment failed — update card to keep your streak alive.”
+- **Footer Copy:** Caption “Payments handled securely by Stripe.”
+
+### Paywall Overlay
+
+- **Backdrop:** `rgba(17, 24, 39, 0.7)` plus background blur (4px).
+- **Card:** Centered modal, 480px max width, padding 32px desktop / 24px mobile, border radius 16px.
+- **Icon:** Lock icon inside circle tinted to match status (purple trial, orange past due).
+- **Headline:** H3 (20px) “Unlock your NextBestMove”.
+- **Body Copy:** Body (14px) highlight benefits (“Daily actions sized to your calendar + AI summaries + streak tracking”).
+- **CTA Layout:** Primary button full width + secondary ghost button stacked with 12px gap.
+- **Status Messaging:** 
+  - Trialing: “Trial ends in X days”
+  - Past due: “Payment failed — tap to update card”
+  - Canceled: “Your access paused. Reactivate anytime.”
+- **Dismissal:** 
+  - Trial/Canceled overlays allow close button.
+  - Past due overlay requires explicit CTA (no outside click close).
+- **Accessibility:** `aria-modal="true"`, focus trap, `aria-live="polite"` for status updates.
+
 ### 4. Modal Specifications
 
 #### Modal Overlay
