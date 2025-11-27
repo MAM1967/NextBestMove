@@ -37,9 +37,11 @@ export async function GET(
 
   try {
     const config = await getProviderConfiguration(provider);
+    const serverMetadata = config.serverMetadata();
+    const authorizationEndpoint = serverMetadata.authorization_endpoint;
 
-    if (!config.authorization_endpoint) {
-      console.error("No authorization_endpoint in config", config);
+    if (!authorizationEndpoint) {
+      console.error("No authorization_endpoint in config", serverMetadata);
       return NextResponse.json(
         { error: "Failed to get authorization endpoint" },
         { status: 500 }
@@ -50,8 +52,9 @@ export async function GET(
     const codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
     const state = randomState();
 
-    const authorizationUrl = new URL(config.authorization_endpoint);
-    authorizationUrl.searchParams.set("client_id", config.client_id);
+    const clientMetadata = config.clientMetadata();
+    const authorizationUrl = new URL(authorizationEndpoint);
+    authorizationUrl.searchParams.set("client_id", clientMetadata.client_id);
     authorizationUrl.searchParams.set("redirect_uri", redirectUri);
     authorizationUrl.searchParams.set("response_type", "code");
     authorizationUrl.searchParams.set("scope", getProviderScope(provider));
@@ -65,7 +68,7 @@ export async function GET(
       authorizationUrl.searchParams.set(key, value);
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const maxAge = 60 * 5; // 5 minutes
 
     cookieStore.set(`nbm_calendar_state_${provider}`, state, {

@@ -26,7 +26,7 @@ export async function GET(
   }
   const provider = providerLower as CalendarProvider;
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const expectedState = cookieStore.get(`nbm_calendar_state_${provider}`)?.value;
   const codeVerifier = cookieStore.get(`nbm_calendar_verifier_${provider}`)?.value;
   const userId = cookieStore.get(`nbm_calendar_user_${provider}`)?.value;
@@ -52,10 +52,10 @@ export async function GET(
     // Use openid-client's authorizationCodeGrant function
     const tokenSet = await client.authorizationCodeGrant(
       config,
-      request.url,
+      new URL(request.url),
       {
-        code_verifier: codeVerifier,
-        state: expectedState,
+        pkceCodeVerifier: codeVerifier,
+        expectedState: expectedState,
       }
     );
 

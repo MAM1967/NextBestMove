@@ -4,12 +4,14 @@ import { getProviderConfiguration } from "@/lib/calendar/providers";
 export async function GET() {
   try {
     const config = await getProviderConfiguration("google");
+    const serverMetadata = config.serverMetadata();
+    const clientMetadata = config.clientMetadata();
     return NextResponse.json({
       success: true,
-      hasAuthEndpoint: !!config.authorization_endpoint,
-      authEndpoint: config.authorization_endpoint,
-      clientId: config.client_id,
-      issuer: config.issuer,
+      hasAuthEndpoint: !!serverMetadata.authorization_endpoint,
+      authEndpoint: serverMetadata.authorization_endpoint,
+      clientId: clientMetadata.client_id,
+      issuer: serverMetadata.issuer,
     });
   } catch (error) {
     return NextResponse.json(
