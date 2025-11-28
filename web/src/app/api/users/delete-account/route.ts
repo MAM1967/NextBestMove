@@ -166,7 +166,25 @@ export async function DELETE(request: Request) {
     // Log deletion (optional - for audit purposes)
     console.log(`User account deleted: ${userId} at ${new Date().toISOString()}`);
 
-    return NextResponse.json({ success: true });
+    // Verify deletion by checking if user still exists
+    const { data: verifyUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", userId)
+      .single();
+
+    if (verifyUser) {
+      console.error("User still exists after deletion attempt!");
+      return NextResponse.json(
+        { error: "User deletion failed - user still exists in database" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: "Account deleted successfully"
+    });
   } catch (error: any) {
     console.error("Error deleting user account:", error);
     const errorMessage = error?.message || error?.code || "Failed to delete account";

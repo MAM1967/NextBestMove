@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function AccountDeletionSection() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +30,17 @@ export function AccountDeletionSection() {
         throw new Error(errorMessage);
       }
 
-      // Redirect to sign out or home page
+      const result = await response.json();
+      console.log("Delete account success:", result);
+
+      // Sign out using Supabase client
+      const supabase = createClient();
+      await supabase.auth.signOut();
+
+      // Small delay to ensure sign out completes
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Redirect to sign in page with deleted parameter
       window.location.href = "/auth/sign-in?deleted=true";
     } catch (err) {
       console.error("Error deleting account:", err);
