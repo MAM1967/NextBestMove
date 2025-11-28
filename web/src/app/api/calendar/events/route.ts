@@ -8,9 +8,10 @@ import "isomorphic-fetch";
 type CalendarEvent = {
   id: string;
   title: string;
-  start: string; // ISO 8601
-  end: string; // ISO 8601
+  start: string; // ISO 8601 for timed, YYYY-MM-DD for all-day
+  end: string; // ISO 8601 for timed, YYYY-MM-DD for all-day (exclusive for all-day)
   duration: number; // minutes
+  isAllDay: boolean; // true if all-day event
 };
 
 type DayAvailability = {
@@ -26,59 +27,73 @@ type DayAvailability = {
  * Get date string (YYYY-MM-DD) for a date in a specific timezone
  */
 function getDateInTimezone(date: Date, timezone: string): string {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
+  return new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  });
-  return formatter.format(date);
+  }).format(date); // Returns "YYYY-MM-DD"
 }
 
 /**
- * Add days to a date string (YYYY-MM-DD) and return a new date string
+ * Add days to a date, return date string in user's timezone
  */
-function addDaysToDateString(dateStr: string, days: number): string {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-  const yearStr = date.getFullYear();
-  const monthStr = String(date.getMonth() + 1).padStart(2, "0");
-  const dayStr = String(date.getDate()).padStart(2, "0");
-  return `${yearStr}-${monthStr}-${dayStr}`;
+function addDaysInTimezone(baseDate: Date, days: number, timezone: string): string {
+  // Add days in milliseconds (simple, avoids timezone issues)
+  const newDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+  return getDateInTimezone(newDate, timezone);
 }
 
 /**
- * Get day of week (0=Sunday, 6=Saturday) for a date string in a specific timezone
+ * Check if a date is a weekend in the user's timezone
  */
-function getDayOfWeek(dateStr: string, timezone: string): number {
-  // Create a date at noon to avoid DST issues
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+function isWeekend(dateStr: string, timezone: string): boolean {
+  // Create date at noon UTC to avoid DST issues
+  const date = new Date(dateStr + "T12:00:00Z");
+
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: timezone,
-    weekday: "long",
+    weekday: "short", // 'Sun', 'Mon', etc.
   });
-  const dayOfWeekStr = formatter.format(date);
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  return dayNames.indexOf(dayOfWeekStr);
+
+  const dayName = formatter.format(date);
+  return dayName === "Sat" || dayName === "Sun";
 }
 
 /**
- * Get the date (YYYY-MM-DD) that an event falls on in a specific timezone
+ * Get all dates an event falls on (handles multi-day all-day events)
  */
-function getEventDate(eventStart: string, timezone: string): string {
-  const date = new Date(eventStart);
-  return getDateInTimezone(date, timezone);
+function getEventDates(event: CalendarEvent, timezone: string): string[] {
+  if (event.isAllDay) {
+    // All-day event - may span multiple days
+    const dates: string[] = [];
+    const start = new Date(event.start + "T00:00:00");
+    const end = new Date(event.end + "T00:00:00"); // end is exclusive
+
+    // Generate all dates from start (inclusive) to end (exclusive)
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      dates.push(getDateInTimezone(d, timezone));
+    }
+    return dates;
+  } else {
+    // Timed event - typically just one date
+    const date = new Date(event.start);
+    return [getDateInTimezone(date, timezone)];
+  }
 }
 
 /**
  * Calculate busy minutes for an event within working hours (9 AM - 5 PM) in user's timezone
  */
 function getBusyMinutes(event: CalendarEvent, dateStr: string, timezone: string): number {
+  if (event.isAllDay) {
+    // All-day event - count as full working day
+    return 480; // 8 hours * 60 minutes
+  }
+
   const eventStart = new Date(event.start);
   const eventEnd = new Date(event.end);
-  
+
   // Get event times in the user's timezone as formatted strings
   const startParts = eventStart.toLocaleTimeString("en-US", {
     timeZone: timezone,
@@ -92,33 +107,33 @@ function getBusyMinutes(event: CalendarEvent, dateStr: string, timezone: string)
     minute: "2-digit",
     hour12: false,
   }).split(":");
-  
+
   const startHour = parseInt(startParts[0] || "0", 10);
   const startMin = parseInt(startParts[1] || "0", 10);
   const endHour = parseInt(endParts[0] || "0", 10);
   const endMin = parseInt(endParts[1] || "0", 10);
-  
+
   // Working hours: 9:00 AM (540 minutes) to 5:00 PM (1020 minutes)
   const workStartMin = 9 * 60; // 540 minutes
   const workEndMin = 17 * 60; // 1020 minutes
-  
+
   const eventStartMin = startHour * 60 + startMin;
   const eventEndMin = endHour * 60 + endMin;
-  
+
   // Calculate overlap
   const overlapStart = Math.max(eventStartMin, workStartMin);
   const overlapEnd = Math.min(eventEndMin, workEndMin);
-  
+
   if (overlapStart >= overlapEnd) {
     return 0;
   }
-  
+
   return overlapEnd - overlapStart;
 }
 
 /**
  * GET /api/calendar/events?days=7
- * 
+ *
  * Returns calendar events for the next N days (default 7) with availability breakdown.
  */
 export async function GET(request: Request) {
@@ -168,16 +183,12 @@ export async function GET(request: Request) {
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
     // Calculate today in user's timezone
-    const now = new Date();
-    const todayStr = getDateInTimezone(now, timezone);
-    
-    // Parse today's date components (YYYY-MM-DD)
-    const [year, month, day] = todayStr.split("-").map(Number);
-    
+    const today = new Date();
+    const todayStr = getDateInTimezone(today, timezone);
+
     // Create start and end dates for fetching events
-    // Use a date at noon in the user's timezone to avoid DST issues
-    const startDateStr = `${todayStr}T12:00:00`;
-    const startDate = new Date(startDateStr);
+    // Start from beginning of today in user's timezone
+    const startDate = new Date(todayStr + "T00:00:00");
     // Fetch events for the next (days + 2) days to account for weekends
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + days + 2);
@@ -195,26 +206,22 @@ export async function GET(request: Request) {
     const daysData: DayAvailability[] = [];
     let daysAdded = 0;
     let dayOffset = 0;
-    
+
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
-      // Work directly with date strings to avoid timezone conversion issues
-      const dateStr = dayOffset === 0 ? todayStr : addDaysToDateString(todayStr, dayOffset);
-      
-      // Get day of week for this date in the user's timezone
-      const dayOfWeek = getDayOfWeek(dateStr, timezone);
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      if (isWeekend && excludeWeekends) {
+      const dateStr = addDaysInTimezone(today, dayOffset, timezone);
+
+      // Check if this is a weekend and user excludes weekends
+      if (excludeWeekends && isWeekend(dateStr, timezone)) {
         // Skip weekends if user has excluded them, but continue to next day
         dayOffset++;
         continue;
       }
 
-      // Filter events for this day (any event that falls on this date in user's timezone)
+      // Filter events for this day (handles multi-day all-day events)
       const dayEvents = events.filter((event) => {
-        const eventDate = getEventDate(event.start, timezone);
-        return eventDate === dateStr;
+        const eventDates = getEventDates(event, timezone);
+        return eventDates.includes(dateStr);
       });
 
       // Calculate busy minutes (only within 9 AM - 5 PM)
@@ -236,7 +243,7 @@ export async function GET(request: Request) {
       } else {
         const actions = Math.floor(availableMinutes / 30);
         const actionCount = Math.min(actions, 8);
-        
+
         if (actionCount === 0) {
           capacity = "micro";
           suggestedActionCount = 0;
@@ -269,7 +276,7 @@ export async function GET(request: Request) {
         capacity,
         suggestedActionCount,
       });
-      
+
       daysAdded++;
       dayOffset++;
     }
@@ -320,21 +327,46 @@ async function fetchGoogleEvents(
   for (const item of response.data.items || []) {
     if (!item.start || !item.end) continue;
 
-    const start = item.start.dateTime || item.start.date;
-    const end = item.end.dateTime || item.end.date;
-    if (!start || !end) continue;
+    const isAllDay = !item.start.dateTime; // If dateTime is missing, it's all-day
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+    if (isAllDay) {
+      // All-day event - use date fields directly
+      const startDate = item.start.date;
+      const endDate = item.end.date;
+      if (!startDate || !endDate) continue;
 
-    events.push({
-      id: item.id || "",
-      title: item.summary || "No title",
-      start,
-      end,
-      duration: Math.round(duration),
-    });
+      // Calculate duration in days
+      const start = new Date(startDate + "T00:00:00");
+      const end = new Date(endDate + "T00:00:00");
+      const durationDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+
+      events.push({
+        id: item.id || "",
+        title: item.summary || "No title",
+        start: startDate, // Use start.date directly
+        end: endDate, // Keep end.date for multi-day handling
+        duration: durationDays * 24 * 60, // Convert days to minutes
+        isAllDay: true,
+      });
+    } else {
+      // Timed event - use dateTime fields
+      const start = item.start.dateTime;
+      const end = item.end.dateTime;
+      if (!start || !end) continue;
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+
+      events.push({
+        id: item.id || "",
+        title: item.summary || "No title",
+        start,
+        end,
+        duration: Math.round(duration),
+        isAllDay: false,
+      });
+    }
   }
 
   return events;
@@ -372,17 +404,41 @@ async function fetchOutlookEvents(
     const end = item.end.dateTime;
     if (!start || !end) continue;
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+    const isAllDay = item.isAllDay || false;
 
-    events.push({
-      id: item.id || "",
-      title: item.subject || "No title",
-      start,
-      end,
-      duration: Math.round(duration),
-    });
+    if (isAllDay) {
+      // All-day event - extract date from dateTime
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const startDateStr = getDateInTimezone(startDate, timezone);
+      const endDateStr = getDateInTimezone(endDate, timezone);
+
+      // Calculate duration in days
+      const durationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      events.push({
+        id: item.id || "",
+        title: item.subject || "No title",
+        start: startDateStr,
+        end: endDateStr,
+        duration: durationDays * 24 * 60, // Convert days to minutes
+        isAllDay: true,
+      });
+    } else {
+      // Timed event
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+
+      events.push({
+        id: item.id || "",
+        title: item.subject || "No title",
+        start,
+        end,
+        duration: Math.round(duration),
+        isAllDay: false,
+      });
+    }
   }
 
   return events;
