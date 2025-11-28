@@ -267,7 +267,7 @@ function generateNextWeekFocus(
 
 // Generate content prompts if user completed ≥ 6 actions
 async function generateContentPrompts(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   weeklySummaryId: string,
   metrics: {
