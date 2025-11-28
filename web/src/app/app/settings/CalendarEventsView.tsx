@@ -89,12 +89,23 @@ export function CalendarEventsView() {
     );
   }
 
-  const capacityLabels: Record<string, string> = {
-    micro: "Micro (1 action)",
-    light: "Light (3 actions)",
-    standard: "Standard (6 actions)",
-    heavy: "Heavy (8 actions)",
-    default: "Default (6 actions)",
+  // Get capacity label based on capacity level and actual suggested action count
+  const getCapacityLabel = (capacity: string, actionCount: number): string => {
+    const capacityNames: Record<string, string> = {
+      micro: "Micro",
+      light: "Light",
+      standard: "Standard",
+      heavy: "Heavy",
+      default: "Default",
+    };
+    const name = capacityNames[capacity] || "Default";
+    if (actionCount === 0) {
+      return `${name} (0 actions)`;
+    } else if (actionCount === 1) {
+      return `${name} (1 action)`;
+    } else {
+      return `${name} (${actionCount} actions)`;
+    }
   };
 
   return (
@@ -156,7 +167,7 @@ export function CalendarEventsView() {
                     )}
                   </div>
                   <span className="text-xs font-medium text-zinc-600">
-                    {capacityLabels[day.capacity]}
+                    {getCapacityLabel(day.capacity, day.suggestedActionCount)}
                   </span>
                 </div>
 
