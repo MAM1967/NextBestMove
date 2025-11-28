@@ -54,8 +54,8 @@ BEGIN
     NOW() + INTERVAL '30 days',
     false,
     jsonb_build_object(
-      'plan_name', 'Professional',
-      'plan_type', 'professional',
+      'plan_name', 'Premium',
+      'plan_type', 'premium',
       'interval', 'month'
     )
   )

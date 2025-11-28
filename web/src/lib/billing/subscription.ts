@@ -90,7 +90,7 @@ export async function getSubscriptionInfo(
   if (subscription.metadata) {
     const planName = (subscription.metadata as any)?.plan_name?.toLowerCase();
     if (planName === "standard") plan = "standard";
-    if (planName === "professional") plan = "professional";
+    if (planName === "premium" || planName === "professional") plan = "premium";
   }
 
   // Check if in read-only mode
@@ -148,8 +148,8 @@ export async function hasProfessionalFeature(
 ): Promise<boolean> {
   const subscription = await getSubscriptionInfo(userId);
 
-  // Must be on Professional plan
-  if (subscription.plan !== "professional") {
+  // Must be on Premium plan
+  if (subscription.plan !== "premium") {
     return false;
   }
 
@@ -189,7 +189,7 @@ export async function checkPinLimit(userId: string): Promise<{
     .eq("status", "ACTIVE");
 
   const currentCount = count || 0;
-  const limit = subscription.plan === "professional" ? Infinity : 50;
+  const limit = subscription.plan === "premium" ? Infinity : 50;
   const canAdd = currentCount < limit;
 
   return {

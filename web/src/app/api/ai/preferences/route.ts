@@ -39,7 +39,7 @@ export async function PATCH(request: Request) {
     .maybeSingle();
 
   const planType = (subscription?.metadata as any)?.plan_type;
-  if (planType !== "professional") {
+  if (planType !== "premium") {
     return NextResponse.json(
       { error: "Premium subscription required" },
       { status: 403 }
