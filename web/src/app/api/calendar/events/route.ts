@@ -37,39 +37,6 @@ function getEventDate(eventStart: string, timezone: string): string {
   return getDateInTimezone(date, timezone);
 }
 
-/**
- * Check if an event overlaps with working hours (9 AM - 5 PM) in a specific timezone
- */
-function eventInWorkingHours(event: CalendarEvent, dateStr: string, timezone: string): boolean {
-  const eventStart = new Date(event.start);
-  const eventEnd = new Date(event.end);
-  
-  // Get the event's date in the user's timezone
-  const eventDate = getEventDate(event.start, timezone);
-  if (eventDate !== dateStr) {
-    return false; // Event is on a different day
-  }
-  
-  // Get the time components in the user's timezone
-  const startTime = eventStart.toLocaleTimeString("en-US", {
-    timeZone: timezone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const endTime = eventEnd.toLocaleTimeString("en-US", {
-    timeZone: timezone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  
-  const startHour = parseInt(startTime.split(":")[0]);
-  const endHour = parseInt(endTime.split(":")[0]);
-  
-  // Check if event overlaps with 9 AM - 5 PM
-  return (startHour < 17 && endHour >= 9) || (startHour >= 9 && startHour < 17);
-}
 
 /**
  * Calculate busy minutes for an event within working hours (9 AM - 5 PM) in user's timezone
@@ -194,11 +161,15 @@ export async function GET(request: Request) {
     const daysData: DayAvailability[] = [];
     for (let i = 0; i < days; i++) {
       // Calculate date string for this day in user's timezone
-      const date = new Date(year, month - 1, day + i);
+      // Start from today and add i days
+      const date = new Date(now);
+      date.setDate(date.getDate() + i);
       const dateStr = getDateInTimezone(date, timezone);
       
       // Check if this is a weekend and user excludes weekends
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+      // Get day of week in user's timezone
+      const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: timezone }));
+      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
@@ -206,13 +177,10 @@ export async function GET(request: Request) {
         continue;
       }
 
-      // Filter events for this day that fall within working hours
+      // Filter events for this day (any event that overlaps with this date in user's timezone)
       const dayEvents = events.filter((event) => {
         const eventDate = getEventDate(event.start, timezone);
-        if (eventDate !== dateStr) {
-          return false;
-        }
-        return eventInWorkingHours(event, dateStr, timezone);
+        return eventDate === dateStr;
       });
 
       // Calculate busy minutes (only within 9 AM - 5 PM)
