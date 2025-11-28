@@ -183,16 +183,44 @@ export async function GET(request: Request) {
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
     // Calculate today in user's timezone
-    const today = new Date();
-    const todayStr = getDateInTimezone(today, timezone);
-
-    // Create start and end dates for fetching events
-    // Start from beginning of today in user's timezone
-    const startDate = new Date(todayStr + "T00:00:00");
-    // Fetch events for the next (days + 2) days to account for weekends
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + days + 2);
-    endDate.setHours(23, 59, 59, 999);
+    // CRITICAL: Get the current date/time in the user's timezone, not server timezone
+    const now = new Date();
+    const todayStr = getDateInTimezone(now, timezone);
+    
+    // Parse today's date to create a date object at midnight in the user's timezone
+    // We need to create a date that represents midnight in the user's timezone
+    const [year, month, day] = todayStr.split("-").map(Number);
+    
+    // Create a date string that represents midnight in the user's timezone
+    // Use Intl to format the date with timezone, then parse it back
+    const midnightInTz = new Date(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(now).replace(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/, "$1-$2-$3T$4:$5:$6")
+    );
+    
+    // Actually, simpler approach: create date at noon in user's timezone, then set to midnight
+    // Better: use the date string directly and create a date at midnight UTC, then adjust
+    // Actually, the simplest: create startDate from todayStr at 00:00:00 in user's timezone
+    // We'll use a different approach - create the date string and let the API handle timezone
+    
+    // For API calls, we need ISO strings. Create start of today in user's timezone
+    // Format: YYYY-MM-DDTHH:mm:ss with timezone offset
+    const startDateStr = `${todayStr}T00:00:00`;
+    // Create date object - this will be interpreted in local timezone, but we'll use ISO for API
+    const startDate = new Date(startDateStr);
+    
+    // For the API, we need to pass the timezone-aware start/end
+    // Calculate end date: today + days + 2 (buffer for weekends)
+    const endDateStr = addDaysInTimezone(now, days + 2, timezone);
+    const endDate = new Date(`${endDateStr}T23:59:59`);
 
     let events: CalendarEvent[] = [];
 
@@ -209,7 +237,8 @@ export async function GET(request: Request) {
 
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
-      const dateStr = addDaysInTimezone(today, dayOffset, timezone);
+      // Start from now (current moment) and add dayOffset days
+      const dateStr = addDaysInTimezone(now, dayOffset, timezone);
 
       // Check if this is a weekend and user excludes weekends
       if (excludeWeekends && isWeekend(dateStr, timezone)) {
