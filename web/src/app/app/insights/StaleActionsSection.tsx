@@ -26,7 +26,9 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
     router.refresh();
   };
 
-  const handleSnooze = async () => {
+  const handleSnooze = async (actionId: string, snoozeUntil: string) => {
+    // The modal handles the actual snooze API call
+    // We just need to refresh after it completes
     router.refresh();
   };
 
@@ -134,13 +136,12 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
       </div>
 
       {/* Modals */}
-      {snoozeActionId && (
-        <SnoozeActionModal
-          actionId={snoozeActionId}
-          onClose={() => setSnoozeActionId(null)}
-          onSnoozed={handleSnooze}
-        />
-      )}
+      <SnoozeActionModal
+        isOpen={snoozeActionId !== null}
+        actionId={snoozeActionId}
+        onClose={() => setSnoozeActionId(null)}
+        onSnooze={handleSnooze}
+      />
       {noteActionId && noteAction && (
         <ActionNoteModal
           actionId={noteActionId}
