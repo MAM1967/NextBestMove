@@ -181,19 +181,31 @@ export async function DELETE(request: Request) {
 
         console.log("Creating admin client with URL:", supabaseUrl);
         
-        // Verify key format - should start with eyJ for JWT or sb_secret_ for service role
+        // Verify key format
+        // Supabase service role keys can be:
+        // - JWT format (starts with "eyJ") - older format
+        // - sb_secret_ format - newer format
+        // Both should work, but let's log what we have
+        console.log("Service role key format check:");
+        console.log("- Starts with eyJ (JWT):", serviceRoleKey.startsWith("eyJ"));
+        console.log("- Starts with sb_secret_:", serviceRoleKey.startsWith("sb_secret_"));
+        
         if (!serviceRoleKey.startsWith("eyJ") && !serviceRoleKey.startsWith("sb_secret_")) {
-          console.warn("Service role key format may be incorrect. Expected JWT (eyJ...) or sb_secret_...");
+          console.warn("⚠️ Service role key format may be incorrect. Expected JWT (eyJ...) or sb_secret_...");
         }
         
         // Create admin client with service role key
         // This bypasses RLS and allows admin operations
+        // Note: The key should be the full service_role key from Supabase Dashboard
+        console.log("Creating admin client...");
         const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
           auth: {
             autoRefreshToken: false,
             persistSession: false,
           },
         });
+        
+        console.log("Admin client created successfully");
 
         console.log("Attempting to delete auth user:", userId);
         
