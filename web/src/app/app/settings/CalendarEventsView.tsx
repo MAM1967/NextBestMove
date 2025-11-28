@@ -111,8 +111,11 @@ export function CalendarEventsView() {
 
         <div className="space-y-4">
           {data.days.map((day) => {
-            const date = new Date(day.date);
-            const isToday = date.toDateString() === new Date().toDateString();
+            // Parse date string (YYYY-MM-DD) - create date at noon to avoid timezone issues
+            const date = new Date(day.date + "T12:00:00");
+            // Check if this is today in the user's timezone
+            const todayStr = new Date().toISOString().split("T")[0];
+            const isToday = day.date === todayStr;
             const dateLabel = isToday
               ? "Today"
               : date.toLocaleDateString("en-US", {
