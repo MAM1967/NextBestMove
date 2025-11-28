@@ -1,21 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { StaleActionsSection } from "./StaleActionsSection";
+import type { Action } from "../actions/types";
 
-type StaleAction = {
-  id: string;
-  action_type: string;
-  state: string;
-  description: string | null;
-  due_date: string;
-  created_at: string;
+type StaleAction = Action & {
   days_old: number;
-  person_pins: {
-    id: string;
-    name: string;
-    url: string | null;
-    notes: string | null;
-  } | null;
 };
 
 async function getStaleActions() {
@@ -35,11 +24,24 @@ async function getStaleActions() {
   sevenDaysAgo.setUTCHours(0, 0, 0, 0);
 
   // Fetch stale actions: NEW state, not snoozed, created more than 7 days ago
+  // Select all fields to match Action type
   const { data: staleActions, error } = await supabase
     .from("actions")
     .select(
       `
-      *,
+      id,
+      user_id,
+      person_id,
+      action_type,
+      state,
+      description,
+      due_date,
+      completed_at,
+      snooze_until,
+      notes,
+      auto_created,
+      created_at,
+      updated_at,
       person_pins (
         id,
         name,
