@@ -63,20 +63,26 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get user timezone
+    // Get user timezone and weekend preference
     const { data: userProfile } = await supabase
       .from("users")
-      .select("timezone")
+      .select("timezone, exclude_weekends")
       .eq("id", user.id)
       .single();
 
     const timezone = userProfile?.timezone || "UTC";
+    const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
     // Fetch events for the next N days
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Calculate today in user's timezone
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("en-CA", { timeZone: timezone }); // YYYY-MM-DD
+    const [year, month, day] = todayStr.split("-").map(Number);
+    
+    // Create date objects in UTC that represent start/end of day in user's timezone
+    const today = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + days);
+    endDate.setUTCDate(endDate.getUTCDate() + days);
 
     let events: CalendarEvent[] = [];
 
@@ -90,23 +96,40 @@ export async function GET(request: Request) {
     const daysData: DayAvailability[] = [];
     for (let i = 0; i < days; i++) {
       const date = new Date(today);
-      date.setDate(date.getDate() + i);
+      date.setUTCDate(date.getUTCDate() + i);
       const dateStr = date.toISOString().split("T")[0];
+      
+      // Check if this is a weekend and user excludes weekends
+      // Get day of week in user's timezone
+      const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: timezone }));
+      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      
+      if (isWeekend && excludeWeekends) {
+        // Skip weekends if user has excluded them
+        continue;
+      }
 
-      // Filter events for this day (9 AM - 5 PM working hours)
-      const dayStart = new Date(date);
-      dayStart.setHours(9, 0, 0, 0);
-      const dayEnd = new Date(date);
-      dayEnd.setHours(17, 0, 0, 0);
+      // Filter events for this day (9 AM - 5 PM working hours in user's timezone)
+      // Create day boundaries in user's timezone, then convert to UTC for comparison
+      const dayStartLocal = new Date(dateInTz);
+      dayStartLocal.setHours(9, 0, 0, 0);
+      const dayEndLocal = new Date(dateInTz);
+      dayEndLocal.setHours(17, 0, 0, 0);
+      
+      // Convert to ISO for comparison with event times (which are in UTC)
+      const dayStartISO = dayStartLocal.toISOString();
+      const dayEndISO = dayEndLocal.toISOString();
 
       const dayEvents = events.filter((event) => {
         const eventStart = new Date(event.start);
         const eventEnd = new Date(event.end);
         // Include events that overlap with working hours
+        // Compare using ISO strings to handle timezone correctly
         return (
-          (eventStart >= dayStart && eventStart < dayEnd) ||
-          (eventEnd > dayStart && eventEnd <= dayEnd) ||
-          (eventStart < dayStart && eventEnd > dayEnd)
+          (event.start >= dayStartISO && event.start < dayEndISO) ||
+          (event.end > dayStartISO && event.end <= dayEndISO) ||
+          (event.start < dayStartISO && event.end > dayEndISO)
         );
       });
 
