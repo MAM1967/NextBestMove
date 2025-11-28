@@ -73,8 +73,8 @@ export function WeekendPreferenceToggle({
         aria-label="Skip weekend planning"
       >
         <span
-          className={`pointer-events-none absolute top-0.5 left-0.5 inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${
-            excludeWeekends ? "translate-x-5" : "translate-x-0"
+          className={`pointer-events-none absolute top-0.5 inline-block h-6 w-6 rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+            excludeWeekends ? "left-[22px]" : "left-0.5"
           }`}
           aria-hidden="true"
         />
