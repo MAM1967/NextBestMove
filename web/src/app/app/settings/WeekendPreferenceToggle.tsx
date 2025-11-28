@@ -65,7 +65,7 @@ export function WeekendPreferenceToggle({
         type="button"
         onClick={handleToggle}
         disabled={isUpdating}
-        className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
           excludeWeekends ? "bg-purple-600" : "bg-zinc-300"
         }`}
         role="switch"
@@ -73,8 +73,8 @@ export function WeekendPreferenceToggle({
         aria-label="Skip weekend planning"
       >
         <span
-          className={`pointer-events-none absolute top-0.5 inline-block h-6 w-6 rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out ${
-            excludeWeekends ? "left-[22px]" : "left-0.5"
+          className={`pointer-events-none absolute top-1 inline-block h-6 w-6 rounded-full bg-white shadow-md transition-all duration-200 ease-in-out ${
+            excludeWeekends ? "left-7" : "left-1"
           }`}
           aria-hidden="true"
         />
