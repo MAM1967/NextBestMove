@@ -30,9 +30,12 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
     router.refresh();
   };
 
-  const handleAddNote = (actionId: string, action: Action) => {
-    setNoteActionId(actionId);
-    setNoteAction(action);
+  const handleAddNote = (actionId: string) => {
+    const action = staleActions.find((a) => a.id === actionId);
+    if (action) {
+      setNoteActionId(actionId);
+      setNoteAction(action);
+    }
   };
 
   const handleNoteSaved = () => {
