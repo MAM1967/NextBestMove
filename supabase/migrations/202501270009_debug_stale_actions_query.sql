@@ -39,3 +39,4 @@ FROM actions a
 ORDER BY a.created_at DESC
 LIMIT 10;
 
+

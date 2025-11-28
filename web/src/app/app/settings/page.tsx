@@ -6,6 +6,7 @@ import { CalendarEventsView } from "./CalendarEventsView";
 import { BillingSection } from "./BillingSection";
 import { WeekendPreferenceToggle } from "./WeekendPreferenceToggle";
 import { ExportDataButton } from "./ExportDataButton";
+import { BYOKSection } from "./BYOKSection";
 
 type CalendarConnection = {
   provider: string;
@@ -98,7 +99,7 @@ export default async function SettingsPage() {
       supabase
         .from("users")
         .select(
-          "email, name, timezone, streak_count, calendar_connected, exclude_weekends"
+          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model"
         )
         .eq("id", user.id)
         .single(),
@@ -114,6 +115,7 @@ export default async function SettingsPage() {
 
   // Fetch subscription data if customer exists
   let subscriptionData = null;
+  let isPremium = false;
   if (billingCustomer) {
     // First try to get active or trialing subscription
     const { data: activeSubscription } = await supabase
@@ -133,6 +135,8 @@ export default async function SettingsPage() {
 
     if (activeSubscription) {
       subscriptionData = activeSubscription;
+      const planType = (activeSubscription.metadata as any)?.plan_type;
+      isPremium = planType === "professional";
     } else {
       // If no active/trialing, get the most recent one (including canceled)
       const { data: latestSubscription } = await supabase
@@ -264,6 +268,18 @@ export default async function SettingsPage() {
             enabled
           />
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="AI preferences"
+        description="Configure how AI features work for you. Premium users can bring their own API key."
+      >
+        <BYOKSection
+          isPremium={isPremium}
+          currentProvider={profile?.ai_provider}
+          currentModel={profile?.ai_model}
+          hasApiKey={!!profile?.ai_api_key_encrypted}
+        />
       </SectionCard>
 
       <SectionCard

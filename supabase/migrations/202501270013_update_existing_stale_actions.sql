@@ -28,3 +28,4 @@ WHERE user_id = '1399963d-9c8b-421a-9d0a-a85c94f2f9c5'
   AND created_at::DATE IN ('2025-11-17', '2025-11-19')
 ORDER BY created_at;
 
+

@@ -36,3 +36,4 @@
 - Check Supabase logs
 - Verify migrations are applied
 
+

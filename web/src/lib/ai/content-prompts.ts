@@ -6,6 +6,9 @@ type Metrics = {
   replies: number;
   callsBooked: number;
   insightText?: string;
+  userAiProvider?: string | null;
+  userApiKeyEncrypted?: string | null;
+  userModel?: string | null;
 };
 
 /**
@@ -50,7 +53,14 @@ Use this as inspiration: "${template}"`;
 
   const fallback = template;
   
-  return await generateWithAI(aiPrompt, { winDescription }, fallback);
+  return await generateWithAI(
+    aiPrompt,
+    { winDescription },
+    fallback,
+    metrics.userAiProvider,
+    metrics.userApiKeyEncrypted,
+    metrics.userModel
+  );
 }
 
 /**
@@ -89,6 +99,13 @@ Use this as inspiration: "${template}"`;
 
   const fallback = template;
   
-  return await generateWithAI(aiPrompt, { insight }, fallback);
+  return await generateWithAI(
+    aiPrompt,
+    { insight },
+    fallback,
+    metrics.userAiProvider,
+    metrics.userApiKeyEncrypted,
+    metrics.userModel
+  );
 }
 

@@ -184,3 +184,4 @@ To test trial expiration without waiting 14 days:
 
 **Ready to test!** Start your dev server and Stripe webhook forwarding, then try the checkout flow.
 
+

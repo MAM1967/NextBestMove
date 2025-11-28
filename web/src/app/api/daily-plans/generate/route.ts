@@ -174,16 +174,16 @@ export async function POST(request: Request) {
     const dateObj = new Date(date);
     const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    
+
     // Get user preference for weekends
     const { data: userProfile } = await supabase
       .from("users")
       .select("exclude_weekends")
       .eq("id", user.id)
       .single();
-    
+
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
-    
+
     // If weekend and user excludes weekends, return 0 capacity
     if (isWeekend && excludeWeekends) {
       return NextResponse.json(
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     const capacityInfo = await getCapacityForDate(supabase, user.id, date);
     const capacityLevel = capacityInfo.level;
     const actionCount = capacityInfo.actionsPerDay;
-    
+
     // For backward compatibility, calculate freeMinutes (approximate)
     let freeMinutes: number | null = null;
     if (capacityInfo.source === "calendar") {
@@ -371,4 +371,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

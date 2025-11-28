@@ -244,3 +244,4 @@ The plan generation algorithm ensures that:
 3. Fast Win is always included (if available)
 4. Total actions never exceed capacity
 
+

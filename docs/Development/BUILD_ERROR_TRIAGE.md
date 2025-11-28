@@ -346,3 +346,4 @@ Before pushing code, verify:
 - [TypeScript Best Practices](https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html)
 - [Next.js TypeScript Guide](https://nextjs.org/docs/app/building-your-application/configuring/typescript)
 
+

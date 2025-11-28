@@ -95,10 +95,10 @@ export async function POST(request: Request) {
     // 4. Calls booked (placeholder - future feature)
     const callsBooked = 0;
 
-    // 5. Get current streak from user profile
+    // 5. Get current streak and AI preferences from user profile
     const { data: userProfile } = await supabase
       .from("users")
-      .select("streak_count")
+      .select("streak_count, ai_provider, ai_api_key_encrypted, ai_model")
       .eq("id", user.id)
       .single();
     const currentStreak = userProfile?.streak_count || 0;
@@ -162,6 +162,9 @@ export async function POST(request: Request) {
         replies,
         callsBooked,
         insightText,
+        userAiProvider: userProfile?.ai_provider,
+        userApiKeyEncrypted: userProfile?.ai_api_key_encrypted,
+        userModel: userProfile?.ai_model,
       });
     }
 

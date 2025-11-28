@@ -20,3 +20,4 @@ WHERE a.user_id = (SELECT id FROM users LIMIT 1)
 ORDER BY a.created_at DESC
 LIMIT 10;
 
+

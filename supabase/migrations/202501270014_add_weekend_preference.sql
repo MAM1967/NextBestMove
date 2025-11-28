@@ -6,3 +6,4 @@ ADD COLUMN IF NOT EXISTS exclude_weekends BOOLEAN NOT NULL DEFAULT false;
 
 COMMENT ON COLUMN users.exclude_weekends IS 'If true, weekends (Saturday/Sunday) are excluded from daily plan generation';
 
+

@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveConnection, getValidAccessToken } from "@/lib/calendar/tokens";
+import {
+  getActiveConnection,
+  getValidAccessToken,
+} from "@/lib/calendar/tokens";
 import { fetchGoogleFreeBusy } from "@/lib/calendar/freebusy-google";
 import { fetchOutlookFreeBusy } from "@/lib/calendar/freebusy-outlook";
-import {
-  getCachedFreeBusy,
-  setCachedFreeBusy,
-} from "@/lib/calendar/cache";
+import { getCachedFreeBusy, setCachedFreeBusy } from "@/lib/calendar/cache";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
 /**
  * Calculate capacity level and suggested action count from free minutes.
- * 
+ *
  * Assumes ~30 minutes per action on average.
  * More realistic thresholds:
  * - 0 minutes: 0 actions (fully booked)
@@ -30,19 +30,19 @@ function calculateCapacity(freeMinutes: number | null): {
   if (freeMinutes === null) {
     return { level: "default", suggestedActionCount: 6 };
   }
-  
+
   // 0 minutes available = fully booked, no actions
   if (freeMinutes < 1) {
     return { level: "micro", suggestedActionCount: 0 };
   }
-  
+
   // Calculate based on ~30 minutes per action
   // Round down to be conservative
   const actions = Math.floor(freeMinutes / 30);
-  
+
   // Cap at 8 actions max
   const actionCount = Math.min(actions, 8);
-  
+
   // Map to capacity levels
   if (actionCount === 0) {
     return { level: "micro", suggestedActionCount: 0 };
@@ -63,7 +63,7 @@ function calculateCapacity(freeMinutes: number | null): {
 
 /**
  * GET /api/calendar/freebusy?date=YYYY-MM-DD
- * 
+ *
  * Returns free/busy data for a specific date.
  * Always returns 200 OK with data (falls back to default capacity on error).
  */
@@ -173,7 +173,11 @@ export async function GET(request: Request) {
       if (connection.provider === "google") {
         freeBusyResult = await fetchGoogleFreeBusy(accessToken, date, timezone);
       } else if (connection.provider === "outlook") {
-        freeBusyResult = await fetchOutlookFreeBusy(accessToken, date, timezone);
+        freeBusyResult = await fetchOutlookFreeBusy(
+          accessToken,
+          date,
+          timezone
+        );
       } else {
         throw new Error(`Unsupported provider: ${connection.provider}`);
       }
@@ -223,7 +227,9 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Free/busy API error:", error);
-    const date = new URL(request.url).searchParams.get("date") || new Date().toISOString().split("T")[0];
+    const date =
+      new URL(request.url).searchParams.get("date") ||
+      new Date().toISOString().split("T")[0];
     return NextResponse.json({
       date,
       freeMinutes: null,
@@ -237,4 +243,3 @@ export async function GET(request: Request) {
     });
   }
 }
-

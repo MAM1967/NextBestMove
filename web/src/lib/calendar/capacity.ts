@@ -12,7 +12,7 @@ export type CapacityInfo = {
 
 /**
  * Calculate capacity level and suggested action count from free minutes.
- * 
+ *
  * Assumes ~30 minutes per action on average.
  * More realistic thresholds:
  * - 0 minutes: 0 actions (fully booked)
@@ -30,19 +30,19 @@ function calculateCapacityFromFreeMinutes(freeMinutes: number | null): {
   if (freeMinutes === null) {
     return { level: "default", suggestedActionCount: 6 };
   }
-  
+
   // 0 minutes available = fully booked, no actions
   if (freeMinutes < 1) {
     return { level: "micro", suggestedActionCount: 0 };
   }
-  
+
   // Calculate based on ~30 minutes per action
   // Round down to be conservative
   const actions = Math.floor(freeMinutes / 30);
-  
+
   // Cap at 8 actions max
   const actionCount = Math.min(actions, 8);
-  
+
   // Map to capacity levels
   if (actionCount === 0) {
     return { level: "micro", suggestedActionCount: 0 };
@@ -142,4 +142,3 @@ export async function getCapacityForDate(
     };
   }
 }
-

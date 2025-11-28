@@ -49,3 +49,4 @@
 - Verify RLS policies are set up correctly
 - Check Supabase logs
 
+
