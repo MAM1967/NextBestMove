@@ -14,13 +14,13 @@ export function WeekendPreferenceToggle({
   const [excludeWeekends, setExcludeWeekends] = useState(initialValue);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (isUpdating) return;
     
-    const newValue = !excludeWeekends;
+    const newValue = e.target.checked;
     setIsUpdating(true);
     const previousValue = excludeWeekends;
     
@@ -61,24 +61,18 @@ export function WeekendPreferenceToggle({
           Exclude Saturday and Sunday from daily plan generation
         </p>
       </div>
-      <button
-        type="button"
-        onClick={handleToggle}
-        disabled={isUpdating}
-        className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-          excludeWeekends ? "bg-purple-600" : "bg-zinc-300"
-        }`}
-        role="switch"
-        aria-checked={excludeWeekends}
-        aria-label="Skip weekend planning"
-      >
-        <span
-          className={`pointer-events-none absolute top-0.5 left-0.5 inline-block h-6 w-6 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
-            excludeWeekends ? "translate-x-5" : "translate-x-0"
-          }`}
-          aria-hidden="true"
+      <label className="flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          checked={excludeWeekends}
+          onChange={handleToggle}
+          disabled={isUpdating}
+          className="h-5 w-5 cursor-pointer rounded border-2 border-zinc-300 text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         />
-      </button>
+        <span className="ml-3 text-sm font-medium text-zinc-700">
+          {excludeWeekends ? "Enabled" : "Disabled"}
+        </span>
+      </label>
     </div>
   );
 }
