@@ -178,16 +178,22 @@ export function BillingSection({
     }
   }
 
-  // Button visibility is based on subscription status, NOT modal state
-  // This ensures the button always reappears after canceling the modal
-  if (!hasCustomer && !subscription) {
+  // Button visibility is based on subscription status, NOT modal state or customer existence
+  // This ensures the button always reappears after canceling the modal or hitting back from Stripe
+  // Edge case: If user hits back from Stripe checkout, hasCustomer might be true but no subscription exists
+  // In that case, we should still show "Start Free Trial", not "Sync Subscription"
+  if (!subscription) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
         <p className="text-sm font-medium text-zinc-900">No active subscription</p>
         <p className="mt-1 text-xs text-zinc-600">
-          Start your 14-day free trial. No credit card required.
+          {hasCustomer 
+            ? "Your subscription may have expired or been canceled."
+            : "Start your 14-day free trial. No credit card required."
+          }
         </p>
-        {/* Button is always visible when !hasCustomer && !subscription, regardless of modal state */}
+        {/* Always show "Start Free Trial" when no subscription exists, regardless of hasCustomer */}
+        {/* This handles the edge case where user hits back from Stripe checkout */}
         <button
           type="button"
           onClick={() => setShowPlanSelection(true)}
@@ -202,32 +208,6 @@ export function BillingSection({
           onSelectPlan={handleSelectPlan}
           isLoading={isLoading}
         />
-      </div>
-    );
-  }
-
-  if (!subscription) {
-    return (
-      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
-        <p className="text-sm font-medium text-zinc-900">No active subscription</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Your subscription may have expired or been canceled.
-        </p>
-        {hasCustomer && (
-          <>
-            <p className="mt-3 text-xs text-zinc-500">
-              If you just completed checkout, try syncing your subscription.
-            </p>
-            <button
-              type="button"
-              onClick={handleSyncSubscription}
-              disabled={isLoading}
-              className="mt-3 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-            >
-              {isLoading ? "Syncing..." : "Sync Subscription"}
-            </button>
-          </>
-        )}
       </div>
     );
   }
