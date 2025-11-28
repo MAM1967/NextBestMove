@@ -96,10 +96,11 @@ export async function POST() {
     console.log("Saved subscription:", savedSubscription);
 
     // Extract current_period_end with proper typing
-    // TypeScript needs explicit type assertion for Stripe.Subscription properties
-    const stripeSub = subscription as Stripe.Subscription;
-    const currentPeriodEnd = stripeSub.current_period_end 
-      ? new Date(stripeSub.current_period_end * 1000).toISOString()
+    // Use type guard to safely access Stripe.Subscription properties
+    const currentPeriodEnd = subscription && 
+      'current_period_end' in subscription && 
+      typeof subscription.current_period_end === 'number'
+      ? new Date(subscription.current_period_end * 1000).toISOString()
       : null;
 
     return NextResponse.json({
