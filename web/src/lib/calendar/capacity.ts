@@ -12,16 +12,49 @@ export type CapacityInfo = {
 
 /**
  * Calculate capacity level and suggested action count from free minutes.
+ * 
+ * Assumes ~30 minutes per action on average.
+ * More realistic thresholds:
+ * - 0 minutes: 0 actions (fully booked)
+ * - 30 minutes: 1 action
+ * - 60 minutes: 2 actions
+ * - 90 minutes: 3 actions
+ * - 120 minutes: 4 actions
+ * - 180 minutes: 6 actions
+ * - 240+ minutes: 8 actions
  */
 function calculateCapacityFromFreeMinutes(freeMinutes: number | null): {
   level: "micro" | "light" | "standard" | "heavy" | "default";
   suggestedActionCount: number;
 } {
-  if (freeMinutes === null || freeMinutes < 30) {
+  if (freeMinutes === null) {
+    return { level: "default", suggestedActionCount: 6 };
+  }
+  
+  // 0 minutes available = fully booked, no actions
+  if (freeMinutes < 1) {
+    return { level: "micro", suggestedActionCount: 0 };
+  }
+  
+  // Calculate based on ~30 minutes per action
+  // Round down to be conservative
+  const actions = Math.floor(freeMinutes / 30);
+  
+  // Cap at 8 actions max
+  const actionCount = Math.min(actions, 8);
+  
+  // Map to capacity levels
+  if (actionCount === 0) {
+    return { level: "micro", suggestedActionCount: 0 };
+  } else if (actionCount <= 1) {
     return { level: "micro", suggestedActionCount: 1 };
-  } else if (freeMinutes < 60) {
+  } else if (actionCount <= 2) {
+    return { level: "light", suggestedActionCount: 2 };
+  } else if (actionCount <= 3) {
     return { level: "light", suggestedActionCount: 3 };
-  } else if (freeMinutes < 120) {
+  } else if (actionCount <= 4) {
+    return { level: "standard", suggestedActionCount: 4 };
+  } else if (actionCount <= 6) {
     return { level: "standard", suggestedActionCount: 6 };
   } else {
     return { level: "heavy", suggestedActionCount: 8 };

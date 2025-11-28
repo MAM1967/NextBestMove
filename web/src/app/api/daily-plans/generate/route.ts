@@ -170,6 +170,28 @@ export async function POST(request: Request) {
       }
     }
 
+    // Check if date is a weekend and user excludes weekends
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    
+    // Get user preference for weekends
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("exclude_weekends")
+      .eq("id", user.id)
+      .single();
+    
+    const excludeWeekends = userProfile?.exclude_weekends ?? false;
+    
+    // If weekend and user excludes weekends, return 0 capacity
+    if (isWeekend && excludeWeekends) {
+      return NextResponse.json(
+        { error: "Weekends are excluded from daily plan generation" },
+        { status: 400 }
+      );
+    }
+
     // Calculate capacity from calendar (or use default)
     const { getCapacityForDate } = await import("@/lib/calendar/capacity");
     const capacityInfo = await getCapacityForDate(supabase, user.id, date);

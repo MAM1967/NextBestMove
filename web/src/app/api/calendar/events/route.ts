@@ -125,22 +125,40 @@ export async function GET(request: Request) {
       const totalWorkingMinutes = 480; // 8 hours * 60 minutes
       const availableMinutes = Math.max(0, totalWorkingMinutes - busyMinutes);
 
-      // Calculate capacity
+      // Calculate capacity based on ~30 minutes per action
+      // More realistic: 0 minutes = 0 actions, 90 minutes = 3 actions, etc.
       let capacity: "micro" | "light" | "standard" | "heavy" | "default";
       let suggestedActionCount: number;
 
-      if (availableMinutes < 30) {
+      if (availableMinutes < 1) {
         capacity = "micro";
-        suggestedActionCount = 1;
-      } else if (availableMinutes < 60) {
-        capacity = "light";
-        suggestedActionCount = 3;
-      } else if (availableMinutes < 120) {
-        capacity = "standard";
-        suggestedActionCount = 6;
+        suggestedActionCount = 0; // Fully booked
       } else {
-        capacity = "heavy";
-        suggestedActionCount = 8;
+        const actions = Math.floor(availableMinutes / 30);
+        const actionCount = Math.min(actions, 8);
+        
+        if (actionCount === 0) {
+          capacity = "micro";
+          suggestedActionCount = 0;
+        } else if (actionCount <= 1) {
+          capacity = "micro";
+          suggestedActionCount = 1;
+        } else if (actionCount <= 2) {
+          capacity = "light";
+          suggestedActionCount = 2;
+        } else if (actionCount <= 3) {
+          capacity = "light";
+          suggestedActionCount = 3;
+        } else if (actionCount <= 4) {
+          capacity = "standard";
+          suggestedActionCount = 4;
+        } else if (actionCount <= 6) {
+          capacity = "standard";
+          suggestedActionCount = 6;
+        } else {
+          capacity = "heavy";
+          suggestedActionCount = 8;
+        }
       }
 
       daysData.push({
