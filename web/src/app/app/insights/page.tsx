@@ -61,21 +61,28 @@ async function getStaleActions() {
     return null;
   }
 
-  // Calculate how many days old each action is
-  const actionsWithAge = (staleActions || []).map((action) => {
+  // Calculate how many days old each action is and transform person_pins
+  const actionsWithAge = (staleActions || []).map((action: any) => {
     const createdDate = new Date(action.created_at);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const daysOld = Math.floor(
       (today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
     );
+    
+    // Transform person_pins from array to single object or null
+    const personPin = Array.isArray(action.person_pins) && action.person_pins.length > 0
+      ? action.person_pins[0]
+      : action.person_pins || null;
+    
     return {
       ...action,
+      person_pins: personPin,
       days_old: daysOld,
-    };
+    } as StaleAction;
   });
 
-  return actionsWithAge as StaleAction[];
+  return actionsWithAge;
 }
 
 export default async function InsightsPage() {
