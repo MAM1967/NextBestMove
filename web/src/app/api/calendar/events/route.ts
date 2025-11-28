@@ -26,7 +26,42 @@ type DayAvailability = {
  * Get date string (YYYY-MM-DD) for a date in a specific timezone
  */
 function getDateInTimezone(date: Date, timezone: string): string {
-  return date.toLocaleDateString("en-CA", { timeZone: timezone });
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(date);
+}
+
+/**
+ * Add days to a date string (YYYY-MM-DD) and return a new date string
+ */
+function addDaysToDateString(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const yearStr = date.getFullYear();
+  const monthStr = String(date.getMonth() + 1).padStart(2, "0");
+  const dayStr = String(date.getDate()).padStart(2, "0");
+  return `${yearStr}-${monthStr}-${dayStr}`;
+}
+
+/**
+ * Get day of week (0=Sunday, 6=Saturday) for a date string in a specific timezone
+ */
+function getDayOfWeek(dateStr: string, timezone: string): number {
+  // Create a date at noon to avoid DST issues
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "long",
+  });
+  const dayOfWeekStr = formatter.format(date);
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return dayNames.indexOf(dayOfWeekStr);
 }
 
 /**
@@ -163,21 +198,11 @@ export async function GET(request: Request) {
     
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
-      // Start from today (now) and add dayOffset days, then get the date string in user's timezone
-      const targetDate = new Date(now);
-      targetDate.setUTCDate(targetDate.getUTCDate() + dayOffset);
-      // Set to noon UTC to avoid DST issues
-      targetDate.setUTCHours(12, 0, 0, 0);
-      const dateStr = getDateInTimezone(targetDate, timezone);
+      // Work directly with date strings to avoid timezone conversion issues
+      const dateStr = dayOffset === 0 ? todayStr : addDaysToDateString(todayStr, dayOffset);
       
       // Get day of week for this date in the user's timezone
-      const formatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: timezone,
-        weekday: "long",
-      });
-      const dayOfWeekStr = formatter.format(targetDate);
-      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const dayOfWeek = dayNames.indexOf(dayOfWeekStr);
+      const dayOfWeek = getDayOfWeek(dateStr, timezone);
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
