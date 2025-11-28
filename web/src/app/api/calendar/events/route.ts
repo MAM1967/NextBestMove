@@ -136,20 +136,28 @@ export async function GET(request: Request) {
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
     
-    // Parse today's date to get year, month, day in user's timezone
+    // Parse today's date components in user's timezone
     const [year, month, day] = todayStr.split("-").map(Number);
     
-    // Create start and end dates for fetching events
-    // Use UTC to avoid timezone issues when creating dates
-    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    const endDate = new Date(Date.UTC(year, month - 1, day + days, 23, 59, 59));
+    // Create start and end dates for fetching events (in UTC, but representing the date range in user's timezone)
+    // We need to fetch events that might fall on any of the days we're interested in
+    // So we fetch from start of today to end of (today + days) in user's timezone
+    const startDate = new Date(`${todayStr}T00:00:00`);
+    // Adjust for timezone offset to get the correct UTC time
+    const tzOffset = new Date().getTimezoneOffset() * 60000; // offset in milliseconds
+    const startDateUTC = new Date(startDate.getTime() - tzOffset);
+    
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + days);
+    endDate.setHours(23, 59, 59, 999);
+    const endDateUTC = new Date(endDate.getTime() - tzOffset);
 
     let events: CalendarEvent[] = [];
 
     if (connection.provider === "google") {
-      events = await fetchGoogleEvents(accessToken, startDate, endDate, timezone);
+      events = await fetchGoogleEvents(accessToken, startDateUTC, endDateUTC, timezone);
     } else if (connection.provider === "outlook") {
-      events = await fetchOutlookEvents(accessToken, startDate, endDate, timezone);
+      events = await fetchOutlookEvents(accessToken, startDateUTC, endDateUTC, timezone);
     }
 
     // Group events by date and calculate availability
@@ -158,15 +166,23 @@ export async function GET(request: Request) {
     let dayOffset = 0;
     
     while (daysAdded < days) {
-      // Calculate date for this day in user's timezone
+      // Calculate date string for this day in user's timezone
       // Start from today and add dayOffset days
-      const targetDate = new Date(Date.UTC(year, month - 1, day + dayOffset));
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() + dayOffset);
       const dateStr = getDateInTimezone(targetDate, timezone);
       
-      // Get day of week in user's timezone
-      // Create a date object that represents this day at noon in the user's timezone
-      const dateInTz = new Date(targetDate.toLocaleString("en-US", { timeZone: timezone }));
-      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
+      // Get day of week - we need to check what day of week this date is in the user's timezone
+      // Create a date at noon in the user's timezone to avoid DST issues
+      const dateAtNoon = new Date(`${dateStr}T12:00:00`);
+      // Format to get the day of week in the user's timezone
+      const dayOfWeekStr = dateAtNoon.toLocaleDateString("en-US", {
+        timeZone: timezone,
+        weekday: "long",
+      });
+      // Convert to number (0 = Sunday, 6 = Saturday)
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayOfWeek = dayNames.indexOf(dayOfWeekStr);
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
