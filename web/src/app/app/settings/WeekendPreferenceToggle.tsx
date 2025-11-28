@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type WeekendPreferenceToggleProps = {
@@ -15,7 +15,14 @@ export function WeekendPreferenceToggle({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleToggle = async (value: boolean) => {
+    if (isUpdating) return;
+    
     setIsUpdating(true);
+    const previousValue = excludeWeekends;
+    
+    // Optimistic update
+    setExcludeWeekends(value);
+    
     try {
       const response = await fetch("/api/users/weekend-preference", {
         method: "PATCH",
@@ -24,17 +31,17 @@ export function WeekendPreferenceToggle({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update weekend preference");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update weekend preference");
       }
 
-      setExcludeWeekends(value);
-      // Refresh to show updated state
+      // Success - refresh to get latest state
       router.refresh();
     } catch (error) {
       console.error("Error updating weekend preference:", error);
+      // Revert on error
+      setExcludeWeekends(previousValue);
       alert("Failed to update weekend preference. Please try again.");
-      // Revert to previous value
-      setExcludeWeekends(!value);
     } finally {
       setIsUpdating(false);
     }
@@ -42,7 +49,7 @@ export function WeekendPreferenceToggle({
 
   return (
     <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3">
-      <div className="flex-1">
+      <div className="flex-1 pr-4">
         <p className="text-sm font-medium text-zinc-900">
           Exclude weekends from daily plans
         </p>
@@ -51,33 +58,29 @@ export function WeekendPreferenceToggle({
           is useful if you don&apos;t work on weekends.
         </p>
       </div>
-      <div className="ml-4 flex items-center">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!isUpdating) {
-              handleToggle(!excludeWeekends);
-            }
-          }}
-          disabled={isUpdating}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-            excludeWeekends ? "bg-purple-600" : "bg-zinc-200"
-          }`}
-          role="switch"
-          aria-checked={excludeWeekends}
-          aria-label="Exclude weekends from daily plans"
-        >
-          <span
-            className={`pointer-events-none absolute inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              excludeWeekends ? "translate-x-5" : "translate-x-0"
-            }`}
-            style={{ top: "2px", left: "2px" }}
-          />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => handleToggle(!excludeWeekends)}
+        disabled={isUpdating}
+        className={`
+          relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
+          transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 
+          focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
+          ${excludeWeekends ? "bg-purple-600" : "bg-zinc-200"}
+        `}
+        role="switch"
+        aria-checked={excludeWeekends}
+        aria-label="Exclude weekends from daily plans"
+      >
+        <span
+          className={`
+            pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow 
+            transition duration-200 ease-in-out
+            ${excludeWeekends ? "translate-x-5" : "translate-x-0"}
+          `}
+          aria-hidden="true"
+        />
+      </button>
     </div>
   );
 }
-
