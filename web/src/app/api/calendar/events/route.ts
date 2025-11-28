@@ -73,35 +73,29 @@ export async function GET(request: Request) {
     const timezone = userProfile?.timezone || "UTC";
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
-    // Fetch events for the next N days
     // Calculate today in user's timezone
     const now = new Date();
     const todayStr = now.toLocaleDateString("en-CA", { timeZone: timezone }); // YYYY-MM-DD
     const [year, month, day] = todayStr.split("-").map(Number);
     
-    // Create date objects in UTC that represent start/end of day in user's timezone
-    const today = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    const endDate = new Date(today);
-    endDate.setUTCDate(endDate.getUTCDate() + days);
+    // Create start date (today at 00:00:00 in user's timezone, converted to UTC)
+    const todayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    // Create end date (today + days at 23:59:59 in user's timezone, converted to UTC)
+    const endDate = new Date(Date.UTC(year, month - 1, day + days, 0, 0, 0, 0));
 
     let events: CalendarEvent[] = [];
 
     if (connection.provider === "google") {
-      events = await fetchGoogleEvents(accessToken, today, endDate, timezone);
+      events = await fetchGoogleEvents(accessToken, todayStart, endDate, timezone);
     } else if (connection.provider === "outlook") {
-      events = await fetchOutlookEvents(accessToken, today, endDate, timezone);
+      events = await fetchOutlookEvents(accessToken, todayStart, endDate, timezone);
     }
 
     // Group events by date and calculate availability
     const daysData: DayAvailability[] = [];
     for (let i = 0; i < days; i++) {
-      const date = new Date(today);
-      date.setUTCDate(date.getUTCDate() + i);
-      const dateStr = date.toISOString().split("T")[0];
-      
-      // Check if this is a weekend and user excludes weekends
-      // Get day of week in user's timezone
-      const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: timezone }));
+      // Calculate date in user's timezone
+      const dateInTz = new Date(year, month - 1, day + i);
       const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
@@ -110,22 +104,25 @@ export async function GET(request: Request) {
         continue;
       }
 
-      // Filter events for this day (9 AM - 5 PM working hours in user's timezone)
-      // Create day boundaries in user's timezone, then convert to UTC for comparison
-      const dayStartLocal = new Date(dateInTz);
-      dayStartLocal.setHours(9, 0, 0, 0);
-      const dayEndLocal = new Date(dateInTz);
-      dayEndLocal.setHours(17, 0, 0, 0);
-      
-      // Convert to ISO for comparison with event times (which are in UTC)
-      const dayStartISO = dayStartLocal.toISOString();
-      const dayEndISO = dayEndLocal.toISOString();
+      // Create date string (YYYY-MM-DD) for this day
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day + i).padStart(2, "0")}`;
 
+      // Calculate day boundaries in user's timezone (9 AM - 5 PM)
+      const dayStartLocal = new Date(year, month - 1, day + i, 9, 0, 0, 0);
+      const dayEndLocal = new Date(year, month - 1, day + i, 17, 0, 0, 0);
+      
+      // Convert to UTC for comparison with event times
+      // Get timezone offset for this date
+      const tzOffset = dayStartLocal.getTimezoneOffset() * 60000; // offset in milliseconds
+      const dayStartUTC = new Date(dayStartLocal.getTime() - tzOffset);
+      const dayEndUTC = new Date(dayEndLocal.getTime() - tzOffset);
+      
+      const dayStartISO = dayStartUTC.toISOString();
+      const dayEndISO = dayEndUTC.toISOString();
+
+      // Filter events that overlap with this day's working hours
       const dayEvents = events.filter((event) => {
-        const eventStart = new Date(event.start);
-        const eventEnd = new Date(event.end);
-        // Include events that overlap with working hours
-        // Compare using ISO strings to handle timezone correctly
+        // Events come as ISO strings, compare directly
         return (
           (event.start >= dayStartISO && event.start < dayEndISO) ||
           (event.end > dayStartISO && event.end <= dayEndISO) ||
@@ -138,8 +135,8 @@ export async function GET(request: Request) {
       for (const event of dayEvents) {
         const eventStart = new Date(event.start);
         const eventEnd = new Date(event.end);
-        const workStart = new Date(Math.max(eventStart.getTime(), dayStartLocal.getTime()));
-        const workEnd = new Date(Math.min(eventEnd.getTime(), dayEndLocal.getTime()));
+        const workStart = new Date(Math.max(eventStart.getTime(), dayStartUTC.getTime()));
+        const workEnd = new Date(Math.min(eventEnd.getTime(), dayEndUTC.getTime()));
         if (workStart < workEnd) {
           busyMinutes += (workEnd.getTime() - workStart.getTime()) / (1000 * 60);
         }
@@ -149,7 +146,6 @@ export async function GET(request: Request) {
       const availableMinutes = Math.max(0, totalWorkingMinutes - busyMinutes);
 
       // Calculate capacity based on ~30 minutes per action
-      // More realistic: 0 minutes = 0 actions, 90 minutes = 3 actions, etc.
       let capacity: "micro" | "light" | "standard" | "heavy" | "default";
       let suggestedActionCount: number;
 
@@ -307,4 +303,3 @@ async function fetchOutlookEvents(
 
   return events;
 }
-
