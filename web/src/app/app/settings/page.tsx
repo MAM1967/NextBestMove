@@ -7,6 +7,8 @@ import { BillingSection } from "./BillingSection";
 import { WeekendPreferenceToggle } from "./WeekendPreferenceToggle";
 import { ExportDataButton } from "./ExportDataButton";
 import { BYOKSection } from "./BYOKSection";
+import { EmailPreferencesSection } from "./EmailPreferencesSection";
+import { AccountDeletionSection } from "./AccountDeletionSection";
 
 type CalendarConnection = {
   provider: string;
@@ -99,7 +101,7 @@ export default async function SettingsPage() {
       supabase
         .from("users")
         .select(
-          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model"
+          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary"
         )
         .eq("id", user.id)
         .single(),
@@ -244,30 +246,17 @@ export default async function SettingsPage() {
       </SectionCard>
 
       <SectionCard
-        title="Notification preferences"
-        description="Toggles only appear for awareness until the notification service is wired up."
+        title="Email preferences"
+        description="Control which emails you receive from NextBestMove."
       >
-        <div className="grid gap-3 md:grid-cols-2">
-          <PlaceholderToggle
-            label="Morning plan"
-            description="Daily at 8am in your timezone."
-            enabled
-          />
-          <PlaceholderToggle
-            label="Fast win reminder"
-            description="Nudge at 2pm if today’s fast win is untouched."
-          />
-          <PlaceholderToggle
-            label="Follow-up alerts"
-            description="Reminder when replies are overdue."
-            enabled
-          />
-          <PlaceholderToggle
-            label="Weekly summary"
-            description="Sunday night recap."
-            enabled
-          />
-        </div>
+        <EmailPreferencesSection
+          initialPreferences={{
+            email_morning_plan: profile?.email_morning_plan ?? true,
+            email_fast_win_reminder: profile?.email_fast_win_reminder ?? true,
+            email_follow_up_alerts: profile?.email_follow_up_alerts ?? true,
+            email_weekly_summary: profile?.email_weekly_summary ?? true,
+          }}
+        />
       </SectionCard>
 
       <SectionCard
@@ -342,6 +331,13 @@ export default async function SettingsPage() {
           </div>
           <ExportDataButton />
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Account deletion"
+        description="Permanently delete your account and all data. This action cannot be undone."
+      >
+        <AccountDeletionSection />
       </SectionCard>
     </div>
   );
