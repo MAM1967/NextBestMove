@@ -45,6 +45,22 @@ function addDaysInTimezone(baseDate: Date, days: number, timezone: string): stri
 }
 
 /**
+ * Add days to a date string (YYYY-MM-DD), return new date string
+ * This avoids timezone conversion issues by working directly with date strings
+ */
+function addDaysToDateString(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  // Create date at noon to avoid DST issues
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  date.setUTCDate(date.getUTCDate() + days);
+  // Format back to YYYY-MM-DD
+  const yearStr = date.getUTCFullYear();
+  const monthStr = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dayStr = String(date.getUTCDate()).padStart(2, "0");
+  return `${yearStr}-${monthStr}-${dayStr}`;
+}
+
+/**
  * Check if a date is a weekend in the user's timezone
  */
 function isWeekend(dateStr: string, timezone: string): boolean {
@@ -233,10 +249,8 @@ export async function GET(request: Request) {
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
       // CRITICAL: Start from todayStr (already in user's timezone) and add dayOffset days
-      // This ensures we're always working with dates in the user's timezone context
-      const dateStr = dayOffset === 0 
-        ? todayStr 
-        : addDaysInTimezone(new Date(todayStr + "T12:00:00"), dayOffset, timezone);
+      // Use addDaysToDateString to work directly with date strings and avoid timezone issues
+      const dateStr = addDaysToDateString(todayStr, dayOffset);
 
       // Check if this is a weekend and user excludes weekends
       if (excludeWeekends && isWeekend(dateStr, timezone)) {
