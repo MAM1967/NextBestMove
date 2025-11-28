@@ -136,14 +136,16 @@ export async function GET(request: Request) {
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
     
-    // Parse today's date components
+    // Parse today's date components (YYYY-MM-DD)
     const [year, month, day] = todayStr.split("-").map(Number);
     
     // Create start and end dates for fetching events
-    // We'll fetch a wide range to ensure we get all events, then filter by date
-    const startDate = new Date(`${todayStr}T00:00:00`);
+    // Use a date at noon in the user's timezone to avoid DST issues
+    const startDateStr = `${todayStr}T12:00:00`;
+    const startDate = new Date(startDateStr);
+    // Fetch events for the next (days + 2) days to account for weekends
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + days + 2); // Add buffer for weekends
+    endDate.setDate(endDate.getDate() + days + 2);
     endDate.setHours(23, 59, 59, 999);
 
     let events: CalendarEvent[] = [];
@@ -160,14 +162,12 @@ export async function GET(request: Request) {
     let dayOffset = 0;
     
     while (daysAdded < days) {
-      // Calculate date string for this day
-      // Start from today and add dayOffset days
-      const targetDate = new Date(now);
-      targetDate.setDate(targetDate.getDate() + dayOffset);
+      // Calculate date string for this day in user's timezone
+      // Create a date at noon to avoid DST boundary issues
+      const targetDate = new Date(year, month - 1, day + dayOffset, 12, 0, 0);
       const dateStr = getDateInTimezone(targetDate, timezone);
       
       // Get day of week for this date in the user's timezone
-      // Use Intl.DateTimeFormat to get the day of week in the correct timezone
       const formatter = new Intl.DateTimeFormat("en-US", {
         timeZone: timezone,
         weekday: "long",
