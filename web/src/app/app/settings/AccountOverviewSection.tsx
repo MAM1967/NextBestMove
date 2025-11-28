@@ -146,14 +146,14 @@ export function AccountOverviewSection({
               {success && (
                 <p className="text-xs text-green-700 mb-2">{success}</p>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-2">
                 <button
                   type="button"
                   onClick={handleTimezoneChange}
                   disabled={isSaving}
-                  className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
                 >
-                  {isSaving ? "Saving..." : "Save"}
+                  Save
                 </button>
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export function AccountOverviewSection({
                     setSuccess(null);
                   }}
                   disabled={isSaving}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
