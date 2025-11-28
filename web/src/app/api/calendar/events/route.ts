@@ -232,8 +232,11 @@ export async function GET(request: Request) {
 
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
-      // Start from now (current moment) and add dayOffset days
-      const dateStr = addDaysInTimezone(now, dayOffset, timezone);
+      // CRITICAL: Start from todayStr (already in user's timezone) and add dayOffset days
+      // This ensures we're always working with dates in the user's timezone context
+      const dateStr = dayOffset === 0 
+        ? todayStr 
+        : addDaysInTimezone(new Date(todayStr + "T12:00:00"), dayOffset, timezone);
 
       // Check if this is a weekend and user excludes weekends
       if (excludeWeekends && isWeekend(dateStr, timezone)) {
