@@ -113,19 +113,19 @@ export function AccountOverviewSection({
 
   return (
     <div className="space-y-4">
-      <dl className="grid gap-3 text-sm">
+      <div className="grid gap-4 text-sm">
         <div>
-          <dt className="text-zinc-500">Name</dt>
-          <dd className="font-medium text-zinc-900">
+          <div className="text-zinc-500 mb-1">Name</div>
+          <div className="font-medium text-zinc-900">
             {name || "Not set"}
-          </dd>
+          </div>
         </div>
         <div>
-          <dt className="text-zinc-500">Email</dt>
-          <dd className="font-medium text-zinc-900">{email}</dd>
+          <div className="text-zinc-500 mb-1">Email</div>
+          <div className="font-medium text-zinc-900">{email}</div>
         </div>
         <div>
-          <dt className="text-zinc-500 mb-1">Timezone</dt>
+          <div className="text-zinc-500 mb-2">Timezone</div>
           {isEditingTimezone ? (
             <div className="space-y-3">
               <select
@@ -146,7 +146,7 @@ export function AccountOverviewSection({
               {success && (
                 <p className="text-xs text-green-700">{success}</p>
               )}
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleTimezoneChange}
@@ -172,12 +172,12 @@ export function AccountOverviewSection({
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <dd className="font-medium text-zinc-900">
+              <div className="font-medium text-zinc-900">
                 {timezone
                   ? commonTimezones.find((tz) => tz.value === timezone)?.label ||
                     timezone
                   : "Not set"}
-              </dd>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsEditingTimezone(true)}
@@ -188,7 +188,7 @@ export function AccountOverviewSection({
             </div>
           )}
         </div>
-      </dl>
+      </div>
 
       <div className="border-t border-zinc-200 pt-4">
         {isEditingPassword ? (
