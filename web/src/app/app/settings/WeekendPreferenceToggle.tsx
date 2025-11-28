@@ -65,7 +65,7 @@ export function WeekendPreferenceToggle({
         type="button"
         onClick={handleToggle}
         disabled={isUpdating}
-        className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
           excludeWeekends ? "bg-purple-600" : "bg-zinc-300"
         }`}
         role="switch"
