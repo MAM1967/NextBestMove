@@ -45,6 +45,10 @@ const nextConfig: NextConfig = {
       envLocal.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpbGhxaGJib3Vna2Jsem5zcG93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMzczODIsImV4cCI6MjA3OTcxMzM4Mn0.8KJaoUjHfSpVZ-mOjdv88Dt8_OJ0UN5nxijiw_NUxl0",
+    // Service role key for admin operations (server-side only)
+    SUPABASE_SERVICE_ROLE_KEY:
+      envLocal.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
 };
 

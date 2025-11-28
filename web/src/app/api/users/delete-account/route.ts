@@ -166,9 +166,11 @@ export async function DELETE(request: Request) {
     // Supabase Auth stores users in auth.users (not directly accessible)
     // We need to use the Admin API to delete the auth user
     // This prevents the user from signing back in
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Get service role key - check both possible env var names
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
     console.log("Service role key present:", !!serviceRoleKey);
     console.log("Service role key length:", serviceRoleKey?.length || 0);
+    console.log("Service role key starts with:", serviceRoleKey?.substring(0, 15) || "N/A");
     
     if (serviceRoleKey) {
       try {
@@ -178,7 +180,11 @@ export async function DELETE(request: Request) {
         }
 
         console.log("Creating admin client with URL:", supabaseUrl);
-        console.log("Service role key starts with:", serviceRoleKey.substring(0, 10));
+        
+        // Verify key format - should start with eyJ for JWT or sb_secret_ for service role
+        if (!serviceRoleKey.startsWith("eyJ") && !serviceRoleKey.startsWith("sb_secret_")) {
+          console.warn("Service role key format may be incorrect. Expected JWT (eyJ...) or sb_secret_...");
+        }
         
         // Create admin client with service role key
         // This bypasses RLS and allows admin operations
@@ -193,8 +199,10 @@ export async function DELETE(request: Request) {
         
         // Use the admin API to delete the auth user
         // This is the correct method per Supabase docs
+        // Note: deleteUser can take options like { shouldSoftDelete: false }
         const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
-          userId
+          userId,
+          { shouldSoftDelete: false } // Hard delete, not soft delete
         );
 
         if (authDeleteError) {
