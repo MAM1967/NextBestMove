@@ -1294,7 +1294,36 @@
 
 ---
 
-### US-8.6: Weekly Focus Setup Step
+### US-8.6: Working Hours Setup Step
+**Epic:** Onboarding  
+**Priority:** 🔴 P0  
+**Size:** S  
+**Story Points:** 3
+
+**As a** new user  
+**I want** to set my working hours during onboarding  
+**So that** daily plans are sized correctly for my schedule
+
+**Acceptance Criteria:**
+- [ ] Step: "When do you typically work?"
+- [ ] Explanation: "We'll use this to calculate your daily action capacity. You can change this later in Settings."
+- [ ] Input: Start hour (dropdown or time picker, default 9 AM)
+- [ ] Input: End hour (dropdown or time picker, default 5 PM)
+- [ ] Validation: End hour must be after start hour
+- [ ] Common presets: "9 AM - 5 PM", "10 AM - 6 PM", "8 AM - 8 PM", "Custom"
+- [ ] Preference saved to `users.work_start_hour` and `users.work_end_hour`
+- [ ] Progress: Step 4 of 8 (after calendar, before weekend preference)
+- [ ] Can skip (defaults to 9 AM - 5 PM)
+
+**Technical Notes:**
+- Store as integers (0-23) for hours
+- Update capacity calculation to use custom hours
+- Update calendar events filtering to use custom hours
+- This is a STANDARD feature (not premium) - core functionality
+
+---
+
+### US-8.7: Weekly Focus Setup Step
 **Epic:** Onboarding  
 **Priority:** 🔴 P0  
 **Size:** S  
