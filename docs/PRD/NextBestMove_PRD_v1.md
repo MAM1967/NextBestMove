@@ -435,20 +435,25 @@ Weekly summary (AI-assisted) delivered Sunday night / Monday morning:
 
 13.1 Onboarding Steps (v0.1)
 	1.	Welcome
-	•	Explain core promise: “I’ll give you a small, realistic list of revenue actions each day.”
+	•	Explain core promise: "I'll give you a small, realistic list of revenue actions each day."
 	2.	Pin your first person
-	•	Ask: “Who’s one person you don’t want to lose track of?”
+	•	Ask: "Who's one person you don't want to lose track of?"
 	•	Fields: Name + URL (+ optional notes)
 	3.	Connect your calendar (optional, recommended)
-	•	Explain: “I’ll size your daily plan based on your schedule, so I don’t overload you.”
-	4.	Weekly Focus proposal
+	•	Explain: "I'll size your daily plan based on your schedule, so I don't overload you."
+	4.	Weekend preference (optional, recommended)
+	•	Ask: "Do you work on weekends?"
+	•	Toggle: "Exclude weekends from daily plans"
+	•	Default: OFF (weekends included)
+	•	Explanation: "I can exclude Saturday and Sunday from daily plan generation if you don't work weekends."
+	5.	Weekly Focus proposal
 	•	Suggest initial focus (generic starter if no history):
-“This week: follow up with 3 people and start 2 new conversations.”
+"This week: follow up with 3 people and start 2 new conversations."
 	•	Options: Looks right / Edit.
-	5.	First daily plan
+	6.	First daily plan
 	•	3 actions max for Day 1 (to ensure early win).
 	•	Includes one Fast Win.
-	6.	Complete Fast Win
+	7.	Complete Fast Win
 	•	Guide user through executing the Fast Win.
 
 13.2 Onboarding Success Criteria

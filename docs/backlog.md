@@ -82,8 +82,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Onboarding
 
-- [ ] **Onboarding flow (6 steps)**  
-       _Welcome → pin → optional calendar → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
+- [ ] **Onboarding flow (7 steps)**  
+       _Welcome → pin → optional calendar → weekend preference → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
 
 ### Settings & Export
 

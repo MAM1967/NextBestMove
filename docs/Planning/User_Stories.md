@@ -1267,7 +1267,34 @@
 
 ---
 
-### US-8.5: Weekly Focus Setup Step
+### US-8.5: Weekend Preference Step
+**Epic:** Onboarding  
+**Priority:** 🔴 P0  
+**Size:** XS  
+**Story Points:** 2
+
+**As a** new user  
+**I want** to specify if weekends are off-limits for actions  
+**So that** daily plans respect my work schedule
+
+**Acceptance Criteria:**
+- [ ] Step: "Do you work on weekends?"
+- [ ] Explanation: "I can exclude Saturday and Sunday from daily plan generation if you don't work weekends."
+- [ ] Toggle: "Exclude weekends from daily plans"
+- [ ] Default: OFF (weekends included)
+- [ ] User can toggle ON/OFF
+- [ ] Preference saved to `users.exclude_weekends`
+- [ ] Progress: Step 4 of 7 (or integrated into Step 3)
+- [ ] Can skip (optional, but recommended)
+
+**Technical Notes:**
+- Reuse `WeekendPreferenceToggle` component from Settings
+- Store in `users.exclude_weekends` column
+- Plan generation already respects this preference
+
+---
+
+### US-8.6: Weekly Focus Setup Step
 **Epic:** Onboarding  
 **Priority:** 🔴 P0  
 **Size:** S  
