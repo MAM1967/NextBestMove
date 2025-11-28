@@ -111,17 +111,25 @@ export function CalendarEventsView() {
 
         <div className="space-y-4">
           {data.days.map((day) => {
-            // Parse date string (YYYY-MM-DD) - create date at noon to avoid timezone issues
-            const date = new Date(day.date + "T12:00:00");
-            // Check if this is today in the user's timezone
-            const todayStr = new Date().toISOString().split("T")[0];
+            // Parse date string (YYYY-MM-DD) - create date at noon UTC to avoid timezone issues
+            const date = new Date(day.date + "T12:00:00Z");
+            // Check if this is today - compare date strings directly
+            // Get today's date string in the same format (YYYY-MM-DD)
+            const today = new Date();
+            const todayStr = today.toISOString().split("T")[0];
             const isToday = day.date === todayStr;
+            
+            // Format date label using the date string directly to avoid timezone conversion
+            // Parse YYYY-MM-DD and format it
+            const [year, month, dayNum] = day.date.split("-").map(Number);
+            const dateObj = new Date(Date.UTC(year, month - 1, dayNum, 12, 0, 0));
             const dateLabel = isToday
               ? "Today"
-              : date.toLocaleDateString("en-US", {
+              : dateObj.toLocaleDateString("en-US", {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
+                  timeZone: data.timezone || "UTC",
                 });
 
             const busyHours = (day.totalBusyMinutes / 60).toFixed(1);
