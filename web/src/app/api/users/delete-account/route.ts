@@ -182,16 +182,26 @@ export async function DELETE(request: Request) {
         console.log("Creating admin client with URL:", supabaseUrl);
         
         // Verify key format
-        // Supabase service role keys can be:
-        // - JWT format (starts with "eyJ") - older format
-        // - sb_secret_ format - newer format
-        // Both should work, but let's log what we have
+        // Supabase service role keys should be JWT format (starts with "eyJ")
+        // The sb_secret_ format is for newer projects but may not work with JS client
+        // Check Supabase Dashboard → Settings → API → service_role key (secret)
         console.log("Service role key format check:");
         console.log("- Starts with eyJ (JWT):", serviceRoleKey.startsWith("eyJ"));
         console.log("- Starts with sb_secret_:", serviceRoleKey.startsWith("sb_secret_"));
+        console.log("- Key length:", serviceRoleKey.length);
         
-        if (!serviceRoleKey.startsWith("eyJ") && !serviceRoleKey.startsWith("sb_secret_")) {
-          console.warn("⚠️ Service role key format may be incorrect. Expected JWT (eyJ...) or sb_secret_...");
+        if (!serviceRoleKey.startsWith("eyJ")) {
+          console.error("❌ Service role key must be JWT format (starts with 'eyJ')");
+          console.error("   The sb_secret_ format may not work with @supabase/supabase-js");
+          console.error("   Get the JWT format key from: Supabase Dashboard → Settings → API → service_role (secret)");
+          return NextResponse.json(
+            { 
+              error: "Invalid service role key format",
+              details: "Service role key must be JWT format (starts with 'eyJ'). Get it from Supabase Dashboard → Settings → API → service_role key (secret). The sb_secret_ format may not work with the JS client.",
+              hint: "Look for the 'service_role' key in your Supabase Dashboard. It should be a long JWT token starting with 'eyJ'."
+            },
+            { status: 500 }
+          );
         }
         
         // Create admin client with service role key
