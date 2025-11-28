@@ -167,10 +167,16 @@ export async function DELETE(request: Request) {
     // We need to use the Admin API to delete the auth user
     // This prevents the user from signing back in
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log("Service role key present:", !!serviceRoleKey);
+    console.log("Service role key length:", serviceRoleKey?.length || 0);
+    
     if (serviceRoleKey) {
       try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        console.log("Creating admin client with URL:", supabaseUrl);
+        
         const adminClient = createAdminClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          supabaseUrl!,
           serviceRoleKey,
           {
             auth: {
@@ -180,23 +186,27 @@ export async function DELETE(request: Request) {
           }
         );
 
-        const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(
+        console.log("Attempting to delete auth user:", userId);
+        const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
           userId
         );
 
         if (authDeleteError) {
-          console.error("Error deleting auth user:", authDeleteError);
+          console.error("❌ Error deleting auth user:", authDeleteError);
+          console.error("Error details:", JSON.stringify(authDeleteError, null, 2));
           // Don't throw - users table deletion is the main requirement
           // Auth user deletion failure is logged but doesn't block success
         } else {
           console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
+          console.log("Delete response:", deleteData);
         }
       } catch (authError) {
-        console.error("Error creating admin client or deleting auth user:", authError);
+        console.error("❌ Exception deleting auth user:", authError);
+        console.error("Error stack:", authError instanceof Error ? authError.stack : 'No stack');
         // Continue - users table deletion is the critical part
       }
     } else {
-      console.warn("SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
+      console.warn("⚠️ SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
       console.warn("User will be able to sign in again, and ensureUserProfile will recreate the profile");
     }
 
