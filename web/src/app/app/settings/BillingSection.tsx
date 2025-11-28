@@ -54,9 +54,12 @@ export function BillingSection({
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
   // Handle modal close - ensure state is reset
+  // Button visibility is based on subscription status, not modal state
   function handleCloseModal() {
     setShowPlanSelection(false);
     setIsLoading(false); // Reset loading state in case of errors
+    // Note: Button visibility is controlled by !hasCustomer && !subscription
+    // Modal state (showPlanSelection) only controls modal visibility, not button visibility
   }
 
   async function handleManageBilling() {
@@ -175,6 +178,8 @@ export function BillingSection({
     }
   }
 
+  // Button visibility is based on subscription status, NOT modal state
+  // This ensures the button always reappears after canceling the modal
   if (!hasCustomer && !subscription) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
@@ -182,6 +187,7 @@ export function BillingSection({
         <p className="mt-1 text-xs text-zinc-600">
           Start your 14-day free trial. No credit card required.
         </p>
+        {/* Button is always visible when !hasCustomer && !subscription, regardless of modal state */}
         <button
           type="button"
           onClick={() => setShowPlanSelection(true)}
