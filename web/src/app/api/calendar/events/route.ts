@@ -138,8 +138,8 @@ export async function GET(request: Request) {
       for (const event of dayEvents) {
         const eventStart = new Date(event.start);
         const eventEnd = new Date(event.end);
-        const workStart = new Date(Math.max(eventStart.getTime(), dayStart.getTime()));
-        const workEnd = new Date(Math.min(eventEnd.getTime(), dayEnd.getTime()));
+        const workStart = new Date(Math.max(eventStart.getTime(), dayStartLocal.getTime()));
+        const workEnd = new Date(Math.min(eventEnd.getTime(), dayEndLocal.getTime()));
         if (workStart < workEnd) {
           busyMinutes += (workEnd.getTime() - workStart.getTime()) / (1000 * 60);
         }
