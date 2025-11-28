@@ -50,10 +50,10 @@ function addDaysInTimezone(baseDate: Date, days: number, timezone: string): stri
  */
 function addDaysToDateString(dateStr: string, days: number): string {
   const [year, month, day] = dateStr.split("-").map(Number);
-  // Create date at noon to avoid DST issues
+  // Create date at noon UTC to avoid DST issues
   const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   date.setUTCDate(date.getUTCDate() + days);
-  // Format back to YYYY-MM-DD
+  // Format back to YYYY-MM-DD using UTC methods to avoid timezone conversion
   const yearStr = date.getUTCFullYear();
   const monthStr = String(date.getUTCMonth() + 1).padStart(2, "0");
   const dayStr = String(date.getUTCDate()).padStart(2, "0");
@@ -202,6 +202,14 @@ export async function GET(request: Request) {
     // CRITICAL: Get the current moment, then format it in user's timezone
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
+    
+    // DEBUG: Log to verify today calculation
+    console.log("Calendar Events Debug:", {
+      serverTime: now.toISOString(),
+      userTimezone: timezone,
+      todayInUserTz: todayStr,
+      excludeWeekends,
+    });
     
     // For API calls, we need to create Date objects that represent the correct time range
     // in the user's timezone. The Google/Outlook APIs accept ISO strings and timezone parameters.
