@@ -4,6 +4,7 @@ import { fetchCalendarStatus } from "@/lib/calendar/status";
 import { CalendarConnectionSection } from "./CalendarConnectionSection";
 import { CalendarEventsView } from "./CalendarEventsView";
 import { BillingSection } from "./BillingSection";
+import { WeekendPreferenceToggle } from "./WeekendPreferenceToggle";
 
 type CalendarConnection = {
   provider: string;
@@ -95,7 +96,7 @@ export default async function SettingsPage() {
     await Promise.all([
       supabase
         .from("users")
-        .select("email, name, timezone, streak_count, calendar_connected")
+        .select("email, name, timezone, streak_count, calendar_connected, exclude_weekends")
         .eq("id", user.id)
         .single(),
       fetchCalendarStatus(supabase, user.id),
@@ -250,6 +251,15 @@ export default async function SettingsPage() {
             enabled
           />
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Planning preferences"
+        description="Control when and how daily plans are generated."
+      >
+        <WeekendPreferenceToggle
+          excludeWeekends={profile?.exclude_weekends ?? false}
+        />
       </SectionCard>
 
       <SectionCard
