@@ -231,9 +231,13 @@ async function handleSubscriptionDeleted(
 
 async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
   // Invoice.subscription can be a string ID or a Subscription object
-  const subscriptionId = typeof invoice.subscription === 'string' 
-    ? invoice.subscription 
-    : invoice.subscription?.id;
+  // Access using bracket notation to avoid TypeScript strict checking
+  const subscription = (invoice as any).subscription;
+  if (!subscription) return;
+  
+  const subscriptionId = typeof subscription === 'string' 
+    ? subscription 
+    : subscription.id;
   if (!subscriptionId) return;
 
   // Get subscription from Stripe to update our records
@@ -246,9 +250,13 @@ async function handleInvoicePaymentFailed(
   invoice: Stripe.Invoice
 ) {
   // Invoice.subscription can be a string ID or a Subscription object
-  const subscriptionId = typeof invoice.subscription === 'string' 
-    ? invoice.subscription 
-    : invoice.subscription?.id;
+  // Access using bracket notation to avoid TypeScript strict checking
+  const subscription = (invoice as any).subscription;
+  if (!subscription) return;
+  
+  const subscriptionId = typeof subscription === 'string' 
+    ? subscription 
+    : subscription.id;
   if (!subscriptionId) return;
 
   // Update subscription status to past_due
