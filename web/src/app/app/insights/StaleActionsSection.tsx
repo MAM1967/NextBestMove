@@ -40,10 +40,25 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
     }
   };
 
-  const handleNoteSaved = () => {
-    setNoteActionId(null);
-    setNoteAction(null);
-    router.refresh();
+  const handleSaveNote = async (actionId: string, note: string) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save note");
+      }
+
+      setNoteActionId(null);
+      setNoteAction(null);
+      router.refresh();
+    } catch (err) {
+      throw err;
+    }
   };
 
   if (staleActions.length === 0) {
@@ -142,18 +157,16 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
         onClose={() => setSnoozeActionId(null)}
         onSnooze={handleSnooze}
       />
-      {noteActionId && noteAction && (
-        <ActionNoteModal
-          actionId={noteActionId}
-          action={noteAction}
-          onClose={() => {
-            setNoteActionId(null);
-            setNoteAction(null);
-          }}
-          onSaved={handleNoteSaved}
-          existingNote={noteAction.notes || null}
-        />
-      )}
+      <ActionNoteModal
+        isOpen={noteActionId !== null}
+        actionId={noteActionId}
+        existingNote={noteAction?.notes || null}
+        onClose={() => {
+          setNoteActionId(null);
+          setNoteAction(null);
+        }}
+        onSave={handleSaveNote}
+      />
     </div>
   );
 }
