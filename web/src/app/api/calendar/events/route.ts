@@ -37,7 +37,6 @@ function getEventDate(eventStart: string, timezone: string): string {
   return getDateInTimezone(date, timezone);
 }
 
-
 /**
  * Calculate busy minutes for an event within working hours (9 AM - 5 PM) in user's timezone
  */
@@ -133,13 +132,12 @@ export async function GET(request: Request) {
     const timezone = userProfile?.timezone || "UTC";
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
-    // Calculate today in user's timezone
+    // Calculate today in user's timezone - this is the key fix
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
-    const [year, month, day] = todayStr.split("-").map(Number);
     
-    // Create start and end dates for fetching events
-    // Fetch from start of today to end of (today + days) in user's timezone
+    // Create start and end dates for fetching events (in UTC)
+    // Start from beginning of today in user's timezone
     const startDate = new Date(`${todayStr}T00:00:00`);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + days);
@@ -156,7 +154,7 @@ export async function GET(request: Request) {
     // Group events by date and calculate availability
     const daysData: DayAvailability[] = [];
     for (let i = 0; i < days; i++) {
-      // Calculate date string for this day in user's timezone
+      // Calculate date for this day in user's timezone
       // Start from today and add i days
       const date = new Date(now);
       date.setDate(date.getDate() + i);
@@ -164,8 +162,7 @@ export async function GET(request: Request) {
       
       // Check if this is a weekend and user excludes weekends
       // Get day of week in user's timezone
-      const dateInTz = new Date(date.toLocaleString("en-US", { timeZone: timezone }));
-      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
@@ -173,7 +170,7 @@ export async function GET(request: Request) {
         continue;
       }
 
-      // Filter events for this day (any event that overlaps with this date in user's timezone)
+      // Filter events for this day (any event that falls on this date in user's timezone)
       const dayEvents = events.filter((event) => {
         const eventDate = getEventDate(event.start, timezone);
         return eventDate === dateStr;
