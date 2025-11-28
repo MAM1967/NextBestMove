@@ -61,10 +61,13 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 ### Calendar Integration
 
 - [x] **Google & Outlook OAuth flows** ✅  
-       _Connect/disconnect endpoints, token storage, error handling, optional skip_
+      _Connect/disconnect endpoints, token storage, error handling, optional skip_
 
 - [x] **Free/busy API + status indicators** ✅  
-       _Cached free/busy fetch, fallback to default capacity, Settings status block, disconnect action_
+      _Cached free/busy fetch, fallback to default capacity, Settings status block, disconnect action_
+
+- [ ] **Customizable working hours (onboarding preference)**  
+      _Allow users to set their working hours (e.g., 9-5, 10-6, 8-8) during onboarding. Currently hardcoded to 9 AM - 5 PM. This is a STANDARD feature (not premium) because it's core functionality - the app won't work correctly for many users without it. Similar to timezone - a fundamental configuration setting. Store in `users` table as `work_start_hour` and `work_end_hour` (integers 0-23). Update capacity calculation and calendar events filtering to use custom hours._
 
 ### Weekly Summary & Content
 
@@ -82,8 +85,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Onboarding
 
-- [ ] **Onboarding flow (7 steps)**  
-       _Welcome → pin → optional calendar → weekend preference → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
+- [ ] **Onboarding flow (8 steps)**  
+       _Welcome → pin → optional calendar → working hours → weekend preference → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
 
 ### Settings & Export
 

@@ -441,19 +441,25 @@ Weekly summary (AI-assisted) delivered Sunday night / Monday morning:
 	•	Fields: Name + URL (+ optional notes)
 	3.	Connect your calendar (optional, recommended)
 	•	Explain: "I'll size your daily plan based on your schedule, so I don't overload you."
-	4.	Weekend preference (optional, recommended)
+	4.	Working hours (optional, recommended)
+	•	Ask: "When do you typically work?"
+	•	Input: Start hour (default 9 AM) and End hour (default 5 PM)
+	•	Presets: "9 AM - 5 PM", "10 AM - 6 PM", "8 AM - 8 PM", "Custom"
+	•	Explanation: "We'll use this to calculate your daily action capacity. You can change this later in Settings."
+	•	Default: 9 AM - 5 PM if skipped
+	5.	Weekend preference (optional, recommended)
 	•	Ask: "Do you work on weekends?"
 	•	Toggle: "Exclude weekends from daily plans"
 	•	Default: OFF (weekends included)
 	•	Explanation: "I can exclude Saturday and Sunday from daily plan generation if you don't work weekends."
-	5.	Weekly Focus proposal
+	6.	Weekly Focus proposal
 	•	Suggest initial focus (generic starter if no history):
 "This week: follow up with 3 people and start 2 new conversations."
 	•	Options: Looks right / Edit.
-	6.	First daily plan
+	7.	First daily plan
 	•	3 actions max for Day 1 (to ensure early win).
 	•	Includes one Fast Win.
-	7.	Complete Fast Win
+	8.	Complete Fast Win
 	•	Guide user through executing the Fast Win.
 
 13.2 Onboarding Success Criteria
