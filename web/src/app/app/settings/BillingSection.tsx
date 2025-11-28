@@ -53,6 +53,12 @@ export function BillingSection({
   const [isLoading, setIsLoading] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
 
+  // Handle modal close - ensure state is reset
+  function handleCloseModal() {
+    setShowPlanSelection(false);
+    setIsLoading(false); // Reset loading state in case of errors
+  }
+
   async function handleManageBilling() {
     setIsLoading(true);
     try {
@@ -127,6 +133,11 @@ export function BillingSection({
     handleSubscribe(plan, interval);
   }
 
+  // Handle checkout errors - ensure modal can be reopened
+  // This is called when handleSubscribe fails
+  // The error handling in handleSubscribe already sets isLoading to false
+  // But we need to ensure the modal can be reopened
+
   async function handleSyncSubscription() {
     setIsLoading(true);
     try {
@@ -181,7 +192,7 @@ export function BillingSection({
         </button>
         <PlanSelectionModal
           isOpen={showPlanSelection}
-          onClose={() => setShowPlanSelection(false)}
+          onClose={handleCloseModal}
           onSelectPlan={handleSelectPlan}
           isLoading={isLoading}
         />

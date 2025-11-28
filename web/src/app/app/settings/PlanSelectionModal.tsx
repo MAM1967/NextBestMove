@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getPlanMetadata, type PlanType, type IntervalType } from "@/lib/billing/plans";
 
 type PlanSelectionModalProps = {
@@ -44,6 +44,39 @@ export function PlanSelectionModal({
 }: PlanSelectionModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("standard");
   const [selectedInterval, setSelectedInterval] = useState<IntervalType>("month");
+
+  // Handle browser back button - close modal when user navigates back
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    // Push state to history so back button closes modal
+    window.history.pushState({ modalOpen: true }, "");
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
