@@ -127,11 +127,17 @@ export function AccountOverviewSection({
         <div>
           <div className="text-zinc-500 mb-2">Timezone</div>
           {isEditingTimezone ? (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleTimezoneChange();
+              }}
+              className="space-y-3"
+            >
               <select
                 value={selectedTimezone}
                 onChange={(e) => setSelectedTimezone(e.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 mb-3"
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 disabled={isSaving}
               >
                 {commonTimezones.map((tz) => (
@@ -141,19 +147,18 @@ export function AccountOverviewSection({
                 ))}
               </select>
               {error && (
-                <p className="text-xs text-red-700 mb-2">{error}</p>
+                <p className="text-xs text-red-700">{error}</p>
               )}
               {success && (
-                <p className="text-xs text-green-700 mb-2">{success}</p>
+                <p className="text-xs text-green-700">{success}</p>
               )}
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={handleTimezoneChange}
+                  type="submit"
                   disabled={isSaving}
-                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                  className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
                 >
-                  Save
+                  {isSaving ? "Saving..." : "Save"}
                 </button>
                 <button
                   type="button"
@@ -164,12 +169,12 @@ export function AccountOverviewSection({
                     setSuccess(null);
                   }}
                   disabled={isSaving}
-                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
               </div>
-            </>
+            </form>
           ) : (
             <div className="flex items-center justify-between">
               <div className="font-medium text-zinc-900">
