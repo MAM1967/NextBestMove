@@ -9,6 +9,7 @@ import { ExportDataButton } from "./ExportDataButton";
 import { BYOKSection } from "./BYOKSection";
 import { EmailPreferencesSection } from "./EmailPreferencesSection";
 import { AccountDeletionSection } from "./AccountDeletionSection";
+import { AccountOverviewSection } from "./AccountOverviewSection";
 
 type CalendarConnection = {
   provider: string;
@@ -179,29 +180,13 @@ export default async function SettingsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <SectionCard
           title="Account overview"
-          description="Basic account metadata pulled from Supabase auth + profile."
+          description="Manage your account details, password, and timezone."
         >
-          <dl className="grid gap-3 text-sm">
-            <div>
-              <dt className="text-zinc-500">Name</dt>
-              <dd className="font-medium text-zinc-900">
-                {profile?.name ?? user.email}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">Email</dt>
-              <dd className="font-medium text-zinc-900">{profile?.email}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">Timezone</dt>
-              <dd className="font-medium text-zinc-900">
-                {profile?.timezone ?? "Not set"}
-              </dd>
-            </div>
-          </dl>
-          <div className="rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-            Timezone editing and account deletion controls will live here soon.
-          </div>
+          <AccountOverviewSection
+            name={profile?.name || null}
+            email={profile?.email || user.email}
+            timezone={profile?.timezone || null}
+          />
         </SectionCard>
 
         <SectionCard

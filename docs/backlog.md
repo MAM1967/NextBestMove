@@ -114,6 +114,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🟠 P1 – High Value Enhancements
 
+- [x] **Account overview: Password change & timezone editing** ✅  
+       _Allow users to change password and update timezone in Settings → Account overview. Timezone dropdown with common options for travelers/remote workers. Password change requires confirmation._
+
+- [ ] **Password reset / Forgot password flow**  
+       _Implement "Forgot password?" link on sign-in page, password reset email flow, and reset password page. Use Supabase `resetPasswordForEmail` and `updateUser` APIs._
+
 - [ ] **Notification preferences wiring** (morning plan, fast win reminder, follow-up alerts, weekly summary)
 - [ ] **Paywall analytics & copy polish** (trial/past-due variants, event tracking)
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
