@@ -7,7 +7,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 0. Final Inputs Needed
 
-- [ ] Confirm Stripe pricing (plan name + amount) and launch date
+- [x] Confirm Stripe pricing (plan name + amount) and launch date ✅  
+       _Standard: $29/mo or $249/year | Professional: $79/mo or $649/year | 14-day free trial (no credit card)_
 - [ ] Provision Google Cloud + Azure OAuth credentials for calendar access
 - [ ] Supabase project + environment variables available (service role, anon key, Stripe secrets)
 
@@ -23,17 +24,17 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Supabase schema & migrations**  
        _All core tables (users, pins, actions, plans, summaries, calendar, billing) + enums, RLS, helper functions_
 
-- [ ] **Stripe API routes (checkout & portal)**  
-       _`POST /api/billing/create-checkout-session`, `POST /api/billing/customer-portal`, env wiring_
+- [x] **Stripe API routes (checkout & portal)** ✅  
+       _`POST /api/billing/create-checkout-session` (support Standard/Professional plans, monthly/annual), `POST /api/billing/customer-portal`, env wiring. Support 14-day trial creation via Stripe API (no credit card required, `trial_period_days: 14`)_
 
-- [ ] **Stripe webhook + subscription sync**  
-       _Verify signature, store events, upsert `billing_customers` / `billing_subscriptions`, update session status_
+- [x] **Stripe webhook + subscription sync** ✅  
+       _Verify signature, store events, upsert `billing_customers` / `billing_subscriptions`, update session status. Handle trial expiration (via `customer.subscription.updated` when trial ends), payment failures, cancellations, and plan upgrades/downgrades. Stripe automatically manages trial status transitions_
 
 - [x] **Supabase Auth pages & profile bootstrap** ✅  
        _Sign up / sign in, default timezone + streak info stored on user record_
 
-- [ ] **Paywall middleware & base overlay**  
-       _Read-only mode when subscription inactive, PaywallOverlay renders on gated pages_
+- [x] **Paywall middleware & base overlay** ✅  
+       _Read-only mode when subscription inactive, PaywallOverlay renders on gated pages. Support 14-day trial (full access), 7-day read-only grace period, and plan-based feature gating (Standard vs Professional). PaywallOverlay component created, subscription status checking implemented, plan page protected_
 
 ### Pins & Actions
 
@@ -51,18 +52,18 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Daily Plan page UI** ✅  
        _Header, focus card, progress indicator, Fast Win card, action list, empty state_
 
-- [ ] **Make action priority ranking obvious to users**  
+- [x] **Make action priority ranking obvious to users** ✅  
        _Priority scoring works but ordering logic is not clear. Add visual indicators (priority badges, urgency indicators), tooltips explaining why actions are prioritized, or sorting options. Users should understand why actions appear in the order they do._
 
-- [ ] **Stale actions insight & algorithm v2**  
-       _Surface actions older than 7 days that remain in NEW state (not snoozed). Provide insight/report UI, and update plan-generation algorithm documentation to “v2” once implemented._
+- [x] **Stale actions insight & algorithm v2** ✅  
+       _Surface actions older than 7 days that remain in NEW state (not snoozed). Provide insight/report UI, and update plan-generation algorithm documentation to "v2" once implemented._
 
 ### Calendar Integration
 
-- [ ] **Google & Outlook OAuth flows**  
+- [x] **Google & Outlook OAuth flows** ✅  
        _Connect/disconnect endpoints, token storage, error handling, optional skip_
 
-- [ ] **Free/busy API + status indicators**  
+- [x] **Free/busy API + status indicators** ✅  
        _Cached free/busy fetch, fallback to default capacity, Settings status block, disconnect action_
 
 ### Weekly Summary & Content
@@ -70,23 +71,26 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Weekly summary metrics job**  
        _Aggregate stats, placeholder narrative/insight/content prompts, schedule job_
 
-- [ ] **Weekly Summary page**  
+- [x] **Weekly Summary page** ✅  
        _Metrics grid, narrative card, insight, focus confirmation, content prompts section_
 
 - [ ] **Content prompt generation**  
        _Template + AI fallback for win/insight posts, saved to `content_prompts` table_
 
+- [x] **Copy to clipboard for content prompts** ✅  
+       _Add "Copy to clipboard" button for content prompts on Weekly Summary page_
+
 ### Onboarding
 
 - [ ] **Onboarding flow (6 steps)**  
-       _Welcome → pin → optional calendar → weekly focus → first plan ready → fast win coaching_
+       _Welcome → pin → optional calendar → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
 
 ### Settings & Export
 
-- [ ] **Settings page framework**  
+- [x] **Settings page framework** ✅  
        _Sections for calendar, notifications, timezone, content prompts, streak, data export_
 
-- [ ] **Billing section UI**  
+- [x] **Billing section UI** ✅  
        _BillingSection component showing plan, status badge, renewal date, manage billing CTA_
 
 - [ ] **Data export endpoint**  
@@ -112,16 +116,26 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)
 - [ ] **Content Ideas list page** (saved prompts CRUD + empty state)
+- [ ] **Trial expiration & read-only grace period** (Day 15-21: read-only mode, banner messaging, subscription prompts. Use Stripe API for trial management - lightest lift)
+- [ ] **Trial reminders** (Day 12 + Day 14 email via Resend + push notifications)
+- [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
+- [ ] **Streak break detection & recovery** (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7)
+- [ ] **Payment failure recovery flow** (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window)
+- [ ] **Win-back campaign automation** (Day 7, 30, 90, 180 post-cancellation emails via Resend)
+- [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
+- [ ] **Plan downgrade handling** (Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation)
 
 ---
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
 
-- [ ] Manual “Busy / Light day” capacity override
+- [ ] Manual "Busy / Light day" capacity override
 - [ ] Action detail modal / history view
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
 - [ ] Deeper analytics (deal progression metric, more insights)
 - [ ] Notification delivery channels (email/push) beyond toggles
+- [ ] Pricing page UI (Standard vs Professional comparison, annual savings, clear value props)
+- [ ] Billing pause feature (30-day pause for users inactive 7+ days)
 
 ---
 
@@ -130,6 +144,15 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] Full QA + accessibility sweep
 - [ ] Production Stripe smoke test (checkout → webhook → paywall release)
 - [ ] Documentation cleanup & release checklist
+
+---
+
+## 💡 Future Ideas
+
+Ideas to consider for future versions beyond MVP and initial enhancements.
+
+- [ ] **View past summaries**  
+       _Page or modal to browse historical weekly summaries, compare weeks, track progress over time_
 
 ---
 

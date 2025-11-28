@@ -145,24 +145,46 @@ export async function POST(request: Request) {
     const body = await request.json();
     const date = body.date || new Date().toISOString().split("T")[0];
 
-    // Check if plan already exists for this date
+    // Check if plan already exists for this date - if so, delete it to allow regeneration
     const { data: existingPlan } = await supabase
       .from("daily_plans")
       .select("id")
       .eq("user_id", user.id)
       .eq("date", date)
-      .single();
+      .maybeSingle();
 
     if (existingPlan) {
-      return NextResponse.json(
-        { error: "Plan already exists for this date" },
-        { status: 400 }
-      );
+      // Delete existing plan and its actions to allow regeneration
+      // Note: daily_plan_actions will be deleted automatically via CASCADE
+      const { error: deleteError } = await supabase
+        .from("daily_plans")
+        .delete()
+        .eq("id", existingPlan.id);
+
+      if (deleteError) {
+        console.error("Error deleting existing plan:", deleteError);
+        return NextResponse.json(
+          { error: "Failed to regenerate plan" },
+          { status: 500 }
+        );
+      }
     }
 
-    // TODO: Calculate capacity from calendar (for now, use default)
-    const freeMinutes = null; // Will be implemented when calendar integration is ready
-    const { level: capacityLevel, actionCount } = calculateCapacity(freeMinutes);
+    // Calculate capacity from calendar (or use default)
+    const { getCapacityForDate } = await import("@/lib/calendar/capacity");
+    const capacityInfo = await getCapacityForDate(supabase, user.id, date);
+    const capacityLevel = capacityInfo.level;
+    const actionCount = capacityInfo.actionsPerDay;
+    
+    // For backward compatibility, calculate freeMinutes (approximate)
+    let freeMinutes: number | null = null;
+    if (capacityInfo.source === "calendar") {
+      // Approximate: capacity levels map to free minutes ranges
+      if (capacityLevel === "micro") freeMinutes = 15;
+      else if (capacityLevel === "light") freeMinutes = 45;
+      else if (capacityLevel === "standard") freeMinutes = 90;
+      else if (capacityLevel === "heavy") freeMinutes = 240;
+    }
 
     // Fetch candidate actions (NEW or SNOOZED due today or in past)
     // For SNOOZED actions, only include those where snooze_until <= date (or NULL)

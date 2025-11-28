@@ -153,6 +153,8 @@ NextBestMove needs a simple way to accept payment and gate premium workflows:
 	•	Pre-subscription users can pin people and preview the daily plan UX but see a paywall overlay when attempting core actions.
 	•	Pricing (amount/plan name) is configured in Stripe so marketing can change it without redeploying.
 
+See Section 21 for detailed pricing, subscription tiers, trial model, and churn prevention strategy.
+
 ⸻
 
 7. Data Inputs (v0.1)
@@ -630,7 +632,7 @@ v0.1: No. In-app only. Consider opt-in email in v0.2.
 	•	Auto-archiving pins?
 v0.1: No auto-archive. Only explicit user archive. Add “Cleanup mode” later.
 	•	Pricing / plans?
-	Launch with one paid plan (monitored via Stripe Product/Price). Marketing can adjust the actual amount later; engineering just needs plan metadata + messaging hooks.
+	See Section 21 for complete pricing model: 14-day free trial (no credit card), Standard ($29/mo or $249/year), Professional ($79/mo or $649/year), with detailed churn prevention and upgrade triggers.
 
 ⸻
 
@@ -655,6 +657,283 @@ Deferred (v0.2+):
 	•	Browser extension for pinning
 	•	More detailed deal/proposal states
 	•	Email summaries, deeper analytics, and reporting
+
+⸻
+
+21. Pricing, Subscription Tiers & Churn Model
+
+21.1 Pricing Philosophy
+
+NextBestMove is a behavior-change product, not a SaaS dashboard. Pricing must reinforce:
+
+Free → Quick Wins → Rhythm → Paid → Retained
+
+The product's value emerges only after:
+	•	2 Weekly Summaries
+	•	5–7 days of consistent actions
+	•	1–2 revived conversations
+	•	1 booked call
+
+So the pricing architecture must move the user toward those moments.
+
+21.2 Subscription Tiers
+
+21.2.1 Free Trial — 14 Days (No credit card)
+
+Full access. All features. No paywall.
+
+Why 14 days?
+	•	Captures two Weekly Summaries → the strongest "aha" moment
+	•	Users experience calendar sizing + follow-up cycles
+	•	Short enough to create urgency
+	•	Long enough to feel the rhythm
+
+Trial Messaging (built-in):
+	•	"No commitment. You'll know in 48 hours if this works."
+
+21.2.2 What Happens on Day 15 (Critical)
+
+Read-Only Grace Period — 7 Days
+
+Not a hard lock. Not a forced downgrade.
+
+User can:
+	•	View Pins
+	•	View past actions
+	•	View Weekly Summaries
+	•	Export data
+	•	Browse settings
+
+User cannot:
+	•	Generate a new daily plan
+	•	Add new pins
+	•	Schedule follow-ups
+	•	Access insights
+	•	Use content prompts
+
+Banner shown everywhere:
+
+"Your trial has ended. Subscribe to resume your rhythm. Your data is safe and nothing is lost."
+
+Why read-only is perfect:
+	•	No loss aversion trauma
+	•	Creates urgency
+	•	Ethical and user-friendly
+	•	Prevents "the app locked me out" anger
+	•	Engineers love it (simple permissions flag)
+
+21.2.3 Paid Plans
+
+STANDARD — $29/mo or $249/year
+(Save $99 — 2 months free)
+
+For fractional executives who need a simple, consistent daily rhythm.
+
+Includes:
+	•	Daily plan (Fast Win + 3–8 actions/day)
+	•	Calendar-aware action sizing
+	•	Smart follow-up engine
+	•	Up to 50 active Pins
+	•	Weekly Summary + single actionable insight
+	•	2 content prompts per week
+	•	Consistency score
+	•	Data export
+	•	Email/push reminders
+	•	Read-only access during inactivity
+	•	Light analytic patterns (consistency + action count)
+
+This is the foundational "habit plan." 80% of users belong here.
+
+PROFESSIONAL — $79/mo or $649/year
+(Save $299 — 4 months free)
+
+Hero Value Proposition: "A smart intelligence layer for complex pipelines."
+
+Fractional CMOs, CFOs, CTOs, and multiproject operators who manage dozens of warm relationships benefit the most.
+
+Includes everything in Standard plus:
+
+1. Unlimited Pins
+Never prune relationships again.
+
+2. Pattern Detection
+	•	"Your Tuesday outreach converts 2x better than Thursday"
+	•	"Follow-ups after 48 hours have higher reply rates"
+	•	"Most of your booked calls come from warm re-engagements"
+
+3. Pre-Call Briefs
+Auto-generated summaries of:
+	•	last interactions
+	•	follow-up history
+	•	next-step suggestions
+	•	user notes
+
+10-second prep = 10x better calls.
+
+4. Content Engine (Your Voice)
+	•	Learns the user's tone
+	•	Provides weekly content drafts
+	•	Curates insights from actual actions ("based on your week…")
+
+5. Full Performance Timeline
+	•	Month-over-month progress
+	•	Consistency arcs
+	•	Pipeline movement
+	•	Warm contact revival patterns
+
+This is "fractional revops" for one person.
+
+21.3 Upgrade Triggers (Behavior-Based)
+
+Upsells must appear ONLY when the user is succeeding.
+
+1. Pin Limit (Standard hits 50)
+Modal: "You've built a strong network of 50 relationships. Add unlimited Pins with Professional."
+
+2. Weekly Summary Insight (Standard)
+"Want deeper insights next week? Try the Intelligence Layer."
+
+3. Attempting to view pattern detection
+"Pattern detection is part of Professional. See when your outreach performs best."
+
+4. Before important call
+"Pre-call brief available. Upgrade to prepare in 10 seconds."
+
+5. Content drafting moment
+"The Content Engine tailors posts to your voice. Try Professional."
+
+21.4 Churn Prevention (Active, Not Passive)
+
+21.4.1 Streak Break Detection
+
+Missed 1 day:
+Push: "Your Fast Win is waiting. Takes 3 minutes."
+
+Missed 2 days:
+System shifts to Micro Mode — 2 actions only.
+
+Missed 3 days:
+Send a personal-style email: "Everything okay? Reply and tell me what broke — I read every message."
+
+Missed 7 days:
+Offer real billing pause (30 days):
+	•	Pauses subscription
+	•	Keeps data
+	•	No payments during pause
+
+Do NOT offer fake pauses.
+
+21.4.2 Payment Failure Handling (Involuntary Churn Fix)
+
+Day 0:
+Soft email: "Your payment failed. Update to keep your rhythm."
+
+Day 3:
+Blocking modal in app + Email reminder #2
+
+Day 7:
+Account moves to read-only + "Update to reactivate"
+
+Day 14:
+Data archived + 30-day window to reactivate
+
+This can recover 20–40% of lost subscribers.
+
+21.4.3 Downgrade Policy (Clarity to Reduce Anxiety)
+
+Professional → Standard:
+Effective next billing cycle. Warning: "You have 87 active Pins. Standard supports 50. Archive 37 or stay on Professional."
+
+Standard → Cancel:
+	•	7-day read-only
+	•	30-day one-click reactivation
+	•	Data export anytime
+
+No surprises. No traps.
+
+21.4.4 Win-Back Campaign (High ROI)
+
+Day 7 post-cancellation:
+"What didn't work for you?"
+
+Day 30:
+"We shipped updates since you left. One of them solves the issue you mentioned…"
+
+Day 90:
+"Your past data is still here. Reactivate in one click."
+
+Day 180 (final):
+"Should we delete your data or keep it?"
+
+This sequence reliably reactivates 15–25%.
+
+21.5 Pricing Page Copy
+
+Simple Pricing. No Tricks.
+Try free for 14 days. No credit card.
+
+STANDARD — $29/mo or $249/year
+"All you need to build a daily revenue rhythm."
+
+PROFESSIONAL — $79/mo or $649/year
+"An intelligence layer for complex pipelines."
+
+Pricing page includes:
+	•	Clear value
+	•	Annual savings
+	•	Risk reversal
+	•	Behavioral differentiators
+
+21.6 Onboarding Flow (Subscription-Aware)
+
+Step 1: Email + Password
+Step 2: Calendar Connect
+Step 3: Pin 3 people
+Step 4: First daily plan
+Step 5: Start 14-day trial
+Step 6: "You'll know in 48 hours if this works."
+
+No early pricing screens. Let the rhythm sell the plan.
+
+21.7 Subscription Model Summary
+
+Trial:
+	•	14 days
+	•	No credit card
+	•	Full access
+	•	7-day read-only grace
+	•	Strong Day 12 + Day 14 reminders
+
+Plans:
+	•	Standard: $29/mo | $249/year
+	•	Professional: $79/mo | $649/year
+
+Highlights:
+	•	Standard = Habit Layer
+	•	Professional = Intelligence Layer
+
+Behavioral Upsells:
+	•	Pin limit
+	•	Weekly summaries
+	•	Premium insights
+	•	Pre-call briefs
+	•	Content engine
+
+Churn Prevention:
+	•	Day 1–3 rescue flow
+	•	Micro Mode
+	•	Real billing pause
+
+Payment Failure:
+	•	3-touch retry
+	•	Grace window
+	•	Archive + recover
+
+Win-Back:
+	•	Day 7
+	•	Day 30
+	•	Day 90
+	•	Day 180
 
 ⸻
 

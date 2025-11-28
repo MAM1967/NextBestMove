@@ -67,10 +67,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Tasks
           </Link>
           <Link
-            href="/app/calendar"
+            href="/app/weekly-summary"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
-            Calendar
+            Weekly Summary
           </Link>
           <Link
             href="/app/insights"

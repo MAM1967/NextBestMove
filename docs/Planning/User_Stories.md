@@ -1331,8 +1331,8 @@
 - [ ] "Mark as Done" button
 - [ ] "I'll do this later" alternative
 - [ ] Success message: "Great start! You've completed your first action."
-- [ ] Progress: Step 6 of 6
-- [ ] On completion, redirect to Daily Plan page
+- [ ] Progress: Step 5 of 6
+- [ ] On completion, proceed to trial start step
 
 **Technical Notes:**
 - Interactive step with action completion
@@ -1340,7 +1340,35 @@
 
 ---
 
-### US-8.8: Onboarding Success Tracking
+### US-8.8: Start 14-Day Trial Step
+**Epic:** Onboarding  
+**Priority:** 🔴 P0  
+**Size:** S  
+**Story Points:** 3
+
+**As a** new user  
+**I want** to start my 14-day free trial  
+**So that** I can use the app without commitment
+
+**Acceptance Criteria:**
+- [ ] Step: "Start your 14-day free trial"
+- [ ] Messaging: "You'll know in 48 hours if this works. No credit card required."
+- [ ] "Start Trial" button (no payment required)
+- [ ] Trial start date recorded in database
+- [ ] Trial expiration date calculated (14 days from start)
+- [ ] User subscription status set to `trialing`
+- [ ] Progress: Step 6 of 6
+- [ ] On completion, redirect to Daily Plan page
+- [ ] Show trial countdown in app header/navigation
+
+**Technical Notes:**
+- Create Stripe subscription with trial period (14 days, no payment method required)
+- Store `trial_ends_at` timestamp in `billing_subscriptions` table
+- Reference PRD Section 21.2.1
+
+---
+
+### US-8.9: Onboarding Success Tracking
 **Epic:** Onboarding  
 **Priority:** 🔴 P0  
 **Size:** S  
@@ -1355,6 +1383,7 @@
 - [ ] Track: Weekly Focus set (✅/❌)
 - [ ] Track: Fast Win completed (✅/❌)
 - [ ] Track: Calendar connected (optional)
+- [ ] Track: Trial started (✅/❌)
 - [ ] Store completion flags in database or analytics
 - [ ] Report on 48-hour activation rate (≥ 60% target)
 
@@ -1610,18 +1639,21 @@
 
 **As a** prospective subscriber  
 **I want** to start a Stripe Checkout session from inside the app  
-**So that** I can pay for the Solo plan without leaving the flow
+**So that** I can pay for Standard or Professional plan without leaving the flow
 
 **Acceptance Criteria:**
 - [ ] API endpoint `POST /api/billing/create-checkout-session` returns checkout URL
-- [ ] Endpoint verifies user auth and uses configured `price_id`
+- [ ] Endpoint accepts `plan` (standard/professional) and `interval` (month/year) parameters
+- [ ] Endpoint verifies user auth and uses configured `price_id` from Stripe
 - [ ] Success & cancel URLs return user to app with messaging
-- [ ] Errors are surfaced via toast (“Checkout unavailable, try again”)
+- [ ] Errors are surfaced via toast ("Checkout unavailable, try again")
 - [ ] Works in test and production Stripe modes (env driven)
+- [ ] Supports both monthly and annual pricing ($29/mo, $249/year for Standard; $79/mo, $649/year for Professional)
 
 **Technical Notes:**
 - Use Stripe SDK server-side; never expose secret key to client.
-- Include metadata (user_id) on session for webhook correlation.
+- Include metadata (user_id, plan_name) on session for webhook correlation.
+- Store plan metadata in `billing_subscriptions.metadata` JSONB field.
 
 ---
 
@@ -1637,8 +1669,10 @@
 
 **Acceptance Criteria:**
 - [ ] Webhook endpoint `POST /api/billing/webhook` verifies Stripe signature
-- [ ] Handles events: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [ ] Handles events: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`
 - [ ] Upserts `billing_customers` and `billing_subscriptions` tables
+- [ ] Stores plan metadata (plan_name, amount) in `billing_subscriptions.metadata` JSONB
+- [ ] Tracks trial start/end dates for 14-day free trial
 - [ ] Stores raw event payload in `billing_events` for auditing
 - [ ] Idempotent: duplicate events do not create duplicates
 - [ ] Updates user session/metadata with subscription status
@@ -1646,6 +1680,7 @@
 **Technical Notes:**
 - Use Stripe `event.id` for idempotency.
 - Webhook handler runs with Supabase service key (server-only).
+- Trial status should be set to `trialing` with `trial_ends_at` timestamp.
 
 ---
 
@@ -1656,19 +1691,24 @@
 **Story Points:** 5
 
 **As a** product owner  
-**I want** daily plan + weekly summary to require an active subscription  
+**I want** daily plan + weekly summary to require an active subscription or trial  
 **So that** core value is tied to paid access
 
 **Acceptance Criteria:**
 - [ ] When subscription status ≠ active/trialing, show PaywallOverlay on Daily Plan and Weekly Summary pages
+- [ ] 14-day free trial provides full access (no credit card required)
+- [ ] After trial expires (Day 15-21): read-only grace period (view only, no new plans/pins/actions)
+- [ ] Read-only banner: "Your trial has ended. Subscribe to resume your rhythm. Your data is safe and nothing is lost."
 - [ ] Pins + onboarding remain available (freemium preview)
 - [ ] Past due state blocks actions and shows warning copy
 - [ ] Paywall CTA triggers checkout or billing portal depending on status
+- [ ] Plan-based feature gating: Standard (50 pins max), Professional (unlimited pins + premium features)
 - [ ] Analytics event logged when paywall displayed and CTA clicked
 
 **Technical Notes:**
 - Read subscription status from user session or `/api/billing/subscription`.
 - Ensure paywall gating also enforced server-side (API returns 402-style error).
+- Trial expiration logic: `trial_ends_at < now()` AND `status = 'trialing'` → read-only mode.
 
 ---
 
@@ -1706,14 +1746,167 @@
 **So that** I know how to restore access quickly
 
 **Acceptance Criteria:**
-- [ ] Banner appears on dashboard when status = past_due (“Payment failed — Update card”)
+- [ ] Banner appears on dashboard when status = past_due ("Payment failed — Update card")
 - [ ] Banner CTA opens billing portal directly
-- [ ] If cancel_at_period_end = true, show reminder banner (“Access ends Mar 21 — Resume plan”)
+- [ ] If cancel_at_period_end = true, show reminder banner ("Access ends Mar 21 — Resume plan")
 - [ ] Banners dismissible once per session but reappear if status unchanged
 
 **Technical Notes:**
 - Use shared notification component.
 - Track dismiss state in local store (not persisted) to avoid noisy loops.
+
+---
+
+### US-11.6: Trial Expiration & Read-Only Grace Period
+**Epic:** Billing & Monetization  
+**Priority:** 🔴 P0  
+**Size:** M  
+**Story Points:** 5
+
+**As a** user whose trial has expired  
+**I want** to still access my data in read-only mode  
+**So that** I don't lose my work and can easily subscribe
+
+**Acceptance Criteria:**
+- [ ] After trial expires (Day 15-21): read-only mode activated
+- [ ] Banner shown everywhere: "Your trial has ended. Subscribe to resume your rhythm. Your data is safe and nothing is lost."
+- [ ] User can: View Pins, View past actions, View Weekly Summaries, Export data, Browse settings
+- [ ] User cannot: Generate new daily plan, Add new pins, Schedule follow-ups, Access insights, Use content prompts
+- [ ] "Subscribe" CTA in banner opens checkout
+- [ ] After 7 days read-only, account moves to inactive state (data preserved)
+
+**Technical Notes:**
+- Check `trial_ends_at < now()` AND `status = 'trialing'` to trigger read-only
+- Server-side API enforcement: return 402/403 for write operations
+- Reference PRD Section 21.2.2
+
+---
+
+### US-11.7: Trial Reminders
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** S  
+**Story Points:** 3
+
+**As a** user on trial  
+**I want** reminders before my trial ends  
+**So that** I can decide to subscribe
+
+**Acceptance Criteria:**
+- [ ] Day 12: In-app banner + optional email: "2 days left in your trial"
+- [ ] Day 14: In-app modal + email: "Last day of trial — Subscribe to keep your rhythm"
+- [ ] Reminders include trial benefits summary
+- [ ] "Subscribe" CTA in reminders
+- [ ] Reminders stop after subscription or trial expiration
+
+**Technical Notes:**
+- Background job to check trial expiration dates
+- Email service integration (SendGrid/Mailgun/etc.)
+- Reference PRD Section 21.2.1
+
+---
+
+### US-11.8: Plan Upgrade Triggers (Behavior-Based)
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** M  
+**Story Points:** 5
+
+**As a** Standard plan user  
+**I want** to see upgrade prompts when I hit limits or need premium features  
+**So that** I can unlock Professional features
+
+**Acceptance Criteria:**
+- [ ] Pin limit hit (50): Modal "You've built a strong network of 50 relationships. Add unlimited Pins with Professional."
+- [ ] Attempting pattern detection: "Pattern detection is part of Professional. See when your outreach performs best."
+- [ ] Before important call: "Pre-call brief available. Upgrade to prepare in 10 seconds."
+- [ ] Content drafting moment: "The Content Engine tailors posts to your voice. Try Professional."
+- [ ] Weekly Summary insight: "Want deeper insights next week? Try the Intelligence Layer."
+- [ ] All prompts include "Upgrade" CTA linking to checkout with Professional plan selected
+- [ ] Prompts only show when user is succeeding (high completion, active usage)
+
+**Technical Notes:**
+- Check `billing_subscriptions.metadata.plan_name` to determine current plan
+- Gate Professional features server-side
+- Reference PRD Section 21.3
+
+---
+
+### US-11.9: Streak Break Detection & Recovery
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** M  
+**Story Points:** 5
+
+**As a** user who missed days  
+**I want** recovery prompts and Micro Mode  
+**So that** I can get back on track
+
+**Acceptance Criteria:**
+- [ ] Missed 1 day: Push notification "Your Fast Win is waiting. Takes 3 minutes."
+- [ ] Missed 2 days: System shifts to Micro Mode (2 actions only)
+- [ ] Missed 3 days: Personal-style email "Everything okay? Reply and tell me what broke — I read every message."
+- [ ] Missed 7 days: Offer real billing pause (30 days) — pauses subscription, keeps data, no payments
+- [ ] Billing pause: Update subscription status, set pause end date, resume automatically after 30 days
+- [ ] Recovery prompts stop after user resumes activity
+
+**Technical Notes:**
+- Background job to check last action date vs current date
+- Email service integration
+- Stripe subscription pause API
+- Reference PRD Section 21.4.1
+
+---
+
+### US-11.10: Payment Failure Recovery Flow
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** M  
+**Story Points:** 5
+
+**As a** user with a payment failure  
+**I want** clear recovery steps  
+**So that** I can restore access quickly
+
+**Acceptance Criteria:**
+- [ ] Day 0: Soft email "Your payment failed. Update to keep your rhythm."
+- [ ] Day 3: Blocking modal in app + Email reminder #2
+- [ ] Day 7: Account moves to read-only + "Update to reactivate" banner
+- [ ] Day 14: Data archived + 30-day window to reactivate
+- [ ] All prompts include "Update Payment" CTA opening billing portal
+- [ ] After payment update: Immediate restoration of full access
+
+**Technical Notes:**
+- Webhook handler for `invoice.payment_failed` event
+- Background job to check payment failure dates
+- Reference PRD Section 21.4.2
+
+---
+
+### US-11.11: Win-Back Campaign Automation
+**Epic:** Billing & Monetization  
+**Priority:** 🟠 P1  
+**Size:** M  
+**Story Points:** 5
+
+**As a** product manager  
+**I want** automated win-back emails for canceled users  
+**So that** we can recover 15-25% of cancellations
+
+**Acceptance Criteria:**
+- [ ] Day 7 post-cancellation: Email "What didn't work for you?" (survey link)
+- [ ] Day 30: Email "We shipped updates since you left. One of them solves the issue you mentioned…"
+- [ ] Day 90: Email "Your past data is still here. Reactivate in one click."
+- [ ] Day 180 (final): Email "Should we delete your data or keep it?"
+- [ ] All emails include "Reactivate" CTA linking to checkout
+- [ ] Campaign stops if user reactivates
+- [ ] Track open/click rates
+
+**Technical Notes:**
+- Background job to check cancellation dates
+- Email service integration
+- Survey form for Day 7 feedback
+- Reference PRD Section 21.4.4
 
 ---
 

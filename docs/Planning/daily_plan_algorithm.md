@@ -1,6 +1,8 @@
-## Daily Plan Generation Algorithm
+## Daily Plan Generation Algorithm v2
 
 This document summarizes how `/api/daily-plans/generate` chooses which actions appear on the plan page and how the Fast Win is selected. The logic below reflects the current implementation in `web/src/app/api/daily-plans/generate/route.ts`.
+
+**Version 2 Update:** Includes stale actions insight and visibility (see Section 6).
 
 ---
 
@@ -19,18 +21,18 @@ This document summarizes how `/api/daily-plans/generate` chooses which actions a
 
 For each candidate action we compute a numeric score:
 
-| Heuristic Layer | Rule | Score |
-| --- | --- | --- |
-| **State boost** | `REPLIED` → +1000 (not currently in candidate set, kept for future) |
-| | `SNOOZED` & due today/past → +800 |
-| **Action type weight** | `FOLLOW_UP` +500 |
-| | `POST_CALL` +450 |
-| | `CALL_PREP` +400 |
-| | `OUTREACH` +300 |
-| | `NURTURE` +200 |
-| | `CONTENT` +100 |
-| **Due-date boost** *(FOLLOW_UP only)* | Due today → +200; overdue 1-3 days → +100 |
-| **Context bonus** | Has `person_pins` → +50 |
+| Heuristic Layer                       | Rule                                                                | Score |
+| ------------------------------------- | ------------------------------------------------------------------- | ----- |
+| **State boost**                       | `REPLIED` → +1000 (not currently in candidate set, kept for future) |
+|                                       | `SNOOZED` & due today/past → +800                                   |
+| **Action type weight**                | `FOLLOW_UP` +500                                                    |
+|                                       | `POST_CALL` +450                                                    |
+|                                       | `CALL_PREP` +400                                                    |
+|                                       | `OUTREACH` +300                                                     |
+|                                       | `NURTURE` +200                                                      |
+|                                       | `CONTENT` +100                                                      |
+| **Due-date boost** _(FOLLOW_UP only)_ | Due today → +200; overdue 1-3 days → +100                           |
+| **Context bonus**                     | Has `person_pins` → +50                                             |
 
 After scoring, the list is sorted descending.
 
@@ -135,7 +137,29 @@ START → Fetch all actions for user
 
 - FOLLOW_UP actions dominate by design; they have the highest base weight plus due-date boosts.
 - Fast Win is purely heuristic; whichever candidate meets the “quick win” conditions first wins.
-- The system currently defaults to six actions per day because calendar capacity is not yet integrated.
-- Priority transparency remains a backlog item (P0) to help users understand ordering.
+- The system uses calendar-based capacity when available, defaulting to six actions per day when no calendar is connected.
 
+## 6. Stale Actions Consideration (v2)
 
+**Problem:** Actions created more than 7 days ago that remain in NEW state (not snoozed) may indicate:
+
+- Actions that were once important but are now overlooked
+- Actions that may no longer be relevant
+- Actions that need user review to determine if they should be prioritized, snoozed, or archived
+
+**Solution:**
+
+- Stale actions (NEW state, not snoozed, >7 days old) are surfaced in the Insights page
+- Users can review these actions and decide whether to:
+  - Prioritize them (they'll appear in future plans if they score high enough)
+  - Snooze them (if timing isn't right)
+  - Archive them (if no longer relevant)
+- Stale actions are NOT automatically excluded from plan generation - they can still appear if they score high enough
+- The Insights page provides visibility into these actions so users can make informed decisions
+
+**Algorithm v2 Notes:**
+
+- Stale actions are identified but not automatically filtered out of plan generation
+- The priority scoring algorithm remains the same - stale actions can still score high if they're follow-ups due today, etc.
+- The Insights page provides a dedicated view for reviewing stale actions
+- Priority transparency is implemented with H/M/L badges and info tooltips

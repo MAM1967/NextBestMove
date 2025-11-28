@@ -14,13 +14,26 @@ This repository contains all documentation, specifications, and code for NextBes
 
 Copy `.env.local.example` to `.env.local` and set:
 
+**Required:**
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
-- `OUTLOOK_CLIENT_ID` / `OUTLOOK_CLIENT_SECRET`
+- `OUTLOOK_CLIENT_ID` / `OUTLOOK_CLIENT_SECRET` / `OUTLOOK_TENANT_ID`
 - `CALENDAR_ENCRYPTION_KEY` (32-byte base64 or hex string for encrypting OAuth tokens)
 
-Additional variables may be required for Stripe/webhook testing; see component READMEs where applicable.
+**Email & Notifications:**
+
+- `RESEND_API_KEY` (for trial reminders, payment failures, win-back campaigns)
+
+**Billing (when implemented):**
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_ID_STANDARD_MONTHLY` / `STRIPE_PRICE_ID_STANDARD_YEARLY`
+- `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` / `STRIPE_PRICE_ID_PROFESSIONAL_YEARLY`
+
+**Note:** Never commit `.env.local` to git. Add it to `.gitignore`.
 
 ### Repository Structure
 
@@ -45,20 +58,24 @@ NextBestMove/
 ## 📚 Documentation
 
 ### Product Requirements
+
 - **[PRD v0.1](docs/PRD/NextBestMove_PRD_v1.md)** - Complete product requirements document
 - **[Implementation Guide](docs/Architecture/Implementation_Guide.md)** - Development roadmap
 
 ### Design & UX
+
 - **[UI Specifications](docs/UI-UX/UI_Specifications.md)** - Complete design system
 - **[Component Specifications](docs/Architecture/Component_Specifications.md)** - React component architecture
 - **[Product Mockups](docs/UI-UX/Product_Screenshot_Mock_Copy_v2.md)** - Screen-by-screen mockups
 
 ### Architecture
+
 - **[Database Schema](docs/Architecture/Database_Schema.md)** - Complete PostgreSQL schema
 - **[Calendar API Specifications](docs/Architecture/Calendar_API_Specifications.md)** - Calendar integration specs
 - **[Calendar Integration Summary](docs/Architecture/Calendar_Integration_Summary.md)** - Integration overview
 
 ### Planning
+
 - **[User Stories](docs/Planning/User_Stories.md)** - Complete user stories for sprint planning
 - **[Gap Analysis](docs/PRD/PRD_Mockup_Gap_Analysis.md)** - PRD vs Mockup alignment
 
@@ -71,6 +88,7 @@ NextBestMove is an actions-first workflow app that answers the question every so
 **"What should I do today to move revenue forward?"**
 
 Instead of managing a CRM or juggling spreadsheets, you simply:
+
 1. **Pin** people you don't want to lose track of
 2. **Get** a short, realistic daily plan (3–8 actions), sized to your actual calendar
 3. **Mark** actions as done / got reply / snooze
@@ -81,21 +99,25 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 ## 🔑 Core Features (v0.1)
 
 ### Actions-First Daily Plan
+
 - A short list of high-impact actions each morning
 - Automatically sized based on your calendar availability
 - Includes one Fast Win to build momentum in under 5 minutes
 
 ### Pin, Don't Manage
+
 - Add simple "Pins" (name + URL) for people you don't want to forget
 - No CRM fields, no enrichment, no complexity
 - Snooze Pins when timing isn't right; archive when done
 
 ### Follow-Up Done Right
+
 - One-tap "Got a reply" handling
 - Smart defaults for snoozing
 - Automatic next steps when the conversation heats up
 
 ### Weekly Rhythm
+
 - Automatic weekly summary
 - 2–3 sentence narrative (AI-assisted)
 - Simple insight ("Your follow-ups convert best within 3 days")
@@ -103,11 +125,13 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - 1–2 content prompts based on your real actions
 
 ### Calendar-Aware Capacity
+
 - Connect your Google/Outlook calendar
 - Daily plans adjust so you never feel overloaded
 - If no calendar connected → fixed lightweight plan
 
 ### Billing Readiness
+
 - Stripe-powered checkout and customer portal
 - Subscription status gates access to core workflows
 - Pricing tier TBD, but billing infrastructure is ready for launch
@@ -122,7 +146,7 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - **Database:** PostgreSQL (Supabase)
 - **Authentication:** Supabase Auth
 - **Payments:** Stripe Checkout + Billing Portal (subscription + invoices)
-- **Calendar Integration:** 
+- **Calendar Integration:**
   - Google Calendar API (read-only free/busy)
   - Microsoft Graph API (Outlook)
   - NextAuth.js for OAuth
@@ -136,23 +160,28 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 ### Core Entities
 
 **PersonPin**
+
 - name, url, notes (optional)
 - status: ACTIVE | SNOOZED | ARCHIVED
 
 **Action**
+
 - type: OUTREACH | FOLLOW_UP | NURTURE | CALL_PREP | POST_CALL | CONTENT | FAST_WIN
 - state: NEW | SENT | REPLIED | SNOOZED | DONE | ARCHIVED
 - due_date, notes (optional), linked to PersonPin
 
 **DailyPlan**
+
 - date, capacity level, action list (ordered)
 - Fast Win + regular actions
 
 **WeeklySummary**
+
 - metrics, narrative, insight, next_week_focus
 - content_prompts
 
 **Subscription**
+
 - status: TRIALING | ACTIVE | PAST_DUE | CANCELED
 - current_plan (text, e.g., SOLO)
 - renewal_date, cancel_at_period_end
@@ -165,6 +194,7 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 ## 🗺️ Development Roadmap
 
 ### v0.1 — MVP (Current)
+
 - ✅ PRD completed
 - ✅ UI/UX specifications
 - ✅ Component architecture
@@ -174,6 +204,7 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 - 🚧 Code implementation in progress
 
 ### v0.2 (Future)
+
 - Manual "Busy / Light day" override
 - "Why this action?" explanation tooltips
 - Improved templates
@@ -181,6 +212,7 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 - Daily email plan (opt-in)
 
 ### v1.0 (Future)
+
 - Multi-channel actions (email / LinkedIn / DM)
 - Team/assistant support
 - Personalized "coaching mode" insights
@@ -190,17 +222,20 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 ## 📖 Documentation Quick Links
 
 ### For Product/Design
+
 - [PRD v0.1](docs/PRD/NextBestMove_PRD_v1.md)
 - [UI Specifications](docs/UI-UX/UI_Specifications.md)
 - [Product Mockups](docs/UI-UX/Product_Screenshot_Mock_Copy_v2.md)
 
 ### For Developers
+
 - [Component Specifications](docs/Architecture/Component_Specifications.md)
 - [Database Schema](docs/Architecture/Database_Schema.md)
 - [Calendar API Specifications](docs/Architecture/Calendar_API_Specifications.md)
 - [Implementation Guide](docs/Architecture/Implementation_Guide.md)
 
 ### For Planning
+
 - [User Stories](docs/Planning/User_Stories.md)
 - [Gap Analysis](docs/PRD/PRD_Mockup_Gap_Analysis.md)
 
@@ -209,6 +244,7 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 ## 🧪 Development Status
 
 🚧 **Early Development**
+
 - ✅ Complete documentation and specifications
 - 🚧 Code implementation starting
 - 📋 80+ user stories ready for sprint planning

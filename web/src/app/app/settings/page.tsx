@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { fetchCalendarStatus } from "@/lib/calendar/status";
 import { CalendarConnectionSection } from "./CalendarConnectionSection";
+import { BillingSection } from "./BillingSection";
 
 type CalendarConnection = {
   provider: string;
@@ -89,16 +90,64 @@ export default async function SettingsPage() {
     redirect("/auth/sign-in?redirect=/app/settings");
   }
 
-  const [{ data: profile }, calendarStatus] = await Promise.all([
-    supabase
-      .from("users")
-      .select("email, name, timezone, streak_count, calendar_connected")
-      .eq("id", user.id)
-      .single(),
-    fetchCalendarStatus(supabase, user.id),
-  ]);
+  const [{ data: profile }, calendarStatus, { data: billingCustomer }] =
+    await Promise.all([
+      supabase
+        .from("users")
+        .select("email, name, timezone, streak_count, calendar_connected")
+        .eq("id", user.id)
+        .single(),
+      fetchCalendarStatus(supabase, user.id),
+      supabase
+        .from("billing_customers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
   const connections: CalendarConnection[] = calendarStatus.connections || [];
+
+  // Fetch subscription data if customer exists
+  let subscriptionData = null;
+  if (billingCustomer) {
+    // First try to get active or trialing subscription
+    const { data: activeSubscription } = await supabase
+      .from("billing_subscriptions")
+      .select(
+        `
+        id,
+        status,
+        current_period_end,
+        cancel_at_period_end,
+        metadata
+      `
+      )
+      .eq("billing_customer_id", billingCustomer.id)
+      .in("status", ["active", "trialing"])
+      .maybeSingle();
+
+    if (activeSubscription) {
+      subscriptionData = activeSubscription;
+    } else {
+      // If no active/trialing, get the most recent one (including canceled)
+      const { data: latestSubscription } = await supabase
+        .from("billing_subscriptions")
+        .select(
+          `
+          id,
+          status,
+          current_period_end,
+          cancel_at_period_end,
+          metadata
+        `
+        )
+        .eq("billing_customer_id", billingCustomer.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      subscriptionData = latestSubscription;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -155,6 +204,16 @@ export default async function SettingsPage() {
           />
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Billing & subscription"
+        description="Manage your subscription, payment method, and billing history."
+      >
+        <BillingSection
+          subscription={subscriptionData}
+          hasCustomer={!!billingCustomer}
+        />
+      </SectionCard>
 
       <SectionCard
         title="Notification preferences"

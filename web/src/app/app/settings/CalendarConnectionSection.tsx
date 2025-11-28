@@ -23,6 +23,7 @@ export function CalendarConnectionSection({
 }: CalendarConnectionSectionProps) {
   const router = useRouter();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleConnect = (provider: "google" | "outlook") => {
     window.location.href = `/api/calendar/connect/${provider}`;
@@ -52,6 +53,33 @@ export function CalendarConnectionSection({
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Invalidate cache first
+      await fetch("/api/calendar/refresh-cache", {
+        method: "POST",
+      });
+
+      // Then fetch free/busy for today to refresh cache
+      const today = new Date().toISOString().split("T")[0];
+      const response = await fetch(`/api/calendar/freebusy?date=${today}`, {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        // Refresh the page to show updated last_sync_at
+        router.refresh();
+      } else {
+        alert("Failed to refresh calendar. Please try again.");
+      }
+    } catch (error) {
+      alert("Failed to refresh calendar. Please try again.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const connectionLabel = connected
     ? `Connected to ${connections[0]?.provider || "calendar"}`
     : "Not connected";
@@ -63,7 +91,7 @@ export function CalendarConnectionSection({
           <p className="text-sm font-medium text-zinc-900">{connectionLabel}</p>
           <p className="text-xs text-zinc-500">
             {connected
-              ? "Capacity will adapt once free/busy sync ships."
+              ? "Capacity adapts to your calendar schedule automatically."
               : "We'll default to 6 actions/day until a calendar is connected."}
           </p>
         </div>
@@ -118,14 +146,24 @@ export function CalendarConnectionSection({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            onClick={handleDisconnect}
-            disabled={isDisconnecting}
-            className="inline-flex items-center rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-          >
-            {isDisconnecting ? "Disconnecting..." : "Disconnect"}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh Calendar"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDisconnect}
+              disabled={isDisconnecting}
+              className="inline-flex items-center rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+            </button>
+          </>
         )}
       </div>
     </div>

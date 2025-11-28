@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCapacityForDate } from "./capacity";
+import { getCapacityForDate, type CapacityInfo } from "./capacity";
 
 export type CalendarConnectionRow = {
   provider: string;
@@ -15,7 +15,7 @@ export type CalendarStatusResponse = {
   lastSyncAt: string | null;
   errorMessage: string | null;
   connections: CalendarConnectionRow[];
-  capacity: Awaited<ReturnType<typeof getCapacityForDate>>;
+  capacity: CapacityInfo;
 };
 
 export async function fetchCalendarStatus(
@@ -27,7 +27,7 @@ export async function fetchCalendarStatus(
       .from("calendar_connections")
       .select("provider, status, last_sync_at, error_message")
       .eq("user_id", userId),
-    getCapacityForDate(userId, new Date().toISOString().split("T")[0]),
+    getCapacityForDate(supabase, userId, new Date().toISOString().split("T")[0]),
   ]);
 
   const rows = connections ?? [];
