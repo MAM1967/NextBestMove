@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlanSelectionModal } from "./PlanSelectionModal";
 import type { PlanType, IntervalType } from "@/lib/billing/stripe";
 
@@ -52,6 +52,12 @@ export function BillingSection({
 }: BillingSectionProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
+
+  // Reset loading state when component mounts or subscription changes
+  // This handles the case where user hits back from Stripe checkout
+  useEffect(() => {
+    setIsLoading(false);
+  }, [subscription]);
 
   // Handle modal close - ensure state is reset
   // Button visibility is based on subscription status, not modal state
@@ -186,12 +192,6 @@ export function BillingSection({
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
         <p className="text-sm font-medium text-zinc-900">No active subscription</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          {hasCustomer 
-            ? "Your subscription may have expired or been canceled."
-            : "Start your 14-day free trial. No credit card required."
-          }
-        </p>
         {/* Always show "Start Free Trial" when no subscription exists, regardless of hasCustomer */}
         {/* This handles the edge case where user hits back from Stripe checkout */}
         <button
