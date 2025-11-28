@@ -326,10 +326,44 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 
 ---
 
+## Preventing Error Cascades
+
+### Lesson: Always Run Type Check Before Pushing
+
+**Problem:** Multiple TypeScript errors can accumulate across commits, causing a cascade of build failures that are difficult to debug.
+
+**Solution:**
+1. Add `type-check` script to `package.json`: `"type-check": "tsc --noEmit"`
+2. Run `npm run type-check` before every commit/push
+3. Set up pre-commit hooks to automatically run type checks
+4. Add type checking to CI/CD pipeline before build step
+
+**Example:**
+```json
+// package.json
+{
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  }
+}
+```
+
+**Why it matters:**
+- Catches errors locally before they reach CI/CD
+- Prevents error cascades where one error masks others
+- Faster feedback loop (seconds vs minutes)
+- Reduces debugging time
+
+**Validation:** Created `BUILD_ERROR_TRIAGE.md` documenting the error cascade and mitigation strategies.
+
+---
+
 ## Future Considerations
 
 - Consider creating a shared types file for commonly used extended types (e.g., `StripeInvoiceWithSubscription`)
 - Set up stricter TypeScript configuration to catch these issues earlier
-- Consider using a type-checking CI step before builds
+- Add pre-commit hooks with husky and lint-staged
+- Set up CI/CD type checking step before builds
 - Document any third-party library type limitations in this file
+- Regular type audits to catch duplicate definitions and inconsistencies
 
