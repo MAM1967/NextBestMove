@@ -113,28 +113,28 @@ export function EmailPreferencesSection({
           description="Daily at 8am in your timezone."
           enabled={preferences.email_morning_plan && !isUnsubscribed}
           onToggle={() => handleToggle("email_morning_plan")}
-          disabled={isSaving || isUnsubscribed}
+          disabled={isSaving}
         />
         <EmailPreferenceToggle
           label="Fast win reminder"
           description="Nudge at 2pm if today's fast win is untouched."
           enabled={preferences.email_fast_win_reminder && !isUnsubscribed}
           onToggle={() => handleToggle("email_fast_win_reminder")}
-          disabled={isSaving || isUnsubscribed}
+          disabled={isSaving}
         />
         <EmailPreferenceToggle
           label="Follow-up alerts"
           description="Reminder when replies are overdue."
           enabled={preferences.email_follow_up_alerts && !isUnsubscribed}
           onToggle={() => handleToggle("email_follow_up_alerts")}
-          disabled={isSaving || isUnsubscribed}
+          disabled={isSaving}
         />
         <EmailPreferenceToggle
           label="Weekly summary"
           description="Sunday night recap."
           enabled={preferences.email_weekly_summary && !isUnsubscribed}
           onToggle={() => handleToggle("email_weekly_summary")}
-          disabled={isSaving || isUnsubscribed}
+          disabled={isSaving}
         />
       </div>
       <div className="pt-2 border-t border-zinc-200">
