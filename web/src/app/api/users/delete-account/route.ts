@@ -32,17 +32,19 @@ export async function DELETE(request: Request) {
     await supabase.from("weekly_summaries").delete().eq("user_id", userId);
 
     // 3. Daily plan actions (junction table)
-    await supabase
-      .from("daily_plan_actions")
-      .delete()
-      .in(
-        "daily_plan_id",
-        supabase
-          .from("daily_plans")
-          .select("id")
-          .eq("user_id", userId)
-          .then(({ data }) => data?.map((p) => p.id) || [])
-      );
+    // First get all daily plan IDs for this user
+    const { data: dailyPlans } = await supabase
+      .from("daily_plans")
+      .select("id")
+      .eq("user_id", userId);
+
+    if (dailyPlans && dailyPlans.length > 0) {
+      const planIds = dailyPlans.map((p) => p.id);
+      await supabase
+        .from("daily_plan_actions")
+        .delete()
+        .in("daily_plan_id", planIds);
+    }
 
     // 4. Daily plans
     await supabase.from("daily_plans").delete().eq("user_id", userId);
