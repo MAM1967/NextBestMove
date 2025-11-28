@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/billing/stripe";
 import { handleSubscriptionUpdated } from "../webhook/route";
+import Stripe from "stripe";
 
 /**
  * Manual sync endpoint to fetch subscription from Stripe and update database
@@ -56,7 +57,7 @@ export async function POST() {
     const activeSub = subscriptions.data.find(
       (s) => s.status === "active" || s.status === "trialing"
     );
-    const subscription = activeSub || subscriptions.data[0];
+    const subscription: Stripe.Subscription = activeSub || subscriptions.data[0];
 
     // Get billing customer ID
     const { data: billingCustomer } = await supabase
