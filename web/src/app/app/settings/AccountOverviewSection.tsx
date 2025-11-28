@@ -127,13 +127,7 @@ export function AccountOverviewSection({
         <div>
           <div className="text-zinc-500 mb-2">Timezone</div>
           {isEditingTimezone ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleTimezoneChange();
-              }}
-              className="space-y-3"
-            >
+            <div className="space-y-3">
               <select
                 value={selectedTimezone}
                 onChange={(e) => setSelectedTimezone(e.target.value)}
@@ -154,9 +148,10 @@ export function AccountOverviewSection({
               )}
               <div className="flex gap-2">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleTimezoneChange}
                   disabled={isSaving}
-                  className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
@@ -169,12 +164,12 @@ export function AccountOverviewSection({
                     setSuccess(null);
                   }}
                   disabled={isSaving}
-                  className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
               </div>
-            </form>
+            </div>
           ) : (
             <div className="flex items-center justify-between">
               <div className="font-medium text-zinc-900">
