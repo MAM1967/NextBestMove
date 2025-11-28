@@ -57,7 +57,7 @@ export async function POST() {
     const activeSub = subscriptions.data.find(
       (s) => s.status === "active" || s.status === "trialing"
     );
-    const subscription: Stripe.Subscription = activeSub || subscriptions.data[0];
+    const subscription = (activeSub || subscriptions.data[0]) as Stripe.Subscription;
 
     // Get billing customer ID
     const { data: billingCustomer } = await supabase
