@@ -1,17 +1,18 @@
 -- Verify BYOK setup for a user
 -- Replace email with your email
 
+-- First query: Show all BYOK fields
 SELECT 
   u.email,
-  COALESCE(u.ai_provider, 'system (default)') as ai_provider,
-  COALESCE(u.ai_model, 'gpt-4o-mini (default)') as ai_model,
+  u.ai_provider,
+  u.ai_model,
   CASE 
     WHEN u.ai_api_key_encrypted IS NOT NULL THEN 'Key saved (encrypted)'
     ELSE 'No key saved'
   END as key_status,
   CASE 
     WHEN u.ai_api_key_encrypted IS NOT NULL THEN LENGTH(u.ai_api_key_encrypted)::text || ' characters'
-    ELSE 'N/A'
+    ELSE NULL
   END as encrypted_key_length
 FROM users u
 WHERE u.email = 'mcddsl+test1@gmail.com'; -- CHANGE THIS EMAIL
