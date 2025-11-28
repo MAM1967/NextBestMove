@@ -23,6 +23,103 @@ type DayAvailability = {
 };
 
 /**
+ * Get date string (YYYY-MM-DD) for a date in a specific timezone
+ */
+function getDateInTimezone(date: Date, timezone: string): string {
+  return date.toLocaleDateString("en-CA", { timeZone: timezone });
+}
+
+/**
+ * Get the date (YYYY-MM-DD) that an event falls on in a specific timezone
+ */
+function getEventDate(eventStart: string, timezone: string): string {
+  const date = new Date(eventStart);
+  return getDateInTimezone(date, timezone);
+}
+
+/**
+ * Check if an event overlaps with working hours (9 AM - 5 PM) in a specific timezone
+ */
+function eventInWorkingHours(event: CalendarEvent, dateStr: string, timezone: string): boolean {
+  const eventStart = new Date(event.start);
+  const eventEnd = new Date(event.end);
+  
+  // Get the event's date in the user's timezone
+  const eventDate = getEventDate(event.start, timezone);
+  if (eventDate !== dateStr) {
+    return false; // Event is on a different day
+  }
+  
+  // Get the time components in the user's timezone
+  const startTime = eventStart.toLocaleTimeString("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const endTime = eventEnd.toLocaleTimeString("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  
+  const startHour = parseInt(startTime.split(":")[0]);
+  const endHour = parseInt(endTime.split(":")[0]);
+  
+  // Check if event overlaps with 9 AM - 5 PM
+  return (startHour < 17 && endHour >= 9) || (startHour >= 9 && startHour < 17);
+}
+
+/**
+ * Calculate busy minutes for an event within working hours (9 AM - 5 PM) in user's timezone
+ */
+function getBusyMinutes(event: CalendarEvent, dateStr: string, timezone: string): number {
+  const eventStart = new Date(event.start);
+  const eventEnd = new Date(event.end);
+  
+  // Get event times in the user's timezone
+  const startHour = parseInt(eventStart.toLocaleString("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  }).split(",")[1]?.trim().split(":")[0] || "0");
+  const endHour = parseInt(eventEnd.toLocaleString("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  }).split(",")[1]?.trim().split(":")[0] || "0");
+  
+  const startMin = parseInt(eventStart.toLocaleString("en-US", {
+    timeZone: timezone,
+    minute: "2-digit",
+    hour12: false,
+  }).split(",")[1]?.trim().split(":")[1] || "0");
+  const endMin = parseInt(eventEnd.toLocaleString("en-US", {
+    timeZone: timezone,
+    minute: "2-digit",
+    hour12: false,
+  }).split(",")[1]?.trim().split(":")[1] || "0");
+  
+  // Working hours: 9:00 AM (540 minutes) to 5:00 PM (1020 minutes)
+  const workStartMin = 9 * 60; // 540 minutes
+  const workEndMin = 17 * 60; // 1020 minutes
+  
+  const eventStartMin = parseInt(startHour) * 60 + parseInt(startMin);
+  const eventEndMin = parseInt(endHour) * 60 + parseInt(endMin);
+  
+  // Calculate overlap
+  const overlapStart = Math.max(eventStartMin, workStartMin);
+  const overlapEnd = Math.min(eventEndMin, workEndMin);
+  
+  if (overlapStart >= overlapEnd) {
+    return 0;
+  }
+  
+  return overlapEnd - overlapStart;
+}
+
+/**
  * GET /api/calendar/events?days=7
  * 
  * Returns calendar events for the next N days (default 7) with availability breakdown.
@@ -75,28 +172,33 @@ export async function GET(request: Request) {
 
     // Calculate today in user's timezone
     const now = new Date();
-    const todayStr = now.toLocaleDateString("en-CA", { timeZone: timezone }); // YYYY-MM-DD
+    const todayStr = getDateInTimezone(now, timezone);
     const [year, month, day] = todayStr.split("-").map(Number);
     
-    // Create start date (today at 00:00:00 in user's timezone, converted to UTC)
-    const todayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    // Create end date (today + days at 23:59:59 in user's timezone, converted to UTC)
-    const endDate = new Date(Date.UTC(year, month - 1, day + days, 0, 0, 0, 0));
+    // Create start and end dates for fetching events
+    // Fetch from start of today to end of (today + days) in user's timezone
+    const startDate = new Date(`${todayStr}T00:00:00`);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + days);
+    endDate.setHours(23, 59, 59, 999);
 
     let events: CalendarEvent[] = [];
 
     if (connection.provider === "google") {
-      events = await fetchGoogleEvents(accessToken, todayStart, endDate, timezone);
+      events = await fetchGoogleEvents(accessToken, startDate, endDate, timezone);
     } else if (connection.provider === "outlook") {
-      events = await fetchOutlookEvents(accessToken, todayStart, endDate, timezone);
+      events = await fetchOutlookEvents(accessToken, startDate, endDate, timezone);
     }
 
     // Group events by date and calculate availability
     const daysData: DayAvailability[] = [];
     for (let i = 0; i < days; i++) {
-      // Calculate date in user's timezone
-      const dateInTz = new Date(year, month - 1, day + i);
-      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
+      // Calculate date string for this day in user's timezone
+      const date = new Date(year, month - 1, day + i);
+      const dateStr = getDateInTimezone(date, timezone);
+      
+      // Check if this is a weekend and user excludes weekends
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
@@ -104,42 +206,19 @@ export async function GET(request: Request) {
         continue;
       }
 
-      // Create date string (YYYY-MM-DD) for this day
-      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day + i).padStart(2, "0")}`;
-
-      // Calculate day boundaries in user's timezone (9 AM - 5 PM)
-      const dayStartLocal = new Date(year, month - 1, day + i, 9, 0, 0, 0);
-      const dayEndLocal = new Date(year, month - 1, day + i, 17, 0, 0, 0);
-      
-      // Convert to UTC for comparison with event times
-      // Get timezone offset for this date
-      const tzOffset = dayStartLocal.getTimezoneOffset() * 60000; // offset in milliseconds
-      const dayStartUTC = new Date(dayStartLocal.getTime() - tzOffset);
-      const dayEndUTC = new Date(dayEndLocal.getTime() - tzOffset);
-      
-      const dayStartISO = dayStartUTC.toISOString();
-      const dayEndISO = dayEndUTC.toISOString();
-
-      // Filter events that overlap with this day's working hours
+      // Filter events for this day that fall within working hours
       const dayEvents = events.filter((event) => {
-        // Events come as ISO strings, compare directly
-        return (
-          (event.start >= dayStartISO && event.start < dayEndISO) ||
-          (event.end > dayStartISO && event.end <= dayEndISO) ||
-          (event.start < dayStartISO && event.end > dayEndISO)
-        );
+        const eventDate = getEventDate(event.start, timezone);
+        if (eventDate !== dateStr) {
+          return false;
+        }
+        return eventInWorkingHours(event, dateStr, timezone);
       });
 
       // Calculate busy minutes (only within 9 AM - 5 PM)
       let busyMinutes = 0;
       for (const event of dayEvents) {
-        const eventStart = new Date(event.start);
-        const eventEnd = new Date(event.end);
-        const workStart = new Date(Math.max(eventStart.getTime(), dayStartUTC.getTime()));
-        const workEnd = new Date(Math.min(eventEnd.getTime(), dayEndUTC.getTime()));
-        if (workStart < workEnd) {
-          busyMinutes += (workEnd.getTime() - workStart.getTime()) / (1000 * 60);
-        }
+        busyMinutes += getBusyMinutes(event, dateStr, timezone);
       }
 
       const totalWorkingMinutes = 480; // 8 hours * 60 minutes
