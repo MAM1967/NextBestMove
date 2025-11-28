@@ -219,14 +219,15 @@ export default async function SettingsPage() {
         </SectionCard>
       </div>
 
-      {calendarStatus.connected && (
+      {/* Calendar Events View - Hidden but available for future use (e.g., work hours implementation) */}
+      {/* {calendarStatus.connected && (
         <SectionCard
           title="Calendar events & availability"
           description="View your upcoming events and how they affect your daily action capacity."
         >
           <CalendarEventsView />
         </SectionCard>
-      )}
+      )} */}
 
       <SectionCard
         title="Billing & subscription"
