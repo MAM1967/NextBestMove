@@ -26,8 +26,14 @@ export function AccountDeletionSection() {
       if (!response.ok) {
         const data = await response.json();
         const errorMessage = data.error || "Failed to delete account";
+        const errorDetails = data.details || data.message || "";
         console.error("Delete account error:", data);
-        throw new Error(errorMessage);
+        
+        // Show detailed error message
+        const fullErrorMessage = errorDetails 
+          ? `${errorMessage}: ${errorDetails}`
+          : errorMessage;
+        throw new Error(fullErrorMessage);
       }
 
       const result = await response.json();
