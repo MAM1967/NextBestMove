@@ -165,19 +165,33 @@ export async function handleSubscriptionUpdated(
   else if (subscription.status === "active") status = "active";
 
   // Upsert subscription
+  // Use type guards to safely access Stripe.Subscription properties
+  const currentPeriodEnd = subscription && 
+    'current_period_end' in subscription && 
+    typeof subscription.current_period_end === 'number'
+    ? new Date(subscription.current_period_end * 1000).toISOString()
+    : new Date().toISOString(); // Fallback to now if not available
+
+  const cancelAtPeriodEnd = subscription && 
+    'cancel_at_period_end' in subscription
+    ? subscription.cancel_at_period_end || false
+    : false;
+
+  const trialEndsAt = subscription && 
+    'trial_end' in subscription &&
+    subscription.trial_end
+    ? new Date(subscription.trial_end * 1000).toISOString()
+    : null;
+
   const { error: upsertError } = await supabase.from("billing_subscriptions").upsert(
     {
       billing_customer_id: billingCustomerId,
       stripe_subscription_id: subscription.id,
       stripe_price_id: priceId,
       status: status,
-      current_period_end: new Date(
-        subscription.current_period_end * 1000
-      ).toISOString(),
-      cancel_at_period_end: subscription.cancel_at_period_end || false,
-      trial_ends_at: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000).toISOString()
-        : null,
+      current_period_end: currentPeriodEnd,
+      cancel_at_period_end: cancelAtPeriodEnd,
+      trial_ends_at: trialEndsAt,
       latest_invoice_url: subscription.latest_invoice
         ? typeof subscription.latest_invoice === "string"
           ? null
