@@ -9,7 +9,10 @@ SELECT
     WHEN u.ai_api_key_encrypted IS NOT NULL THEN 'Key saved (encrypted)'
     ELSE 'No key saved'
   END as key_status,
-  LENGTH(u.ai_api_key_encrypted) as encrypted_key_length
+  CASE 
+    WHEN u.ai_api_key_encrypted IS NOT NULL THEN LENGTH(u.ai_api_key_encrypted)::text
+    ELSE 'N/A'
+  END as encrypted_key_length
 FROM users u
 WHERE u.email = 'mcddsl+test1@gmail.com'; -- CHANGE THIS EMAIL
 
