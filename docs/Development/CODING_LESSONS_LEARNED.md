@@ -8,6 +8,7 @@ This document captures coding lessons, best practices, and solutions to common p
 - [Stripe TypeScript Types](#stripe-typescript-types)
 - [React Component Props](#react-component-props)
 - [Supabase Client Types](#supabase-client-types)
+- [Avoid Duplicate Type Definitions](#avoid-duplicate-type-definitions)
 
 ---
 
@@ -241,6 +242,52 @@ function myFunction(supabase: Awaited<ReturnType<typeof createClient>>) {
 ```
 
 **Validation:** Fixed in `generateContentPrompts` function.
+
+---
+
+## Avoid Duplicate Type Definitions
+
+### Lesson: Don't Define the Same Type in Multiple Files
+
+**Problem:** Defining the same type in multiple files with different structures causes TypeScript errors: "Two different types with this name exist, but they are unrelated."
+
+**Solution:**
+1. Define types in a shared location (e.g., `types.ts` file)
+2. Import and extend shared types rather than redefining them
+3. Use intersection types (`&`) to add additional properties
+
+**Example:**
+```typescript
+// ❌ Wrong - duplicate type definitions
+// page.tsx
+type StaleAction = {
+  id: string;
+  action_type: string;
+  // ... minimal fields
+};
+
+// StaleActionsSection.tsx
+type StaleAction = Action & {
+  days_old: number;
+};
+// TypeScript error: Two different types with this name exist
+
+// ✅ Correct - use shared type definition
+// page.tsx
+import type { Action } from "../actions/types";
+type StaleAction = Action & {
+  days_old: number;
+};
+
+// StaleActionsSection.tsx
+import type { Action } from "../actions/types";
+type StaleAction = Action & {
+  days_old: number;
+};
+// Both files use the same type definition
+```
+
+**Validation:** Fixed duplicate `StaleAction` type definitions in `insights/page.tsx` and `insights/StaleActionsSection.tsx` by using the shared `Action` type from `actions/types.ts`.
 
 ---
 
