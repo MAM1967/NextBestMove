@@ -57,6 +57,13 @@ export async function POST() {
     const activeSub = subscriptions.data.find(
       (s) => s.status === "active" || s.status === "trialing"
     );
+    // Ensure we have a subscription and type it correctly
+    if (!subscriptions.data[0]) {
+      return NextResponse.json(
+        { error: "No valid subscription found" },
+        { status: 404 }
+      );
+    }
     const subscription = (activeSub || subscriptions.data[0]) as Stripe.Subscription;
 
     // Get billing customer ID
@@ -87,14 +94,17 @@ export async function POST() {
 
     console.log("Saved subscription:", savedSubscription);
 
+    // Extract current_period_end with proper typing
+    const currentPeriodEnd = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : null;
+
     return NextResponse.json({
       success: true,
       subscription: {
         id: subscription.id,
         status: subscription.status,
-        current_period_end: new Date(
-          subscription.current_period_end * 1000
-        ).toISOString(),
+        current_period_end: currentPeriodEnd,
       },
       saved: savedSubscription ? true : false,
     });
