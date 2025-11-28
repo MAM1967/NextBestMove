@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { generateWinPost, generateInsightPost } from "@/lib/ai/content-prompts";
 
 /**
  * POST /api/weekly-summaries/generate
- * 
+ *
  * Generates a weekly summary for a given week.
  * Can be called manually or by a cron job.
- * 
+ *
  * Query params:
  * - week_start_date (optional): YYYY-MM-DD format, defaults to Monday of current week
  * - user_id (optional): defaults to authenticated user
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const weekStartParam = searchParams.get("week_start_date");
-    
+
     // Calculate week start (Monday)
     let weekStartDate: Date;
     if (weekStartParam) {
@@ -144,7 +145,7 @@ export async function POST(request: Request) {
     if (insertError) {
       console.error("Error creating weekly summary:", insertError);
       return NextResponse.json(
-        { 
+        {
           error: "Failed to create weekly summary",
           details: insertError.message,
           code: insertError.code,
@@ -160,6 +161,7 @@ export async function POST(request: Request) {
         actionsCompleted,
         replies,
         callsBooked,
+        insightText,
       });
     }
 
@@ -186,7 +188,9 @@ function generateNarrativeSummary(
 
   const parts: string[] = [];
   parts.push(
-    `You completed ${actionsCompleted} action${actionsCompleted !== 1 ? "s" : ""} across ${daysActive} day${daysActive !== 1 ? "s" : ""} this week.`
+    `You completed ${actionsCompleted} action${
+      actionsCompleted !== 1 ? "s" : ""
+    } across ${daysActive} day${daysActive !== 1 ? "s" : ""} this week.`
   );
 
   if (replies > 0) {
@@ -194,7 +198,9 @@ function generateNarrativeSummary(
   }
 
   if (callsBooked > 0) {
-    parts.push(`You booked ${callsBooked} call${callsBooked !== 1 ? "s" : ""}.`);
+    parts.push(
+      `You booked ${callsBooked} call${callsBooked !== 1 ? "s" : ""}.`
+    );
   }
 
   if (replies === 0 && callsBooked === 0 && actionsCompleted > 0) {
@@ -266,6 +272,7 @@ function generateNextWeekFocus(
 }
 
 // Generate content prompts if user completed ≥ 6 actions
+// Uses template + AI phrasing per PRD Section 8.2
 async function generateContentPrompts(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -275,47 +282,45 @@ async function generateContentPrompts(
     actionsCompleted: number;
     replies: number;
     callsBooked: number;
+    insightText?: string;
   }
 ) {
   const prompts: Array<{ type: "WIN_POST" | "INSIGHT_POST"; content: string }> =
     [];
 
-  // Win post prompt
-  if (metrics.actionsCompleted >= 6) {
-    const winParts: string[] = [];
-    if (metrics.callsBooked > 0) {
-      winParts.push(`booked ${metrics.callsBooked} call${metrics.callsBooked !== 1 ? "s" : ""}`);
-    }
-    if (metrics.replies > 0) {
-      winParts.push(
-        `received ${metrics.replies} repl${metrics.replies !== 1 ? "ies" : "y"}`
-      );
-    }
-    if (metrics.actionsCompleted >= 10) {
-      winParts.push(`completed ${metrics.actionsCompleted} actions`);
-    }
-
-    if (winParts.length > 0) {
+  // Generate WIN_POST if there's a win to celebrate
+  // (calls booked, replies received, or high action count)
+  if (
+    metrics.callsBooked > 0 ||
+    metrics.replies > 0 ||
+    metrics.actionsCompleted >= 10
+  ) {
+    const winContent = await generateWinPost(metrics);
+    if (winContent) {
       prompts.push({
         type: "WIN_POST",
-        content: `A small win from last week: ${winParts.join(" and ")}. Here's what changed when I focused on consistent follow-ups...`,
+        content: winContent,
       });
     }
   }
 
-  // Insight post prompt
-  if (metrics.replies > 0 && metrics.actionsCompleted > 0) {
-    const replyRate = Math.round((metrics.replies / metrics.actionsCompleted) * 100);
-    prompts.push({
-      type: "INSIGHT_POST",
-      content: `One insight from recent conversations: follow-ups within 3 days convert ${replyRate >= 20 ? "2x" : "better"}. Here's how I'm approaching it...`,
-    });
+  // Generate INSIGHT_POST if there's an insight to share
+  // (replies received or insight text available)
+  if (metrics.replies > 0 || metrics.insightText) {
+    const insightContent = await generateInsightPost(metrics);
+    if (insightContent) {
+      prompts.push({
+        type: "INSIGHT_POST",
+        content: insightContent,
+      });
+    }
   }
 
-  // Insert prompts
+  // Insert prompts (max 2 per PRD Section 15.1)
   if (prompts.length > 0) {
+    const promptsToInsert = prompts.slice(0, 2); // Ensure max 2 prompts
     await supabase.from("content_prompts").insert(
-      prompts.map((prompt) => ({
+      promptsToInsert.map((prompt) => ({
         user_id: userId,
         weekly_summary_id: weeklySummaryId,
         type: prompt.type,
@@ -325,4 +330,3 @@ async function generateContentPrompts(
     );
   }
 }
-
