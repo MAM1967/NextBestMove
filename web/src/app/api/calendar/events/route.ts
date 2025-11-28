@@ -132,16 +132,17 @@ export async function GET(request: Request) {
     const timezone = userProfile?.timezone || "UTC";
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
-    // Calculate today in user's timezone - this is the key fix
+    // Calculate today in user's timezone
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
     
-    // Create start and end dates for fetching events (in UTC)
-    // Start from beginning of today in user's timezone
-    const startDate = new Date(`${todayStr}T00:00:00`);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + days);
-    endDate.setHours(23, 59, 59, 999);
+    // Parse today's date to get year, month, day in user's timezone
+    const [year, month, day] = todayStr.split("-").map(Number);
+    
+    // Create start and end dates for fetching events
+    // Use UTC to avoid timezone issues when creating dates
+    const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month - 1, day + days, 23, 59, 59));
 
     let events: CalendarEvent[] = [];
 
@@ -153,20 +154,24 @@ export async function GET(request: Request) {
 
     // Group events by date and calculate availability
     const daysData: DayAvailability[] = [];
-    for (let i = 0; i < days; i++) {
+    let daysAdded = 0;
+    let dayOffset = 0;
+    
+    while (daysAdded < days) {
       // Calculate date for this day in user's timezone
-      // Start from today and add i days
-      const date = new Date(now);
-      date.setDate(date.getDate() + i);
-      const dateStr = getDateInTimezone(date, timezone);
+      // Start from today and add dayOffset days
+      const targetDate = new Date(Date.UTC(year, month - 1, day + dayOffset));
+      const dateStr = getDateInTimezone(targetDate, timezone);
       
-      // Check if this is a weekend and user excludes weekends
       // Get day of week in user's timezone
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+      // Create a date object that represents this day at noon in the user's timezone
+      const dateInTz = new Date(targetDate.toLocaleString("en-US", { timeZone: timezone }));
+      const dayOfWeek = dateInTz.getDay(); // 0 = Sunday, 6 = Saturday
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
       if (isWeekend && excludeWeekends) {
-        // Skip weekends if user has excluded them
+        // Skip weekends if user has excluded them, but continue to next day
+        dayOffset++;
         continue;
       }
 
@@ -228,6 +233,9 @@ export async function GET(request: Request) {
         capacity,
         suggestedActionCount,
       });
+      
+      daysAdded++;
+      dayOffset++;
     }
 
     return NextResponse.json({
