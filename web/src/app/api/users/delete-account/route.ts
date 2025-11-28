@@ -173,41 +173,74 @@ export async function DELETE(request: Request) {
     if (serviceRoleKey) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        if (!supabaseUrl) {
+          throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
+        }
+
         console.log("Creating admin client with URL:", supabaseUrl);
+        console.log("Service role key starts with:", serviceRoleKey.substring(0, 10));
         
-        const adminClient = createAdminClient(
-          supabaseUrl!,
-          serviceRoleKey,
-          {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false,
-            },
-          }
-        );
+        // Create admin client with service role key
+        // This bypasses RLS and allows admin operations
+        const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        });
 
         console.log("Attempting to delete auth user:", userId);
+        
+        // Use the admin API to delete the auth user
+        // This is the correct method per Supabase docs
         const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
           userId
         );
 
         if (authDeleteError) {
           console.error("❌ Error deleting auth user:", authDeleteError);
-          console.error("Error details:", JSON.stringify(authDeleteError, null, 2));
-          // Don't throw - users table deletion is the main requirement
-          // Auth user deletion failure is logged but doesn't block success
+          console.error("Error code:", authDeleteError.status);
+          console.error("Error message:", authDeleteError.message);
+          console.error("Full error:", JSON.stringify(authDeleteError, null, 2));
+          
+          // Return error so user knows deletion failed
+          return NextResponse.json(
+            { 
+              error: "Failed to delete auth user",
+              details: authDeleteError.message,
+              userId 
+            },
+            { status: 500 }
+          );
         } else {
           console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
           console.log("Delete response:", deleteData);
         }
       } catch (authError) {
         console.error("❌ Exception deleting auth user:", authError);
+        console.error("Error type:", authError instanceof Error ? authError.constructor.name : typeof authError);
+        console.error("Error message:", authError instanceof Error ? authError.message : String(authError));
         console.error("Error stack:", authError instanceof Error ? authError.stack : 'No stack');
-        // Continue - users table deletion is the critical part
+        
+        // Return error so user knows deletion failed
+        return NextResponse.json(
+          { 
+            error: "Failed to delete auth user",
+            details: authError instanceof Error ? authError.message : String(authError),
+            userId 
+          },
+          { status: 500 }
+        );
       }
     } else {
-      console.warn("⚠️ SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
-      console.warn("User will be able to sign in again, and ensureUserProfile will recreate the profile");
+      console.error("❌ SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
+      return NextResponse.json(
+        { 
+          error: "Service role key not configured",
+          message: "Cannot delete auth user. User will be able to sign in again."
+        },
+        { status: 500 }
+      );
     }
 
     // Log deletion (optional - for audit purposes)
