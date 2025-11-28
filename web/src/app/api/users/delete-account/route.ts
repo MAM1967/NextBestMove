@@ -162,8 +162,10 @@ export async function DELETE(request: Request) {
     }
     console.log(`Deleted user profile: ${userDeleteData[0]?.email || userId}`);
 
-    // 10. Delete from Supabase Auth (auth.users)
-    // This requires service role key to delete auth users
+    // 10. Delete from Supabase Auth
+    // Supabase Auth stores users in auth.users (not directly accessible)
+    // We need to use the Admin API to delete the auth user
+    // This prevents the user from signing back in
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (serviceRoleKey) {
       try {
@@ -184,18 +186,18 @@ export async function DELETE(request: Request) {
 
         if (authDeleteError) {
           console.error("Error deleting auth user:", authDeleteError);
-          // Don't throw - public.users is deleted, which is the main requirement
+          // Don't throw - users table deletion is the main requirement
           // Auth user deletion failure is logged but doesn't block success
         } else {
-          console.log(`✅ Auth user ${userId} deleted from auth.users`);
+          console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
         }
       } catch (authError) {
         console.error("Error creating admin client or deleting auth user:", authError);
-        // Continue - public.users deletion is the critical part
+        // Continue - users table deletion is the critical part
       }
     } else {
-      console.warn("SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth.users record");
-      console.warn("User will be able to sign in again, but public.users is deleted");
+      console.warn("SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
+      console.warn("User will be able to sign in again, and ensureUserProfile will recreate the profile");
     }
 
     // Log deletion (optional - for audit purposes)
