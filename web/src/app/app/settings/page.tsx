@@ -5,6 +5,7 @@ import { CalendarConnectionSection } from "./CalendarConnectionSection";
 import { CalendarEventsView } from "./CalendarEventsView";
 import { BillingSection } from "./BillingSection";
 import { WeekendPreferenceToggle } from "./WeekendPreferenceToggle";
+import { ExportDataButton } from "./ExportDataButton";
 
 type CalendarConnection = {
   provider: string;
@@ -316,19 +317,13 @@ export default async function SettingsPage() {
 
       <SectionCard
         title="Data export & backups"
-        description="Download your pins, actions, and summaries. Endpoint is stubbed until implemented."
+        description="Download your pins, actions, and summaries as JSON."
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-zinc-600">
-            JSON export will include pins, actions, plans, and summaries.
+            JSON export includes pins, actions, plans, and summaries.
           </div>
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-600"
-          >
-            Export JSON (coming soon)
-          </button>
+          <ExportDataButton />
         </div>
       </SectionCard>
     </div>
