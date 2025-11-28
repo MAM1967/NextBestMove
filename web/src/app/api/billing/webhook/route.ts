@@ -78,13 +78,15 @@ export async function POST(request: Request) {
       }
 
       case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
+        // event.data.object may have expanded properties not in the base Invoice type
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
         await handleInvoicePaid(supabase, invoice);
         break;
       }
 
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        // event.data.object may have expanded properties not in the base Invoice type
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
         await handleInvoicePaymentFailed(supabase, invoice);
         break;
       }
@@ -229,15 +231,16 @@ async function handleSubscriptionDeleted(
     .eq("stripe_subscription_id", subscription.id);
 }
 
-async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
+async function handleInvoicePaid(
+  supabase: any, 
+  invoice: Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
+) {
   // Invoice.subscription can be a string ID or a Subscription object
-  // Access using bracket notation to avoid TypeScript strict checking
-  const subscription = (invoice as any).subscription;
-  if (!subscription) return;
+  if (!invoice.subscription) return;
   
-  const subscriptionId = typeof subscription === 'string' 
-    ? subscription 
-    : subscription.id;
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription.id;
   if (!subscriptionId) return;
 
   // Get subscription from Stripe to update our records
@@ -247,16 +250,14 @@ async function handleInvoicePaid(supabase: any, invoice: Stripe.Invoice) {
 
 async function handleInvoicePaymentFailed(
   supabase: any,
-  invoice: Stripe.Invoice
+  invoice: Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
 ) {
   // Invoice.subscription can be a string ID or a Subscription object
-  // Access using bracket notation to avoid TypeScript strict checking
-  const subscription = (invoice as any).subscription;
-  if (!subscription) return;
+  if (!invoice.subscription) return;
   
-  const subscriptionId = typeof subscription === 'string' 
-    ? subscription 
-    : subscription.id;
+  const subscriptionId = typeof invoice.subscription === 'string' 
+    ? invoice.subscription 
+    : invoice.subscription.id;
   if (!subscriptionId) return;
 
   // Update subscription status to past_due
