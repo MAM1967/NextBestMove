@@ -96,7 +96,9 @@ export default async function SettingsPage() {
     await Promise.all([
       supabase
         .from("users")
-        .select("email, name, timezone, streak_count, calendar_connected, exclude_weekends")
+        .select(
+          "email, name, timezone, streak_count, calendar_connected, exclude_weekends"
+        )
         .eq("id", user.id)
         .single(),
       fetchCalendarStatus(supabase, user.id),
@@ -196,14 +198,21 @@ export default async function SettingsPage() {
         </SectionCard>
 
         <SectionCard
-          title="Calendar connection"
-          description="Used to size your daily plan once OAuth flows are enabled."
+          title="Calendar connection and preferences"
+          description="Connect your calendar and configure planning preferences."
         >
-          <CalendarConnectionSection
-            connections={connections}
-            connected={calendarStatus.connected}
-            status={calendarStatus.status || "disconnected"}
-          />
+          <div className="space-y-4">
+            <CalendarConnectionSection
+              connections={connections}
+              connected={calendarStatus.connected}
+              status={calendarStatus.status || "disconnected"}
+            />
+            <div className="border-t border-zinc-200 pt-4">
+              <WeekendPreferenceToggle
+                excludeWeekends={profile?.exclude_weekends ?? false}
+              />
+            </div>
+          </div>
         </SectionCard>
       </div>
 
@@ -251,15 +260,6 @@ export default async function SettingsPage() {
             enabled
           />
         </div>
-      </SectionCard>
-
-      <SectionCard
-        title="Planning preferences"
-        description="Control when and how daily plans are generated."
-      >
-        <WeekendPreferenceToggle
-          excludeWeekends={profile?.exclude_weekends ?? false}
-        />
       </SectionCard>
 
       <SectionCard
