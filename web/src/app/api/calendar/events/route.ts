@@ -183,42 +183,37 @@ export async function GET(request: Request) {
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
     // Calculate today in user's timezone
-    // CRITICAL: Get the current date/time in the user's timezone, not server timezone
+    // CRITICAL: Get the current moment, then format it in user's timezone
     const now = new Date();
     const todayStr = getDateInTimezone(now, timezone);
     
-    // Parse today's date to create a date object at midnight in the user's timezone
-    // We need to create a date that represents midnight in the user's timezone
-    const [year, month, day] = todayStr.split("-").map(Number);
+    // For API calls, we need to create Date objects that represent the correct time range
+    // in the user's timezone. The Google/Outlook APIs accept ISO strings and timezone parameters.
+    // We'll create dates representing the start/end of the range in the user's timezone.
     
-    // Create a date string that represents midnight in the user's timezone
-    // Use Intl to format the date with timezone, then parse it back
-    const midnightInTz = new Date(
-      new Intl.DateTimeFormat("en-CA", {
-        timeZone: timezone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      }).format(now).replace(/(\d{4})-(\d{2})-(\d{2}), (\d{2}):(\d{2}):(\d{2})/, "$1-$2-$3T$4:$5:$6")
-    );
+    // Get current date/time components in user's timezone
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
     
-    // Actually, simpler approach: create date at noon in user's timezone, then set to midnight
-    // Better: use the date string directly and create a date at midnight UTC, then adjust
-    // Actually, the simplest: create startDate from todayStr at 00:00:00 in user's timezone
-    // We'll use a different approach - create the date string and let the API handle timezone
+    const todayParts = formatter.formatToParts(now);
+    const year = todayParts.find(p => p.type === "year")?.value;
+    const month = todayParts.find(p => p.type === "month")?.value;
+    const day = todayParts.find(p => p.type === "day")?.value;
     
-    // For API calls, we need ISO strings. Create start of today in user's timezone
-    // Format: YYYY-MM-DDTHH:mm:ss with timezone offset
-    const startDateStr = `${todayStr}T00:00:00`;
-    // Create date object - this will be interpreted in local timezone, but we'll use ISO for API
+    // Create start date: today at 00:00:00 in user's timezone
+    // We'll create an ISO string, but the API will interpret it with the timezone parameter
+    const startDateStr = `${year}-${month}-${day}T00:00:00`;
     const startDate = new Date(startDateStr);
     
-    // For the API, we need to pass the timezone-aware start/end
-    // Calculate end date: today + days + 2 (buffer for weekends)
+    // For end date, calculate the last day we need (today + days + 2 buffer for weekends)
     const endDateStr = addDaysInTimezone(now, days + 2, timezone);
     const endDate = new Date(`${endDateStr}T23:59:59`);
 
