@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { fetchCalendarStatus } from "@/lib/calendar/status";
 import { CalendarConnectionSection } from "./CalendarConnectionSection";
+import { CalendarEventsView } from "./CalendarEventsView";
 import { BillingSection } from "./BillingSection";
 
 type CalendarConnection = {
@@ -204,6 +205,15 @@ export default async function SettingsPage() {
           />
         </SectionCard>
       </div>
+
+      {calendarStatus.connected && (
+        <SectionCard
+          title="Calendar events & availability"
+          description="View your upcoming events and how they affect your daily action capacity."
+        >
+          <CalendarEventsView />
+        </SectionCard>
+      )}
 
       <SectionCard
         title="Billing & subscription"
