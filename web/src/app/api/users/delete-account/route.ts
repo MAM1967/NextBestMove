@@ -27,14 +27,16 @@ export async function DELETE(request: Request) {
     // Delete all user data in order (respecting foreign key constraints)
     // Check for errors at each step
     // 1. Content prompts (references weekly_summaries)
-    const { error: contentPromptsError } = await supabase
+    const { data: contentPromptsData, error: contentPromptsError } = await supabase
       .from("content_prompts")
       .delete()
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .select();
     if (contentPromptsError) {
       console.error("Error deleting content prompts:", contentPromptsError);
       throw contentPromptsError;
     }
+    console.log(`Deleted ${contentPromptsData?.length || 0} content prompts`);
 
     // 2. Weekly summaries
     const { error: weeklySummariesError } = await supabase
@@ -143,14 +145,21 @@ export async function DELETE(request: Request) {
     }
 
     // 9. User profile (last, as other tables may reference it)
-    const { error: userDeleteError } = await supabase
+    const { data: userDeleteData, error: userDeleteError } = await supabase
       .from("users")
       .delete()
-      .eq("id", userId);
+      .eq("id", userId)
+      .select();
     if (userDeleteError) {
       console.error("Error deleting user profile:", userDeleteError);
+      console.error("User ID:", userId);
       throw userDeleteError;
     }
+    if (!userDeleteData || userDeleteData.length === 0) {
+      console.error("User deletion returned no rows - user may not exist or RLS blocked deletion");
+      throw new Error("User deletion failed - no rows deleted. Check RLS policies.");
+    }
+    console.log(`Deleted user profile: ${userDeleteData[0]?.email || userId}`);
 
     // 10. Delete from Supabase Auth
     // Note: This requires service role key. We'll use the admin API
@@ -167,19 +176,30 @@ export async function DELETE(request: Request) {
     console.log(`User account deleted: ${userId} at ${new Date().toISOString()}`);
 
     // Verify deletion by checking if user still exists
-    const { data: verifyUser } = await supabase
+    // Use a fresh query to ensure we're not seeing cached data
+    const { data: verifyUser, error: verifyError } = await supabase
       .from("users")
       .select("id")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
-    if (verifyUser) {
-      console.error("User still exists after deletion attempt!");
+    if (verifyError) {
+      console.error("Error verifying deletion:", verifyError);
+      // If we get an error, assume deletion worked (user might not exist)
+    } else if (verifyUser) {
+      console.error("User still exists after deletion attempt! User ID:", userId);
+      console.error("Verification query returned:", verifyUser);
       return NextResponse.json(
-        { error: "User deletion failed - user still exists in database" },
+        { 
+          error: "User deletion failed - user still exists in database",
+          userId,
+          details: "The user record was not deleted. Check RLS policies and foreign key constraints."
+        },
         { status: 500 }
       );
     }
+
+    console.log(`✅ User ${userId} successfully deleted from public.users`);
 
     return NextResponse.json({ 
       success: true,
