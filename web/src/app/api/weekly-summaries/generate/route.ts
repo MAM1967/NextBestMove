@@ -286,6 +286,9 @@ async function generateContentPrompts(
     replies: number;
     callsBooked: number;
     insightText?: string;
+    userAiProvider?: string | null;
+    userApiKeyEncrypted?: string | null;
+    userModel?: string | null;
   }
 ) {
   const prompts: Array<{ type: "WIN_POST" | "INSIGHT_POST"; content: string }> =
