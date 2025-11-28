@@ -86,11 +86,15 @@ export async function getSubscriptionInfo(
     : null;
 
   // Determine plan from metadata
+  // Note: Internal type uses "professional" (matches Stripe), but metadata uses "premium" as display name
   let plan: PlanType = "none";
   if (subscription.metadata) {
+    const planType = (subscription.metadata as any)?.plan_type?.toLowerCase();
     const planName = (subscription.metadata as any)?.plan_name?.toLowerCase();
-    if (planName === "standard") plan = "standard";
-    if (planName === "premium" || planName === "professional") plan = "premium";
+    if (planType === "standard" || planName === "standard") plan = "standard";
+    if (planType === "premium" || planType === "professional" || planName === "premium" || planName === "professional") {
+      plan = "professional"; // Use "professional" for type (matches Stripe), "premium" is just display name
+    }
   }
 
   // Check if in read-only mode
@@ -148,8 +152,8 @@ export async function hasProfessionalFeature(
 ): Promise<boolean> {
   const subscription = await getSubscriptionInfo(userId);
 
-  // Must be on Premium plan
-  if (subscription.plan !== "premium") {
+  // Must be on Premium plan (internal type is "professional")
+  if (subscription.plan !== "professional") {
     return false;
   }
 
@@ -189,7 +193,7 @@ export async function checkPinLimit(userId: string): Promise<{
     .eq("status", "ACTIVE");
 
   const currentCount = count || 0;
-  const limit = subscription.plan === "premium" ? Infinity : 50;
+  const limit = subscription.plan === "professional" ? Infinity : 50;
   const canAdd = currentCount < limit;
 
   return {
