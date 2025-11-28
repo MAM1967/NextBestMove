@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
 import { ensureUserProfile } from "@/lib/supabase/userProfile";
+import { syncCalendarOnLogin } from "@/lib/calendar/sync-on-login";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -22,6 +23,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       .eq("id", user.id)
       .single();
     userProfile = data;
+
+    // Sync calendar on login (non-blocking, runs in background)
+    // This ensures calendar data is fresh for capacity calculations
+    syncCalendarOnLogin(user.id).catch((error) => {
+      // Silently fail - don't block page rendering
+      console.warn("Calendar sync on login failed:", error);
+    });
   }
 
   return (
