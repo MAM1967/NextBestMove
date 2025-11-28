@@ -7,6 +7,7 @@ type EmailPreferences = {
   email_fast_win_reminder: boolean;
   email_follow_up_alerts: boolean;
   email_weekly_summary: boolean;
+  email_unsubscribed?: boolean;
 };
 
 type EmailPreferencesSectionProps = {
@@ -19,11 +20,14 @@ export function EmailPreferencesSection({
   const [preferences, setPreferences] = useState(initialPreferences);
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const isUnsubscribed = preferences.email_unsubscribed ?? false;
 
   const handleToggle = async (key: keyof EmailPreferences) => {
+    // If unsubscribed, re-enable all preferences when toggling any
     const newPreferences = {
       ...preferences,
       [key]: !preferences[key],
+      email_unsubscribed: false, // Re-subscribe when user changes any preference
     };
     setPreferences(newPreferences);
     setIsSaving(true);
@@ -50,6 +54,47 @@ export function EmailPreferencesSection({
     }
   };
 
+  const handleUnsubscribe = async () => {
+    if (!confirm("Are you sure you want to unsubscribe from all emails? You can re-enable them later.")) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/users/email-preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_morning_plan: false,
+          email_fast_win_reminder: false,
+          email_follow_up_alerts: false,
+          email_weekly_summary: false,
+          email_unsubscribed: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to unsubscribe");
+      }
+
+      setPreferences({
+        email_morning_plan: false,
+        email_fast_win_reminder: false,
+        email_follow_up_alerts: false,
+        email_weekly_summary: false,
+        email_unsubscribed: true,
+      });
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (error) {
+      console.error("Error unsubscribing:", error);
+      alert("Failed to unsubscribe. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {success && (
@@ -57,35 +102,50 @@ export function EmailPreferencesSection({
           Preferences saved successfully!
         </div>
       )}
+      {isUnsubscribed && (
+        <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-700">
+          You're unsubscribed from all emails. Toggle any preference above to re-enable emails.
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-2">
         <EmailPreferenceToggle
           label="Morning plan"
           description="Daily at 8am in your timezone."
-          enabled={preferences.email_morning_plan}
+          enabled={preferences.email_morning_plan && !isUnsubscribed}
           onToggle={() => handleToggle("email_morning_plan")}
-          disabled={isSaving}
+          disabled={isSaving || isUnsubscribed}
         />
         <EmailPreferenceToggle
           label="Fast win reminder"
           description="Nudge at 2pm if today's fast win is untouched."
-          enabled={preferences.email_fast_win_reminder}
+          enabled={preferences.email_fast_win_reminder && !isUnsubscribed}
           onToggle={() => handleToggle("email_fast_win_reminder")}
-          disabled={isSaving}
+          disabled={isSaving || isUnsubscribed}
         />
         <EmailPreferenceToggle
           label="Follow-up alerts"
           description="Reminder when replies are overdue."
-          enabled={preferences.email_follow_up_alerts}
+          enabled={preferences.email_follow_up_alerts && !isUnsubscribed}
           onToggle={() => handleToggle("email_follow_up_alerts")}
-          disabled={isSaving}
+          disabled={isSaving || isUnsubscribed}
         />
         <EmailPreferenceToggle
           label="Weekly summary"
           description="Sunday night recap."
-          enabled={preferences.email_weekly_summary}
+          enabled={preferences.email_weekly_summary && !isUnsubscribed}
           onToggle={() => handleToggle("email_weekly_summary")}
-          disabled={isSaving}
+          disabled={isSaving || isUnsubscribed}
         />
+      </div>
+      <div className="pt-2 border-t border-zinc-200">
+        <button
+          type="button"
+          onClick={handleUnsubscribe}
+          disabled={isSaving || isUnsubscribed}
+          className="text-xs font-medium text-zinc-600 hover:text-zinc-900 underline disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isUnsubscribed ? "Unsubscribed from all emails" : "Unsubscribe from all emails"}
+        </button>
       </div>
     </div>
   );

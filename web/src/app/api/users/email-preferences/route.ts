@@ -21,6 +21,7 @@ export async function PATCH(request: Request) {
     email_fast_win_reminder,
     email_follow_up_alerts,
     email_weekly_summary,
+    email_unsubscribed,
   } = body;
 
   // Validate all fields are booleans
@@ -28,7 +29,8 @@ export async function PATCH(request: Request) {
     typeof email_morning_plan !== "boolean" ||
     typeof email_fast_win_reminder !== "boolean" ||
     typeof email_follow_up_alerts !== "boolean" ||
-    typeof email_weekly_summary !== "boolean"
+    typeof email_weekly_summary !== "boolean" ||
+    (email_unsubscribed !== undefined && typeof email_unsubscribed !== "boolean")
   ) {
     return NextResponse.json(
       { error: "All preferences must be boolean values" },
@@ -36,14 +38,20 @@ export async function PATCH(request: Request) {
     );
   }
 
+  const updateData: any = {
+    email_morning_plan,
+    email_fast_win_reminder,
+    email_follow_up_alerts,
+    email_weekly_summary,
+  };
+
+  if (email_unsubscribed !== undefined) {
+    updateData.email_unsubscribed = email_unsubscribed;
+  }
+
   const { error } = await supabase
     .from("users")
-    .update({
-      email_morning_plan,
-      email_fast_win_reminder,
-      email_follow_up_alerts,
-      email_weekly_summary,
-    })
+    .update(updateData)
     .eq("id", user.id);
 
   if (error) {

@@ -101,7 +101,7 @@ export default async function SettingsPage() {
       supabase
         .from("users")
         .select(
-          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary"
+          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
         )
         .eq("id", user.id)
         .single(),
@@ -255,6 +255,7 @@ export default async function SettingsPage() {
             email_fast_win_reminder: profile?.email_fast_win_reminder ?? true,
             email_follow_up_alerts: profile?.email_follow_up_alerts ?? true,
             email_weekly_summary: profile?.email_weekly_summary ?? true,
+            email_unsubscribed: profile?.email_unsubscribed ?? false,
           }}
         />
       </SectionCard>
