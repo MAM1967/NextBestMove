@@ -163,8 +163,11 @@ export async function GET(request: Request) {
     
     while (daysAdded < days) {
       // Calculate date string for this day in user's timezone
-      // Create a date at noon to avoid DST boundary issues
-      const targetDate = new Date(year, month - 1, day + dayOffset, 12, 0, 0);
+      // Start from today (now) and add dayOffset days, then get the date string in user's timezone
+      const targetDate = new Date(now);
+      targetDate.setUTCDate(targetDate.getUTCDate() + dayOffset);
+      // Set to noon UTC to avoid DST issues
+      targetDate.setUTCHours(12, 0, 0, 0);
       const dateStr = getDateInTimezone(targetDate, timezone);
       
       // Get day of week for this date in the user's timezone

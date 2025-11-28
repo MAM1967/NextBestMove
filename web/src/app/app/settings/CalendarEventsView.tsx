@@ -37,7 +37,8 @@ export function CalendarEventsView() {
     async function fetchEvents() {
       try {
         setLoading(true);
-        const response = await fetch("/api/calendar/events?days=7");
+        // Add cache-busting timestamp to prevent stale data
+        const response = await fetch(`/api/calendar/events?days=7&_t=${Date.now()}`);
         if (!response.ok) {
           throw new Error("Failed to fetch calendar events");
         }
