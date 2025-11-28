@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 /**
  * DELETE /api/users/delete-account
@@ -161,16 +162,41 @@ export async function DELETE(request: Request) {
     }
     console.log(`Deleted user profile: ${userDeleteData[0]?.email || userId}`);
 
-    // 10. Delete from Supabase Auth
-    // Note: This requires service role key. We'll use the admin API
-    // For now, delete from public.users (auth.users will be handled separately)
-    // In production, use Supabase Admin API:
-    // const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false } });
-    // await adminClient.auth.admin.deleteUser(userId);
-    
-    // For now, the user is deleted from public.users
-    // The auth.users record should be cleaned up via a background job or manual process
-    // This is acceptable for MVP - the user cannot log in once public.users is deleted
+    // 10. Delete from Supabase Auth (auth.users)
+    // This requires service role key to delete auth users
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) {
+      try {
+        const adminClient = createAdminClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          serviceRoleKey,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          }
+        );
+
+        const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(
+          userId
+        );
+
+        if (authDeleteError) {
+          console.error("Error deleting auth user:", authDeleteError);
+          // Don't throw - public.users is deleted, which is the main requirement
+          // Auth user deletion failure is logged but doesn't block success
+        } else {
+          console.log(`✅ Auth user ${userId} deleted from auth.users`);
+        }
+      } catch (authError) {
+        console.error("Error creating admin client or deleting auth user:", authError);
+        // Continue - public.users deletion is the critical part
+      }
+    } else {
+      console.warn("SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth.users record");
+      console.warn("User will be able to sign in again, but public.users is deleted");
+    }
 
     // Log deletion (optional - for audit purposes)
     console.log(`User account deleted: ${userId} at ${new Date().toISOString()}`);
