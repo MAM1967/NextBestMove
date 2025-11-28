@@ -45,35 +45,31 @@ function getBusyMinutes(event: CalendarEvent, dateStr: string, timezone: string)
   const eventStart = new Date(event.start);
   const eventEnd = new Date(event.end);
   
-  // Get event times in the user's timezone
-  const startHour = parseInt(eventStart.toLocaleString("en-US", {
+  // Get event times in the user's timezone as formatted strings
+  const startParts = eventStart.toLocaleTimeString("en-US", {
     timeZone: timezone,
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
-  }).split(",")[1]?.trim().split(":")[0] || "0");
-  const endHour = parseInt(eventEnd.toLocaleString("en-US", {
+  }).split(":");
+  const endParts = eventEnd.toLocaleTimeString("en-US", {
     timeZone: timezone,
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
-  }).split(",")[1]?.trim().split(":")[0] || "0");
+  }).split(":");
   
-  const startMin = parseInt(eventStart.toLocaleString("en-US", {
-    timeZone: timezone,
-    minute: "2-digit",
-    hour12: false,
-  }).split(",")[1]?.trim().split(":")[1] || "0");
-  const endMin = parseInt(eventEnd.toLocaleString("en-US", {
-    timeZone: timezone,
-    minute: "2-digit",
-    hour12: false,
-  }).split(",")[1]?.trim().split(":")[1] || "0");
+  const startHour = parseInt(startParts[0] || "0", 10);
+  const startMin = parseInt(startParts[1] || "0", 10);
+  const endHour = parseInt(endParts[0] || "0", 10);
+  const endMin = parseInt(endParts[1] || "0", 10);
   
   // Working hours: 9:00 AM (540 minutes) to 5:00 PM (1020 minutes)
   const workStartMin = 9 * 60; // 540 minutes
   const workEndMin = 17 * 60; // 1020 minutes
   
-  const eventStartMin = parseInt(startHour) * 60 + parseInt(startMin);
-  const eventEndMin = parseInt(endHour) * 60 + parseInt(endMin);
+  const eventStartMin = startHour * 60 + startMin;
+  const eventEndMin = endHour * 60 + endMin;
   
   // Calculate overlap
   const overlapStart = Math.max(eventStartMin, workStartMin);
