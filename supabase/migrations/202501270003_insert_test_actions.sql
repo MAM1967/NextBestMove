@@ -8,8 +8,10 @@ DECLARE
   v_today DATE := CURRENT_DATE;
   v_inserted_count INTEGER := 0;
 BEGIN
-  -- Get the first user (or replace with your specific user_id)
-  SELECT id INTO v_user_id FROM auth.users LIMIT 1;
+  -- Get user by email
+  SELECT id INTO v_user_id 
+  FROM users 
+  WHERE email = 'mcddsl+test1@gmail.com';
   
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'No user found. Please sign up first to create a user account.';
