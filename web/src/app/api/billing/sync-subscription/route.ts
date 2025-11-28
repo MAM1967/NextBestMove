@@ -64,7 +64,8 @@ export async function POST() {
         { status: 404 }
       );
     }
-    const subscription = (activeSub || subscriptions.data[0]) as Stripe.Subscription;
+    const selectedSub = activeSub || subscriptions.data[0];
+    const subscription = selectedSub as Stripe.Subscription;
 
     // Get billing customer ID
     const { data: billingCustomer } = await supabase
@@ -95,8 +96,10 @@ export async function POST() {
     console.log("Saved subscription:", savedSubscription);
 
     // Extract current_period_end with proper typing
-    const currentPeriodEnd = subscription.current_period_end 
-      ? new Date(subscription.current_period_end * 1000).toISOString()
+    // TypeScript needs explicit type assertion for Stripe.Subscription properties
+    const stripeSub = subscription as Stripe.Subscription;
+    const currentPeriodEnd = stripeSub.current_period_end 
+      ? new Date(stripeSub.current_period_end * 1000).toISOString()
       : null;
 
     return NextResponse.json({
