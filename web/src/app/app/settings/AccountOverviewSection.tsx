@@ -146,13 +146,12 @@ export function AccountOverviewSection({
               {success && (
                 <p className="text-xs text-green-700">{success}</p>
               )}
-              <div className="flex flex-row items-center gap-2 pt-1 w-full">
+              <div className="flex flex-row items-center justify-start gap-2 pt-1">
                 <button
                   type="button"
                   onClick={handleTimezoneChange}
                   disabled={isSaving}
-                  className="flex-shrink-0 inline-flex items-center justify-center rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ minWidth: '80px' }}
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
@@ -165,8 +164,7 @@ export function AccountOverviewSection({
                     setSuccess(null);
                   }}
                   disabled={isSaving}
-                  className="flex-shrink-0 inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ minWidth: '80px' }}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
