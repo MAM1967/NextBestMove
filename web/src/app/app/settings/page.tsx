@@ -208,9 +208,11 @@ export default async function SettingsPage() {
               status={calendarStatus.status || "disconnected"}
             />
             <div className="border-t border-zinc-200 pt-4">
-              <WeekendPreferenceToggle
-                excludeWeekends={profile?.exclude_weekends ?? false}
-              />
+              <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
+                <WeekendPreferenceToggle
+                  excludeWeekends={profile?.exclude_weekends ?? false}
+                />
+              </div>
             </div>
           </div>
         </SectionCard>
