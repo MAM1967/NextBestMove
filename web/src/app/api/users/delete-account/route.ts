@@ -25,59 +25,132 @@ export async function DELETE(request: Request) {
 
   try {
     // Delete all user data in order (respecting foreign key constraints)
+    // Check for errors at each step
     // 1. Content prompts (references weekly_summaries)
-    await supabase.from("content_prompts").delete().eq("user_id", userId);
+    const { error: contentPromptsError } = await supabase
+      .from("content_prompts")
+      .delete()
+      .eq("user_id", userId);
+    if (contentPromptsError) {
+      console.error("Error deleting content prompts:", contentPromptsError);
+      throw contentPromptsError;
+    }
 
     // 2. Weekly summaries
-    await supabase.from("weekly_summaries").delete().eq("user_id", userId);
+    const { error: weeklySummariesError } = await supabase
+      .from("weekly_summaries")
+      .delete()
+      .eq("user_id", userId);
+    if (weeklySummariesError) {
+      console.error("Error deleting weekly summaries:", weeklySummariesError);
+      throw weeklySummariesError;
+    }
 
     // 3. Daily plan actions (junction table)
     // First get all daily plan IDs for this user
-    const { data: dailyPlans } = await supabase
+    const { data: dailyPlans, error: dailyPlansSelectError } = await supabase
       .from("daily_plans")
       .select("id")
       .eq("user_id", userId);
+    if (dailyPlansSelectError) {
+      console.error("Error selecting daily plans:", dailyPlansSelectError);
+      throw dailyPlansSelectError;
+    }
 
     if (dailyPlans && dailyPlans.length > 0) {
       const planIds = dailyPlans.map((p) => p.id);
-      await supabase
+      const { error: dailyPlanActionsError } = await supabase
         .from("daily_plan_actions")
         .delete()
         .in("daily_plan_id", planIds);
+      if (dailyPlanActionsError) {
+        console.error("Error deleting daily plan actions:", dailyPlanActionsError);
+        throw dailyPlanActionsError;
+      }
     }
 
     // 4. Daily plans
-    await supabase.from("daily_plans").delete().eq("user_id", userId);
+    const { error: dailyPlansError } = await supabase
+      .from("daily_plans")
+      .delete()
+      .eq("user_id", userId);
+    if (dailyPlansError) {
+      console.error("Error deleting daily plans:", dailyPlansError);
+      throw dailyPlansError;
+    }
 
     // 5. Actions
-    await supabase.from("actions").delete().eq("user_id", userId);
+    const { error: actionsError } = await supabase
+      .from("actions")
+      .delete()
+      .eq("user_id", userId);
+    if (actionsError) {
+      console.error("Error deleting actions:", actionsError);
+      throw actionsError;
+    }
 
     // 6. Person pins
-    await supabase.from("person_pins").delete().eq("user_id", userId);
+    const { error: pinsError } = await supabase
+      .from("person_pins")
+      .delete()
+      .eq("user_id", userId);
+    if (pinsError) {
+      console.error("Error deleting person pins:", pinsError);
+      throw pinsError;
+    }
 
     // 7. Calendar connections
-    await supabase.from("calendar_connections").delete().eq("user_id", userId);
+    const { error: calendarError } = await supabase
+      .from("calendar_connections")
+      .delete()
+      .eq("user_id", userId);
+    if (calendarError) {
+      console.error("Error deleting calendar connections:", calendarError);
+      throw calendarError;
+    }
 
     // 8. Billing subscriptions (cascade should handle this, but explicit for safety)
-    const { data: billingCustomer } = await supabase
+    const { data: billingCustomer, error: billingCustomerError } = await supabase
       .from("billing_customers")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
+
+    if (billingCustomerError && billingCustomerError.code !== "PGRST116") {
+      // PGRST116 is "not found" which is fine
+      console.error("Error selecting billing customer:", billingCustomerError);
+      throw billingCustomerError;
+    }
 
     if (billingCustomer) {
-      await supabase
+      const { error: subscriptionsError } = await supabase
         .from("billing_subscriptions")
         .delete()
         .eq("billing_customer_id", billingCustomer.id);
-      await supabase
+      if (subscriptionsError) {
+        console.error("Error deleting billing subscriptions:", subscriptionsError);
+        throw subscriptionsError;
+      }
+
+      const { error: customersError } = await supabase
         .from("billing_customers")
         .delete()
         .eq("user_id", userId);
+      if (customersError) {
+        console.error("Error deleting billing customer:", customersError);
+        throw customersError;
+      }
     }
 
     // 9. User profile (last, as other tables may reference it)
-    await supabase.from("users").delete().eq("id", userId);
+    const { error: userDeleteError } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", userId);
+    if (userDeleteError) {
+      console.error("Error deleting user profile:", userDeleteError);
+      throw userDeleteError;
+    }
 
     // 10. Delete from Supabase Auth
     // Note: This requires service role key. We'll use the admin API
@@ -94,10 +167,11 @@ export async function DELETE(request: Request) {
     console.log(`User account deleted: ${userId} at ${new Date().toISOString()}`);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting user account:", error);
+    const errorMessage = error?.message || error?.code || "Failed to delete account";
     return NextResponse.json(
-      { error: "Failed to delete account" },
+      { error: errorMessage, details: error },
       { status: 500 }
     );
   }

@@ -24,7 +24,9 @@ export function AccountDeletionSection() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to delete account");
+        const errorMessage = data.error || "Failed to delete account";
+        console.error("Delete account error:", data);
+        throw new Error(errorMessage);
       }
 
       // Redirect to sign out or home page
