@@ -29,8 +29,20 @@ body {
 button.safari-purple-fix {
   background-color: rgb(147, 51, 234) !important;
   color: white !important;
+  border: none !important;
 }
 
 button.safari-purple-fix:hover:not(:disabled) {
+  background-color: rgb(126, 34, 206) !important;
+}
+
+button.safari-purple-fix:disabled {
+  background-color: rgb(147, 51, 234) !important;
+  color: white !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+button.safari-purple-fix:active:not(:disabled) {
   background-color: rgb(126, 34, 206) !important;
 }
