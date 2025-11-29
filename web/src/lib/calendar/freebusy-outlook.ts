@@ -48,16 +48,16 @@ export async function fetchOutlookFreeBusy(
   });
 
   // Parse working hours
-  const startTime = parseTimeString(workStartTime);
-  const endTime = parseTimeString(workEndTime);
+  const startTimeParsed = parseTimeString(workStartTime);
+  const endTimeParsed = parseTimeString(workEndTime);
 
   // Parse date and set working hours (using user's custom hours)
   const dateObj = new Date(`${date}T00:00:00`);
   const startOfDay = new Date(dateObj);
-  startOfDay.setHours(startTime.hours, startTime.minutes, 0, 0);
+  startOfDay.setHours(startTimeParsed.hours, startTimeParsed.minutes, 0, 0);
 
   const endOfDay = new Date(dateObj);
-  endOfDay.setHours(endTime.hours, endTime.minutes, 0, 0);
+  endOfDay.setHours(endTimeParsed.hours, endTimeParsed.minutes, 0, 0);
 
   // Convert to ISO strings for API
   const startTime = startOfDay.toISOString();
@@ -83,13 +83,13 @@ export async function fetchOutlookFreeBusy(
     const scheduleInfo = schedule.value?.[0];
     
     // Calculate total working minutes
-    const startMinutes = startTime.hours * 60 + startTime.minutes;
-    const endMinutes = endTime.hours * 60 + endTime.minutes;
+    const startMinutes = startTimeParsed.hours * 60 + startTimeParsed.minutes;
+    const endMinutes = endTimeParsed.hours * 60 + endTimeParsed.minutes;
     const totalMinutes = endMinutes - startMinutes;
     
     // Format times for response (HH:MM)
-    const startTimeStr = `${startTime.hours.toString().padStart(2, "0")}:${startTime.minutes.toString().padStart(2, "0")}`;
-    const endTimeStr = `${endTime.hours.toString().padStart(2, "0")}:${endTime.minutes.toString().padStart(2, "0")}`;
+    const startTimeStr = `${startTimeParsed.hours.toString().padStart(2, "0")}:${startTimeParsed.minutes.toString().padStart(2, "0")}`;
+    const endTimeStr = `${endTimeParsed.hours.toString().padStart(2, "0")}:${endTimeParsed.minutes.toString().padStart(2, "0")}`;
     
     if (!scheduleInfo || !scheduleInfo.scheduleItems) {
       return {
@@ -130,11 +130,11 @@ export async function fetchOutlookFreeBusy(
   } catch (error) {
     console.error("Failed to fetch Outlook free/busy:", error);
     // Return default (all free) on error
-    const startMinutes = startTime.hours * 60 + startTime.minutes;
-    const endMinutes = endTime.hours * 60 + endTime.minutes;
+    const startMinutes = startTimeParsed.hours * 60 + startTimeParsed.minutes;
+    const endMinutes = endTimeParsed.hours * 60 + endTimeParsed.minutes;
     const totalMinutes = endMinutes - startMinutes;
-    const startTimeStr = `${startTime.hours.toString().padStart(2, "0")}:${startTime.minutes.toString().padStart(2, "0")}`;
-    const endTimeStr = `${endTime.hours.toString().padStart(2, "0")}:${endTime.minutes.toString().padStart(2, "0")}`;
+    const startTimeStr = `${startTimeParsed.hours.toString().padStart(2, "0")}:${startTimeParsed.minutes.toString().padStart(2, "0")}`;
+    const endTimeStr = `${endTimeParsed.hours.toString().padStart(2, "0")}:${endTimeParsed.minutes.toString().padStart(2, "0")}`;
     return {
       freeMinutes: totalMinutes,
       busySlots: [],

@@ -112,10 +112,10 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get user working hours for cache response
+    // Get user timezone and working hours (default to UTC and 9-5)
     const { data: userProfile } = await supabase
       .from("users")
-      .select("work_start_time, work_end_time")
+      .select("timezone, work_start_time, work_end_time")
       .eq("id", user.id)
       .single();
 
@@ -171,13 +171,6 @@ export async function GET(request: Request) {
         message: "Unable to access calendar. Using default capacity.",
       });
     }
-
-    // Get user timezone and working hours (default to UTC and 9-5)
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("timezone, work_start_time, work_end_time")
-      .eq("id", user.id)
-      .single();
 
     const timezone = userProfile?.timezone || "UTC";
     // Convert TIME to HH:MM string (PostgreSQL TIME format is HH:MM:SS)
