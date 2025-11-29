@@ -248,6 +248,30 @@ export async function DELETE(request: Request) {
         console.log("Using Supabase URL:", supabaseUrl);
         console.log("Service key format verified (starts with eyJ):", serviceRoleKey.startsWith("eyJ"));
         
+        // Verify the admin client can access auth
+        // Test by trying to list users (this will fail if key is invalid)
+        console.log("Testing admin client access...");
+        const { data: testData, error: testError } = await adminClient.auth.admin.listUsers({
+          page: 1,
+          perPage: 1,
+        });
+        
+        if (testError) {
+          console.error("❌ Admin client test failed:", testError);
+          console.error("Test error message:", testError.message);
+          console.error("This suggests the service role key is invalid for this Supabase project");
+          return NextResponse.json(
+            { 
+              error: "Invalid service role key",
+              details: testError.message || "The service role key does not match this Supabase project",
+              hint: "Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: " + supabaseUrl
+            },
+            { status: 500 }
+          );
+        }
+        
+        console.log("✅ Admin client test passed - key is valid");
+        
         // Use the admin API to delete the auth user
         // This is the correct method per Supabase docs
         // Note: deleteUser second parameter is boolean for shouldSoftDelete
