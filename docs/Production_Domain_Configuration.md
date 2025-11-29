@@ -1,4 +1,5 @@
 # Production Domain Configuration Guide
+
 ## nextbestmove.app
 
 **Date:** January 29, 2025  
@@ -9,6 +10,7 @@
 ## Quick Configuration Checklist
 
 ### 1. Vercel Domain Setup
+
 - [ ] Add domain `nextbestmove.app` to Vercel project
 - [ ] Configure DNS records (Vercel will provide instructions)
 - [ ] SSL certificate will be automatically provisioned
@@ -26,7 +28,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... (JWT format)
 
 STRIPE_SECRET_KEY=sk_live_... (production key)
 STRIPE_WEBHOOK_SECRET=whsec_... (production webhook secret)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_... (production key)
+# Note: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is NOT required (using Stripe Checkout, not Elements)
 
 OPENAI_API_KEY=sk-proj-... (your OpenAI API key)
 
@@ -51,11 +53,13 @@ RESEND_API_KEY=... (if using Resend for emails)
 1. Go to: **Supabase Dashboard → Authentication → URL Configuration**
 
 2. **Site URL:**
+
    ```
    https://nextbestmove.app
    ```
 
 3. **Redirect URLs** (add all of these):
+
    ```
    https://nextbestmove.app/auth/callback
    https://nextbestmove.app/api/auth/callback/*
@@ -75,11 +79,13 @@ RESEND_API_KEY=... (if using Resend for emails)
 4. Click **Edit**
 
 5. **Authorized JavaScript origins:**
+
    ```
    https://nextbestmove.app
    ```
 
 6. **Authorized redirect URIs:**
+
    ```
    https://nextbestmove.app/api/calendar/callback/google
    ```
@@ -98,6 +104,7 @@ RESEND_API_KEY=... (if using Resend for emails)
 5. **Add a platform → Web**
 
 6. **Redirect URIs:**
+
    ```
    https://nextbestmove.app/api/calendar/callback/outlook
    ```
@@ -111,21 +118,25 @@ RESEND_API_KEY=... (if using Resend for emails)
 ### Option A: Test Mode (Recommended for Initial Launch)
 
 **Use test mode if:**
+
 - You're deploying to production but won't have real users immediately
 - You want to test the full payment flow without real charges
 - You're launching during a holiday period (e.g., Christmas)
 
 **Configuration:**
+
 1. Go to: **[Stripe Dashboard](https://dashboard.stripe.com/test/webhooks)** (test mode)
 2. Navigate to: **Developers → Webhooks**
 3. Click **Add endpoint** (or edit existing)
 
 4. **Endpoint URL:**
+
    ```
    https://nextbestmove.app/api/billing/webhook
    ```
 
 5. **Events to listen for:**
+
    - `checkout.session.completed`
    - `customer.subscription.created`
    - `customer.subscription.updated`
@@ -137,6 +148,7 @@ RESEND_API_KEY=... (if using Resend for emails)
 7. Add to Vercel as `STRIPE_WEBHOOK_SECRET`
 
 **Vercel Environment Variables (Test Mode):**
+
 ```
 STRIPE_SECRET_KEY=sk_test_... (test mode key)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... (test mode key)
@@ -146,16 +158,19 @@ STRIPE_WEBHOOK_SECRET=whsec_... (test mode webhook secret)
 ### Option B: Live Mode (When Ready for Real Payments)
 
 **Switch to live mode when:**
+
 - You're ready to accept real payments
 - You have real users signing up
 - You've tested everything in test mode
 
 **Configuration:**
+
 1. Go to: **[Stripe Dashboard](https://dashboard.stripe.com/webhooks)** (live mode)
 2. Follow same steps as test mode
 3. Use **live mode** keys instead of test keys
 
 **Vercel Environment Variables (Live Mode):**
+
 ```
 STRIPE_SECRET_KEY=sk_live_... (live mode key)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_... (live mode key)
@@ -182,6 +197,7 @@ Apply all migrations to production Supabase:
    - `202501280007_add_users_delete_policy.sql`
 
 **Or use Supabase CLI:**
+
 ```bash
 supabase db push --db-url "your-production-db-url"
 ```
@@ -191,11 +207,13 @@ supabase db push --db-url "your-production-db-url"
 ## 8. Vercel Deployment
 
 1. **Connect domain:**
+
    - Go to: **Vercel Dashboard → Your Project → Settings → Domains**
    - Add: `nextbestmove.app`
    - Follow DNS configuration instructions
 
 2. **Deploy:**
+
    - Push to `main` branch (auto-deploys)
    - Or manually trigger deployment
 
@@ -212,17 +230,20 @@ supabase db push --db-url "your-production-db-url"
 ### Critical Tests
 
 1. **Sign Up:**
+
    - [ ] Visit `https://nextbestmove.app`
    - [ ] Create new account
    - [ ] Verify redirect works
 
 2. **Calendar OAuth:**
+
    - [ ] Go to Settings → Calendar
    - [ ] Click "Connect Google Calendar"
    - [ ] Verify OAuth redirect works
    - [ ] Verify calendar connects successfully
 
 3. **Billing:**
+
    - [ ] Click "Start Free Trial"
    - [ ] Verify Stripe checkout redirects
    - [ ] Complete checkout (test mode)
@@ -239,17 +260,20 @@ supabase db push --db-url "your-production-db-url"
 ## Troubleshooting
 
 ### OAuth Redirect Errors
+
 - Verify redirect URIs match exactly (no trailing slashes)
 - Check that domain is added in OAuth provider console
 - Verify HTTPS is working (SSL certificate valid)
 
 ### Stripe Webhook Not Receiving Events
+
 - Verify webhook URL is correct
 - Check webhook secret matches in Vercel
 - Verify Stripe is in live mode (not test mode)
 - Check Vercel function logs for webhook errors
 
 ### Environment Variables Not Working
+
 - Verify variables are set for **Production** environment
 - Redeploy after adding new variables
 - Check Vercel function logs for missing variables
@@ -257,4 +281,3 @@ supabase db push --db-url "your-production-db-url"
 ---
 
 _Last updated: January 29, 2025_
-

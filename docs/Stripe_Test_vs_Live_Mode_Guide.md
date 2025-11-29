@@ -24,9 +24,10 @@ Set these for **Production** environment (but using test keys):
 
 ```
 STRIPE_SECRET_KEY=sk_test_... (from Stripe Dashboard → Developers → API keys → Test mode)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... (from Stripe Dashboard → Developers → API keys → Test mode)
 STRIPE_WEBHOOK_SECRET=whsec_... (from Stripe Dashboard → Developers → Webhooks → Test mode endpoint)
 ```
+
+**Note:** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is **NOT required**. This app uses Stripe Checkout (hosted checkout page), not Stripe Elements (embedded forms). The checkout session is created server-side using the secret key, and users are redirected to Stripe's hosted checkout page.
 
 ### Webhook Configuration (Test Mode)
 
@@ -126,7 +127,7 @@ Before switching to live mode, verify:
 | Item | Test Mode | Live Mode |
 |------|-----------|-----------|
 | **Secret Key** | `sk_test_...` | `sk_live_...` |
-| **Publishable Key** | `pk_test_...` | `pk_live_...` |
+| **Publishable Key** | ❌ Not required | ❌ Not required |
 | **Webhook Secret** | From test webhook | From live webhook |
 | **Charges** | No real charges | Real charges |
 | **Test Cards** | Use test cards | Real cards only |
