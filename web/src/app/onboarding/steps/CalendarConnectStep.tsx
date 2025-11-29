@@ -21,11 +21,12 @@ export function CalendarConnectStep({
   useEffect(() => {
     // Check URL params for calendar connection success
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("calendar") === "success") {
+    const calendarParam = urlParams.get("calendar");
+    
+    if (calendarParam === "success") {
       setIsConnected(true);
       setIsChecking(false);
-      // Clean up URL
-      window.history.replaceState({}, "", window.location.pathname);
+      // Don't clean up URL here - let OnboardingFlow handle it
       return;
     }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { WelcomeStep } from "./steps/WelcomeStep";
 import { PinFirstPersonStep } from "./steps/PinFirstPersonStep";
 import { CalendarConnectStep } from "./steps/CalendarConnectStep";
@@ -32,12 +32,57 @@ const STEPS: OnboardingStep[] = [
   "fast_win_coaching",
 ];
 
+const ONBOARDING_STEP_KEY = "nbm_onboarding_step";
+
+function getSavedStep(): OnboardingStep | null {
+  if (typeof window === "undefined") return null;
+  const saved = localStorage.getItem(ONBOARDING_STEP_KEY);
+  if (saved && STEPS.includes(saved as OnboardingStep)) {
+    return saved as OnboardingStep;
+  }
+  return null;
+}
+
+function saveStep(step: OnboardingStep) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ONBOARDING_STEP_KEY, step);
+}
+
+function clearSavedStep() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ONBOARDING_STEP_KEY);
+}
+
 export function OnboardingFlow() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
+  const searchParams = useSearchParams();
+  
+  // Initialize step from localStorage or default to welcome
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(() => {
+    return getSavedStep() || "welcome";
+  });
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
     new Set()
   );
+
+  // Restore step when component mounts (e.g., after OAuth redirect)
+  useEffect(() => {
+    // If returning from calendar OAuth, ensure we're on calendar_connect step
+    const calendarParam = searchParams.get("calendar");
+    if (calendarParam === "success" || calendarParam === "error") {
+      // Make sure we're on the calendar step
+      setCurrentStep("calendar_connect");
+      saveStep("calendar_connect");
+      // Clean up URL params
+      router.replace("/onboarding", { scroll: false });
+    } else {
+      // Otherwise, restore saved step if available
+      const savedStep = getSavedStep();
+      if (savedStep && savedStep !== currentStep) {
+        setCurrentStep(savedStep);
+      }
+    }
+  }, [searchParams, router]); // Removed currentStep from deps to avoid loop
 
   const currentStepIndex = STEPS.indexOf(currentStep);
   const totalSteps = STEPS.length;
@@ -45,7 +90,9 @@ export function OnboardingFlow() {
   const handleNext = () => {
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
     if (currentStepIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentStepIndex + 1]);
+      const nextStep = STEPS[currentStepIndex + 1];
+      setCurrentStep(nextStep);
+      saveStep(nextStep);
     } else {
       handleComplete();
     }
@@ -53,14 +100,18 @@ export function OnboardingFlow() {
 
   const handleBack = () => {
     if (currentStepIndex > 0) {
-      setCurrentStep(STEPS[currentStepIndex - 1]);
+      const prevStep = STEPS[currentStepIndex - 1];
+      setCurrentStep(prevStep);
+      saveStep(prevStep);
     }
   };
 
   const handleSkip = () => {
     setCompletedSteps((prev) => new Set([...prev, currentStep]));
     if (currentStepIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentStepIndex + 1]);
+      const nextStep = STEPS[currentStepIndex + 1];
+      setCurrentStep(nextStep);
+      saveStep(nextStep);
     } else {
       handleComplete();
     }
@@ -74,15 +125,18 @@ export function OnboardingFlow() {
       });
 
       if (response.ok) {
+        clearSavedStep();
         router.push("/app");
         router.refresh();
       } else {
         console.error("Failed to complete onboarding");
         // Still redirect to app even if API call fails
+        clearSavedStep();
         router.push("/app");
       }
     } catch (error) {
       console.error("Error completing onboarding:", error);
+      clearSavedStep();
       router.push("/app");
     }
   };
