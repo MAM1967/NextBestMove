@@ -19,6 +19,7 @@ export function AccountOverviewSection({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedTimezone, setSelectedTimezone] = useState(timezone || "America/New_York");
+  const [currentTimezone, setCurrentTimezone] = useState(timezone); // Track current displayed timezone
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -99,10 +100,11 @@ export function AccountOverviewSection({
       }
 
       setSuccess("Timezone updated successfully");
+      setCurrentTimezone(selectedTimezone); // Update displayed timezone immediately
       setIsEditingTimezone(false);
       setTimeout(() => {
         setSuccess(null);
-        window.location.reload(); // Reload to reflect timezone change
+        window.location.reload(); // Reload to reflect timezone change in other parts of app
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update timezone");
@@ -192,9 +194,9 @@ export function AccountOverviewSection({
           ) : (
             <div className="flex items-center justify-between">
               <div className="font-medium text-zinc-900">
-                {timezone
-                  ? commonTimezones.find((tz) => tz.value === timezone)?.label ||
-                    timezone
+                {currentTimezone
+                  ? commonTimezones.find((tz) => tz.value === currentTimezone)?.label ||
+                    currentTimezone
                   : "Not set"}
               </div>
               <button
