@@ -63,16 +63,18 @@ export async function POST(request: Request) {
 
     // Get or create Stripe customer
     let customerId: string;
+    let billingCustomerId: string;
     const adminClient = createAdminClient();
 
     const { data: existingCustomer } = await adminClient
       .from("billing_customers")
-      .select("stripe_customer_id")
+      .select("id, stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (existingCustomer?.stripe_customer_id) {
       customerId = existingCustomer.stripe_customer_id;
+      billingCustomerId = existingCustomer.id;
     } else {
       // Create new Stripe customer
       const customer = await stripe.customers.create({
@@ -84,21 +86,25 @@ export async function POST(request: Request) {
       customerId = customer.id;
 
       // Store in database using admin client (bypasses RLS)
-      const { error: insertError } = await adminClient
+      const { data: newCustomer, error: insertError } = await adminClient
         .from("billing_customers")
         .insert({
           user_id: user.id,
           stripe_customer_id: customerId,
           currency: "usd",
-        });
+        })
+        .select("id")
+        .single();
 
-      if (insertError) {
+      if (insertError || !newCustomer) {
         console.error("Error inserting billing customer:", insertError);
         return NextResponse.json(
-          { error: "Failed to save customer record", details: insertError.message },
+          { error: "Failed to save customer record", details: insertError?.message },
           { status: 500 }
         );
       }
+
+      billingCustomerId = newCustomer.id;
     }
 
     // Create subscription with 14-day trial (no payment method required)
@@ -129,13 +135,7 @@ export async function POST(request: Request) {
       .from("billing_subscriptions")
       .upsert(
         {
-          billing_customer_id: existingCustomer?.id || (
-            await adminClient
-              .from("billing_customers")
-              .select("id")
-              .eq("stripe_customer_id", customerId)
-              .single()
-          ).data?.id,
+          billing_customer_id: billingCustomerId,
           stripe_subscription_id: subscription.id,
           stripe_price_id: priceId,
           status: "trialing",
