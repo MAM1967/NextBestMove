@@ -162,8 +162,8 @@ export async function POST(request: Request) {
           interval: interval,
         },
       };
-      // Allow trial without payment method
-      sessionParams.payment_method_collection = "if_required";
+      // No payment method required for trial
+      sessionParams.payment_method_collection = "never";
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

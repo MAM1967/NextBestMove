@@ -9,7 +9,7 @@ import { WorkingHoursStep } from "./steps/WorkingHoursStep";
 import { WeekendPreferenceStep } from "./steps/WeekendPreferenceStep";
 import { WeeklyFocusStep } from "./steps/WeeklyFocusStep";
 import { FirstPlanReadyStep } from "./steps/FirstPlanReadyStep";
-import { FastWinCoachingStep } from "./steps/FastWinCoachingStep";
+import { StartFreeTrialStep } from "./steps/StartFreeTrialStep";
 
 export type OnboardingStep =
   | "welcome"
@@ -19,7 +19,7 @@ export type OnboardingStep =
   | "weekend_preference"
   | "weekly_focus"
   | "first_plan_ready"
-  | "fast_win_coaching";
+  | "start_free_trial";
 
 const STEPS: OnboardingStep[] = [
   "welcome",
@@ -29,7 +29,7 @@ const STEPS: OnboardingStep[] = [
   "weekend_preference",
   "weekly_focus",
   "first_plan_ready",
-  "fast_win_coaching",
+  "start_free_trial",
 ];
 
 const ONBOARDING_STEP_KEY = "nbm_onboarding_step";
@@ -186,9 +186,9 @@ export function OnboardingFlow() {
             onBack={handleBack}
           />
         );
-      case "fast_win_coaching":
+      case "start_free_trial":
         return (
-          <FastWinCoachingStep
+          <StartFreeTrialStep
             onNext={handleComplete}
             onBack={handleBack}
           />
