@@ -85,6 +85,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Weekly Summary
           </Link>
           <Link
+            href="/app/content-ideas"
+            className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
+          >
+            Content Ideas
+          </Link>
+          <Link
             href="/app/insights"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
