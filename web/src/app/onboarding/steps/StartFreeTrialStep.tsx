@@ -72,7 +72,7 @@ export function StartFreeTrialStep({
           Start your 14-day free trial
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          No credit card required. Get full access to all features for 14 days.
+          No credit card required. No payment due during your 14-day trial period.
         </p>
       </div>
 
@@ -120,7 +120,7 @@ export function StartFreeTrialStep({
               No credit card required
             </p>
             <p className="mt-0.5 text-xs text-zinc-600">
-              Start using NextBestMove immediately, no payment needed
+              No payment due during your 14-day trial. Start using NextBestMove immediately.
             </p>
           </div>
         </div>
