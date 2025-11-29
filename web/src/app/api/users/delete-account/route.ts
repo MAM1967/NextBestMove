@@ -250,27 +250,48 @@ export async function DELETE(request: Request) {
         
         // Verify the admin client can access auth
         // Test by trying to list users (this will fail if key is invalid)
-        console.log("Testing admin client access...");
-        const { data: testData, error: testError } = await adminClient.auth.admin.listUsers({
-          page: 1,
-          perPage: 1,
-        });
-        
-        if (testError) {
-          console.error("❌ Admin client test failed:", testError);
-          console.error("Test error message:", testError.message);
-          console.error("This suggests the service role key is invalid for this Supabase project");
+        console.log("=== Testing admin client access ===");
+        try {
+          const { data: testData, error: testError } = await adminClient.auth.admin.listUsers({
+            page: 1,
+            perPage: 1,
+          });
+          
+          if (testError) {
+            console.error("❌ Admin client test failed:", testError);
+            console.error("Test error status:", testError.status);
+            console.error("Test error message:", testError.message);
+            console.error("Test error name:", testError.name);
+            console.error("Full test error:", JSON.stringify(testError, null, 2));
+            console.error("This suggests the service role key is invalid for this Supabase project");
+            console.error("Supabase URL used:", supabaseUrl);
+            console.error("Service key first 50 chars:", serviceRoleKey.substring(0, 50));
+            
+            return NextResponse.json(
+              { 
+                error: "Invalid service role key",
+                details: testError.message || "The service role key does not match this Supabase project",
+                hint: `Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: ${supabaseUrl}. The key should start with 'eyJ' and be a long JWT token.`
+              },
+              { status: 500 }
+            );
+          }
+          
+          console.log("✅ Admin client test passed - key is valid");
+          console.log("Test returned user count:", testData?.users?.length || 0);
+        } catch (testException) {
+          console.error("❌ Exception during admin client test:", testException);
+          console.error("Exception type:", testException instanceof Error ? testException.constructor.name : typeof testException);
+          console.error("Exception message:", testException instanceof Error ? testException.message : String(testException));
           return NextResponse.json(
             { 
-              error: "Invalid service role key",
-              details: testError.message || "The service role key does not match this Supabase project",
-              hint: "Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: " + supabaseUrl
+              error: "Failed to validate service role key",
+              details: testException instanceof Error ? testException.message : String(testException),
+              hint: "There was an exception while testing the admin client. Check Vercel function logs for details."
             },
             { status: 500 }
           );
         }
-        
-        console.log("✅ Admin client test passed - key is valid");
         
         // Use the admin API to delete the auth user
         // This is the correct method per Supabase docs
