@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAccountActivationEmail, sendWelcomeEmail } from "@/lib/email/resend";
 
 async function bootstrapUserProfile(
   userId: string,
@@ -365,6 +367,47 @@ export async function signUpAction(
       ? `Account created but profile setup failed: ${profileResult.error}`
       : "Account created but profile setup failed. Please contact support.";
     return { error: errorMessage };
+  }
+
+  // Send welcome/activation email via Resend
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (process.env.NODE_ENV === "production" ? "https://nextbestmove.app" : "http://localhost:3000");
+    
+    // Check if email confirmation is required
+    const adminClient = createAdminClient();
+    const { data: userData } = await adminClient.auth.admin.getUserById(data.user.id);
+    
+    if (userData?.user && !userData.user.email_confirmed_at) {
+      // Email confirmation required - send activation email
+      // Use magiclink type instead of signup (doesn't require password)
+      const { data: linkData } = await adminClient.auth.admin.generateLink({
+        type: "magiclink",
+        email: email,
+        options: {
+          redirectTo: `${baseUrl}/auth/sign-in`,
+        },
+      });
+      
+      if (linkData?.properties?.action_link) {
+        await sendAccountActivationEmail({
+          to: email,
+          userName: name,
+          activationLink: linkData.properties.action_link,
+        });
+        console.log("✅ Account activation email sent via Resend");
+      }
+    } else {
+      // No confirmation required - send welcome email
+      await sendWelcomeEmail({
+        to: email,
+        userName: name,
+      });
+      console.log("✅ Welcome email sent via Resend");
+    }
+  } catch (emailError) {
+    // Don't fail sign-up if email fails - just log it
+    console.error("⚠️ Failed to send welcome/activation email:", emailError);
   }
 
   return { success: true };

@@ -273,4 +273,148 @@ export async function sendWinBackEmail({
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Email template for password reset
+ */
+export async function sendPasswordResetEmail({
+  to,
+  userName,
+  resetLink,
+}: {
+  to: string;
+  userName: string;
+  resetLink: string;
+}) {
+  const subject = "Reset your NextBestMove password";
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Hi ${userName || "there"},</h1>
+        
+        <p style="margin-bottom: 16px;">
+          We received a request to reset your password. Click the button below to set a new password:
+        </p>
+        
+        <div style="margin: 32px 0;">
+          <a href="${resetLink}" 
+             style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Reset Password
+          </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+          This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+        </p>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="${resetLink}" style="color: #6366f1; word-break: break-all;">${resetLink}</a>
+        </p>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * Email template for account activation/confirmation
+ */
+export async function sendAccountActivationEmail({
+  to,
+  userName,
+  activationLink,
+}: {
+  to: string;
+  userName: string;
+  activationLink: string;
+}) {
+  const subject = "Confirm your NextBestMove account";
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Welcome to NextBestMove, ${userName || "there"}!</h1>
+        
+        <p style="margin-bottom: 16px;">
+          Thanks for signing up! Please confirm your email address to get started:
+        </p>
+        
+        <div style="margin: 32px 0;">
+          <a href="${activationLink}" 
+             style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Confirm Email Address
+          </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+          This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+        </p>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="${activationLink}" style="color: #6366f1; word-break: break-all;">${activationLink}</a>
+        </p>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
+/**
+ * Email template for welcome email (sent after successful sign-up when confirmations are disabled)
+ */
+export async function sendWelcomeEmail({
+  to,
+  userName,
+}: {
+  to: string;
+  userName: string;
+}) {
+  const subject = "Welcome to NextBestMove!";
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Welcome to NextBestMove, ${userName || "there"}!</h1>
+        
+        <p style="margin-bottom: 16px;">
+          Thanks for signing up! We're excited to help you build better relationships and stay on top of your follow-ups.
+        </p>
+        
+        <p style="margin-bottom: 16px;">
+          Get started by completing your onboarding to set up your first daily plan.
+        </p>
+        
+        <div style="margin: 32px 0;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/onboarding" 
+             style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Complete Onboarding
+          </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+          If you have any questions, just reply to this email. We're here to help!
+        </p>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 
