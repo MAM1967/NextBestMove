@@ -108,7 +108,15 @@ RESEND_API_KEY=... (if using Resend for emails)
 
 ## 6. Stripe Webhook Configuration
 
-1. Go to: **[Stripe Dashboard](https://dashboard.stripe.com/)**
+### Option A: Test Mode (Recommended for Initial Launch)
+
+**Use test mode if:**
+- You're deploying to production but won't have real users immediately
+- You want to test the full payment flow without real charges
+- You're launching during a holiday period (e.g., Christmas)
+
+**Configuration:**
+1. Go to: **[Stripe Dashboard](https://dashboard.stripe.com/test/webhooks)** (test mode)
 2. Navigate to: **Developers → Webhooks**
 3. Click **Add endpoint** (or edit existing)
 
@@ -126,7 +134,35 @@ RESEND_API_KEY=... (if using Resend for emails)
    - `customer.subscription.trial_will_end`
 
 6. **Copy the Signing secret** (starts with `whsec_`)
-7. Add it to Vercel as `STRIPE_WEBHOOK_SECRET`
+7. Add to Vercel as `STRIPE_WEBHOOK_SECRET`
+
+**Vercel Environment Variables (Test Mode):**
+```
+STRIPE_SECRET_KEY=sk_test_... (test mode key)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... (test mode key)
+STRIPE_WEBHOOK_SECRET=whsec_... (test mode webhook secret)
+```
+
+### Option B: Live Mode (When Ready for Real Payments)
+
+**Switch to live mode when:**
+- You're ready to accept real payments
+- You have real users signing up
+- You've tested everything in test mode
+
+**Configuration:**
+1. Go to: **[Stripe Dashboard](https://dashboard.stripe.com/webhooks)** (live mode)
+2. Follow same steps as test mode
+3. Use **live mode** keys instead of test keys
+
+**Vercel Environment Variables (Live Mode):**
+```
+STRIPE_SECRET_KEY=sk_live_... (live mode key)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_... (live mode key)
+STRIPE_WEBHOOK_SECRET=whsec_... (live mode webhook secret)
+```
+
+**Important:** You can have both test and live webhooks configured. Just make sure your environment variables match the mode you want to use.
 
 ---
 
