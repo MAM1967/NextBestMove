@@ -286,7 +286,7 @@ export default async function SettingsPage() {
                 disabled
                 className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-zinc-600"
               >
-                On · Coming soon
+                Coming soon
               </button>
             </div>
             <p className="text-xs text-zinc-500">
@@ -295,6 +295,11 @@ export default async function SettingsPage() {
             {contentPromptsCount !== null && contentPromptsCount > 0 && (
               <p className="text-xs font-medium text-zinc-700">
                 {contentPromptsCount} prompt{contentPromptsCount !== 1 ? "s" : ""} saved
+              </p>
+            )}
+            {contentPromptsCount === 0 && (
+              <p className="text-xs text-zinc-500 italic">
+                Save prompts from weekly summaries to see them here
               </p>
             )}
           </div>
