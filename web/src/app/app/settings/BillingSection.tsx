@@ -187,21 +187,47 @@ export function BillingSection({
   // Button visibility is based on subscription status, NOT modal state or customer existence
   // This ensures the button always reappears after canceling the modal or hitting back from Stripe
   // Edge case: If user hits back from Stripe checkout, hasCustomer might be true but no subscription exists
-  // In that case, we should still show "Start Free Trial", not "Sync Subscription"
+  // In that case, show "Sync Subscription" button to manually sync from Stripe
   if (!subscription) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
         <p className="text-sm font-medium text-zinc-900">No active subscription</p>
-        {/* Always show "Start Free Trial" when no subscription exists, regardless of hasCustomer */}
-        {/* This handles the edge case where user hits back from Stripe checkout */}
-        <button
-          type="button"
-          onClick={() => setShowPlanSelection(true)}
-          disabled={isLoading}
-          className="mt-4 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-        >
-          {isLoading ? "Loading..." : "Start Free Trial"}
-        </button>
+        {hasCustomer ? (
+          // If customer exists but no subscription, offer to sync
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-zinc-600">
+              If you just completed checkout, click below to sync your subscription.
+            </p>
+            <button
+              type="button"
+              onClick={handleSyncSubscription}
+              disabled={isLoading}
+              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+            >
+              {isLoading ? "Syncing..." : "Sync Subscription"}
+            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPlanSelection(true)}
+                disabled={isLoading}
+                className="text-xs text-zinc-500 underline hover:text-zinc-700"
+              >
+                Or start a new subscription
+              </button>
+            </div>
+          </div>
+        ) : (
+          // No customer, show "Start Free Trial"
+          <button
+            type="button"
+            onClick={() => setShowPlanSelection(true)}
+            disabled={isLoading}
+            className="mt-4 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+          >
+            {isLoading ? "Loading..." : "Start Free Trial"}
+          </button>
+        )}
         <PlanSelectionModal
           isOpen={showPlanSelection}
           onClose={handleCloseModal}
