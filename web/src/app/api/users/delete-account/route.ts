@@ -202,6 +202,9 @@ export async function DELETE(request: Request) {
       );
     }
     
+    // Get Supabase URL for error messages
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    
     // Use admin client helper - it will validate the key format and throw if invalid
     try {
       console.log("Creating admin client...");
@@ -232,17 +235,21 @@ export async function DELETE(request: Request) {
           console.error("Test error name:", testError.name);
           console.error("Full test error:", JSON.stringify(testError, null, 2));
           console.error("This suggests the service role key is invalid for this Supabase project");
-          console.error("Supabase URL used:", supabaseUrl);
-          console.error("Service key first 50 chars:", serviceRoleKey.substring(0, 50));
+          if (supabaseUrl) {
+            console.error("Supabase URL used:", supabaseUrl);
+          }
+          if (serviceRoleKey) {
+            console.error("Service key first 50 chars:", serviceRoleKey.substring(0, 50));
+          }
           
-          return NextResponse.json(
-            { 
-              error: "Invalid service role key",
-              details: testError.message || "The service role key does not match this Supabase project",
-              hint: `Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: ${supabaseUrl}. The key should start with 'eyJ' and be a long JWT token.`
-            },
-            { status: 500 }
-          );
+            return NextResponse.json(
+              { 
+                error: "Invalid service role key",
+                details: testError.message || "The service role key does not match this Supabase project",
+                hint: `Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API${supabaseUrl ? ` for project: ${supabaseUrl}` : ''}. The key should start with 'eyJ' and be a long JWT token.`
+              },
+              { status: 500 }
+            );
         }
         
         console.log("✅ Admin client test passed - key is valid");
