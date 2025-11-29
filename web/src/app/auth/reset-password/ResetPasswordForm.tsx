@@ -17,33 +17,113 @@ export function ResetPasswordForm() {
     async function checkSession() {
       const supabase = createClient();
       
-      // Supabase automatically handles the hash fragments from the reset link
-      // and establishes a session. We just need to check if we have a session.
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if there are hash fragments in the URL (Supabase reset link format)
+      // Also check query params in case the link format is different
+      const hash = window.location.hash;
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const accessToken = hashParams.get("access_token") || searchParams.get("access_token");
+      const type = hashParams.get("type") || searchParams.get("type");
       
-      if (session) {
-        setHasValidSession(true);
-      } else {
-        // Check if there are hash fragments in the URL (Supabase reset link format)
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get("access_token");
-        const type = hashParams.get("type");
+      console.log("🔍 Checking reset link:", {
+        hasHash: !!hash,
+        hashLength: hash.length,
+        hasSearchParams: searchParams.toString().length > 0,
+        accessToken: !!accessToken,
+        type,
+        hash: hash.substring(0, 100),
+        search: window.location.search.substring(0, 100),
+        fullUrl: window.location.href.substring(0, 150),
+      });
+      
+      if (accessToken && type === "recovery") {
+        // Supabase client should automatically process hash fragments
+        // But we need to wait for it to establish the session
+        // Use onAuthStateChange to detect when session is established
+        let resolved = false;
+        let subscription: { unsubscribe: () => void } | null = null;
         
-        if (accessToken && type === "recovery") {
-          // Supabase is processing the token, wait a moment and check again
-          setTimeout(async () => {
-            const { data: { session: newSession } } = await supabase.auth.getSession();
-            if (newSession) {
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("🔔 Auth state change:", { event, hasSession: !!session });
+          if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+            if (!resolved) {
+              resolved = true;
               setHasValidSession(true);
-            } else {
               setIsValidating(false);
+              if (subscription) subscription.unsubscribe();
             }
-          }, 1000);
-        } else {
-          setIsValidating(false);
+          }
+        });
+        subscription = authSubscription;
+        
+        // Try to set session explicitly from hash fragments if needed
+        // The createBrowserClient should handle this automatically, but let's be explicit
+        try {
+          // Get refresh token from hash if available
+          const refreshToken = hashParams.get("refresh_token");
+          if (accessToken && refreshToken) {
+            const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            console.log("🔐 Set session from tokens:", { hasSession: !!sessionData.session, error: setSessionError?.message });
+            if (sessionData.session) {
+              if (!resolved) {
+                resolved = true;
+                setHasValidSession(true);
+                setIsValidating(false);
+                if (subscription) subscription.unsubscribe();
+                return;
+              }
+            }
+          }
+        } catch (setSessionError) {
+          console.error("❌ Error setting session:", setSessionError);
         }
+        
+        // Also check immediately in case session is already established
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log("📋 Initial session check:", { hasSession: !!session, error: sessionError?.message });
+        
+        if (session) {
+          if (!resolved) {
+            resolved = true;
+            setHasValidSession(true);
+            setIsValidating(false);
+            if (subscription) subscription.unsubscribe();
+            return;
+          }
+        }
+        
+        // Wait up to 5 seconds for session to be established
+        const timeoutId = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            supabase.auth.getSession().then(({ data: { session: finalSession }, error: finalError }) => {
+              console.log("⏱️ Final session check:", { hasSession: !!finalSession, error: finalError?.message });
+              if (finalSession) {
+                setHasValidSession(true);
+              }
+              setIsValidating(false);
+              if (subscription) subscription.unsubscribe();
+            });
+          }
+        }, 5000);
+        
+        // Cleanup timeout if component unmounts
+        return () => {
+          clearTimeout(timeoutId);
+          if (subscription) subscription.unsubscribe();
+        };
+      } else {
+        // No hash fragments - check if we already have a session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log("📋 No hash fragments, checking session:", { hasSession: !!session, error: error?.message });
+        if (session) {
+          setHasValidSession(true);
+        }
+        setIsValidating(false);
       }
-      setIsValidating(false);
     }
 
     checkSession();
