@@ -73,8 +73,11 @@ All of these must be set in **Vercel Dashboard → Project Settings → Environm
 - [ ] `MICROSOFT_TENANT_ID` - Microsoft tenant ID (usually `common`)
 
 #### NextAuth (If using NextAuth.js)
-- [ ] `NEXTAUTH_URL` - Your production domain (e.g., `https://yourdomain.com`)
+- [ ] `NEXTAUTH_URL` - Production domain: `https://nextbestmove.app`
 - [ ] `NEXTAUTH_SECRET` - Secret for NextAuth (generate with: `openssl rand -base64 32`)
+
+#### Resend (For Email - Optional)
+- [ ] `RESEND_API_KEY` - Resend API key for transactional emails (if using Resend)
 
 #### Encryption (For BYOK)
 - [ ] `ENCRYPTION_KEY` - 32-character encryption key (or will use service role key prefix)
@@ -91,18 +94,27 @@ All of these must be set in **Vercel Dashboard → Project Settings → Environm
 ### Supabase Configuration
 - [ ] Update Supabase Auth redirect URLs to include production domain
   - Go to: Supabase Dashboard → Authentication → URL Configuration
-  - Add: `https://yourdomain.com/auth/callback`
-  - Add: `https://yourdomain.com/api/auth/callback/*`
+  - **Site URL:** `https://nextbestmove.app`
+  - **Redirect URLs:** Add the following:
+    - `https://nextbestmove.app/auth/callback`
+    - `https://nextbestmove.app/api/auth/callback/*`
+    - `https://nextbestmove.app/api/calendar/callback/google`
+    - `https://nextbestmove.app/api/calendar/callback/outlook`
 
 ### OAuth Provider Configuration
 - [ ] **Google OAuth:**
-  - [ ] Add production redirect URIs in Google Cloud Console
-  - [ ] Authorized JavaScript origins: `https://yourdomain.com`
-  - [ ] Authorized redirect URIs: `https://yourdomain.com/api/calendar/callback/google`
+  - [ ] Go to: [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+  - [ ] Edit your OAuth 2.0 Client ID
+  - [ ] **Authorized JavaScript origins:** Add `https://nextbestmove.app`
+  - [ ] **Authorized redirect URIs:** Add `https://nextbestmove.app/api/calendar/callback/google`
+  - [ ] Save changes
 
 - [ ] **Microsoft OAuth:**
-  - [ ] Add production redirect URIs in Azure AD
-  - [ ] Redirect URI: `https://yourdomain.com/api/calendar/callback/outlook`
+  - [ ] Go to: [Azure Portal](https://portal.azure.com/) → Azure Active Directory → App registrations
+  - [ ] Select your app registration
+  - [ ] Go to Authentication → Add a platform → Web
+  - [ ] **Redirect URI:** Add `https://nextbestmove.app/api/calendar/callback/outlook`
+  - [ ] Save changes
 
 ---
 
@@ -129,7 +141,7 @@ supabase db push
 - [ ] Stripe account activated for live mode
 - [ ] Production API keys generated
 - [ ] Webhook endpoint configured:
-  - URL: `https://yourdomain.com/api/billing/webhook`
+  - URL: `https://nextbestmove.app/api/billing/webhook`
   - Events to listen for:
     - `checkout.session.completed`
     - `customer.subscription.created`
