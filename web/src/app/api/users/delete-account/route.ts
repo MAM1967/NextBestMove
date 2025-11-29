@@ -309,10 +309,27 @@ export async function DELETE(request: Request) {
           console.error("Full error:", JSON.stringify(authDeleteError, null, 2));
           
           // Check if it's an API key error
-          if (authDeleteError.message?.includes("Invalid API key") || authDeleteError.message?.includes("JWT")) {
+          if (authDeleteError.message?.includes("Invalid API key") || authDeleteError.message?.includes("JWT") || authDeleteError.message?.includes("invalid")) {
             console.error("⚠️ This appears to be an API key validation error");
-            console.error("   Verify the service role key in Vercel matches the one in Supabase Dashboard");
-            console.error("   Key should start with 'eyJ' and be the full JWT token");
+            console.error("   Environment:", process.env.NODE_ENV || "development");
+            console.error("   Supabase URL:", supabaseUrl);
+            console.error("   Service key present:", !!serviceRoleKey);
+            console.error("   Service key length:", serviceRoleKey?.length || 0);
+            console.error("   Service key starts with eyJ:", serviceRoleKey?.startsWith("eyJ"));
+            console.error("   Verify the service role key in .env.local (local) or Vercel (production)");
+            console.error("   Key should start with 'eyJ' and be the full JWT token from Supabase Dashboard");
+            
+            return NextResponse.json(
+              { 
+                error: "Failed to delete auth user",
+                details: authDeleteError.message || "Invalid API key",
+                userId,
+                hint: process.env.NODE_ENV === "development" 
+                  ? "For local development, ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local. For production, verify it's set in Vercel environment variables. The key must match the service_role key in Supabase Dashboard → Settings → API."
+                  : "The service role key may be incorrect. Verify it in Vercel environment variables matches Supabase Dashboard."
+              },
+              { status: authDeleteError.status || 500 }
+            );
           }
           
           // Return error so user knows deletion failed
@@ -322,7 +339,7 @@ export async function DELETE(request: Request) {
               details: authDeleteError.message || "Unknown error",
               userId,
               hint: authDeleteError.message?.includes("Invalid API key") 
-                ? "The service role key may be incorrect. Verify it in Vercel environment variables matches Supabase Dashboard."
+                ? "The service role key may be incorrect. Verify it in .env.local (local) or Vercel (production) environment variables matches Supabase Dashboard."
                 : undefined
             },
             { status: authDeleteError.status || 500 }
