@@ -9,9 +9,19 @@ import {
 import { encryptSecret } from "@/lib/security/encryption";
 import * as client from "openid-client";
 
-function buildRedirectUrl(origin: string, status: "success" | "error") {
-  const url = new URL("/app/settings", origin);
-  url.searchParams.set("calendar", status);
+function buildRedirectUrl(
+  origin: string,
+  status: "success" | "error",
+  callbackUrl?: string | null
+) {
+  // Use callbackUrl if provided (e.g., from onboarding), otherwise default to settings
+  const basePath = callbackUrl || "/app/settings";
+  const url = new URL(basePath, origin);
+  if (status === "success") {
+    url.searchParams.set("calendar", "success");
+  } else {
+    url.searchParams.set("calendar", "error");
+  }
   return url;
 }
 
@@ -30,17 +40,18 @@ export async function GET(
   const expectedState = cookieStore.get(`nbm_calendar_state_${provider}`)?.value;
   const codeVerifier = cookieStore.get(`nbm_calendar_verifier_${provider}`)?.value;
   const userId = cookieStore.get(`nbm_calendar_user_${provider}`)?.value;
+  const callbackUrl = cookieStore.get(`nbm_calendar_callback_${provider}`)?.value;
 
   if (!expectedState || !codeVerifier || !userId) {
     return NextResponse.redirect(
-      buildRedirectUrl(request.nextUrl.origin, "error")
+      buildRedirectUrl(request.nextUrl.origin, "error", callbackUrl)
     );
   }
 
   const actualState = request.nextUrl.searchParams.get("state") || "";
   if (actualState !== expectedState) {
     return NextResponse.redirect(
-      buildRedirectUrl(request.nextUrl.origin, "error")
+      buildRedirectUrl(request.nextUrl.origin, "error", callbackUrl)
     );
   }
 
@@ -115,15 +126,18 @@ export async function GET(
   } catch (error) {
     console.error("Calendar callback error:", error);
     return NextResponse.redirect(
-      buildRedirectUrl(request.nextUrl.origin, "error")
+      buildRedirectUrl(request.nextUrl.origin, "error", callbackUrl)
     );
   } finally {
     cookieStore.delete(`nbm_calendar_state_${provider}`);
     cookieStore.delete(`nbm_calendar_verifier_${provider}`);
     cookieStore.delete(`nbm_calendar_user_${provider}`);
+    if (callbackUrl) {
+      cookieStore.delete(`nbm_calendar_callback_${provider}`);
+    }
   }
 
   return NextResponse.redirect(
-    buildRedirectUrl(request.nextUrl.origin, "success")
+    buildRedirectUrl(request.nextUrl.origin, "success", callbackUrl)
   );
 }

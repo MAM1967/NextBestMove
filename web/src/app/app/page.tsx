@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 function getErrorMessage(error: any): { title: string; message: string } {
   const errorMessage = error?.message || "Unknown error";
@@ -57,6 +58,21 @@ export default async function AppDashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/sign-in");
+  }
+
+  // Check if user has completed onboarding
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .single();
+
+  if (!userProfile?.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
   let tasks = null;
   let error = null;

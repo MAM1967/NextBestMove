@@ -151,22 +151,26 @@ You can store it securely for reference:
 **Important**: All testing should be done from the `web/` directory where the Next.js app is located.
 
 1. **Navigate to the web directory:**
+
    ```bash
    cd web
    ```
 
 2. **Add CRON_SECRET to `.env.local`** (in the `web/` directory):
+
    ```bash
    # In web/.env.local
    CRON_SECRET=your-secret-here
    ```
 
 3. **Start the development server:**
+
    ```bash
    npm run dev
    ```
 
 4. **In a new terminal (still in `web/` directory), test the endpoints:**
+
    ```bash
    # Test daily plans cron
    curl -X GET http://localhost:3000/api/cron/daily-plans \

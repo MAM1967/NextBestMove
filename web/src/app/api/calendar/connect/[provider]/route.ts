@@ -95,6 +95,18 @@ export async function GET(
       maxAge,
     });
 
+    // Store callbackUrl if provided (for onboarding redirect)
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    if (callbackUrl) {
+      cookieStore.set(`nbm_calendar_callback_${provider}`, callbackUrl, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge,
+      });
+    }
+
     return NextResponse.redirect(authorizationUrl.toString());
   } catch (error) {
     console.error("Calendar connect error:", error);

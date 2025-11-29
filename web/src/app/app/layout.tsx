@@ -16,13 +16,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (user) {
     await ensureUserProfile(user.id);
 
-    // Get user profile
+    // Get user profile including onboarding status
     const { data } = await supabase
       .from("users")
-      .select("name, email")
+      .select("name, email, onboarding_completed")
       .eq("id", user.id)
       .single();
     userProfile = data;
+
+    // Redirect to onboarding if not completed (unless already on onboarding page)
+    // Note: This check is done in the page component, not here, to avoid layout issues
+    // The onboarding page itself will handle the redirect check
 
     // Sync calendar on login (non-blocking, runs in background)
     // This ensures calendar data is fresh for capacity calculations
