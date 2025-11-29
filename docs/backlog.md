@@ -77,8 +77,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Weekly Summary page** ✅  
        _Metrics grid, narrative card, insight, focus confirmation, content prompts section_
 
-- [ ] **Content prompt generation**  
-       _Template + AI fallback for win/insight posts, saved to `content_prompts` table_
+- [x] **Content prompt generation** ✅  
+      _Template + AI fallback for win/insight posts, saved to `content_prompts` table. OpenAI integration with BYOK support for premium users._
 
 - [x] **Copy to clipboard for content prompts** ✅  
        _Add "Copy to clipboard" button for content prompts on Weekly Summary page_
@@ -96,11 +96,11 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Billing section UI** ✅  
        _BillingSection component showing plan, status badge, renewal date, manage billing CTA_
 
-- [ ] **Data export endpoint**  
-       _Download JSON of pins/actions/plans/summaries + button in Settings_
+- [x] **Data export endpoint** ✅  
+      _Download JSON of pins/actions/plans/summaries + button in Settings_
 
-- [ ] **Email preferences & account deletion controls**  
-       _Add placeholder UI + backend hooks for unsubscribe, weekly insights report opt-in, productivity tips toggle (future), and “Delete my account”. High P1 – required to meet compliance expectations._
+- [x] **Email preferences & account deletion controls** ✅  
+      _Email preferences UI with toggles for morning plan, fast win reminder, follow-up alerts, weekly summary. Unsubscribe from all emails option. Account deletion with full data removal and auth.users deletion. High P1 – required to meet compliance expectations._
 
 ### Background Jobs & Observability
 
