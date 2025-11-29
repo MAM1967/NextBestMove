@@ -168,12 +168,16 @@ export async function DELETE(request: Request) {
     // This prevents the user from signing back in
     // Get service role key - check both possible env var names
     // In Next.js API routes, process.env works directly (no need for next.config.ts)
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    const rawServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    
+    // Trim whitespace that might have been accidentally added
+    const serviceRoleKey = rawServiceRoleKey?.trim();
     
     console.log("=== Service Role Key Debug ===");
     console.log("Service role key present:", !!serviceRoleKey);
     console.log("Service role key length:", serviceRoleKey?.length || 0);
     console.log("Service role key starts with:", serviceRoleKey?.substring(0, 20) || "N/A");
+    console.log("Service role key ends with:", serviceRoleKey?.substring(serviceRoleKey?.length - 10) || "N/A");
     console.log("All env vars with SUPABASE:", Object.keys(process.env).filter(k => k.includes("SUPABASE")));
     
     if (!serviceRoleKey) {
@@ -191,12 +195,13 @@ export async function DELETE(request: Request) {
     
     if (serviceRoleKey) {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
         if (!supabaseUrl) {
           throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
         }
 
         console.log("Creating admin client with URL:", supabaseUrl);
+        console.log("URL length:", supabaseUrl.length);
         
         // Verify key format
         // Supabase service role keys should be JWT format (starts with "eyJ")
@@ -206,6 +211,8 @@ export async function DELETE(request: Request) {
         console.log("- Starts with eyJ (JWT):", serviceRoleKey.startsWith("eyJ"));
         console.log("- Starts with sb_secret_:", serviceRoleKey.startsWith("sb_secret_"));
         console.log("- Key length:", serviceRoleKey.length);
+        console.log("- Contains spaces:", serviceRoleKey.includes(" "));
+        console.log("- Contains newlines:", serviceRoleKey.includes("\n"));
         
         if (!serviceRoleKey.startsWith("eyJ")) {
           console.error("❌ Service role key must be JWT format (starts with 'eyJ')");
@@ -225,6 +232,9 @@ export async function DELETE(request: Request) {
         // This bypasses RLS and allows admin operations
         // Note: The key should be the full service_role key from Supabase Dashboard
         console.log("Creating admin client...");
+        console.log("Supabase URL:", supabaseUrl);
+        console.log("Service key (first 30 chars):", serviceRoleKey.substring(0, 30) + "...");
+        
         const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
           auth: {
             autoRefreshToken: false,
