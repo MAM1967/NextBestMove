@@ -4,7 +4,9 @@ This document describes the background jobs (cron jobs) configured for NextBestM
 
 ## Overview
 
-We use **Vercel Cron** to run scheduled background jobs. All cron endpoints are configured in `vercel.json` and run automatically on the specified schedule.
+We use **cron-job.org** (a free external cron service) to call our API endpoints on a schedule. This approach works well for free Vercel plans that have limited built-in cron job support.
+
+**Alternative**: If you upgrade to a Vercel Pro plan, you can use Vercel Cron instead (see "Vercel Cron (Alternative)" section below).
 
 ## Cron Jobs
 
@@ -59,26 +61,66 @@ if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
 }
 ```
 
-**Important**: Set `CRON_SECRET` in Vercel environment variables. Vercel Cron automatically sends this header when calling your endpoints.
+**Important**: Set `CRON_SECRET` in Vercel environment variables. External cron services (like cron-job.org) will send this header when calling your endpoints.
 
-## Vercel Configuration
+## Setup with cron-job.org
 
-### 1. Add CRON_SECRET to Vercel
+### 1. Generate CRON_SECRET
+
+Generate a secure random secret:
+
+```bash
+openssl rand -hex 32
+```
+
+### 2. Add CRON_SECRET to Vercel
 
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Add `CRON_SECRET` with a secure random string (e.g., generate with `openssl rand -hex 32`)
+2. Add `CRON_SECRET` with the generated secret
 3. Add it to **Production**, **Preview**, and **Development** environments
 
-### 2. Verify Cron Jobs in Vercel
+### 3. Set Up Cron Jobs on cron-job.org
 
-1. Go to Vercel Dashboard → Your Project → Settings → Cron Jobs
-2. Verify that all 4 cron jobs are listed:
-   - `daily-plans` - `0 6 * * *`
-   - `weekly-summaries` - `0 1 * * 1`
-   - `auto-unsnooze` - `0 0 * * *`
-   - `auto-archive` - `0 2 * * *`
+1. Go to [https://cron-job.org](https://cron-job.org) and create a free account
+2. For each job, click "Create cronjob" and configure:
 
-### 3. Test Cron Jobs Locally
+#### Job 1: Daily Plan Generation
+- **Title**: `NextBestMove - Daily Plans`
+- **Address**: `https://nextbestmove.app/api/cron/daily-plans`
+- **Schedule**: `0 6 * * *` (Daily at 6 AM UTC)
+- **Request method**: `GET`
+- **Request headers**: 
+  - Key: `Authorization`
+  - Value: `Bearer YOUR_CRON_SECRET` (use the secret from step 1)
+
+#### Job 2: Weekly Summary Generation
+- **Title**: `NextBestMove - Weekly Summaries`
+- **Address**: `https://nextbestmove.app/api/cron/weekly-summaries`
+- **Schedule**: `0 1 * * 1` (Monday at 1 AM UTC)
+- **Request method**: `GET`
+- **Request headers**: 
+  - Key: `Authorization`
+  - Value: `Bearer YOUR_CRON_SECRET`
+
+#### Job 3: Auto-Unsnooze
+- **Title**: `NextBestMove - Auto-Unsnooze`
+- **Address**: `https://nextbestmove.app/api/cron/auto-unsnooze`
+- **Schedule**: `0 0 * * *` (Daily at midnight UTC)
+- **Request method**: `GET`
+- **Request headers**: 
+  - Key: `Authorization`
+  - Value: `Bearer YOUR_CRON_SECRET`
+
+#### Job 4: Auto-Archive
+- **Title**: `NextBestMove - Auto-Archive`
+- **Address**: `https://nextbestmove.app/api/cron/auto-archive`
+- **Schedule**: `0 2 * * *` (Daily at 2 AM UTC)
+- **Request method**: `GET`
+- **Request headers**: 
+  - Key: `Authorization`
+  - Value: `Bearer YOUR_CRON_SECRET`
+
+### 4. Test Cron Jobs Locally
 
 For local testing, you can manually call the endpoints:
 
@@ -117,8 +159,8 @@ These functions can be called from both:
 ## Monitoring
 
 Monitor cron job execution in:
-- **Vercel Dashboard**: Project → Functions → View logs
-- **Vercel Cron Dashboard**: Project → Settings → Cron Jobs → View execution history
+- **cron-job.org Dashboard**: View execution history, success/failure status, and response times
+- **Vercel Dashboard**: Project → Functions → View logs (to see API endpoint logs)
 
 Each cron endpoint returns JSON with:
 - `success`: boolean
@@ -130,20 +172,54 @@ Each cron endpoint returns JSON with:
 ## Troubleshooting
 
 ### Cron jobs not running
-1. Check that `vercel.json` is in the `web/` directory (not root)
-2. Verify cron jobs appear in Vercel Dashboard → Settings → Cron Jobs
-3. Check Vercel logs for errors
+1. Check cron-job.org dashboard to see if jobs are enabled and running
+2. Verify the URL is correct (should be `https://nextbestmove.app/api/cron/...`)
+3. Check that the Authorization header is set correctly in cron-job.org
+4. Check Vercel logs for API endpoint errors
 
 ### "Unauthorized" errors
 1. Verify `CRON_SECRET` is set in Vercel environment variables
-2. Check that the secret matches what Vercel is sending
-3. For local testing, ensure `CRON_SECRET` is in `.env.local`
+2. Check that the secret in cron-job.org matches the one in Vercel
+3. Ensure the Authorization header format is: `Bearer YOUR_SECRET` (with space after "Bearer")
+4. For local testing, ensure `CRON_SECRET` is in `.env.local`
 
 ### Jobs running but not generating plans/summaries
-1. Check logs for specific error messages
-2. Verify users exist in database
-3. Check that users have candidate actions (for daily plans)
-4. Verify date calculations (weekend exclusion, week start dates)
+1. Check cron-job.org execution logs for response details
+2. Check Vercel logs for specific error messages
+3. Verify users exist in database
+4. Check that users have candidate actions (for daily plans)
+5. Verify date calculations (weekend exclusion, week start dates)
+
+## Vercel Cron (Alternative)
+
+If you upgrade to Vercel Pro plan (which allows more cron jobs), you can use Vercel Cron instead:
+
+1. Create `web/vercel.json`:
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-plans",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-summaries",
+      "schedule": "0 1 * * 1"
+    },
+    {
+      "path": "/api/cron/auto-unsnooze",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/auto-archive",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
+```
+
+2. Vercel will automatically call your endpoints with the `Authorization: Bearer CRON_SECRET` header
+3. Monitor in Vercel Dashboard → Settings → Cron Jobs
 
 ---
 
