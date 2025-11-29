@@ -97,7 +97,7 @@ export default async function SettingsPage() {
     redirect("/auth/sign-in?redirect=/app/settings");
   }
 
-  const [{ data: profile }, calendarStatus, { data: billingCustomer }] =
+  const [{ data: profile }, calendarStatus, { data: billingCustomer }, { count: contentPromptsCount }] =
     await Promise.all([
       supabase
         .from("users")
@@ -112,6 +112,10 @@ export default async function SettingsPage() {
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle(),
+      supabase
+        .from("content_prompts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
     ]);
 
   const connections: CalendarConnection[] = calendarStatus.connections || [];
@@ -288,6 +292,11 @@ export default async function SettingsPage() {
             <p className="text-xs text-zinc-500">
               Prompts appear when you complete at least six actions in a week.
             </p>
+            {contentPromptsCount !== null && contentPromptsCount > 0 && (
+              <p className="text-xs font-medium text-zinc-700">
+                {contentPromptsCount} prompt{contentPromptsCount !== 1 ? "s" : ""} saved
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">

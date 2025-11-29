@@ -1,55 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-
-function getErrorMessage(error: any): { title: string; message: string } {
-  const errorMessage = error?.message || "Unknown error";
-  const errorCode = error?.code || "";
-
-  // Network/connection errors
-  if (
-    errorMessage.includes("fetch failed") ||
-    errorMessage.includes("NetworkError") ||
-    errorMessage.includes("Failed to fetch")
-  ) {
-    return {
-      title: "Connection Error",
-      message:
-        "Unable to connect to Supabase. Please check your internet connection and ensure your Supabase project is running.",
-    };
-  }
-
-  // Table doesn't exist
-  if (
-    errorCode === "PGRST116" ||
-    errorMessage.includes("relation") ||
-    errorMessage.includes("does not exist")
-  ) {
-    return {
-      title: "Table Not Found",
-      message:
-        "The 'tasks' table doesn't exist yet. Please run the migration file: supabase/migrations/202501270001_create_tasks_table.sql",
-    };
-  }
-
-  // Permission/RLS errors
-  if (
-    errorCode === "PGRST301" ||
-    errorMessage.includes("permission") ||
-    errorMessage.includes("row-level security")
-  ) {
-    return {
-      title: "Permission Error",
-      message:
-        "You don't have permission to access this data. Check your Supabase RLS policies.",
-    };
-  }
-
-  // Generic error
-  return {
-    title: "Error Loading Tasks",
-    message: `Unable to load tasks: ${errorMessage}`,
-  };
-}
+import Link from "next/link";
 
 export default async function AppDashboardPage() {
   const supabase = await createClient();
@@ -66,7 +17,7 @@ export default async function AppDashboardPage() {
   // Check if user has completed onboarding
   const { data: userProfile } = await supabase
     .from("users")
-    .select("onboarding_completed")
+    .select("onboarding_completed, streak_count")
     .eq("id", user.id)
     .single();
 
@@ -74,39 +25,81 @@ export default async function AppDashboardPage() {
     redirect("/onboarding");
   }
 
-  let tasks = null;
-  let error = null;
-  let errorInfo = null;
+  const today = new Date().toISOString().split("T")[0];
 
-  try {
-    const result = await supabase
-      .from("tasks")
-      .select("id, title, status")
-      .limit(5);
+  // Fetch today's daily plan
+  const { data: dailyPlan } = await supabase
+    .from("daily_plans")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("date", today)
+    .single();
 
-    tasks = result.data;
-    error = result.error;
+  // Fetch plan actions if plan exists
+  let fastWinCount = 0;
+  let regularActionCount = 0;
+  let completedCount = 0;
+  let fastWinDescription = null;
 
-    // Log the actual error for debugging
-    if (error) {
-      console.error("Supabase error:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        fullError: error,
-      });
+  if (dailyPlan) {
+    const { data: planActions } = await supabase
+      .from("daily_plan_actions")
+      .select(
+        `
+        is_fast_win,
+        position,
+        actions (
+          id,
+          state,
+          action_type,
+          description
+        )
+      `
+      )
+      .eq("daily_plan_id", dailyPlan.id)
+      .order("position", { ascending: true });
+
+    if (planActions) {
+      for (const planAction of planActions) {
+        const action = planAction.actions as any;
+        if (action) {
+          if (planAction.is_fast_win) {
+            fastWinCount = 1;
+            fastWinDescription = action.description;
+            if (action.state === "DONE" || action.state === "REPLIED" || action.state === "SENT") {
+              completedCount++;
+            }
+          } else {
+            regularActionCount++;
+            if (action.state === "DONE" || action.state === "REPLIED" || action.state === "SENT") {
+              completedCount++;
+            }
+          }
+        }
+      }
     }
-  } catch (err: any) {
-    // Catch any unexpected errors (like network failures)
-    console.error("Unexpected error fetching tasks:", err);
-    error = {
-      message: err?.message || "Unknown error",
-      code: err?.code || "",
-    };
   }
 
-  errorInfo = error ? getErrorMessage(error) : null;
+  const totalActions = fastWinCount + regularActionCount;
+  const progressPercentage = totalActions > 0 ? (completedCount / totalActions) * 100 : 0;
+
+  // Get calendar free minutes from daily plan if available
+  const freeMinutes = dailyPlan?.free_minutes ?? null;
+  const capacity = dailyPlan?.capacity ?? "default";
+
+  // Format calendar availability
+  let timeUntilNextEvent = "Calendar not connected";
+  if (freeMinutes !== null) {
+    if (freeMinutes < 30) {
+      timeUntilNextEvent = "Very busy day";
+    } else if (freeMinutes < 60) {
+      timeUntilNextEvent = "Light availability";
+    } else if (freeMinutes < 120) {
+      timeUntilNextEvent = "Standard availability";
+    } else {
+      timeUntilNextEvent = "Good availability";
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -115,8 +108,9 @@ export default async function AppDashboardPage() {
           Today&apos;s next best move
         </h1>
         <p className="text-sm text-zinc-600">
-          This dashboard is wired to Supabase. Once your schema is in place,
-          tasks from the database will appear below.
+          {dailyPlan
+            ? `You have ${totalActions} action${totalActions !== 1 ? "s" : ""} planned for today`
+            : "Generate your daily plan to get started"}
         </p>
       </header>
 
@@ -124,7 +118,8 @@ export default async function AppDashboardPage() {
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
           <h2 className="text-sm font-medium text-zinc-900">Suggested focus</h2>
           <p className="mt-1 text-sm text-zinc-600">
-            e.g. &quot;Deep work: Ship NextBestMove onboarding flow&quot;.
+            {dailyPlan?.focus_statement ||
+              "Complete your daily plan to see your focus for today"}
           </p>
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
@@ -132,87 +127,100 @@ export default async function AppDashboardPage() {
             Time until next event
           </h2>
           <p className="mt-1 text-sm text-zinc-600">
-            Calendar-aware availability will show up here.
+            {timeUntilNextEvent}
           </p>
+          {freeMinutes !== null && (
+            <p className="mt-1 text-xs text-zinc-500">
+              {freeMinutes} minutes available today
+            </p>
+          )}
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-medium text-zinc-900">Energy check</h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            Quick self-check or inferred energy, to shape suggestions.
+          <h2 className="text-sm font-medium text-zinc-900">Current streak</h2>
+          <p className="mt-1 text-2xl font-semibold text-zinc-900">
+            🔥 {userProfile?.streak_count ?? 0}
           </p>
+          <p className="mt-1 text-xs text-zinc-500">day{userProfile?.streak_count !== 1 ? "s" : ""}</p>
         </div>
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-zinc-900">
-          Today&apos;s tasks (Supabase demo)
-        </h2>
-        {errorInfo && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4">
-            <h3 className="text-sm font-semibold text-red-900">
-              {errorInfo.title}
-            </h3>
-            <p className="mt-1 text-sm text-red-700">{errorInfo.message}</p>
-            {errorInfo.title === "Table Not Found" && (
-              <div className="mt-3 rounded-md bg-red-100 p-2 text-xs text-red-800">
-                <p className="font-medium">Quick fix:</p>
-                <ol className="mt-1 list-inside list-decimal space-y-1">
-                  <li>Open your Supabase dashboard</li>
-                  <li>Go to SQL Editor</li>
-                  <li>
-                    Run the migration file:{" "}
-                    <code className="rounded bg-red-200 px-1">
-                      202501270001_create_tasks_table.sql
-                    </code>
-                  </li>
-                </ol>
-              </div>
-            )}
-            {/* Debug info - remove in production */}
-            {process.env.NODE_ENV === "development" && error && (
-              <details className="mt-3 rounded-md bg-red-100 p-2 text-xs text-red-800">
-                <summary className="cursor-pointer font-medium">
-                  Debug info (dev only)
-                </summary>
-                <pre className="mt-2 overflow-auto text-[10px]">
-                  {JSON.stringify(
-                    {
-                      message: error.message,
-                      code: error.code,
-                      details: error.details,
-                      hint: error.hint,
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              </details>
-            )}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium text-zinc-900">
+            Today&apos;s plan
+          </h2>
+          {dailyPlan && (
+            <Link
+              href="/app/plan"
+              className="text-xs font-medium text-purple-700 hover:text-purple-800 hover:underline"
+            >
+              View full plan →
+            </Link>
+          )}
+        </div>
+
+        {!dailyPlan && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm text-amber-800 mb-3">
+              No plan generated for today yet.
+            </p>
+            <Link
+              href="/app/plan"
+              className="inline-block rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+            >
+              Generate Daily Plan
+            </Link>
           </div>
         )}
-        {!error && (!tasks || tasks.length === 0) && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm text-amber-800">
-              No tasks found yet. Add some rows to the{" "}
-              <code className="rounded bg-amber-100 px-1">tasks</code> table in
-              Supabase to see them here.
+
+        {dailyPlan && totalActions === 0 && (
+          <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+            <p className="text-sm text-zinc-600">
+              Your plan has been generated but no actions are available yet. Add some pins to get started.
             </p>
           </div>
         )}
-        {!error && tasks && tasks.length > 0 && (
-          <ul className="mt-3 space-y-2 text-sm">
-            {tasks.map((task) => (
-              <li
-                key={task.id}
-                className="flex items-center justify-between rounded-md border border-zinc-200 px-3 py-2 transition-colors hover:bg-zinc-50"
-              >
-                <span className="text-zinc-900">{task.title}</span>
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-700">
-                  {task.status}
-                </span>
-              </li>
-            ))}
-          </ul>
+
+        {dailyPlan && totalActions > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-zinc-600">Progress</span>
+              <span className="font-semibold text-zinc-900">
+                {completedCount} of {totalActions} completed
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
+              <div
+                className="h-full bg-purple-600 transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+              />
+            </div>
+            {fastWinCount > 0 && fastWinDescription && (
+              <div className="mt-3 rounded-lg border-2 border-purple-200 bg-purple-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-900">
+                    FAST WIN
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-700">
+                  {fastWinDescription}
+                </p>
+              </div>
+            )}
+            {regularActionCount > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-zinc-500 mb-2">
+                  {regularActionCount} regular action{regularActionCount !== 1 ? "s" : ""}
+                </p>
+                <Link
+                  href="/app/plan"
+                  className="text-sm text-purple-700 hover:text-purple-800 hover:underline"
+                >
+                  View all actions →
+                </Link>
+              </div>
+            )}
+          </div>
         )}
       </section>
     </div>

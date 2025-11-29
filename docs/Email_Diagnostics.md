@@ -45,11 +45,13 @@ This will send a test password reset email and return the email ID from Resend.
 #### Emails Not Appearing in Resend Dashboard
 
 **Possible causes:**
+
 - Resend API key is incorrect or missing
 - API key doesn't have permission to send emails
 - Domain not verified in Resend
 
 **Check:**
+
 1. Verify `RESEND_API_KEY` is set in Vercel environment variables
 2. Check Resend dashboard → API Keys to verify the key is active
 3. Verify domain `nextbestmove.app` is verified in Resend
@@ -57,11 +59,13 @@ This will send a test password reset email and return the email ID from Resend.
 #### Emails in Resend Dashboard but Not Received
 
 **Possible causes:**
+
 - Email is in spam folder
 - Recipient's email server is blocking emails
 - Domain reputation issues
 
 **Check:**
+
 1. Check spam/junk folder
 2. Check Resend dashboard for bounce/failure status
 3. Verify DMARC/SPF/DKIM records are correct
@@ -70,6 +74,7 @@ This will send a test password reset email and return the email ID from Resend.
 #### Error: "RESEND_API_KEY is not set"
 
 **Fix:**
+
 1. Add `RESEND_API_KEY` to Vercel environment variables
 2. Redeploy the application
 3. Verify the key is correct (starts with `re_`)
@@ -77,12 +82,14 @@ This will send a test password reset email and return the email ID from Resend.
 #### Error: "Failed to send email: [error message]"
 
 **Common errors:**
+
 - `Invalid API key` - API key is wrong or expired
 - `Domain not verified` - Domain needs to be verified in Resend
 - `Rate limit exceeded` - Too many emails sent too quickly
 - `Invalid from address` - From address must use verified domain
 
 **Fix:**
+
 1. Check Resend dashboard for specific error details
 2. Verify domain is verified
 3. Check API key permissions
@@ -121,6 +128,7 @@ If there's an error:
 ## Resend API Response
 
 When an email is successfully sent, Resend returns:
+
 - `id` - Email ID (can be used to track delivery)
 - `from` - Sender email
 - `to` - Recipient email
@@ -131,4 +139,3 @@ This ID can be used in Resend dashboard to check delivery status.
 ---
 
 _Last updated: January 29, 2025_
-

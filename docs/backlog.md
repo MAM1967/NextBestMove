@@ -110,6 +110,14 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Observability setup**  
        _Sentry, analytics events (PostHog/Mixpanel), logging for billing + webhooks_
 
+### Dashboard & Settings Data
+
+- [ ] **Dashboard data integration**  
+       _Dashboard currently shows static placeholder content. Should display user-specific data: today's daily plan, fast win action, regular actions, streak count, calendar availability. Replace placeholder tasks table query with actual daily plan and actions data._
+
+- [ ] **Content prompts & streak data in settings**  
+       _Settings page shows static content prompts section and streak count. Content prompts should show actual data (count of prompts generated, enable/disable toggle if implemented). Streak count is fetched but may need real-time updates. Add to backlog if this is P2._
+
 ---
 
 ## 🟠 P1 – High Value Enhancements
