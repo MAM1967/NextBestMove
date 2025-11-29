@@ -202,56 +202,19 @@ export async function DELETE(request: Request) {
       );
     }
     
-    if (serviceRoleKey) {
-      try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-        if (!supabaseUrl) {
-          throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
-        }
-
-        console.log("Creating admin client with URL:", supabaseUrl);
-        console.log("URL length:", supabaseUrl.length);
+    // Use admin client helper - it will validate the key format and throw if invalid
+    try {
+      console.log("Creating admin client...");
+      console.log("Service role key present:", !!serviceRoleKey);
+      console.log("Service role key length:", serviceRoleKey?.length || 0);
+      console.log("Service role key starts with:", serviceRoleKey?.substring(0, 20) || "N/A");
+      
+      // The createAdminClient helper will validate the key format
+      // It will throw an error if the key is invalid or missing
+      const adminClient = createAdminClient();
         
-        // Verify key format
-        // Supabase service role keys should be JWT format (starts with "eyJ")
-        // The sb_secret_ format is for newer projects but may not work with JS client
-        // Check Supabase Dashboard → Settings → API → service_role key (secret)
-        console.log("Service role key format check:");
-        console.log("- Starts with eyJ (JWT):", serviceRoleKey.startsWith("eyJ"));
-        console.log("- Starts with sb_secret_:", serviceRoleKey.startsWith("sb_secret_"));
-        console.log("- Key length:", serviceRoleKey.length);
-        console.log("- Contains spaces:", serviceRoleKey.includes(" "));
-        console.log("- Contains newlines:", serviceRoleKey.includes("\n"));
-        
-        if (!serviceRoleKey.startsWith("eyJ")) {
-          console.error("❌ Service role key must be JWT format (starts with 'eyJ')");
-          console.error("   The sb_secret_ format may not work with @supabase/supabase-js");
-          console.error("   Get the JWT format key from: Supabase Dashboard → Settings → API → service_role (secret)");
-          return NextResponse.json(
-            { 
-              error: "Invalid service role key format",
-              details: "Service role key must be JWT format (starts with 'eyJ'). Get it from Supabase Dashboard → Settings → API → service_role key (secret). The sb_secret_ format may not work with the JS client.",
-              hint: "Look for the 'service_role' key in your Supabase Dashboard. It should be a long JWT token starting with 'eyJ'."
-            },
-            { status: 500 }
-          );
-        }
-        
-        // Create admin client with service role key
-        // This bypasses RLS and allows admin operations
-        // Note: The key should be the full service_role key from Supabase Dashboard
-        console.log("Creating admin client...");
-        console.log("Supabase URL:", supabaseUrl);
-        console.log("Service key (first 30 chars):", serviceRoleKey.substring(0, 30) + "...");
-        
-        // Use our admin client helper which handles the service role key
-        const adminClient = createAdminClient();
-        
-        console.log("Admin client created successfully");
-
+        console.log("✅ Admin client created successfully");
         console.log("Attempting to delete auth user:", userId);
-        console.log("Using Supabase URL:", supabaseUrl);
-        console.log("Service key format verified (starts with eyJ):", serviceRoleKey.startsWith("eyJ"));
         
         // Verify the admin client can access auth
         // Test by trying to list users (this will fail if key is invalid)
@@ -292,7 +255,7 @@ export async function DELETE(request: Request) {
             { 
               error: "Failed to validate service role key",
               details: testException instanceof Error ? testException.message : String(testException),
-              hint: "There was an exception while testing the admin client. Check Vercel function logs for details."
+              hint: "There was an exception while testing the admin client. Check Vercel function logs for details. Make sure SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key from Supabase Dashboard."
             },
             { status: 500 }
           );
@@ -358,13 +321,25 @@ export async function DELETE(request: Request) {
         console.error("Error type:", authError instanceof Error ? authError.constructor.name : typeof authError);
         console.error("Error message:", authError instanceof Error ? authError.message : String(authError));
         console.error("Error stack:", authError instanceof Error ? authError.stack : 'No stack');
-        
+
+        // Check if it's a key format error from createAdminClient
+        if (authError instanceof Error && authError.message.includes("Invalid service role key format")) {
+          return NextResponse.json(
+            {
+              error: "Invalid service role key format",
+              details: authError.message,
+              hint: "The service role key in Vercel must be in JWT format (starts with 'eyJ'). Check Vercel Dashboard → Environment Variables → SUPABASE_SERVICE_ROLE_KEY"
+            },
+            { status: 500 }
+          );
+        }
+
         // Return error so user knows deletion failed
         return NextResponse.json(
-          { 
+          {
             error: "Failed to delete auth user",
             details: authError instanceof Error ? authError.message : String(authError),
-            userId 
+            userId
           },
           { status: 500 }
         );
@@ -372,7 +347,7 @@ export async function DELETE(request: Request) {
     } else {
       console.error("❌ SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
       return NextResponse.json(
-        { 
+        {
           error: "Service role key not configured",
           message: "Cannot delete auth user. User will be able to sign in again."
         },
