@@ -47,7 +47,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (request.nextUrl.pathname.startsWith("/auth")) {
+  // Exception: allow /auth/reset-password when user has a recovery session
+  if (request.nextUrl.pathname.startsWith("/auth") && request.nextUrl.pathname !== "/auth/reset-password") {
     const {
       data: { user },
     } = await supabase.auth.getUser();

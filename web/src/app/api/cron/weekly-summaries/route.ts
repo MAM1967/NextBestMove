@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendWeeklySummaryEmail } from "@/lib/email/notifications";
 
 /**
  * GET /api/cron/weekly-summaries
@@ -33,10 +34,10 @@ export async function GET(request: Request) {
 
     const weekStartStr = lastMonday.toISOString().split("T")[0];
 
-    // Get all active users
+    // Get all active users with email preferences
     const { data: users, error: usersError } = await adminClient
       .from("users")
-      .select("id")
+      .select("id, email, name, email_weekly_summary, email_unsubscribed")
       .order("created_at", { ascending: false });
 
     if (usersError) {
@@ -58,6 +59,7 @@ export async function GET(request: Request) {
     let successCount = 0;
     let errorCount = 0;
     let skippedCount = 0;
+    let emailsSent = 0;
     const errors: Array<{ userId: string; error: string }> = [];
 
     // Generate summaries for each user
@@ -75,12 +77,32 @@ export async function GET(request: Request) {
           // Skip if summary already exists (not an error)
           if (result.error?.includes("already exists")) {
             skippedCount++;
+            // Still try to send email if summary exists
+            if (user.email_weekly_summary && !user.email_unsubscribed) {
+              try {
+                await sendEmailForWeeklySummary(adminClient, user, weekStartStr);
+                emailsSent++;
+              } catch (emailError) {
+                console.error(`Error sending email to ${user.email}:`, emailError);
+              }
+            }
             continue;
           }
           errorCount++;
           errors.push({ userId: user.id, error: result.error || "Unknown error" });
         } else {
           successCount++;
+          
+          // Send email if user has email_weekly_summary enabled
+          if (user.email_weekly_summary && !user.email_unsubscribed) {
+            try {
+              await sendEmailForWeeklySummary(adminClient, user, weekStartStr);
+              emailsSent++;
+            } catch (emailError) {
+              console.error(`Error sending email to ${user.email}:`, emailError);
+              // Don't fail the whole job if email fails
+            }
+          }
         }
       } catch (error) {
         errorCount++;
@@ -96,6 +118,7 @@ export async function GET(request: Request) {
       totalUsers: users.length,
       generated: successCount,
       skipped: skippedCount,
+      emailsSent,
       errors: errorCount,
       errorDetails: errors.length > 0 ? errors : undefined,
     });
@@ -109,5 +132,46 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Helper function to send weekly summary email
+ */
+async function sendEmailForWeeklySummary(
+  adminClient: any,
+  user: { id: string; email: string; name: string },
+  weekStartStr: string
+) {
+  // Fetch the weekly summary
+  const { data: summary, error: summaryError } = await adminClient
+    .from("weekly_summaries")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("week_start_date", weekStartStr)
+    .maybeSingle();
+
+  if (summaryError || !summary) {
+    throw new Error(summaryError?.message || "Summary not found");
+  }
+
+  // Parse content prompts if they exist
+  let contentPrompts: Array<{ type: string; text: string }> | null = null;
+  if (summary.content_prompts && Array.isArray(summary.content_prompts)) {
+    contentPrompts = summary.content_prompts;
+  }
+
+  // Send email
+  await sendWeeklySummaryEmail({
+    to: user.email,
+    userName: user.name,
+    weekStartDate: weekStartStr,
+    daysActive: summary.days_active || 0,
+    actionsCompleted: summary.actions_completed || 0,
+    replies: summary.replies || 0,
+    callsBooked: summary.calls_booked || 0,
+    insightText: summary.insight_text,
+    nextWeekFocus: summary.next_week_focus,
+    contentPrompts,
+  });
 }
 

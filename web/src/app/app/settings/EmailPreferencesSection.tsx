@@ -137,7 +137,7 @@ export function EmailPreferencesSection({
           disabled={isSaving}
         />
       </div>
-      <div className="pt-2 border-t border-zinc-200">
+      <div className="pt-2 border-t border-zinc-200 space-y-2">
         <button
           type="button"
           onClick={handleUnsubscribe}
@@ -146,6 +146,9 @@ export function EmailPreferencesSection({
         >
           {isUnsubscribed ? "Unsubscribed from all emails" : "Unsubscribe from all emails"}
         </button>
+        <p className="text-xs text-zinc-500">
+          💡 <strong>Tip:</strong> If you're not receiving emails, check your spam folder and mark NextBestMove emails as "Not Spam" to improve deliverability.
+        </p>
       </div>
     </div>
   );

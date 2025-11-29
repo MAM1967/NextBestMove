@@ -66,13 +66,13 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Free/busy API + status indicators** ✅  
        _Cached free/busy fetch, fallback to default capacity, Settings status block, disconnect action_
 
-- [ ] **Customizable working hours (onboarding preference)**  
-       _Allow users to set their working hours (e.g., 9-5, 10-6, 8-8) during onboarding. Currently hardcoded to 9 AM - 5 PM. This is a STANDARD feature (not premium) because it's core functionality - the app won't work correctly for many users without it. Similar to timezone - a fundamental configuration setting. Store in `users` table as `work_start_hour` and `work_end_hour` (integers 0-23). Update capacity calculation and calendar events filtering to use custom hours._
+- [x] **Customizable working hours (onboarding preference)** ✅  
+       _Allow users to set their working hours (e.g., 9-5, 10-6, 8-8) during onboarding. Currently hardcoded to 9 AM - 5 PM. This is a STANDARD feature (not premium) because it's core functionality - the app won't work correctly for many users without it. Similar to timezone - a fundamental configuration setting. Store in `users` table as `work_start_time` and `work_end_time` (TIME type). Update capacity calculation and calendar events filtering to use custom hours. Implemented in onboarding Step 4 and Settings → Account Overview._
 
 ### Weekly Summary & Content
 
-- [ ] **Weekly summary metrics job**  
-       _Aggregate stats, placeholder narrative/insight/content prompts, schedule job_
+- [x] **Weekly summary metrics job** ✅  
+       _Aggregate stats, placeholder narrative/insight/content prompts, schedule job. Implemented as cron job via cron-job.org, generates summaries and sends emails if enabled._
 
 - [x] **Weekly Summary page** ✅  
        _Metrics grid, narrative card, insight, focus confirmation, content prompts section_
@@ -85,8 +85,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Onboarding
 
-- [ ] **Onboarding flow (8 steps)**  
-       _Welcome → pin → optional calendar → working hours → weekend preference → weekly focus → first plan ready → fast win coaching → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan_
+- [x] **Onboarding flow (8 steps)** ✅  
+       _Welcome → pin → optional calendar → working hours → weekend preference → weekly focus → first plan ready → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan. Implemented with localStorage persistence for OAuth redirects, final step changed from "fast win coaching" to "start free trial"._
 
 ### Settings & Export
 
@@ -104,8 +104,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Background Jobs & Observability
 
-- [ ] **Background jobs**  
-       _Daily plan cron, weekly summary cron, auto-unsnooze, auto-archive (Supabase or Vercel Cron)_
+- [x] **Background jobs** ✅  
+       _Daily plan cron, weekly summary cron, auto-unsnooze, auto-archive. Implemented via cron-job.org (4 jobs total). Includes notification cron jobs: morning plan, fast win reminder, follow-up alerts._
 
 - [ ] **Observability setup**  
        _Sentry, analytics events (PostHog/Mixpanel), logging for billing + webhooks_
@@ -117,10 +117,11 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Account overview: Password change & timezone editing** ✅  
        _Allow users to change password and update timezone in Settings → Account overview. Timezone dropdown with common options for travelers/remote workers. Password change requires confirmation._
 
-- [ ] **Password reset / Forgot password flow**  
-       _Implement "Forgot password?" link on sign-in page, password reset email flow, and reset password page. Use Supabase `resetPasswordForEmail` and `updateUser` APIs._
+- [x] **Password reset / Forgot password flow** ✅  
+       _Implement "Forgot password?" link on sign-in page, password reset email flow, and reset password page. Use Supabase `resetPasswordForEmail` and `updateUser` APIs. Includes forgot password page, reset password page with token validation, and proper session handling._
 
-- [ ] **Notification preferences wiring** (morning plan, fast win reminder, follow-up alerts, weekly summary)
+- [x] **Notification preferences wiring** ✅ (morning plan, fast win reminder, follow-up alerts, weekly summary)
+       _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
 - [ ] **Paywall analytics & copy polish** (trial/past-due variants, event tracking)
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)

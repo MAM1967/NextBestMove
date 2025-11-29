@@ -1,10 +1,16 @@
 import { Resend } from "resend";
 
 // Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Handle missing API key gracefully for local development
+const resendApiKey = process.env.RESEND_API_KEY;
+if (!resendApiKey) {
+  console.warn("⚠️ RESEND_API_KEY is not set. Email sending will fail.");
+}
 
-// Default from address (update when domain is verified)
-const DEFAULT_FROM = "NextBestMove <onboarding@resend.dev>";
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
+
+// Default from address (using verified domain)
+const DEFAULT_FROM = "NextBestMove <noreply@nextbestmove.app>";
 
 /**
  * Send an email using Resend
@@ -20,6 +26,10 @@ export async function sendEmail({
   html: string;
   from?: string;
 }) {
+  if (!resend) {
+    throw new Error("RESEND_API_KEY is not set. Please add it to your environment variables.");
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from,

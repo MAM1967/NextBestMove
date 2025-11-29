@@ -1,0 +1,164 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import { NextResponse } from "next/server";
+import { sendFastWinReminderEmail } from "@/lib/email/notifications";
+
+/**
+ * POST /api/notifications/fast-win-reminder
+ * 
+ * Sends fast win reminder emails at 2pm to users who have email_fast_win_reminder enabled
+ * and haven't completed their fast win yet.
+ * Should be called by a cron job that runs frequently (e.g., every hour)
+ * to catch users at 2pm in their timezone.
+ * 
+ * Query params:
+ * - secret: CRON_SECRET for authentication
+ */
+export async function POST(request: Request) {
+  try {
+    // Verify cron secret
+    const { searchParams } = new URL(request.url);
+    const secret = searchParams.get("secret");
+    if (secret !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const supabase = createAdminClient();
+    const today = new Date().toISOString().split("T")[0];
+
+    // Get all users with fast win reminder emails enabled and not unsubscribed
+    const { data: users, error: usersError } = await supabase
+      .from("users")
+      .select("id, email, name, timezone, email_fast_win_reminder, email_unsubscribed")
+      .eq("email_fast_win_reminder", true)
+      .eq("email_unsubscribed", false);
+
+    if (usersError) {
+      console.error("Error fetching users:", usersError);
+      return NextResponse.json(
+        { error: "Failed to fetch users", details: usersError.message },
+        { status: 500 }
+      );
+    }
+
+    if (!users || users.length === 0) {
+      return NextResponse.json({
+        success: true,
+        sent: 0,
+        skipped: 0,
+        message: "No users with fast win reminder emails enabled",
+      });
+    }
+
+    let sent = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const user of users) {
+      try {
+        // Calculate 2pm in user's timezone
+        const userTime = new Date(
+          new Date().toLocaleString("en-US", { timeZone: user.timezone })
+        );
+        const userHour = userTime.getHours();
+
+        // Only send if it's 2pm (within a 1-hour window to account for cron frequency)
+        if (userHour !== 14) {
+          skipped++;
+          continue;
+        }
+
+        // Get today's plan for the user
+        const { data: dailyPlan, error: planError } = await supabase
+          .from("daily_plans")
+          .select(
+            `
+            *,
+            daily_plan_actions (
+              is_fast_win,
+              actions (
+                *,
+                person_pins (
+                  id,
+                  name,
+                  url
+                )
+              )
+            )
+          `
+          )
+          .eq("user_id", user.id)
+          .eq("date", today)
+          .maybeSingle();
+
+        if (planError) {
+          console.error(`Error fetching plan for user ${user.id}:`, planError);
+          errors.push(`User ${user.email}: ${planError.message}`);
+          skipped++;
+          continue;
+        }
+
+        if (!dailyPlan) {
+          // No plan for today - skip
+          skipped++;
+          continue;
+        }
+
+        // Find fast win action
+        const fastWinAction = dailyPlan.daily_plan_actions?.find(
+          (pa: any) => pa.is_fast_win && pa.actions
+        );
+
+        if (!fastWinAction || !fastWinAction.actions) {
+          // No fast win - skip
+          skipped++;
+          continue;
+        }
+
+        const action = fastWinAction.actions as any;
+
+        // Check if fast win is already completed
+        if (action.state === "DONE" || action.state === "SENT" || action.completed_at) {
+          // Fast win already completed - skip
+          skipped++;
+          continue;
+        }
+
+        // Send email
+        await sendFastWinReminderEmail({
+          to: user.email,
+          userName: user.name,
+          fastWin: {
+            description: action.description || "Fast Win",
+            personName: action.person_pins?.[0]?.name,
+            url: action.person_pins?.[0]?.url,
+          },
+        });
+
+        sent++;
+        
+        // Add delay to avoid Resend rate limits (2 requests/second)
+        if (sent < users.length) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+      } catch (error: any) {
+        console.error(`Error sending email to ${user.email}:`, error);
+        errors.push(`User ${user.email}: ${error.message}`);
+        skipped++;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      sent,
+      skipped,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error: any) {
+    console.error("Error in fast win reminder notification job:", error);
+    return NextResponse.json(
+      { error: "Internal server error", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+

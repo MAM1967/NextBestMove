@@ -52,9 +52,58 @@ We use **cron-job.org** (a free external cron service) to call our API endpoints
   - Updates them to `state='ARCHIVED'`
 - **Reference**: PRD Section 18 - "Actions in DONE state: Kept 'live' for 90 days, then marked ARCHIVED."
 
+### 5. Morning Plan Email
+
+- **Endpoint**: `/api/notifications/morning-plan`
+- **Schedule**: Hourly (`0 * * * *`) - Runs every hour to catch 8am in all timezones
+- **Purpose**: Send daily plan emails at 8am in each user's timezone
+- **Logic**:
+  - Fetches all users with `email_morning_plan=true` and `email_unsubscribed=false`
+  - Checks if it's 8am in each user's timezone
+  - Fetches today's daily plan for eligible users
+  - Sends email with fast win and actions
+- **Note**: Runs hourly to account for different timezones
+
+### 6. Fast Win Reminder Email
+
+- **Endpoint**: `/api/notifications/fast-win-reminder`
+- **Schedule**: Hourly (`0 * * * *`) - Runs every hour to catch 2pm in all timezones
+- **Purpose**: Send reminder at 2pm if fast win hasn't been completed
+- **Logic**:
+  - Fetches all users with `email_fast_win_reminder=true` and `email_unsubscribed=false`
+  - Checks if it's 2pm in each user's timezone
+  - Fetches today's daily plan and checks if fast win is incomplete
+  - Sends reminder email if fast win is still pending
+- **Note**: Runs hourly to account for different timezones
+
+### 7. Follow-Up Alerts Email
+
+- **Endpoint**: `/api/notifications/follow-up-alerts`
+- **Schedule**: Daily at 9 AM UTC (`0 9 * * *`)
+- **Purpose**: Send alerts for overdue follow-up actions
+- **Logic**:
+  - Fetches all users with `email_follow_up_alerts=true` and `email_unsubscribed=false`
+  - Finds actions with `state='SENT'`, `due_date < today`, and `completed_at IS NULL`
+  - Calculates days overdue for each action
+  - Sends email with list of overdue follow-ups
+
+### 8. Weekly Summary Email
+
+- **Endpoint**: `/api/cron/weekly-summaries` (updated to send emails)
+- **Schedule**: Monday at 1 AM UTC (`0 1 * * 1`)
+- **Purpose**: Generate weekly summaries and send emails
+- **Logic**:
+  - Generates weekly summary for previous week (Monday-Sunday)
+  - Sends email to users with `email_weekly_summary=true` and `email_unsubscribed=false`
+  - Includes metrics, insights, next week focus, and content prompts
+
 ## Security
 
-All cron endpoints verify the `CRON_SECRET` environment variable:
+All cron endpoints verify the `CRON_SECRET` environment variable. There are two authentication methods:
+
+### Method 1: Authorization Header (Existing Cron Jobs)
+
+Used by: `/api/cron/*` endpoints
 
 ```typescript
 const authHeader = request.headers.get("authorization");
@@ -65,7 +114,19 @@ if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
 }
 ```
 
-**Important**: Set `CRON_SECRET` in Vercel environment variables. External cron services (like cron-job.org) will send this header when calling your endpoints.
+### Method 2: Query Parameter (Notification Endpoints)
+
+Used by: `/api/notifications/*` endpoints
+
+```typescript
+const { searchParams } = new URL(request.url);
+const secret = searchParams.get("secret");
+if (secret !== process.env.CRON_SECRET) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+```
+
+**Important**: Set `CRON_SECRET` in Vercel environment variables. External cron services (like cron-job.org) will use this secret to authenticate requests to your endpoints.
 
 ## Setup with cron-job.org
 
@@ -146,6 +207,41 @@ You can store it securely for reference:
   - Key: `Authorization`
   - Value: `Bearer YOUR_CRON_SECRET`
 
+#### Job 5: Morning Plan Email
+
+- **Title**: `NextBestMove - Morning Plan Emails`
+- **Address**: `https://nextbestmove.app/api/notifications/morning-plan?secret=YOUR_CRON_SECRET`
+- **Schedule**: `0 * * * *` (Every hour)
+- **Request method**: `POST`
+- **Note**: Uses query parameter `?secret=` instead of Authorization header
+
+#### Job 6: Fast Win Reminder Email
+
+- **Title**: `NextBestMove - Fast Win Reminders`
+- **Address**: `https://nextbestmove.app/api/notifications/fast-win-reminder?secret=YOUR_CRON_SECRET`
+- **Schedule**: `0 * * * *` (Every hour)
+- **Request method**: `POST`
+- **Note**: Uses query parameter `?secret=` instead of Authorization header
+
+#### Job 7: Follow-Up Alerts Email
+
+- **Title**: `NextBestMove - Follow-Up Alerts`
+- **Address**: `https://nextbestmove.app/api/notifications/follow-up-alerts?secret=YOUR_CRON_SECRET`
+- **Schedule**: `0 9 * * *` (Daily at 9 AM UTC)
+- **Request method**: `POST`
+- **Note**: Uses query parameter `?secret=` instead of Authorization header
+
+#### Job 8: Weekly Summary Email
+
+- **Title**: `NextBestMove - Weekly Summaries` (already configured)
+- **Address**: `https://nextbestmove.app/api/cron/weekly-summaries`
+- **Schedule**: `0 1 * * 1` (Monday at 1 AM UTC)
+- **Request method**: `GET`
+- **Request headers**:
+  - Key: `Authorization`
+  - Value: `Bearer YOUR_CRON_SECRET`
+- **Note**: This job now automatically sends emails after generating summaries
+
 ### 4. Test Cron Jobs Locally
 
 **Important**: All testing should be done from the `web/` directory where the Next.js app is located.
@@ -187,9 +283,20 @@ You can store it securely for reference:
    # Test auto-archive
    curl -X GET http://localhost:3000/api/cron/auto-archive \
      -H "Authorization: Bearer your-secret-here"
+
+   # Test morning plan notifications
+   curl -X POST "http://localhost:3000/api/notifications/morning-plan?secret=your-secret-here"
+
+   # Test fast win reminder notifications
+   curl -X POST "http://localhost:3000/api/notifications/fast-win-reminder?secret=your-secret-here"
+
+   # Test follow-up alerts notifications
+   curl -X POST "http://localhost:3000/api/notifications/follow-up-alerts?secret=your-secret-here"
    ```
 
 **Note**: Replace `your-secret-here` with the actual `CRON_SECRET` value you generated in step 1.
+
+**Important**: Notification endpoints use query parameters (`?secret=`) instead of Authorization headers.
 
 ## Shared Functions
 
@@ -276,4 +383,4 @@ If you upgrade to Vercel Pro plan (which allows more cron jobs), you can use Ver
 
 ---
 
-_Last updated: January 29, 2025_
+_Last updated: January 29, 2025 - Added notification email endpoints_
