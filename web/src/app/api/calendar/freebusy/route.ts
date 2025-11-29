@@ -112,6 +112,18 @@ export async function GET(request: Request) {
       );
     }
 
+    // Get user working hours for cache response
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("work_start_hour, work_end_hour")
+      .eq("id", user.id)
+      .single();
+
+    const workStartHour = userProfile?.work_start_hour ?? 9;
+    const workEndHour = userProfile?.work_end_hour ?? 17;
+    const startTimeStr = `${workStartHour.toString().padStart(2, "0")}:00`;
+    const endTimeStr = `${workEndHour.toString().padStart(2, "0")}:00`;
+
     // Check cache first
     const cached = getCachedFreeBusy(user.id, date);
     if (cached) {
@@ -119,7 +131,7 @@ export async function GET(request: Request) {
         date,
         freeMinutes: cached.freeMinutes,
         busySlots: cached.busySlots,
-        workingHours: { start: "09:00", end: "17:00" },
+        workingHours: { start: startTimeStr, end: endTimeStr },
         capacity: cached.capacity,
         suggestedActionCount: cached.suggestedActionCount,
         fallback: false,
@@ -158,25 +170,35 @@ export async function GET(request: Request) {
       });
     }
 
-    // Get user timezone (default to UTC)
+    // Get user timezone and working hours (default to UTC and 9-5)
     const { data: userProfile } = await supabase
       .from("users")
-      .select("timezone")
+      .select("timezone, work_start_hour, work_end_hour")
       .eq("id", user.id)
       .single();
 
     const timezone = userProfile?.timezone || "UTC";
+    const workStartHour = userProfile?.work_start_hour ?? 9;
+    const workEndHour = userProfile?.work_end_hour ?? 17;
 
     // Fetch free/busy data from provider
     let freeBusyResult;
     try {
       if (connection.provider === "google") {
-        freeBusyResult = await fetchGoogleFreeBusy(accessToken, date, timezone);
+        freeBusyResult = await fetchGoogleFreeBusy(
+          accessToken,
+          date,
+          timezone,
+          workStartHour,
+          workEndHour
+        );
       } else if (connection.provider === "outlook") {
         freeBusyResult = await fetchOutlookFreeBusy(
           accessToken,
           date,
-          timezone
+          timezone,
+          workStartHour,
+          workEndHour
         );
       } else {
         throw new Error(`Unsupported provider: ${connection.provider}`);

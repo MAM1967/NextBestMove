@@ -24,6 +24,7 @@
 **Steps:**
 
 1. Create a test account:
+
    - Email: `test+delete@example.com` (use a unique email)
    - Password: `testpass123`
    - Name: "Delete Test User"
@@ -51,20 +52,23 @@
 **Verification Steps:**
 
 1. **Check Vercel logs** for the deletion process:
+
    - Look for: `✅ Auth user {userId} deleted from Supabase Auth`
    - Look for: `✅ User {userId} successfully deleted from public.users`
    - No errors should appear
 
 2. **Verify in Supabase Dashboard:**
+
    ```sql
    -- Check that user is deleted from public.users
-   SELECT id, email, name 
-   FROM users 
+   SELECT id, email, name
+   FROM users
    WHERE email = 'test+delete@example.com';
    -- Should return 0 rows
    ```
 
 3. **Verify auth.users deletion:**
+
    - Go to Supabase Dashboard → Authentication → Users
    - Search for the test email
    - User should NOT exist in the list
@@ -162,6 +166,7 @@ After running TC-1, verify:
 **Root Cause:** Service role key was not in JWT format or not properly configured.
 
 **Fix Applied:**
+
 - ✅ Service role key must be JWT format (starts with `eyJ`)
 - ✅ Key is configured in Vercel environment variables
 - ✅ `deleteUser` call uses correct format: `deleteUser(userId, false)`
@@ -171,6 +176,7 @@ After running TC-1, verify:
 **Root Cause:** `deleteUser` was called with object `{ shouldSoftDelete: false }` instead of boolean.
 
 **Fix Applied:**
+
 - ✅ Changed to: `deleteUser(userId, false)`
 
 ---
@@ -188,6 +194,7 @@ EC-2      | ⏳     | Ready for testing
 ```
 
 **Status Legend:**
+
 - ✅ Pass
 - ❌ Fail
 - ⏳ Pending/Not Tested
@@ -202,4 +209,3 @@ EC-2      | ⏳     | Ready for testing
 3. Confirm user cannot sign back in
 4. Check Vercel logs for any errors
 5. Update test results above
-

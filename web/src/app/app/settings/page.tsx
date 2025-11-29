@@ -102,7 +102,7 @@ export default async function SettingsPage() {
       supabase
         .from("users")
         .select(
-          "email, name, timezone, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
+          "email, name, timezone, work_start_hour, work_end_hour, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
         )
         .eq("id", user.id)
         .single(),
@@ -186,6 +186,8 @@ export default async function SettingsPage() {
             name={profile?.name || null}
             email={profile?.email || user.email}
             timezone={profile?.timezone || null}
+            workStartHour={profile?.work_start_hour ?? null}
+            workEndHour={profile?.work_end_hour ?? null}
           />
         </SectionCard>
 

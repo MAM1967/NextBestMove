@@ -100,22 +100,36 @@ export async function getCapacityForDate(
     };
   }
 
-  // Get user timezone
+  // Get user timezone and working hours
   const { data: userProfile } = await supabase
     .from("users")
-    .select("timezone")
+    .select("timezone, work_start_hour, work_end_hour")
     .eq("id", userId)
     .single();
 
   const timezone = userProfile?.timezone || "UTC";
+  const workStartHour = userProfile?.work_start_hour ?? 9;
+  const workEndHour = userProfile?.work_end_hour ?? 17;
 
   // Fetch free/busy data
   try {
     let freeBusyResult;
     if (connection.provider === "google") {
-      freeBusyResult = await fetchGoogleFreeBusy(accessToken, date, timezone);
+      freeBusyResult = await fetchGoogleFreeBusy(
+        accessToken,
+        date,
+        timezone,
+        workStartHour,
+        workEndHour
+      );
     } else if (connection.provider === "outlook") {
-      freeBusyResult = await fetchOutlookFreeBusy(accessToken, date, timezone);
+      freeBusyResult = await fetchOutlookFreeBusy(
+        accessToken,
+        date,
+        timezone,
+        workStartHour,
+        workEndHour
+      );
     } else {
       return {
         level: "default",

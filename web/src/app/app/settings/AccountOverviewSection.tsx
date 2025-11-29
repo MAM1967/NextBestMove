@@ -7,19 +7,28 @@ type AccountOverviewSectionProps = {
   name: string | null;
   email: string;
   timezone: string | null;
+  workStartHour: number | null;
+  workEndHour: number | null;
 };
 
 export function AccountOverviewSection({
   name,
   email,
   timezone,
+  workStartHour,
+  workEndHour,
 }: AccountOverviewSectionProps) {
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [isEditingTimezone, setIsEditingTimezone] = useState(false);
+  const [isEditingWorkingHours, setIsEditingWorkingHours] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedTimezone, setSelectedTimezone] = useState(timezone || "America/New_York");
   const [currentTimezone, setCurrentTimezone] = useState(timezone); // Track current displayed timezone
+  const [selectedStartHour, setSelectedStartHour] = useState(workStartHour ?? 9);
+  const [selectedEndHour, setSelectedEndHour] = useState(workEndHour ?? 17);
+  const [currentStartHour, setCurrentStartHour] = useState(workStartHour ?? 9);
+  const [currentEndHour, setCurrentEndHour] = useState(workEndHour ?? 17);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -113,6 +122,44 @@ export function AccountOverviewSection({
     }
   };
 
+  const handleWorkingHoursChange = async () => {
+    setError(null);
+    setSuccess(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/users/working-hours", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workStartHour: selectedStartHour,
+          workEndHour: selectedEndHour,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update working hours");
+      }
+
+      setSuccess("Working hours updated successfully");
+      setCurrentStartHour(selectedStartHour);
+      setCurrentEndHour(selectedEndHour);
+      setIsEditingWorkingHours(false);
+      setTimeout(() => {
+        setSuccess(null);
+        window.location.reload(); // Reload to reflect working hours change in capacity calculations
+      }, 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update working hours");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Generate hour options (0-23)
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 text-sm">
@@ -202,6 +249,119 @@ export function AccountOverviewSection({
               <button
                 type="button"
                 onClick={() => setIsEditingTimezone(true)}
+                className="text-xs font-medium text-purple-700 hover:text-purple-800 underline"
+              >
+                Change
+              </button>
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="text-zinc-500 mb-2">Working hours</div>
+          {isEditingWorkingHours ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="start-hour"
+                    className="block text-xs font-medium text-zinc-900 mb-1"
+                  >
+                    Start hour
+                  </label>
+                  <select
+                    id="start-hour"
+                    value={selectedStartHour}
+                    onChange={(e) => setSelectedStartHour(Number(e.target.value))}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    disabled={isSaving}
+                  >
+                    {hourOptions.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {hour.toString().padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="end-hour"
+                    className="block text-xs font-medium text-zinc-900 mb-1"
+                  >
+                    End hour
+                  </label>
+                  <select
+                    id="end-hour"
+                    value={selectedEndHour}
+                    onChange={(e) => setSelectedEndHour(Number(e.target.value))}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    disabled={isSaving}
+                  >
+                    {hourOptions.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {hour.toString().padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {error && (
+                <p className="text-xs text-red-700">{error}</p>
+              )}
+              {success && (
+                <p className="text-xs text-green-700">{success}</p>
+              )}
+              <div className="flex gap-2 items-center justify-start" style={{ width: '100%' }}>
+                <button
+                  type="button"
+                  onClick={handleWorkingHoursChange}
+                  disabled={isSaving || selectedEndHour <= selectedStartHour}
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    flex: '0 0 auto',
+                    minWidth: '80px',
+                    height: '32px',
+                    opacity: isSaving ? 0.5 : 1,
+                    isolation: 'isolate',
+                    WebkitTransform: 'translateZ(0)',
+                    transform: 'translateZ(0)',
+                  }}
+                  className="safari-purple-fix rounded-lg px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed"
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingWorkingHours(false);
+                    setSelectedStartHour(currentStartHour);
+                    setSelectedEndHour(currentEndHour);
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  disabled={isSaving}
+                  style={{ 
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    flex: '0 0 auto',
+                    minWidth: '80px',
+                    height: '32px',
+                    opacity: isSaving ? 0.5 : 1,
+                  }}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-zinc-900">
+                {currentStartHour.toString().padStart(2, "0")}:00 - {currentEndHour.toString().padStart(2, "0")}:00
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditingWorkingHours(true)}
                 className="text-xs font-medium text-purple-700 hover:text-purple-800 underline"
               >
                 Change
