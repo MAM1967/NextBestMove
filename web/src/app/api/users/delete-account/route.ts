@@ -221,10 +221,10 @@ export async function DELETE(request: Request) {
         
         // Use the admin API to delete the auth user
         // This is the correct method per Supabase docs
-        // Note: deleteUser can take options like { shouldSoftDelete: false }
+        // Note: deleteUser second parameter is boolean for shouldSoftDelete
         const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
           userId,
-          { shouldSoftDelete: false } // Hard delete, not soft delete
+          false // Hard delete, not soft delete
         );
 
         if (authDeleteError) {

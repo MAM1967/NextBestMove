@@ -146,18 +146,17 @@ export function AccountOverviewSection({
               {success && (
                 <p className="text-xs text-green-700">{success}</p>
               )}
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center" style={{ width: '100%' }}>
                 <button
                   type="button"
                   onClick={handleTimezoneChange}
                   disabled={isSaving}
                   style={{ 
-                    display: 'inline-block', 
+                    flex: '0 0 auto',
                     minWidth: '80px',
+                    height: '32px',
                     visibility: 'visible',
                     opacity: isSaving ? 0.5 : 1,
-                    position: 'relative',
-                    zIndex: 1
                   }}
                   className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed"
                 >
@@ -173,12 +172,11 @@ export function AccountOverviewSection({
                   }}
                   disabled={isSaving}
                   style={{ 
-                    display: 'inline-block', 
+                    flex: '0 0 auto',
                     minWidth: '80px',
+                    height: '32px',
                     visibility: 'visible',
                     opacity: isSaving ? 0.5 : 1,
-                    position: 'relative',
-                    zIndex: 1
                   }}
                   className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed"
                 >
@@ -259,17 +257,16 @@ export function AccountOverviewSection({
             {success && (
               <p className="text-xs text-green-700">{success}</p>
             )}
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center" style={{ width: '100%' }}>
               <button
                 type="submit"
                 disabled={isSaving}
                 style={{ 
-                  display: 'inline-block', 
+                  flex: '0 0 auto',
                   minWidth: '120px',
+                  height: '32px',
                   visibility: 'visible',
                   opacity: isSaving ? 0.5 : 1,
-                  position: 'relative',
-                  zIndex: 1
                 }}
                 className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
               >
@@ -286,12 +283,11 @@ export function AccountOverviewSection({
                 }}
                 disabled={isSaving}
                 style={{ 
-                  display: 'inline-block', 
+                  flex: '0 0 auto',
                   minWidth: '80px',
+                  height: '32px',
                   visibility: 'visible',
                   opacity: isSaving ? 0.5 : 1,
-                  position: 'relative',
-                  zIndex: 1
                 }}
                 className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
               >
