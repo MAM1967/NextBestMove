@@ -161,20 +161,8 @@ export function AccountOverviewSection({
                     isolation: 'isolate',
                     WebkitTransform: 'translateZ(0)',
                     transform: 'translateZ(0)',
-                    backgroundColor: 'rgb(147, 51, 234) !important' as any,
-                    color: 'white !important' as any,
                   }}
-                  onMouseOver={(e) => {
-                    if (!isSaving) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgb(126, 34, 206)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isSaving) {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgb(147, 51, 234)';
-                    }
-                  }}
-                  className="rounded-lg px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed"
+                  className="safari-purple-fix rounded-lg px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed"
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
@@ -288,20 +276,8 @@ export function AccountOverviewSection({
                   isolation: 'isolate',
                   WebkitTransform: 'translateZ(0)',
                   transform: 'translateZ(0)',
-                  backgroundColor: 'rgb(147, 51, 234) !important' as any,
-                  color: 'white !important' as any,
                 }}
-                onMouseOver={(e) => {
-                  if (!isSaving) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgb(126, 34, 206)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!isSaving) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'rgb(147, 51, 234)';
-                  }
-                }}
-                className="rounded-lg px-3 py-1.5 text-xs font-semibold"
+                className="safari-purple-fix rounded-lg px-3 py-1.5 text-xs font-semibold"
               >
                 {isSaving ? "Saving..." : "Update password"}
               </button>

@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Safari fix: Force purple button background color */
+button.safari-purple-fix {
+  background-color: rgb(147, 51, 234) !important;
+  color: white !important;
+}
+
+button.safari-purple-fix:hover:not(:disabled) {
+  background-color: rgb(126, 34, 206) !important;
+}
