@@ -180,6 +180,15 @@ export async function DELETE(request: Request) {
     console.log("Service role key ends with:", serviceRoleKey?.substring(serviceRoleKey?.length - 10) || "N/A");
     console.log("All env vars with SUPABASE:", Object.keys(process.env).filter(k => k.includes("SUPABASE")));
     
+    // Service role keys are typically 300+ characters long
+    // If it's shorter, it might be truncated or incorrect
+    if (serviceRoleKey && serviceRoleKey.length < 250) {
+      console.warn("⚠️ WARNING: Service role key is shorter than expected!");
+      console.warn("   Typical service role keys are 300+ characters long");
+      console.warn("   Current length:", serviceRoleKey.length);
+      console.warn("   This key might be truncated or incorrect");
+    }
+    
     if (!serviceRoleKey) {
       console.error("❌ SUPABASE_SERVICE_ROLE_KEY not found in process.env");
       console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("SERVICE") || k.includes("SUPABASE")));
