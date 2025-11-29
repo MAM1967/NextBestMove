@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * DELETE /api/users/delete-account
@@ -244,12 +244,8 @@ export async function DELETE(request: Request) {
         console.log("Supabase URL:", supabaseUrl);
         console.log("Service key (first 30 chars):", serviceRoleKey.substring(0, 30) + "...");
         
-        const adminClient = createAdminClient(supabaseUrl, serviceRoleKey, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        });
+        // Use our admin client helper which handles the service role key
+        const adminClient = createAdminClient();
         
         console.log("Admin client created successfully");
 
