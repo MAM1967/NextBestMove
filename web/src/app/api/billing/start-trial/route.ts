@@ -131,12 +131,20 @@ export async function POST(request: Request) {
       ? new Date(subscription.trial_end * 1000).toISOString()
       : null;
 
+    // Use type guards to safely access Stripe.Subscription properties
+    const currentPeriodEnd = 'current_period_end' in subscription && 
+      typeof subscription.current_period_end === 'number'
+      ? subscription.current_period_end
+      : null;
+    const status = 'status' in subscription ? subscription.status : null;
+    const trialEnd = 'trial_end' in subscription ? subscription.trial_end : null;
+
     console.log("📅 Trial subscription created:", {
       subscriptionId: subscription.id,
-      trial_end: subscription.trial_end,
+      trial_end: trialEnd,
       trialEndsAt,
-      current_period_end: subscription.current_period_end,
-      status: subscription.status,
+      current_period_end: currentPeriodEnd,
+      status: status,
     });
 
     // Store subscription in database using admin client
