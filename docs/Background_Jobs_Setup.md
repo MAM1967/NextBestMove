@@ -11,16 +11,18 @@ We use **cron-job.org** (a free external cron service) to call our API endpoints
 ## Cron Jobs
 
 ### 1. Daily Plan Generation
+
 - **Endpoint**: `/api/cron/daily-plans`
 - **Schedule**: Daily at 6 AM UTC (`0 6 * * *`)
 - **Purpose**: Generate daily plans for all active users
-- **Logic**: 
+- **Logic**:
   - Fetches all users
   - Skips weekends if user has `exclude_weekends` enabled
   - Skips if plan already exists for today
   - Uses shared `generateDailyPlanForUser()` function
 
 ### 2. Weekly Summary Generation
+
 - **Endpoint**: `/api/cron/weekly-summaries`
 - **Schedule**: Monday at 1 AM UTC (`0 1 * * 1`)
 - **Purpose**: Generate weekly summaries for the previous week (Monday-Sunday)
@@ -31,6 +33,7 @@ We use **cron-job.org** (a free external cron service) to call our API endpoints
   - Uses shared `generateWeeklySummaryForUser()` function
 
 ### 3. Auto-Unsnooze
+
 - **Endpoint**: `/api/cron/auto-unsnooze`
 - **Schedule**: Daily at midnight UTC (`0 0 * * *`)
 - **Purpose**: Automatically unsnooze pins and actions that have reached their `snooze_until` date
@@ -40,6 +43,7 @@ We use **cron-job.org** (a free external cron service) to call our API endpoints
 - **Note**: There's also a database trigger that handles this on INSERT/UPDATE, but this cron ensures it runs even if no items are touched
 
 ### 4. Auto-Archive
+
 - **Endpoint**: `/api/cron/auto-archive`
 - **Schedule**: Daily at 2 AM UTC (`0 2 * * *`)
 - **Purpose**: Archive DONE actions older than 90 days
@@ -84,12 +88,14 @@ openssl rand -hex 32
 ### 3. Store cron-job.org API Key (Optional)
 
 The cron-job.org API key (`tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=`) is used for:
+
 - Managing cron jobs programmatically via cron-job.org API
 - Accessing advanced features in their dashboard
 
 **Note**: This key is NOT sent in HTTP requests to our endpoints. It's only used for cron-job.org's own API/dashboard.
 
 You can store it securely for reference:
+
 - Add to a password manager
 - Or add as an environment variable `CRON_JOB_ORG_API_KEY` in Vercel (for reference only, not used in code)
 
@@ -101,65 +107,85 @@ You can store it securely for reference:
 **Important**: Use the `CRON_SECRET` (from step 1) in the Authorization header, NOT the cron-job.org API key.
 
 #### Job 1: Daily Plan Generation
+
 - **Title**: `NextBestMove - Daily Plans`
 - **Address**: `https://nextbestmove.app/api/cron/daily-plans`
 - **Schedule**: `0 6 * * *` (Daily at 6 AM UTC)
 - **Request method**: `GET`
-- **Request headers**: 
+- **Request headers**:
   - Key: `Authorization`
   - Value: `Bearer YOUR_CRON_SECRET` (use the secret from step 1)
 
 #### Job 2: Weekly Summary Generation
+
 - **Title**: `NextBestMove - Weekly Summaries`
 - **Address**: `https://nextbestmove.app/api/cron/weekly-summaries`
 - **Schedule**: `0 1 * * 1` (Monday at 1 AM UTC)
 - **Request method**: `GET`
-- **Request headers**: 
+- **Request headers**:
   - Key: `Authorization`
   - Value: `Bearer YOUR_CRON_SECRET`
 
 #### Job 3: Auto-Unsnooze
+
 - **Title**: `NextBestMove - Auto-Unsnooze`
 - **Address**: `https://nextbestmove.app/api/cron/auto-unsnooze`
 - **Schedule**: `0 0 * * *` (Daily at midnight UTC)
 - **Request method**: `GET`
-- **Request headers**: 
+- **Request headers**:
   - Key: `Authorization`
   - Value: `Bearer YOUR_CRON_SECRET`
 
 #### Job 4: Auto-Archive
+
 - **Title**: `NextBestMove - Auto-Archive`
 - **Address**: `https://nextbestmove.app/api/cron/auto-archive`
 - **Schedule**: `0 2 * * *` (Daily at 2 AM UTC)
 - **Request method**: `GET`
-- **Request headers**: 
+- **Request headers**:
   - Key: `Authorization`
   - Value: `Bearer YOUR_CRON_SECRET`
 
 ### 4. Test Cron Jobs Locally
 
-For local testing, you can manually call the endpoints:
+**Important**: All testing should be done from the `web/` directory where the Next.js app is located.
 
-```bash
-# Set CRON_SECRET in .env.local
-CRON_SECRET=your-secret-here
+1. **Navigate to the web directory:**
+   ```bash
+   cd web
+   ```
 
-# Test daily plans cron
-curl -X GET http://localhost:3000/api/cron/daily-plans \
-  -H "Authorization: Bearer your-secret-here"
+2. **Add CRON_SECRET to `.env.local`** (in the `web/` directory):
+   ```bash
+   # In web/.env.local
+   CRON_SECRET=your-secret-here
+   ```
 
-# Test weekly summaries cron
-curl -X GET http://localhost:3000/api/cron/weekly-summaries \
-  -H "Authorization: Bearer your-secret-here"
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-# Test auto-unsnooze
-curl -X GET http://localhost:3000/api/cron/auto-unsnooze \
-  -H "Authorization: Bearer your-secret-here"
+4. **In a new terminal (still in `web/` directory), test the endpoints:**
+   ```bash
+   # Test daily plans cron
+   curl -X GET http://localhost:3000/api/cron/daily-plans \
+     -H "Authorization: Bearer your-secret-here"
 
-# Test auto-archive
-curl -X GET http://localhost:3000/api/cron/auto-archive \
-  -H "Authorization: Bearer your-secret-here"
-```
+   # Test weekly summaries cron
+   curl -X GET http://localhost:3000/api/cron/weekly-summaries \
+     -H "Authorization: Bearer your-secret-here"
+
+   # Test auto-unsnooze
+   curl -X GET http://localhost:3000/api/cron/auto-unsnooze \
+     -H "Authorization: Bearer your-secret-here"
+
+   # Test auto-archive
+   curl -X GET http://localhost:3000/api/cron/auto-archive \
+     -H "Authorization: Bearer your-secret-here"
+   ```
+
+**Note**: Replace `your-secret-here` with the actual `CRON_SECRET` value you generated in step 1.
 
 ## Shared Functions
 
@@ -169,16 +195,19 @@ To avoid code duplication, we've extracted the generation logic into shared func
 - **`/lib/summaries/generate-weekly-summary.ts`**: `generateWeeklySummaryForUser()`
 
 These functions can be called from both:
+
 - Authenticated user endpoints (`/api/daily-plans/generate`, `/api/weekly-summaries/generate`)
 - Cron jobs (`/api/cron/daily-plans`, `/api/cron/weekly-summaries`)
 
 ## Monitoring
 
 Monitor cron job execution in:
+
 - **cron-job.org Dashboard**: View execution history, success/failure status, and response times
 - **Vercel Dashboard**: Project → Functions → View logs (to see API endpoint logs)
 
 Each cron endpoint returns JSON with:
+
 - `success`: boolean
 - `generated`: number of items processed
 - `skipped`: number of items skipped (already exists, etc.)
@@ -188,18 +217,21 @@ Each cron endpoint returns JSON with:
 ## Troubleshooting
 
 ### Cron jobs not running
+
 1. Check cron-job.org dashboard to see if jobs are enabled and running
 2. Verify the URL is correct (should be `https://nextbestmove.app/api/cron/...`)
 3. Check that the Authorization header is set correctly in cron-job.org
 4. Check Vercel logs for API endpoint errors
 
 ### "Unauthorized" errors
+
 1. Verify `CRON_SECRET` is set in Vercel environment variables
 2. Check that the secret in cron-job.org matches the one in Vercel
 3. Ensure the Authorization header format is: `Bearer YOUR_SECRET` (with space after "Bearer")
 4. For local testing, ensure `CRON_SECRET` is in `.env.local`
 
 ### Jobs running but not generating plans/summaries
+
 1. Check cron-job.org execution logs for response details
 2. Check Vercel logs for specific error messages
 3. Verify users exist in database
@@ -211,6 +243,7 @@ Each cron endpoint returns JSON with:
 If you upgrade to Vercel Pro plan (which allows more cron jobs), you can use Vercel Cron instead:
 
 1. Create `web/vercel.json`:
+
 ```json
 {
   "crons": [
@@ -240,4 +273,3 @@ If you upgrade to Vercel Pro plan (which allows more cron jobs), you can use Ver
 ---
 
 _Last updated: January 29, 2025_
-
