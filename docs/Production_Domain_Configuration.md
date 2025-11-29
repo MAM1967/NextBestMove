@@ -151,9 +151,10 @@ RESEND_API_KEY=... (if using Resend for emails)
 
 ```
 STRIPE_SECRET_KEY=sk_test_... (test mode key)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... (test mode key)
 STRIPE_WEBHOOK_SECRET=whsec_... (test mode webhook secret)
 ```
+
+**Note:** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is **NOT required** because this app uses Stripe Checkout (hosted by Stripe), not Stripe Elements. The checkout session is created server-side and redirects to Stripe's hosted checkout page.
 
 ### Option B: Live Mode (When Ready for Real Payments)
 
@@ -173,9 +174,10 @@ STRIPE_WEBHOOK_SECRET=whsec_... (test mode webhook secret)
 
 ```
 STRIPE_SECRET_KEY=sk_live_... (live mode key)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_... (live mode key)
 STRIPE_WEBHOOK_SECRET=whsec_... (live mode webhook secret)
 ```
+
+**Note:** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is **NOT required** because this app uses Stripe Checkout (hosted by Stripe), not Stripe Elements.
 
 **Important:** You can have both test and live webhooks configured. Just make sure your environment variables match the mode you want to use.
 
