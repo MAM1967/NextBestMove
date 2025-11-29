@@ -66,7 +66,7 @@ export async function forgotPasswordAction(
 
     // Send email via Resend
     try {
-      await sendPasswordResetEmail({
+      const emailResult = await sendPasswordResetEmail({
         to: email,
         userName,
         resetLink,
@@ -74,11 +74,16 @@ export async function forgotPasswordAction(
 
       console.log("✅ Password reset email sent via Resend:", {
         email: email.substring(0, 3) + "***",
+        emailId: emailResult?.id,
         resetLink: resetLink.substring(0, 50) + "...",
       });
     } catch (emailError) {
-      console.error("❌ Failed to send password reset email via Resend:", emailError);
-      // Still return success to avoid email enumeration
+      console.error("❌ Failed to send password reset email via Resend:", {
+        error: emailError instanceof Error ? emailError.message : String(emailError),
+        email: email.substring(0, 3) + "***",
+        stack: emailError instanceof Error ? emailError.stack : undefined,
+      });
+      // Still return success to avoid email enumeration, but log the error for debugging
     }
 
     return {

@@ -31,6 +31,13 @@ export async function sendEmail({
   }
 
   try {
+    console.log("📧 Attempting to send email via Resend:", {
+      to,
+      from,
+      subject,
+      hasApiKey: !!resendApiKey,
+    });
+
     const { data, error } = await resend.emails.send({
       from,
       to,
@@ -39,13 +46,29 @@ export async function sendEmail({
     });
 
     if (error) {
-      console.error("Resend email error:", error);
+      console.error("❌ Resend email error:", {
+        message: error.message,
+        name: error.name,
+        error: JSON.stringify(error, null, 2),
+      });
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
+    console.log("✅ Email sent successfully via Resend:", {
+      emailId: data?.id,
+      to,
+      subject,
+      from,
+    });
+
     return data;
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("❌ Error sending email:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      to,
+      subject,
+    });
     throw error;
   }
 }

@@ -390,24 +390,34 @@ export async function signUpAction(
       });
       
       if (linkData?.properties?.action_link) {
-        await sendAccountActivationEmail({
+        const emailResult = await sendAccountActivationEmail({
           to: email,
           userName: name,
           activationLink: linkData.properties.action_link,
         });
-        console.log("✅ Account activation email sent via Resend");
+        console.log("✅ Account activation email sent via Resend:", {
+          emailId: emailResult?.id,
+          email: email.substring(0, 3) + "***",
+        });
       }
     } else {
       // No confirmation required - send welcome email
-      await sendWelcomeEmail({
+      const emailResult = await sendWelcomeEmail({
         to: email,
         userName: name,
       });
-      console.log("✅ Welcome email sent via Resend");
+      console.log("✅ Welcome email sent via Resend:", {
+        emailId: emailResult?.id,
+        email: email.substring(0, 3) + "***",
+      });
     }
   } catch (emailError) {
     // Don't fail sign-up if email fails - just log it
-    console.error("⚠️ Failed to send welcome/activation email:", emailError);
+    console.error("⚠️ Failed to send welcome/activation email:", {
+      error: emailError instanceof Error ? emailError.message : String(emailError),
+      email: email.substring(0, 3) + "***",
+      stack: emailError instanceof Error ? emailError.stack : undefined,
+    });
   }
 
   return { success: true };
