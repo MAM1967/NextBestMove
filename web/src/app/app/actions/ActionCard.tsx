@@ -319,9 +319,16 @@ export function ActionCard({
             </h4>
             <div className="mt-1 flex items-center gap-4 text-sm">
               {(() => {
-                const dueDate = new Date(action.due_date);
+                // Normalize both dates to local midnight for accurate comparison
+                // Parse due_date string and create date at local midnight
+                const [year, month, day] = action.due_date.split('-').map(Number);
+                const dueDate = new Date(year, month - 1, day);
+                dueDate.setHours(0, 0, 0, 0);
+                
+                // Get today at local midnight
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
+                
                 const daysDiff = Math.floor(
                   (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
                 );

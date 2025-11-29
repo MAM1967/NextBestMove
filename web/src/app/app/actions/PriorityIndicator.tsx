@@ -27,7 +27,11 @@ function calculatePriorityLevel(action: Action): {
 
   // High priority: Snoozed action now due
   if (action.state === "SNOOZED" && action.snooze_until) {
-    const snoozeDate = new Date(action.snooze_until);
+    // Normalize snooze date to local midnight
+    const [year, month, day] = action.snooze_until.split('-').map(Number);
+    const snoozeDate = new Date(year, month - 1, day);
+    snoozeDate.setHours(0, 0, 0, 0);
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (snoozeDate <= today) {
@@ -39,7 +43,11 @@ function calculatePriorityLevel(action: Action): {
   }
 
   // Check due date urgency
-  const dueDate = new Date(action.due_date);
+  // Normalize due date to local midnight
+  const [year, month, day] = action.due_date.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day);
+  dueDate.setHours(0, 0, 0, 0);
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const daysDiff = Math.floor(
@@ -114,7 +122,11 @@ function getUrgencyIndicator(action: Action): {
   className: string;
   icon: string;
 } | null {
-  const dueDate = new Date(action.due_date);
+  // Normalize due date to local midnight
+  const [year, month, day] = action.due_date.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day);
+  dueDate.setHours(0, 0, 0, 0);
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const daysDiff = Math.floor(
