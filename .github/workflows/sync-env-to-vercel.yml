@@ -1,0 +1,60 @@
+name: Sync Environment Variables to Vercel
+
+on:
+  workflow_dispatch: # Manual trigger only (for security)
+    inputs:
+      confirm:
+        description: 'Type "sync" to confirm environment variable sync'
+        required: true
+
+jobs:
+  sync-env:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'sync'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Sync GitHub Secrets to Vercel
+        run: |
+          # Sync environment variables from GitHub Secrets to Vercel
+          # Uses Vercel CLI with non-interactive flags
+          
+          export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
+          export VERCEL_ORG_ID="${{ secrets.VERCEL_ORG_ID }}"
+          export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
+          
+          # Function to add env var if secret exists
+          sync_var() {
+            local var_name=$1
+            local secret_value=$2
+            if [ -n "$secret_value" ]; then
+              echo "Syncing $var_name..."
+              echo "$secret_value" | vercel env add "$var_name" production \
+                --token="$VERCEL_TOKEN" \
+                --scope="$VERCEL_ORG_ID" \
+                --yes \
+                --force || echo "⚠️  $var_name may already exist or failed to sync"
+            else
+              echo "⏭️  Skipping $var_name (not set in GitHub Secrets)"
+            fi
+          }
+          
+          # Sync all environment variables
+          sync_var "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          sync_var "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}"
+          sync_var "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+          sync_var "RESEND_API_KEY" "${{ secrets.RESEND_API_KEY }}"
+          sync_var "CRON_SECRET" "${{ secrets.CRON_SECRET }}"
+          sync_var "OPENAI_API_KEY" "${{ secrets.OPENAI_API_KEY }}"
+          
+          echo "✅ Environment variable sync completed"
+          echo "📝 Note: Non-sensitive variables (NEXT_PUBLIC_*) should be set manually in Vercel Dashboard"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
