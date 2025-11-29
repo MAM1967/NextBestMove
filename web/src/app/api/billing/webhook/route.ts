@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  // Use admin client for webhook - no user auth context, need to bypass RLS
+  const supabase = createAdminClient();
 
   // Store event for auditing
   try {
