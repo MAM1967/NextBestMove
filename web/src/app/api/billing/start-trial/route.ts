@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { stripe, getPriceId, getPlanMetadata } from "@/lib/billing/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import Stripe from "stripe";
 
 /**
  * POST /api/billing/start-trial
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     // Create subscription with 14-day trial (no payment method required)
-    const subscription = await stripe.subscriptions.create({
+    const subscription: Stripe.Subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
       trial_period_days: 14,
