@@ -212,110 +212,115 @@ export async function DELETE(request: Request) {
       // The createAdminClient helper will validate the key format
       // It will throw an error if the key is invalid or missing
       const adminClient = createAdminClient();
+      
+      console.log("✅ Admin client created successfully");
+      console.log("Attempting to delete auth user:", userId);
+      
+      // Verify the admin client can access auth
+      // Test by trying to list users (this will fail if key is invalid)
+      console.log("=== Testing admin client access ===");
+      try {
+        const { data: testData, error: testError } = await adminClient.auth.admin.listUsers({
+          page: 1,
+          perPage: 1,
+        });
         
-        console.log("✅ Admin client created successfully");
-        console.log("Attempting to delete auth user:", userId);
-        
-        // Verify the admin client can access auth
-        // Test by trying to list users (this will fail if key is invalid)
-        console.log("=== Testing admin client access ===");
-        try {
-          const { data: testData, error: testError } = await adminClient.auth.admin.listUsers({
-            page: 1,
-            perPage: 1,
-          });
+        if (testError) {
+          console.error("❌ Admin client test failed:", testError);
+          console.error("Test error status:", testError.status);
+          console.error("Test error message:", testError.message);
+          console.error("Test error name:", testError.name);
+          console.error("Full test error:", JSON.stringify(testError, null, 2));
+          console.error("This suggests the service role key is invalid for this Supabase project");
+          console.error("Supabase URL used:", supabaseUrl);
+          console.error("Service key first 50 chars:", serviceRoleKey.substring(0, 50));
           
-          if (testError) {
-            console.error("❌ Admin client test failed:", testError);
-            console.error("Test error status:", testError.status);
-            console.error("Test error message:", testError.message);
-            console.error("Test error name:", testError.name);
-            console.error("Full test error:", JSON.stringify(testError, null, 2));
-            console.error("This suggests the service role key is invalid for this Supabase project");
-            console.error("Supabase URL used:", supabaseUrl);
-            console.error("Service key first 50 chars:", serviceRoleKey.substring(0, 50));
-            
-            return NextResponse.json(
-              { 
-                error: "Invalid service role key",
-                details: testError.message || "The service role key does not match this Supabase project",
-                hint: `Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: ${supabaseUrl}. The key should start with 'eyJ' and be a long JWT token.`
-              },
-              { status: 500 }
-            );
-          }
-          
-          console.log("✅ Admin client test passed - key is valid");
-          console.log("Test returned user count:", testData?.users?.length || 0);
-        } catch (testException) {
-          console.error("❌ Exception during admin client test:", testException);
-          console.error("Exception type:", testException instanceof Error ? testException.constructor.name : typeof testException);
-          console.error("Exception message:", testException instanceof Error ? testException.message : String(testException));
           return NextResponse.json(
             { 
-              error: "Failed to validate service role key",
-              details: testException instanceof Error ? testException.message : String(testException),
-              hint: "There was an exception while testing the admin client. Check Vercel function logs for details. Make sure SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key from Supabase Dashboard."
+              error: "Invalid service role key",
+              details: testError.message || "The service role key does not match this Supabase project",
+              hint: `Verify that SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key in Supabase Dashboard → Settings → API for project: ${supabaseUrl}. The key should start with 'eyJ' and be a long JWT token.`
             },
             { status: 500 }
           );
         }
         
-        // Use the admin API to delete the auth user
-        // This is the correct method per Supabase docs
-        // Note: deleteUser second parameter is boolean for shouldSoftDelete
-        const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
-          userId,
-          false // Hard delete, not soft delete
+        console.log("✅ Admin client test passed - key is valid");
+        console.log("Test returned user count:", testData?.users?.length || 0);
+      } catch (testException) {
+        console.error("❌ Exception during admin client test:", testException);
+        console.error("Exception type:", testException instanceof Error ? testException.constructor.name : typeof testException);
+        console.error("Exception message:", testException instanceof Error ? testException.message : String(testException));
+        return NextResponse.json(
+          { 
+            error: "Failed to validate service role key",
+            details: testException instanceof Error ? testException.message : String(testException),
+            hint: "There was an exception while testing the admin client. Check Vercel function logs for details. Make sure SUPABASE_SERVICE_ROLE_KEY in Vercel matches the service_role key from Supabase Dashboard."
+          },
+          { status: 500 }
         );
+      }
+      
+      // Use the admin API to delete the auth user
+      // This is the correct method per Supabase docs
+      // Note: deleteUser second parameter is boolean for shouldSoftDelete
+      const { data: deleteData, error: authDeleteError } = await adminClient.auth.admin.deleteUser(
+        userId,
+        false // Hard delete, not soft delete
+      );
 
-        if (authDeleteError) {
-          console.error("❌ Error deleting auth user:", authDeleteError);
-          console.error("Error code:", authDeleteError.status);
-          console.error("Error message:", authDeleteError.message);
-          console.error("Error name:", authDeleteError.name);
-          console.error("Full error:", JSON.stringify(authDeleteError, null, 2));
-          
+      if (authDeleteError) {
+        console.error("❌ Error deleting auth user:", authDeleteError);
+        console.error("Error code:", authDeleteError.status);
+        console.error("Error message:", authDeleteError.message);
+        console.error("Error name:", authDeleteError.name);
+        console.error("Full error:", JSON.stringify(authDeleteError, null, 2));
+        
           // Check if it's an API key error
           if (authDeleteError.message?.includes("Invalid API key") || authDeleteError.message?.includes("JWT") || authDeleteError.message?.includes("invalid")) {
             console.error("⚠️ This appears to be an API key validation error");
             console.error("   Environment:", process.env.NODE_ENV || "development");
-            console.error("   Supabase URL:", supabaseUrl);
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+            if (supabaseUrl) {
+              console.error("   Supabase URL:", supabaseUrl);
+            }
             console.error("   Service key present:", !!serviceRoleKey);
             console.error("   Service key length:", serviceRoleKey?.length || 0);
-            console.error("   Service key starts with eyJ:", serviceRoleKey?.startsWith("eyJ"));
-            console.error("   Verify the service role key in .env.local (local) or Vercel (production)");
-            console.error("   Key should start with 'eyJ' and be the full JWT token from Supabase Dashboard");
-            
-            return NextResponse.json(
-              { 
-                error: "Failed to delete auth user",
-                details: authDeleteError.message || "Invalid API key",
-                userId,
-                hint: process.env.NODE_ENV === "development" 
-                  ? "For local development, ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local. For production, verify it's set in Vercel environment variables. The key must match the service_role key in Supabase Dashboard → Settings → API."
-                  : "The service role key may be incorrect. Verify it in Vercel environment variables matches Supabase Dashboard."
-              },
-              { status: authDeleteError.status || 500 }
-            );
-          }
+            if (serviceRoleKey) {
+              console.error("   Service key starts with eyJ:", serviceRoleKey.startsWith("eyJ"));
+            }
+          console.error("   Verify the service role key in .env.local (local) or Vercel (production)");
+          console.error("   Key should start with 'eyJ' and be the full JWT token from Supabase Dashboard");
           
-          // Return error so user knows deletion failed
           return NextResponse.json(
             { 
               error: "Failed to delete auth user",
-              details: authDeleteError.message || "Unknown error",
+              details: authDeleteError.message || "Invalid API key",
               userId,
-              hint: authDeleteError.message?.includes("Invalid API key") 
-                ? "The service role key may be incorrect. Verify it in .env.local (local) or Vercel (production) environment variables matches Supabase Dashboard."
-                : undefined
+              hint: process.env.NODE_ENV === "development" 
+                ? "For local development, ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local. For production, verify it's set in Vercel environment variables. The key must match the service_role key in Supabase Dashboard → Settings → API."
+                : "The service role key may be incorrect. Verify it in Vercel environment variables matches Supabase Dashboard."
             },
             { status: authDeleteError.status || 500 }
           );
-        } else {
-          console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
-          console.log("Delete response:", deleteData);
         }
+        
+        // Return error so user knows deletion failed
+        return NextResponse.json(
+          { 
+            error: "Failed to delete auth user",
+            details: authDeleteError.message || "Unknown error",
+            userId,
+            hint: authDeleteError.message?.includes("Invalid API key") 
+              ? "The service role key may be incorrect. Verify it in .env.local (local) or Vercel (production) environment variables matches Supabase Dashboard."
+              : undefined
+          },
+          { status: authDeleteError.status || 500 }
+        );
+      } else {
+        console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
+        console.log("Delete response:", deleteData);
+      }
       } catch (authError) {
         console.error("❌ Exception deleting auth user:", authError);
         console.error("Error type:", authError instanceof Error ? authError.constructor.name : typeof authError);
@@ -344,16 +349,6 @@ export async function DELETE(request: Request) {
           { status: 500 }
         );
       }
-    } else {
-      console.error("❌ SUPABASE_SERVICE_ROLE_KEY not set - cannot delete auth user");
-      return NextResponse.json(
-        {
-          error: "Service role key not configured",
-          message: "Cannot delete auth user. User will be able to sign in again."
-        },
-        { status: 500 }
-      );
-    }
 
     // Log deletion (optional - for audit purposes)
     console.log(`User account deleted: ${userId} at ${new Date().toISOString()}`);
