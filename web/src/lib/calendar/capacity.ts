@@ -103,13 +103,18 @@ export async function getCapacityForDate(
   // Get user timezone and working hours
   const { data: userProfile } = await supabase
     .from("users")
-    .select("timezone, work_start_hour, work_end_hour")
+    .select("timezone, work_start_time, work_end_time")
     .eq("id", userId)
     .single();
 
   const timezone = userProfile?.timezone || "UTC";
-  const workStartHour = userProfile?.work_start_hour ?? 9;
-  const workEndHour = userProfile?.work_end_hour ?? 17;
+  // Convert TIME to HH:MM string (PostgreSQL TIME format is HH:MM:SS)
+  const workStartTime = userProfile?.work_start_time 
+    ? userProfile.work_start_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
+    : "09:00";
+  const workEndTime = userProfile?.work_end_time
+    ? userProfile.work_end_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
+    : "17:00";
 
   // Fetch free/busy data
   try {
@@ -119,16 +124,16 @@ export async function getCapacityForDate(
         accessToken,
         date,
         timezone,
-        workStartHour,
-        workEndHour
+        workStartTime,
+        workEndTime
       );
     } else if (connection.provider === "outlook") {
       freeBusyResult = await fetchOutlookFreeBusy(
         accessToken,
         date,
         timezone,
-        workStartHour,
-        workEndHour
+        workStartTime,
+        workEndTime
       );
     } else {
       return {

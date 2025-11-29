@@ -7,16 +7,16 @@ type AccountOverviewSectionProps = {
   name: string | null;
   email: string;
   timezone: string | null;
-  workStartHour: number | null;
-  workEndHour: number | null;
+  workStartTime: string | null;
+  workEndTime: string | null;
 };
 
 export function AccountOverviewSection({
   name,
   email,
   timezone,
-  workStartHour,
-  workEndHour,
+  workStartTime,
+  workEndTime,
 }: AccountOverviewSectionProps) {
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [isEditingTimezone, setIsEditingTimezone] = useState(false);
@@ -25,10 +25,21 @@ export function AccountOverviewSection({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedTimezone, setSelectedTimezone] = useState(timezone || "America/New_York");
   const [currentTimezone, setCurrentTimezone] = useState(timezone); // Track current displayed timezone
-  const [selectedStartHour, setSelectedStartHour] = useState(workStartHour ?? 9);
-  const [selectedEndHour, setSelectedEndHour] = useState(workEndHour ?? 17);
-  const [currentStartHour, setCurrentStartHour] = useState(workStartHour ?? 9);
-  const [currentEndHour, setCurrentEndHour] = useState(workEndHour ?? 17);
+  
+  // Parse time strings (HH:MM) to hours and minutes
+  const parseTime = (timeStr: string | null, defaultTime: string) => {
+    if (!timeStr) return defaultTime;
+    // Handle both HH:MM and HH:MM:SS formats
+    return timeStr.substring(0, 5);
+  };
+  
+  const defaultStartTime = parseTime(workStartTime, "09:00");
+  const defaultEndTime = parseTime(workEndTime, "17:00");
+  
+  const [selectedStartTime, setSelectedStartTime] = useState(defaultStartTime);
+  const [selectedEndTime, setSelectedEndTime] = useState(defaultEndTime);
+  const [currentStartTime, setCurrentStartTime] = useState(defaultStartTime);
+  const [currentEndTime, setCurrentEndTime] = useState(defaultEndTime);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -125,6 +136,18 @@ export function AccountOverviewSection({
   const handleWorkingHoursChange = async () => {
     setError(null);
     setSuccess(null);
+    
+    // Validate times
+    const [startHours, startMinutes] = selectedStartTime.split(":").map(Number);
+    const [endHours, endMinutes] = selectedEndTime.split(":").map(Number);
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+    
+    if (endTotalMinutes <= startTotalMinutes) {
+      setError("End time must be after start time");
+      return;
+    }
+    
     setIsSaving(true);
 
     try {
@@ -132,8 +155,8 @@ export function AccountOverviewSection({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workStartHour: selectedStartHour,
-          workEndHour: selectedEndHour,
+          workStartTime: selectedStartTime,
+          workEndTime: selectedEndTime,
         }),
       });
 
@@ -143,8 +166,8 @@ export function AccountOverviewSection({
       }
 
       setSuccess("Working hours updated successfully");
-      setCurrentStartHour(selectedStartHour);
-      setCurrentEndHour(selectedEndHour);
+      setCurrentStartTime(selectedStartTime);
+      setCurrentEndTime(selectedEndTime);
       setIsEditingWorkingHours(false);
       setTimeout(() => {
         setSuccess(null);
@@ -157,8 +180,6 @@ export function AccountOverviewSection({
     }
   };
 
-  // Generate hour options (0-23)
-  const hourOptions = Array.from({ length: 24 }, (_, i) => i);
 
   return (
     <div className="space-y-4">
@@ -263,45 +284,37 @@ export function AccountOverviewSection({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label
-                    htmlFor="start-hour"
+                    htmlFor="start-time"
                     className="block text-xs font-medium text-zinc-900 mb-1"
                   >
-                    Start hour
+                    Start time
                   </label>
-                  <select
-                    id="start-hour"
-                    value={selectedStartHour}
-                    onChange={(e) => setSelectedStartHour(Number(e.target.value))}
+                  <input
+                    id="start-time"
+                    type="time"
+                    value={selectedStartTime}
+                    onChange={(e) => setSelectedStartTime(e.target.value)}
                     className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     disabled={isSaving}
-                  >
-                    {hourOptions.map((hour) => (
-                      <option key={hour} value={hour}>
-                        {hour.toString().padStart(2, "0")}:00
-                      </option>
-                    ))}
-                  </select>
+                    step="900"
+                  />
                 </div>
                 <div>
                   <label
-                    htmlFor="end-hour"
+                    htmlFor="end-time"
                     className="block text-xs font-medium text-zinc-900 mb-1"
                   >
-                    End hour
+                    End time
                   </label>
-                  <select
-                    id="end-hour"
-                    value={selectedEndHour}
-                    onChange={(e) => setSelectedEndHour(Number(e.target.value))}
+                  <input
+                    id="end-time"
+                    type="time"
+                    value={selectedEndTime}
+                    onChange={(e) => setSelectedEndTime(e.target.value)}
                     className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     disabled={isSaving}
-                  >
-                    {hourOptions.map((hour) => (
-                      <option key={hour} value={hour}>
-                        {hour.toString().padStart(2, "0")}:00
-                      </option>
-                    ))}
-                  </select>
+                    step="900"
+                  />
                 </div>
               </div>
               {error && (
@@ -314,7 +327,7 @@ export function AccountOverviewSection({
                 <button
                   type="button"
                   onClick={handleWorkingHoursChange}
-                  disabled={isSaving || selectedEndHour <= selectedStartHour}
+                  disabled={isSaving}
                   style={{ 
                     WebkitAppearance: 'none',
                     appearance: 'none',
@@ -334,8 +347,8 @@ export function AccountOverviewSection({
                   type="button"
                   onClick={() => {
                     setIsEditingWorkingHours(false);
-                    setSelectedStartHour(currentStartHour);
-                    setSelectedEndHour(currentEndHour);
+                    setSelectedStartTime(currentStartTime);
+                    setSelectedEndTime(currentEndTime);
                     setError(null);
                     setSuccess(null);
                   }}
@@ -357,7 +370,7 @@ export function AccountOverviewSection({
           ) : (
             <div className="flex items-center justify-between">
               <div className="font-medium text-zinc-900">
-                {currentStartHour.toString().padStart(2, "0")}:00 - {currentEndHour.toString().padStart(2, "0")}:00
+                {currentStartTime} - {currentEndTime}
               </div>
               <button
                 type="button"
