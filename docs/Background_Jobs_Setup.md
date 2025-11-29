@@ -67,11 +67,13 @@ if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
 
 ### 1. Generate CRON_SECRET
 
-Generate a secure random secret:
+Generate a secure random secret for authenticating requests to our endpoints:
 
 ```bash
 openssl rand -hex 32
 ```
+
+**Note**: This is different from the cron-job.org API key. The `CRON_SECRET` is used to authenticate HTTP requests to our API endpoints, while the cron-job.org API key is for managing jobs via their API/dashboard.
 
 ### 2. Add CRON_SECRET to Vercel
 
@@ -79,10 +81,24 @@ openssl rand -hex 32
 2. Add `CRON_SECRET` with the generated secret
 3. Add it to **Production**, **Preview**, and **Development** environments
 
-### 3. Set Up Cron Jobs on cron-job.org
+### 3. Store cron-job.org API Key (Optional)
 
-1. Go to [https://cron-job.org](https://cron-job.org) and create a free account
+The cron-job.org API key (`tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=`) is used for:
+- Managing cron jobs programmatically via cron-job.org API
+- Accessing advanced features in their dashboard
+
+**Note**: This key is NOT sent in HTTP requests to our endpoints. It's only used for cron-job.org's own API/dashboard.
+
+You can store it securely for reference:
+- Add to a password manager
+- Or add as an environment variable `CRON_JOB_ORG_API_KEY` in Vercel (for reference only, not used in code)
+
+### 4. Set Up Cron Jobs on cron-job.org
+
+1. Go to [https://cron-job.org](https://cron-job.org) and sign in
 2. For each job, click "Create cronjob" and configure:
+
+**Important**: Use the `CRON_SECRET` (from step 1) in the Authorization header, NOT the cron-job.org API key.
 
 #### Job 1: Daily Plan Generation
 - **Title**: `NextBestMove - Daily Plans`
