@@ -111,7 +111,23 @@ export async function POST(request: Request) {
     }
 
     // Build success and cancel URLs
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Try to get base URL from request headers first (for production), then env var, then fallback
+    const requestUrl = request.headers.get("referer") || request.headers.get("origin");
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+    
+    if (!baseUrl && requestUrl) {
+      // Extract base URL from referer/origin (e.g., "https://nextbestmove.app")
+      try {
+        const url = new URL(requestUrl);
+        baseUrl = `${url.protocol}//${url.host}`;
+      } catch {
+        // If URL parsing fails, fall back to env or localhost
+      }
+    }
+    
+    // Final fallback to localhost for local development
+    baseUrl = baseUrl || "http://localhost:3000";
+    
     const successUrl = `${baseUrl}/app/settings?checkout=success`;
     const cancelUrl = `${baseUrl}/app/settings?checkout=canceled`;
 
