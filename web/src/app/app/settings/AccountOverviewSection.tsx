@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { formatTime } from "@/lib/utils/timeFormat";
 
 type AccountOverviewSectionProps = {
   name: string | null;
@@ -9,6 +10,7 @@ type AccountOverviewSectionProps = {
   timezone: string | null;
   workStartTime: string | null;
   workEndTime: string | null;
+  timeFormatPreference: "12h" | "24h" | null;
 };
 
 export function AccountOverviewSection({
@@ -17,6 +19,7 @@ export function AccountOverviewSection({
   timezone,
   workStartTime,
   workEndTime,
+  timeFormatPreference,
 }: AccountOverviewSectionProps) {
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [isEditingTimezone, setIsEditingTimezone] = useState(false);
@@ -40,6 +43,8 @@ export function AccountOverviewSection({
   const [selectedEndTime, setSelectedEndTime] = useState(defaultEndTime);
   const [currentStartTime, setCurrentStartTime] = useState(defaultStartTime);
   const [currentEndTime, setCurrentEndTime] = useState(defaultEndTime);
+  const [currentTimeFormat, setCurrentTimeFormat] = useState<"12h" | "24h">(timeFormatPreference || "24h");
+  const [selectedTimeFormat, setSelectedTimeFormat] = useState<"12h" | "24h">(timeFormatPreference || "24h");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -175,6 +180,33 @@ export function AccountOverviewSection({
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update working hours");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTimeFormatChange = async () => {
+    setError(null);
+    setSuccess(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/users/time-format", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeFormat: selectedTimeFormat }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update time format");
+      }
+
+      setSuccess("Time format updated successfully");
+      setCurrentTimeFormat(selectedTimeFormat);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update time format");
     } finally {
       setIsSaving(false);
     }
@@ -370,7 +402,7 @@ export function AccountOverviewSection({
           ) : (
             <div className="flex items-center justify-between">
               <div className="font-medium text-zinc-900">
-                {currentStartTime} - {currentEndTime}
+                {formatTime(currentStartTime, currentTimeFormat)} - {formatTime(currentEndTime, currentTimeFormat)}
               </div>
               <button
                 type="button"
@@ -381,6 +413,46 @@ export function AccountOverviewSection({
               </button>
             </div>
           )}
+        </div>
+        <div>
+          <div className="text-zinc-500 mb-2">Time format</div>
+          <div className="flex items-center justify-between">
+            <div className="font-medium text-zinc-900">
+              {currentTimeFormat === "12h" ? "12-hour (AM/PM)" : "24-hour"}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTimeFormat("12h");
+                  handleTimeFormatChange();
+                }}
+                disabled={isSaving || currentTimeFormat === "12h"}
+                className={`text-xs font-medium px-3 py-1 rounded-lg border ${
+                  currentTimeFormat === "12h"
+                    ? "bg-purple-50 border-purple-200 text-purple-700"
+                    : "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                12h
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTimeFormat("24h");
+                  handleTimeFormatChange();
+                }}
+                disabled={isSaving || currentTimeFormat === "24h"}
+                className={`text-xs font-medium px-3 py-1 rounded-lg border ${
+                  currentTimeFormat === "24h"
+                    ? "bg-purple-50 border-purple-200 text-purple-700"
+                    : "bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+                } disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                24h
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
