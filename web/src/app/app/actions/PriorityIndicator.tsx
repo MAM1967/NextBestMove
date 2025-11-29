@@ -3,6 +3,34 @@
 import { useState } from "react";
 import { Action } from "./types";
 
+/**
+ * Parse a date string (YYYY-MM-DD) and return a Date object at local midnight
+ */
+function parseLocalDate(dateString: string): Date {
+  // Handle both YYYY-MM-DD format and potential ISO strings
+  const dateOnly = dateString.split('T')[0]; // Remove time if present
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    console.error('Invalid date string:', dateString);
+    return new Date(); // Fallback to today
+  }
+  
+  // Create date at local midnight (not UTC)
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/**
+ * Get today's date at local midnight
+ */
+function getTodayLocal(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
 type PriorityLevel = "high" | "medium" | "low";
 
 interface PriorityIndicatorProps {
@@ -27,13 +55,8 @@ function calculatePriorityLevel(action: Action): {
 
   // High priority: Snoozed action now due
   if (action.state === "SNOOZED" && action.snooze_until) {
-    // Normalize snooze date to local midnight
-    const [year, month, day] = action.snooze_until.split('-').map(Number);
-    const snoozeDate = new Date(year, month - 1, day);
-    snoozeDate.setHours(0, 0, 0, 0);
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const snoozeDate = parseLocalDate(action.snooze_until);
+    const today = getTodayLocal();
     if (snoozeDate <= today) {
       return {
         level: "high",
@@ -43,13 +66,8 @@ function calculatePriorityLevel(action: Action): {
   }
 
   // Check due date urgency
-  // Normalize due date to local midnight
-  const [year, month, day] = action.due_date.split('-').map(Number);
-  const dueDate = new Date(year, month - 1, day);
-  dueDate.setHours(0, 0, 0, 0);
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const dueDate = parseLocalDate(action.due_date);
+  const today = getTodayLocal();
   const daysDiff = Math.floor(
     (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -122,13 +140,8 @@ function getUrgencyIndicator(action: Action): {
   className: string;
   icon: string;
 } | null {
-  // Normalize due date to local midnight
-  const [year, month, day] = action.due_date.split('-').map(Number);
-  const dueDate = new Date(year, month - 1, day);
-  dueDate.setHours(0, 0, 0, 0);
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const dueDate = parseLocalDate(action.due_date);
+  const today = getTodayLocal();
   const daysDiff = Math.floor(
     (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
   );
