@@ -8,6 +8,7 @@ type Subscription = {
   id: string;
   status: "trialing" | "active" | "past_due" | "canceled";
   current_period_end: string;
+  trial_ends_at?: string | null;
   cancel_at_period_end: boolean;
   metadata: {
     plan_name?: string;
@@ -230,7 +231,11 @@ export function BillingSection({
     );
   }
 
-  const renewalDate = new Date(subscription.current_period_end);
+  // For trialing subscriptions, prefer trial_ends_at; otherwise use current_period_end
+  // Note: For trials, Stripe sets current_period_end to the trial end date, but we prefer trial_ends_at if available
+  const renewalDate = subscription.status === "trialing" && subscription.trial_ends_at
+    ? new Date(subscription.trial_ends_at)
+    : new Date(subscription.current_period_end);
   const isCanceled = subscription.status === "canceled";
   const isCanceling = subscription.cancel_at_period_end && !isCanceled;
   const planName =

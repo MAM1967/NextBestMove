@@ -130,6 +130,14 @@ export async function POST(request: Request) {
       ? new Date(subscription.trial_end * 1000).toISOString()
       : null;
 
+    console.log("📅 Trial subscription created:", {
+      subscriptionId: subscription.id,
+      trial_end: subscription.trial_end,
+      trialEndsAt,
+      current_period_end: subscription.current_period_end,
+      status: subscription.status,
+    });
+
     // Store subscription in database using admin client
     const { error: subError } = await adminClient
       .from("billing_subscriptions")

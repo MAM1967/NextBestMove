@@ -128,6 +128,7 @@ export default async function SettingsPage() {
         id,
         status,
         current_period_end,
+        trial_ends_at,
         cancel_at_period_end,
         metadata
       `
@@ -149,6 +150,7 @@ export default async function SettingsPage() {
           id,
           status,
           current_period_end,
+          trial_ends_at,
           cancel_at_period_end,
           metadata
         `
