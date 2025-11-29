@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/billing/stripe";
 import { handleSubscriptionUpdated } from "../webhook/route";
@@ -83,8 +84,9 @@ export async function POST() {
 
     console.log("Syncing subscription:", subscription.id, "Status:", subscription.status);
     
-    // Use the webhook handler to sync the subscription
-    await handleSubscriptionUpdated(supabase, subscription, billingCustomer.id);
+    // Use admin client for subscription update to bypass RLS
+    const adminSupabase = createAdminClient();
+    await handleSubscriptionUpdated(adminSupabase, subscription, billingCustomer.id);
 
     // Verify it was saved
     const { data: savedSubscription } = await supabase
