@@ -280,7 +280,6 @@ export async function DELETE(request: Request) {
           if (authDeleteError.message?.includes("Invalid API key") || authDeleteError.message?.includes("JWT") || authDeleteError.message?.includes("invalid")) {
             console.error("⚠️ This appears to be an API key validation error");
             console.error("   Environment:", process.env.NODE_ENV || "development");
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
             if (supabaseUrl) {
               console.error("   Supabase URL:", supabaseUrl);
             }
