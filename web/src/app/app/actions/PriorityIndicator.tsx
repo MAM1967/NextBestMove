@@ -2,34 +2,7 @@
 
 import { useState } from "react";
 import { Action } from "./types";
-
-/**
- * Parse a date string (YYYY-MM-DD) and return a Date object at local midnight
- */
-function parseLocalDate(dateString: string): Date {
-  // Handle both YYYY-MM-DD format and potential ISO strings
-  const dateOnly = dateString.split('T')[0]; // Remove time if present
-  const [year, month, day] = dateOnly.split('-').map(Number);
-  
-  if (isNaN(year) || isNaN(month) || isNaN(day)) {
-    console.error('Invalid date string:', dateString);
-    return new Date(); // Fallback to today
-  }
-  
-  // Create date at local midnight (not UTC)
-  const date = new Date(year, month - 1, day);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-/**
- * Get today's date at local midnight
- */
-function getTodayLocal(): Date {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-}
+import { parseLocalDate, getTodayLocal, getDaysDifference } from "@/lib/utils/dateUtils";
 
 type PriorityLevel = "high" | "medium" | "low";
 
@@ -65,12 +38,8 @@ function calculatePriorityLevel(action: Action): {
     }
   }
 
-  // Check due date urgency
-  const dueDate = parseLocalDate(action.due_date);
-  const today = getTodayLocal();
-  const daysDiff = Math.floor(
-    (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  // Check due date urgency using date-fns
+  const daysDiff = getDaysDifference(action.due_date);
 
   // High priority: FOLLOW_UP due today or overdue
   if (action.action_type === "FOLLOW_UP") {
