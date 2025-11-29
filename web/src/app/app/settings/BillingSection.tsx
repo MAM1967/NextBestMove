@@ -193,10 +193,12 @@ export function BillingSection({
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
         <p className="text-sm font-medium text-zinc-900">No active subscription</p>
         {hasCustomer ? (
-          // If customer exists but no subscription, offer to sync
+          // If customer exists but no subscription, offer to sync (fallback only)
+          // In production, webhook should handle this automatically
           <div className="mt-4 space-y-2">
             <p className="text-xs text-zinc-600">
-              If you just completed checkout, click below to sync your subscription.
+              If you just completed checkout, your subscription should appear automatically.
+              If it doesn't, click below to sync.
             </p>
             <button
               type="button"
@@ -206,16 +208,6 @@ export function BillingSection({
             >
               {isLoading ? "Syncing..." : "Sync Subscription"}
             </button>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setShowPlanSelection(true)}
-                disabled={isLoading}
-                className="text-xs text-zinc-500 underline hover:text-zinc-700"
-              >
-                Or start a new subscription
-              </button>
-            </div>
           </div>
         ) : (
           // No customer, show "Start Free Trial"

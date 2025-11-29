@@ -113,26 +113,42 @@ async function handleCheckoutCompleted(
   const customerId = session.customer as string;
   const subscriptionId = session.subscription as string;
 
+  console.log("🔄 Processing checkout.session.completed:", {
+    customerId,
+    subscriptionId,
+    sessionId: session.id,
+  });
+
   if (!customerId || !subscriptionId) {
-    console.error("Missing customer or subscription ID in checkout session");
+    console.error("❌ Missing customer or subscription ID in checkout session");
     return;
   }
 
   // Get customer from database
-  const { data: customer } = await supabase
+  const { data: customer, error: customerError } = await supabase
     .from("billing_customers")
     .select("id, user_id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
 
-  if (!customer) {
-    console.error("Customer not found in database");
+  if (customerError) {
+    console.error("❌ Error fetching customer:", customerError);
     return;
   }
 
+  if (!customer) {
+    console.error("❌ Customer not found in database for:", customerId);
+    return;
+  }
+
+  console.log("✅ Found customer in database:", customer.id, "for user:", customer.user_id);
+
   // Get subscription from Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  console.log("✅ Retrieved subscription from Stripe:", subscription.id, "Status:", subscription.status);
+  
   await handleSubscriptionUpdated(supabase, subscription, customer.id);
+  console.log("✅ Subscription updated in database");
 }
 
 export async function handleSubscriptionUpdated(
@@ -186,36 +202,48 @@ export async function handleSubscriptionUpdated(
     ? new Date(subscription.trial_end * 1000).toISOString()
     : null;
 
-  const { error: upsertError } = await supabase.from("billing_subscriptions").upsert(
-    {
-      billing_customer_id: billingCustomerId,
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: priceId,
-      status: status,
-      current_period_end: currentPeriodEnd,
-      cancel_at_period_end: cancelAtPeriodEnd,
-      trial_ends_at: trialEndsAt,
-      latest_invoice_url: subscription.latest_invoice
-        ? typeof subscription.latest_invoice === "string"
-          ? null
-          : (subscription.latest_invoice as Stripe.Invoice).hosted_invoice_url
-        : null,
-      metadata: {
-        plan_name: planMetadata.plan_name || "Standard",
-        plan_type: planMetadata.plan_type || "standard",
-        interval: planMetadata.interval || "month",
-        amount: subscription.items.data[0]?.price.unit_amount || 0,
+  console.log("💾 Upserting subscription to database:", {
+    billingCustomerId,
+    subscriptionId: subscription.id,
+    status,
+    priceId,
+  });
+
+  const { data: upsertedData, error: upsertError } = await supabase
+    .from("billing_subscriptions")
+    .upsert(
+      {
+        billing_customer_id: billingCustomerId,
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: priceId,
+        status: status,
+        current_period_end: currentPeriodEnd,
+        cancel_at_period_end: cancelAtPeriodEnd,
+        trial_ends_at: trialEndsAt,
+        latest_invoice_url: subscription.latest_invoice
+          ? typeof subscription.latest_invoice === "string"
+            ? null
+            : (subscription.latest_invoice as Stripe.Invoice).hosted_invoice_url
+          : null,
+        metadata: {
+          plan_name: planMetadata.plan_name || "Standard",
+          plan_type: planMetadata.plan_type || "standard",
+          interval: planMetadata.interval || "month",
+          amount: subscription.items.data[0]?.price.unit_amount || 0,
+        },
       },
-    },
-    {
-      onConflict: "stripe_subscription_id",
-    }
-  );
+      {
+        onConflict: "stripe_subscription_id",
+      }
+    )
+    .select();
 
   if (upsertError) {
-    console.error("Error upserting subscription:", upsertError);
+    console.error("❌ Error upserting subscription:", upsertError);
     throw new Error(`Failed to save subscription: ${upsertError.message}`);
   }
+
+  console.log("✅ Subscription successfully saved to database:", upsertedData?.[0]?.id);
 }
 
 async function handleSubscriptionDeleted(
