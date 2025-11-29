@@ -112,11 +112,11 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Dashboard & Settings Data
 
-- [ ] **Dashboard data integration**  
-       _Dashboard currently shows static placeholder content. Should display user-specific data: today's daily plan, fast win action, regular actions, streak count, calendar availability. Replace placeholder tasks table query with actual daily plan and actions data._
+- [x] **Dashboard data integration** ✅  
+       _Dashboard now fetches and displays user-specific data: today's daily plan, fast win action, regular actions count, progress, streak count, and calendar availability. Removed placeholder tasks table query._
 
-- [ ] **Content prompts & streak data in settings**  
-       _Settings page shows static content prompts section and streak count. Content prompts should show actual data (count of prompts generated, enable/disable toggle if implemented). Streak count is fetched but may need real-time updates. Add to backlog if this is P2._
+- [x] **Content prompts & streak data in settings** ✅  
+       _Settings page now shows count of saved content prompts. Streak count displays correctly from user profile. Content prompts toggle remains disabled (coming soon feature)._
 
 ---
 
