@@ -167,10 +167,27 @@ export async function DELETE(request: Request) {
     // We need to use the Admin API to delete the auth user
     // This prevents the user from signing back in
     // Get service role key - check both possible env var names
+    // In Next.js API routes, process.env works directly (no need for next.config.ts)
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    
+    console.log("=== Service Role Key Debug ===");
     console.log("Service role key present:", !!serviceRoleKey);
     console.log("Service role key length:", serviceRoleKey?.length || 0);
-    console.log("Service role key starts with:", serviceRoleKey?.substring(0, 15) || "N/A");
+    console.log("Service role key starts with:", serviceRoleKey?.substring(0, 20) || "N/A");
+    console.log("All env vars with SUPABASE:", Object.keys(process.env).filter(k => k.includes("SUPABASE")));
+    
+    if (!serviceRoleKey) {
+      console.error("❌ SUPABASE_SERVICE_ROLE_KEY not found in process.env");
+      console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("SERVICE") || k.includes("SUPABASE")));
+      return NextResponse.json(
+        { 
+          error: "Service role key not configured",
+          details: "SUPABASE_SERVICE_ROLE_KEY is not set in environment variables. Please add it to Vercel environment variables.",
+          hint: "Go to Vercel Dashboard → Project Settings → Environment Variables → Add SUPABASE_SERVICE_ROLE_KEY"
+        },
+        { status: 500 }
+      );
+    }
     
     if (serviceRoleKey) {
       try {
@@ -218,6 +235,8 @@ export async function DELETE(request: Request) {
         console.log("Admin client created successfully");
 
         console.log("Attempting to delete auth user:", userId);
+        console.log("Using Supabase URL:", supabaseUrl);
+        console.log("Service key format verified (starts with eyJ):", serviceRoleKey.startsWith("eyJ"));
         
         // Use the admin API to delete the auth user
         // This is the correct method per Supabase docs
@@ -231,16 +250,27 @@ export async function DELETE(request: Request) {
           console.error("❌ Error deleting auth user:", authDeleteError);
           console.error("Error code:", authDeleteError.status);
           console.error("Error message:", authDeleteError.message);
+          console.error("Error name:", authDeleteError.name);
           console.error("Full error:", JSON.stringify(authDeleteError, null, 2));
+          
+          // Check if it's an API key error
+          if (authDeleteError.message?.includes("Invalid API key") || authDeleteError.message?.includes("JWT")) {
+            console.error("⚠️ This appears to be an API key validation error");
+            console.error("   Verify the service role key in Vercel matches the one in Supabase Dashboard");
+            console.error("   Key should start with 'eyJ' and be the full JWT token");
+          }
           
           // Return error so user knows deletion failed
           return NextResponse.json(
             { 
               error: "Failed to delete auth user",
-              details: authDeleteError.message,
-              userId 
+              details: authDeleteError.message || "Unknown error",
+              userId,
+              hint: authDeleteError.message?.includes("Invalid API key") 
+                ? "The service role key may be incorrect. Verify it in Vercel environment variables matches Supabase Dashboard."
+                : undefined
             },
-            { status: 500 }
+            { status: authDeleteError.status || 500 }
           );
         } else {
           console.log(`✅ Auth user ${userId} deleted from Supabase Auth`);
