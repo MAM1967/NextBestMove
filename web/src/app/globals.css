@@ -25,24 +25,32 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Safari fix: Force purple button background color */
-button.safari-purple-fix {
+/* Safari fix: Force purple button background color with high specificity */
+button.safari-purple-fix.safari-purple-fix {
   background-color: rgb(147, 51, 234) !important;
   color: white !important;
   border: none !important;
 }
 
-button.safari-purple-fix:hover:not(:disabled) {
+button.safari-purple-fix.safari-purple-fix:hover:not(:disabled) {
   background-color: rgb(126, 34, 206) !important;
 }
 
-button.safari-purple-fix:disabled {
+button.safari-purple-fix.safari-purple-fix:disabled {
   background-color: rgb(147, 51, 234) !important;
   color: white !important;
   opacity: 0.5 !important;
   cursor: not-allowed !important;
 }
 
-button.safari-purple-fix:active:not(:disabled) {
+button.safari-purple-fix.safari-purple-fix:active:not(:disabled) {
   background-color: rgb(126, 34, 206) !important;
+}
+
+/* Additional high-specificity override for Safari */
+button.safari-purple-fix[type="button"],
+button.safari-purple-fix[type="submit"] {
+  background-color: rgb(147, 51, 234) !important;
+  color: white !important;
+  border: none !important;
 }
