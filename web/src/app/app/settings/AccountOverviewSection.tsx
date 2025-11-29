@@ -152,10 +152,15 @@ export function AccountOverviewSection({
                   onClick={handleTimezoneChange}
                   disabled={isSaving}
                   style={{ 
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
                     flex: '0 0 auto',
                     minWidth: '80px',
                     height: '32px',
                     opacity: isSaving ? 0.5 : 1,
+                    isolation: 'isolate',
+                    WebkitTransform: 'translateZ(0)',
+                    transform: 'translateZ(0)',
                   }}
                   className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed"
                 >
@@ -171,6 +176,8 @@ export function AccountOverviewSection({
                   }}
                   disabled={isSaving}
                   style={{ 
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
                     flex: '0 0 auto',
                     minWidth: '80px',
                     height: '32px',
@@ -260,10 +267,15 @@ export function AccountOverviewSection({
                 type="submit"
                 disabled={isSaving}
                 style={{ 
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
                   flex: '0 0 auto',
                   minWidth: '120px',
                   height: '32px',
                   opacity: isSaving ? 0.5 : 1,
+                  isolation: 'isolate',
+                  WebkitTransform: 'translateZ(0)',
+                  transform: 'translateZ(0)',
                 }}
                 className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700"
               >
@@ -280,6 +292,8 @@ export function AccountOverviewSection({
                 }}
                 disabled={isSaving}
                 style={{ 
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
                   flex: '0 0 auto',
                   minWidth: '80px',
                   height: '32px',
