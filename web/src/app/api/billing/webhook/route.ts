@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/billing/stripe";
 import { headers } from "next/headers";
 import Stripe from "stripe";
+import { logWebhookEvent, logError, logBillingEvent } from "@/lib/utils/logger";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -10,6 +11,10 @@ export async function POST(request: Request) {
   const signature = headersList.get("stripe-signature");
 
   if (!signature) {
+    logWebhookEvent("Missing stripe-signature header", {
+      status: "error",
+      webhookType: "stripe",
+    });
     return NextResponse.json(
       { error: "Missing stripe-signature header" },
       { status: 400 }
@@ -17,7 +22,9 @@ export async function POST(request: Request) {
   }
 
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error("STRIPE_WEBHOOK_SECRET is not set");
+    logError("STRIPE_WEBHOOK_SECRET is not set", undefined, {
+      context: "webhook_config",
+    });
     return NextResponse.json(
       { error: "Webhook secret not configured" },
       { status: 500 }
@@ -33,7 +40,11 @@ export async function POST(request: Request) {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
+    logWebhookEvent("Webhook signature verification failed", {
+      status: "error",
+      webhookType: "stripe",
+      error: err.message,
+    });
     return NextResponse.json(
       { error: `Webhook Error: ${err.message}` },
       { status: 400 }
@@ -51,8 +62,17 @@ export async function POST(request: Request) {
       payload: event.data.object as any,
       processed_at: new Date().toISOString(),
     });
+    logWebhookEvent("Billing event stored", {
+      eventId: event.id,
+      webhookType: "stripe",
+      eventType: event.type,
+      status: "success",
+    });
   } catch (error) {
-    console.error("Error storing billing event:", error);
+    logError("Error storing billing event", error, {
+      eventId: event.id,
+      eventType: event.type,
+    });
     // Continue processing even if event storage fails
   }
 
@@ -93,12 +113,27 @@ export async function POST(request: Request) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logWebhookEvent("Unhandled event type", {
+          eventId: event.id,
+          webhookType: "stripe",
+          eventType: event.type,
+          status: "warning",
+        });
     }
+
+    logWebhookEvent("Webhook processed successfully", {
+      eventId: event.id,
+      webhookType: "stripe",
+      eventType: event.type,
+      status: "success",
+    });
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("Error processing webhook:", error);
+    logError("Error processing webhook", error, {
+      eventId: event.id,
+      eventType: event.type,
+    });
     return NextResponse.json(
       { error: "Webhook processing failed", details: error.message },
       { status: 500 }
@@ -113,14 +148,16 @@ async function handleCheckoutCompleted(
   const customerId = session.customer as string;
   const subscriptionId = session.subscription as string;
 
-  console.log("🔄 Processing checkout.session.completed:", {
+  logBillingEvent("checkout.session.completed", {
     customerId,
     subscriptionId,
-    sessionId: session.id,
+    eventId: session.id,
   });
 
   if (!customerId || !subscriptionId) {
-    console.error("❌ Missing customer or subscription ID in checkout session");
+    logError("Missing customer or subscription ID in checkout session", undefined, {
+      sessionId: session.id,
+    });
     return;
   }
 
@@ -132,23 +169,40 @@ async function handleCheckoutCompleted(
     .maybeSingle();
 
   if (customerError) {
-    console.error("❌ Error fetching customer:", customerError);
+    logError("Error fetching customer", customerError, {
+      customerId,
+      sessionId: session.id,
+    });
     return;
   }
 
   if (!customer) {
-    console.error("❌ Customer not found in database for:", customerId);
+    logError("Customer not found in database", undefined, {
+      customerId,
+      sessionId: session.id,
+    });
     return;
   }
 
-  console.log("✅ Found customer in database:", customer.id, "for user:", customer.user_id);
+  logBillingEvent("Customer found in database", {
+    customerId,
+    userId: customer.user_id,
+    sessionId: session.id,
+  });
 
   // Get subscription from Stripe
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  console.log("✅ Retrieved subscription from Stripe:", subscription.id, "Status:", subscription.status);
+  logBillingEvent("Subscription retrieved from Stripe", {
+    subscriptionId: subscription.id,
+    status: subscription.status,
+    customerId,
+  });
   
   await handleSubscriptionUpdated(supabase, subscription, customer.id);
-  console.log("✅ Subscription updated in database");
+  logBillingEvent("Subscription updated in database", {
+    subscriptionId: subscription.id,
+    customerId,
+  });
 }
 
 export async function handleSubscriptionUpdated(
@@ -165,7 +219,10 @@ export async function handleSubscriptionUpdated(
       .maybeSingle();
 
     if (!customer) {
-      console.error("Customer not found for subscription update");
+      logError("Customer not found for subscription update", undefined, {
+        subscriptionId: subscription.id,
+        stripeCustomerId: subscription.customer as string,
+      });
       return;
     }
     billingCustomerId = customer.id;
@@ -202,11 +259,11 @@ export async function handleSubscriptionUpdated(
     ? new Date(subscription.trial_end * 1000).toISOString()
     : null;
 
-  console.log("💾 Upserting subscription to database:", {
-    billingCustomerId,
+  logBillingEvent("Upserting subscription to database", {
     subscriptionId: subscription.id,
     status,
     priceId,
+    billingCustomerId,
   });
 
   const { data: upsertedData, error: upsertError } = await supabase
@@ -239,11 +296,18 @@ export async function handleSubscriptionUpdated(
     .select();
 
   if (upsertError) {
-    console.error("❌ Error upserting subscription:", upsertError);
+    logError("Error upserting subscription", upsertError, {
+      subscriptionId: subscription.id,
+      billingCustomerId,
+    });
     throw new Error(`Failed to save subscription: ${upsertError.message}`);
   }
 
-  console.log("✅ Subscription successfully saved to database:", upsertedData?.[0]?.id);
+  logBillingEvent("Subscription successfully saved to database", {
+    subscriptionId: subscription.id,
+    databaseId: upsertedData?.[0]?.id,
+    billingCustomerId,
+  });
 }
 
 async function handleSubscriptionDeleted(

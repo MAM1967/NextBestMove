@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -55,4 +56,13 @@ const nextConfig: NextConfig = {
   // In Next.js, non-NEXT_PUBLIC_ vars are automatically server-only, but this ensures it's accessible
 };
 
-export default nextConfig;
+// Wrap the config with Sentry
+export default withSentryConfig(nextConfig, {
+  // For all available options, see:
+  // https://github.com/getsentry/sentry-webpack-plugin#options
+
+  // Suppresses source map uploading logs during build
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

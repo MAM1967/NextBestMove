@@ -7,16 +7,19 @@ These tests verify core functionality that directly impacts user trust and billi
 ## Test 1: Calendar Import & Availability Calculation Visibility
 
 ### Purpose
+
 Verify that calendar events are imported correctly and that daily capacity calculations are transparent and accurate.
 
 ### Test Steps
 
 1. **Connect Calendar**
+
    - Go to Settings → Calendar section
    - Connect Google Calendar or Outlook
    - Verify connection status shows "Connected"
 
 2. **Verify Calendar Events Import**
+
    - After connection, the system should display:
      - **All calendar events for the current user** (for the next 7 days)
      - Event titles, times, and durations
@@ -34,8 +37,8 @@ Verify that calendar events are imported correctly and that daily capacity calcu
      - **Available hours:** 24 - busy hours
      - **Calculated capacity:** How many actions can fit in available time
      - **Breakdown by time blocks:** Show which hours are free/busy
-   
 4. **Verify Daily Plan Generation Uses Calendar**
+
    - Generate a daily plan
    - The plan should show:
      - **Calendar-based capacity badge** (already implemented)
@@ -94,12 +97,14 @@ Upcoming Events (Next 7 Days):
 ### Implementation Notes
 
 This test requires:
+
 1. **Calendar events display** - Show imported events in UI
 2. **Availability breakdown** - Show free/busy calculation
 3. **Capacity transparency** - Show how capacity is calculated
 4. **Plan verification** - Verify plan respects capacity
 
 **Location for display:**
+
 - Settings → Calendar section (add "View Calendar" button)
 - Or dedicated debug/info panel
 - Or console logs with detailed breakdown
@@ -109,27 +114,32 @@ This test requires:
 ## Test 2: Stripe Checkout Flow Resilience
 
 ### Purpose
+
 Verify that the billing flow is robust and handles user navigation (back button, cancel) gracefully without breaking the UI state.
 
 ### Test Steps
 
 1. **Initial State**
+
    - User has no subscription
    - Settings page shows "Start Free Trial" button
    - Button is visible and clickable
 
 2. **Open Plan Selection Modal**
+
    - Click "Start Free Trial" button
    - Modal opens with plan selection
    - "Start Free Trial" button on Settings page disappears (current behavior)
 
 3. **Test Cancel Button**
+
    - Click "Cancel" button in modal
    - Modal closes
    - **Expected:** "Start Free Trial" button should reappear on Settings page
    - **Current Bug:** Button does NOT reappear
 
 4. **Test Browser Back Button**
+
    - Open plan selection modal
    - Press browser back button
    - Modal should close (or stay open, depending on implementation)
@@ -137,12 +147,14 @@ Verify that the billing flow is robust and handles user navigation (back button,
    - **Current Bug:** Button disappears and doesn't come back
 
 5. **Test Multiple Cancel/Open Cycles**
+
    - Open modal → Cancel → Button reappears
    - Open modal → Cancel → Button reappears
    - Repeat 3-5 times
    - **Expected:** Button should always reappear after cancel
 
 6. **Test Successful Checkout**
+
    - Open modal → Select plan → Click "Start Free Trial"
    - Redirects to Stripe
    - Complete checkout
@@ -160,11 +172,13 @@ Verify that the billing flow is robust and handles user navigation (back button,
 ### Expected Behavior
 
 **State Management:**
+
 - Modal open/close should NOT affect parent component state
 - Button visibility should be based on subscription status, not modal state
 - Cancel should reset to initial state (no subscription = show button)
 
 **User Experience:**
+
 - User can cancel and try again without issues
 - Browser navigation doesn't break the flow
 - Stripe checkout cancellation returns user to working state
@@ -189,6 +203,7 @@ Verify that the billing flow is robust and handles user navigation (back button,
 ## Test Execution Priority
 
 These tests should be run:
+
 1. **Before any production deployment**
 2. **After any calendar integration changes**
 3. **After any billing/Stripe changes**
@@ -221,5 +236,3 @@ Environment: [LOCAL/PRODUCTION]
 ---
 
 _These tests are critical for user trust and billing reliability. Do not skip._
-
-
