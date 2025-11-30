@@ -54,6 +54,11 @@ jobs:
           TARGET_ENV="${{ steps.env.outputs.env }}"
           
           echo "🔄 Syncing environment variables to $TARGET_ENV..."
+          echo "📋 Project ID: $VERCEL_PROJECT_ID"
+          echo "📋 Org ID: $VERCEL_ORG_ID"
+          
+          # Verify Vercel CLI is working
+          vercel --version || echo "⚠️  Vercel CLI check failed"
           
           # Function to add env var if secret exists
           sync_var() {
@@ -61,12 +66,26 @@ jobs:
             local secret_value=$2
             local env_type=$3
             if [ -n "$secret_value" ]; then
+              echo ""
               echo "📤 Syncing $var_name to $env_type..."
-              echo "$secret_value" | vercel env add "$var_name" "$env_type" \
+              OUTPUT=$(echo "$secret_value" | vercel env add "$var_name" "$env_type" \
                 --token="$VERCEL_TOKEN" \
                 --scope="$VERCEL_ORG_ID" \
-                --yes \
-                --force 2>&1 | grep -v "already exists" || echo "✅ $var_name synced (or already exists)"
+                --yes 2>&1)
+              EXIT_CODE=$?
+              
+              if [ $EXIT_CODE -eq 0 ]; then
+                echo "✅ $var_name successfully synced to $env_type"
+              else
+                # Check if it's just "already exists" error
+                if echo "$OUTPUT" | grep -q "already exists\|already added"; then
+                  echo "ℹ️  $var_name already exists in $env_type (skipping)"
+                else
+                  echo "❌ Failed to sync $var_name:"
+                  echo "$OUTPUT"
+                  return 1
+                fi
+              fi
             else
               echo "⏭️  Skipping $var_name (not set in GitHub Secrets)"
             fi
@@ -101,6 +120,12 @@ jobs:
           sync_var "NEXT_PUBLIC_SUPABASE_URL" "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" "$TARGET_ENV"
           sync_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" "$TARGET_ENV"
           sync_var "NEXT_PUBLIC_APP_URL" "${{ secrets.NEXT_PUBLIC_APP_URL }}" "$TARGET_ENV"
+          
+          echo ""
+          echo "📊 Verifying synced variables..."
+          vercel env ls "$TARGET_ENV" \
+            --token="$VERCEL_TOKEN" \
+            --scope="$VERCEL_ORG_ID" 2>&1 | head -20 || echo "⚠️  Could not list environment variables"
           
           echo ""
           echo "✅ Environment variable sync completed for $TARGET_ENV"
