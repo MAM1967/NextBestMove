@@ -39,6 +39,9 @@ export async function GET(
     const config = await getProviderConfiguration(provider);
     const serverMetadata = config.serverMetadata();
     const authorizationEndpoint = serverMetadata.authorization_endpoint;
+    const clientMetadata = config.clientMetadata();
+    
+    console.log(`[Calendar Connect] ${provider} - Client ID: ${clientMetadata.client_id.substring(0, 30)}..., Redirect URI: ${redirectUri}`);
 
     if (!authorizationEndpoint) {
       console.error("No authorization_endpoint in config", serverMetadata);
@@ -51,8 +54,6 @@ export async function GET(
     const codeVerifier = randomPKCECodeVerifier();
     const codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
     const state = randomState();
-
-    const clientMetadata = config.clientMetadata();
     const authorizationUrl = new URL(authorizationEndpoint);
     authorizationUrl.searchParams.set("client_id", clientMetadata.client_id);
     authorizationUrl.searchParams.set("redirect_uri", redirectUri);

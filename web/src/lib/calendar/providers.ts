@@ -43,14 +43,17 @@ async function getConfiguration(provider: CalendarProvider) {
   }
 
   const config = PROVIDERS[provider];
-  const clientId = process.env[config.clientIdEnv];
-  const clientSecret = process.env[config.clientSecretEnv];
+  const clientId = process.env[config.clientIdEnv]?.trim();
+  const clientSecret = process.env[config.clientSecretEnv]?.trim();
 
   if (!clientId || !clientSecret) {
     throw new Error(
       `${config.clientIdEnv}/${config.clientSecretEnv} env vars are required for ${provider}`
     );
   }
+
+  // Log client ID for debugging (first 30 chars only for security)
+  console.log(`[OAuth Config] ${provider} client ID: ${clientId.substring(0, 30)}... (length: ${clientId.length})`);
 
   try {
     const serverUrl = new URL(config.issuerUrl);
