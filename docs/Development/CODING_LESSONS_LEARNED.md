@@ -9,6 +9,7 @@ This document captures coding lessons, best practices, and solutions to common p
 - [React Component Props](#react-component-props)
 - [Supabase Client Types](#supabase-client-types)
 - [Avoid Duplicate Type Definitions](#avoid-duplicate-type-definitions)
+- [Timezone and Date Handling](#timezone-and-date-handling)
 
 ---
 
@@ -358,6 +359,85 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 
 ---
 
+## Timezone and Date Handling
+
+### Lesson: Always Consider Timezone When Working with Dates
+
+**Problem:** JavaScript's `Date` object and date string parsing can cause subtle timezone-related bugs, especially when comparing dates or calculating day differences. For example:
+- `new Date('2025-11-29')` is interpreted as UTC midnight, which may be a different day in the user's local timezone
+- Creating dates from strings like `"2025-11-29T00:00:00"` uses the server's local timezone, causing off-by-one errors
+- Calendar events from different timezones can be incorrectly compared
+
+**Solution:**
+1. **Use `date-fns` library** for reliable date parsing and comparison
+2. **Always parse dates explicitly** using timezone-aware methods
+3. **Use UTC dates at noon** (12:00 UTC) when calculating day differences to avoid DST/timezone edge cases
+4. **Format dates in the user's timezone** using `Intl.DateTimeFormat` with explicit timezone parameter
+5. **Centralize date utilities** in `web/src/lib/utils/dateUtils.ts` to ensure consistent handling
+
+**Example:**
+```typescript
+// ❌ Wrong - timezone issues
+const dueDate = new Date(action.due_date); // Interprets as UTC midnight
+const today = new Date(); // Uses local time
+const daysDiff = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24)); // Can be off by 1 day
+
+// ❌ Wrong - creating dates from strings
+const eventDate = new Date(eventDateStr + "T00:00:00"); // Uses server timezone
+const todayAtMidnight = new Date(todayStr + "T00:00:00"); // Different timezone interpretation
+
+// ✅ Correct - using date-fns for local date parsing
+import { parse, startOfDay, differenceInDays } from 'date-fns';
+
+function parseLocalDate(dateString: string): Date {
+  const dateOnly = dateString.split('T')[0]; // Get YYYY-MM-DD part
+  const parsed = parse(dateOnly, 'yyyy-MM-dd', new Date());
+  return startOfDay(parsed); // Normalize to local midnight
+}
+
+const dueDate = parseLocalDate(action.due_date);
+const today = startOfDay(new Date());
+const daysDiff = differenceInDays(today, dueDate); // Accurate day difference
+
+// ✅ Correct - UTC dates at noon for day calculations
+const [year, month, day] = dateStr.split('-').map(Number);
+const dateAtNoonUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+// Using noon UTC avoids DST transitions and timezone edge cases
+
+// ✅ Correct - formatting in user's timezone
+const todayStr = new Intl.DateTimeFormat("en-CA", {
+  timeZone: userTimezone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(now);
+```
+
+**Key Principles:**
+1. **Parse dates as local dates** when comparing with "today" in the user's timezone
+2. **Use UTC dates at noon** when calculating day differences to avoid DST issues
+3. **Always specify timezone** when formatting dates for display
+4. **Use `date-fns` utilities** (`parse`, `startOfDay`, `differenceInDays`, `format`) instead of raw Date operations
+5. **Test with different timezones** to catch edge cases
+
+**Package Used:** `date-fns` - A lightweight, modular date utility library that provides timezone-aware date operations.
+
+**Validation:** Fixed date comparison bugs in:
+- `ActionCard.tsx` - Fixed overdue date calculations
+- `PriorityIndicator.tsx` - Fixed snooze date comparisons
+- `app/page.tsx` - Fixed all-day calendar event date calculations showing "tomorrow" instead of correct day
+- Created `dateUtils.ts` with centralized date handling functions
+
+**Common Pitfalls:**
+- ❌ Don't use `new Date('YYYY-MM-DD')` - it's interpreted as UTC midnight
+- ❌ Don't create dates from strings without timezone context
+- ❌ Don't calculate day differences using millisecond math without timezone consideration
+- ✅ Always use `date-fns` functions for date operations
+- ✅ Always format dates in the user's timezone when displaying
+- ✅ Use UTC dates at noon for day difference calculations
+
+---
+
 ## Future Considerations
 
 - Consider creating a shared types file for commonly used extended types (e.g., `StripeInvoiceWithSubscription`)
@@ -366,4 +446,5 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 - Set up CI/CD type checking step before builds
 - Document any third-party library type limitations in this file
 - Regular type audits to catch duplicate definitions and inconsistencies
+- Add timezone testing to CI/CD pipeline to catch date-related bugs
 
