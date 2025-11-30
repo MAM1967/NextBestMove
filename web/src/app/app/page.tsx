@@ -17,7 +17,7 @@ export default async function AppDashboardPage() {
   // Check if user has completed onboarding
   const { data: userProfile } = await supabase
     .from("users")
-    .select("onboarding_completed, streak_count, exclude_weekends, calendar_connected")
+    .select("onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone")
     .eq("id", user.id)
     .single();
 
@@ -105,9 +105,149 @@ export default async function AppDashboardPage() {
   
   const hasActiveCalendarConnection = (calendarConnections && calendarConnections.length > 0) || calendarConnected;
 
-  // Format calendar availability
+  // Fetch next calendar event to show time until next event
   let timeUntilNextEvent = "Calendar not connected";
-  if (freeMinutes !== null) {
+  
+  if (hasActiveCalendarConnection) {
+    try {
+      // Import calendar functions
+      const { getActiveConnection, getValidAccessToken } = await import("@/lib/calendar/tokens");
+      const connection = await getActiveConnection(supabase, user.id);
+      
+      if (connection) {
+        const accessToken = await getValidAccessToken(supabase, connection);
+        
+        if (accessToken) {
+          // Get user timezone
+          const userTimezone = userProfile?.timezone || "UTC";
+          const now = new Date();
+          
+          // Fetch events from calendar API
+          let nextEventStart: Date | null = null;
+          
+          if (connection.provider === "google") {
+            const { google } = await import("googleapis");
+            const oauth2Client = new google.auth.OAuth2();
+            oauth2Client.setCredentials({ access_token: accessToken });
+            const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+            
+            const response = await calendar.events.list({
+              calendarId: "primary",
+              timeMin: now.toISOString(),
+              timeMax: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Next 2 days
+              timeZone: userTimezone,
+              singleEvents: true,
+              orderBy: "startTime",
+              maxResults: 10,
+            });
+            
+            // Find first timed event (not all-day)
+            for (const item of response.data.items || []) {
+              if (item.start?.dateTime) {
+                const eventStart = new Date(item.start.dateTime);
+                if (eventStart > now) {
+                  nextEventStart = eventStart;
+                  break;
+                }
+              }
+            }
+          } else if (connection.provider === "outlook") {
+            const { Client } = await import("@microsoft/microsoft-graph-client");
+            // Ensure fetch is available for Microsoft Graph client
+            if (typeof globalThis.fetch === 'undefined') {
+              await import("isomorphic-fetch" as any);
+            }
+            
+            const client = Client.init({
+              authProvider: (done) => {
+                done(null, accessToken);
+              },
+            });
+            
+            const response = await client
+              .api("/me/calendar/calendarView")
+              .query({
+                startDateTime: now.toISOString(),
+                endDateTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+              })
+              .header("Prefer", `outlook.timezone="${userTimezone}"`)
+              .top(10)
+              .get();
+            
+            // Find first timed event (not all-day)
+            for (const item of response.value || []) {
+              if (item.start?.dateTime && !item.isAllDay) {
+                const eventStart = new Date(item.start.dateTime);
+                if (eventStart > now) {
+                  nextEventStart = eventStart;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Format time until next event
+          if (nextEventStart) {
+            const diffMs = nextEventStart.getTime() - now.getTime();
+            const minutes = Math.floor(diffMs / (1000 * 60));
+            
+            if (minutes < 0) {
+              timeUntilNextEvent = "No upcoming events";
+            } else if (minutes < 60) {
+              timeUntilNextEvent = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+            } else if (minutes < 1440) {
+              const hours = Math.floor(minutes / 60);
+              const remainingMinutes = minutes % 60;
+              if (remainingMinutes === 0) {
+                timeUntilNextEvent = `${hours} hour${hours !== 1 ? 's' : ''}`;
+              } else {
+                timeUntilNextEvent = `${hours}h ${remainingMinutes}m`;
+              }
+            } else {
+              const days = Math.floor(minutes / 1440);
+              timeUntilNextEvent = `${days} day${days !== 1 ? 's' : ''}`;
+            }
+          } else {
+            timeUntilNextEvent = "No upcoming events";
+          }
+        } else {
+          // Calendar connected but can't access - fall back to availability
+          if (freeMinutes !== null) {
+            if (freeMinutes < 30) {
+              timeUntilNextEvent = "Very busy day";
+            } else if (freeMinutes < 60) {
+              timeUntilNextEvent = "Light availability";
+            } else if (freeMinutes < 120) {
+              timeUntilNextEvent = "Standard availability";
+            } else {
+              timeUntilNextEvent = "Good availability";
+            }
+          } else {
+            timeUntilNextEvent = "Calendar connected";
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching next calendar event:", error);
+      // Fall back to showing calendar connected status or availability
+      if (freeMinutes !== null) {
+        if (freeMinutes < 30) {
+          timeUntilNextEvent = "Very busy day";
+        } else if (freeMinutes < 60) {
+          timeUntilNextEvent = "Light availability";
+        } else if (freeMinutes < 120) {
+          timeUntilNextEvent = "Standard availability";
+        } else {
+          timeUntilNextEvent = "Good availability";
+        }
+      } else {
+        timeUntilNextEvent = "Calendar connected";
+      }
+    }
+  }
+  
+  // Fallback to free minutes display if no next event found
+  if (timeUntilNextEvent === "Calendar not connected" && freeMinutes !== null) {
     if (freeMinutes < 30) {
       timeUntilNextEvent = "Very busy day";
     } else if (freeMinutes < 60) {
@@ -117,9 +257,6 @@ export default async function AppDashboardPage() {
     } else {
       timeUntilNextEvent = "Good availability";
     }
-  } else if (hasActiveCalendarConnection) {
-    // Calendar is connected but no free minutes calculated yet (plan not generated or calendar sync pending)
-    timeUntilNextEvent = "Calendar connected";
   }
 
   return (
