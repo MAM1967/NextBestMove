@@ -109,7 +109,7 @@ export async function sendTrialReminder({
         </p>
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.com"}/app/settings" 
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
             Subscribe Now
           </a>
@@ -169,7 +169,7 @@ export async function sendPaymentFailureEmail({
         </p>
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.com"}/app/settings" 
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
             Update Payment Method
           </a>
@@ -215,7 +215,7 @@ export async function sendStreakBreakEmail({
         </p>
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.com"}/app/plan" 
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/plan" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
             Get Back on Track
           </a>
@@ -280,7 +280,7 @@ export async function sendWinBackEmail({
         </p>
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.com"}/app/settings" 
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
             ${ctaText}
           </a>

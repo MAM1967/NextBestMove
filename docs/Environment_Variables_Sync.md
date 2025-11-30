@@ -58,7 +58,7 @@ Automatically syncs GitHub Secrets to Vercel on push to `main` or manual trigger
 |------------|-------------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://...supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | `eyJ...` (JWT format) |
-| `NEXT_PUBLIC_APP_URL` | Production app URL | `https://nextbestmove.app` |
+| `NEXT_PUBLIC_APP_URL` | Production app URL (custom domain) | `https://nextbestmove.app` |
 
 #### Step 2: Get Vercel Credentials
 

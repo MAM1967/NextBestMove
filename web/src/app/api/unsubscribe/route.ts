@@ -67,7 +67,7 @@ export async function GET(request: Request) {
             You won't receive any more emails from NextBestMove.
           </p>
           <p style="color: #6b7280; margin-top: 16px; font-size: 14px;">
-            You can manage your email preferences in your <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.com"}/app/settings">settings</a>.
+            You can manage your email preferences in your <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings">settings</a>.
           </p>
         </body>
       </html>
