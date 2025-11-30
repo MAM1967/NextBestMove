@@ -215,38 +215,72 @@ export default async function AppDashboardPage() {
           if (nextEventStart) {
             if (nextEventIsAllDay) {
               // For all-day events, show the date or relative time
+              // Get today's date in user's timezone
               const todayStr = new Intl.DateTimeFormat("en-CA", {
                 timeZone: userTimezone,
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",
               }).format(now);
-              const eventDateStr = new Intl.DateTimeFormat("en-CA", {
-                timeZone: userTimezone,
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              }).format(nextEventStart);
+              
+              // Get event date in user's timezone
+              // For Google Calendar all-day events, item.start.date is already YYYY-MM-DD
+              // For Outlook, we need to format the dateTime
+              let eventDateStr: string;
+              if (connection.provider === "google") {
+                // For Google, we already have the date string from item.start.date
+                // Parse it from the Date object we created
+                eventDateStr = new Intl.DateTimeFormat("en-CA", {
+                  timeZone: userTimezone,
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                }).format(nextEventStart);
+              } else {
+                // For Outlook, format the dateTime
+                eventDateStr = new Intl.DateTimeFormat("en-CA", {
+                  timeZone: userTimezone,
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                }).format(nextEventStart);
+              }
               
               if (eventDateStr === todayStr) {
                 timeUntilNextEvent = "All day today";
               } else {
-                // Calculate days until event
-                const todayAtMidnight = new Date(todayStr + "T00:00:00");
-                const eventAtMidnight = new Date(eventDateStr + "T00:00:00");
-                const diffMs = eventAtMidnight.getTime() - todayAtMidnight.getTime();
+                // Calculate days until event by comparing date strings
+                // Parse dates as YYYY-MM-DD and calculate difference
+                // Use UTC dates at noon to avoid timezone/DST issues
+                const [todayYear, todayMonth, todayDay] = todayStr.split('-').map(Number);
+                const [eventYear, eventMonth, eventDay] = eventDateStr.split('-').map(Number);
+                
+                // Create dates at noon UTC to avoid timezone/DST issues
+                const todayDate = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0));
+                const eventDate = new Date(Date.UTC(eventYear, eventMonth - 1, eventDay, 12, 0, 0));
+                
+                const diffMs = eventDate.getTime() - todayDate.getTime();
                 const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                
+                // Debug logging
+                console.log("All-day event date calculation:", {
+                  todayStr,
+                  eventDateStr,
+                  days,
+                  todayDate: todayDate.toISOString(),
+                  eventDate: eventDate.toISOString(),
+                });
                 
                 if (days === 1) {
                   timeUntilNextEvent = "All day tomorrow";
-                } else if (days < 7) {
+                } else if (days < 7 && days > 0) {
                   // Show day name
                   const dayName = new Intl.DateTimeFormat("en-US", {
                     timeZone: userTimezone,
                     weekday: "long",
                   }).format(nextEventStart);
                   timeUntilNextEvent = `All day ${dayName}`;
-                } else {
+                } else if (days > 0) {
                   // Show date
                   const dateStr = new Intl.DateTimeFormat("en-US", {
                     timeZone: userTimezone,
@@ -254,6 +288,9 @@ export default async function AppDashboardPage() {
                     day: "numeric",
                   }).format(nextEventStart);
                   timeUntilNextEvent = `All day ${dateStr}`;
+                } else {
+                  // Shouldn't happen, but fallback
+                  timeUntilNextEvent = "All day today";
                 }
               }
             } else {
