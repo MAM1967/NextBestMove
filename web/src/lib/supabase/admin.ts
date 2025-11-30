@@ -27,7 +27,15 @@ export function createAdminClient() {
   }
 
   // Validate key format - must be JWT format (starts with "eyJ")
-  if (!serviceRoleKey.startsWith("eyJ")) {
+  // Sometimes keys get truncated - check if it's missing the first character
+  let correctedKey = serviceRoleKey;
+  if (!serviceRoleKey.startsWith("eyJ") && serviceRoleKey.startsWith("yJ")) {
+    // Key is missing the first "e" - add it back
+    console.warn("⚠️ Service role key appears to be missing first character 'e'. Attempting to fix...");
+    correctedKey = "e" + serviceRoleKey;
+  }
+  
+  if (!correctedKey.startsWith("eyJ")) {
     console.error("❌ Service role key format error:");
     console.error("   Key starts with:", serviceRoleKey.substring(0, 20));
     console.error("   Key length:", serviceRoleKey.length);
@@ -35,12 +43,16 @@ export function createAdminClient() {
     throw new Error(
       `Invalid service role key format: Service role key must be JWT format (starts with 'eyJ'). ` +
       `Get it from Supabase Dashboard → Settings → API → service_role key (secret). ` +
-      `The sb_secret_ format may not work with the JS client. ` +
-      `Current key starts with: ${serviceRoleKey.substring(0, 20)}...`
+      `The key appears to be truncated or corrupted. ` +
+      `Current key starts with: ${serviceRoleKey.substring(0, 20)}... ` +
+      `Please check your Vercel environment variable SUPABASE_SERVICE_ROLE_KEY and ensure the full key is present.`
     );
   }
+  
+  // Use corrected key if we fixed it
+  const finalKey = correctedKey !== serviceRoleKey ? correctedKey : serviceRoleKey;
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(supabaseUrl, finalKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
