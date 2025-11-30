@@ -187,10 +187,14 @@ export async function generateDailyPlanForUser(
     }
 
     // Fetch candidate actions (NEW or SNOOZED due today or in past)
-    const today = new Date(date);
+    // Parse date string to avoid timezone issues (same fix as client-side)
+    const [year, month, day] = date.split('-').map(Number);
+    const today = new Date(year, month - 1, day);
     today.setHours(0, 0, 0, 0);
 
     // Fetch all candidate actions
+    // Note: due_date is a DATE column, so .lte("due_date", date) compares DATE to DATE string (YYYY-MM-DD)
+    // This should work correctly regardless of timezone since we're comparing date-only values
     const { data: allCandidateActions, error: actionsError } = await supabase
       .from("actions")
       .select(
@@ -210,6 +214,19 @@ export async function generateDailyPlanForUser(
       .lte("due_date", date)
       .order("due_date", { ascending: true })
       .order("created_at", { ascending: false });
+    
+    // Log for debugging
+    console.log("Plan generation query:", {
+      userId,
+      date,
+      candidateActionsFound: allCandidateActions?.length || 0,
+      firstFewActions: allCandidateActions?.slice(0, 3).map(a => ({
+        id: a.id,
+        state: a.state,
+        due_date: a.due_date,
+        action_type: a.action_type,
+      })) || [],
+    });
 
     if (actionsError) {
       console.error("Error fetching candidate actions:", actionsError);
@@ -226,7 +243,9 @@ export async function generateDailyPlanForUser(
         if (!action.snooze_until) {
           return true;
         }
-        const snoozeDate = new Date(action.snooze_until);
+        // Parse snooze date to avoid timezone issues
+        const [sYear, sMonth, sDay] = action.snooze_until.split('-').map(Number);
+        const snoozeDate = new Date(sYear, sMonth - 1, sDay);
         snoozeDate.setHours(0, 0, 0, 0);
         return snoozeDate <= today;
       }
@@ -234,7 +253,99 @@ export async function generateDailyPlanForUser(
     });
 
     if (!candidateActions || candidateActions.length === 0) {
-      return { success: false, error: "No candidate actions available for plan generation" };
+      // Get diagnostic info to help debug
+      const { data: allActions } = await supabase
+        .from("actions")
+        .select("id, state, due_date, action_type")
+        .eq("user_id", userId)
+        .limit(10);
+      
+      const { data: activePins } = await supabase
+        .from("person_pins")
+        .select("id, name, status, created_at")
+        .eq("user_id", userId)
+        .eq("status", "ACTIVE");
+      
+      // Try to auto-create actions from active pins if no candidate actions exist
+      if (activePins && activePins.length > 0) {
+        console.log(`No candidate actions found, attempting to create actions from ${activePins.length} active pins`);
+        
+        // Create OUTREACH actions for active pins that don't have recent actions
+        const newActions = [];
+        for (const pin of activePins) {
+          // Check if pin already has a recent NEW action
+          const { data: existingAction } = await supabase
+            .from("actions")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("person_id", pin.id)
+            .eq("state", "NEW")
+            .eq("action_type", "OUTREACH")
+            .maybeSingle();
+          
+          if (!existingAction) {
+            // Create a new OUTREACH action for this pin, due today
+            const { data: newAction, error: createError } = await supabase
+              .from("actions")
+              .insert({
+                user_id: userId,
+                person_id: pin.id,
+                action_type: "OUTREACH",
+                state: "NEW",
+                due_date: date,
+                description: `Reach out to ${pin.name}`,
+                auto_created: true,
+              })
+              .select()
+              .single();
+            
+            if (!createError && newAction) {
+              // Fetch the full action with person_pins relation
+              const { data: fullAction } = await supabase
+                .from("actions")
+                .select(`
+                  *,
+                  person_pins (
+                    id,
+                    name,
+                    url,
+                    notes,
+                    created_at
+                  )
+                `)
+                .eq("id", newAction.id)
+                .single();
+              
+              if (fullAction) {
+                newActions.push(fullAction);
+              }
+            }
+          }
+        }
+        
+        // If we created new actions, use them as candidates
+        if (newActions.length > 0) {
+          console.log(`Created ${newActions.length} new actions from active pins`);
+          candidateActions.push(...newActions);
+        }
+      }
+      
+      // If still no candidate actions after trying to create from pins
+      if (!candidateActions || candidateActions.length === 0) {
+        console.error("No candidate actions for plan generation:", {
+          userId,
+          date,
+          totalActions: allActions?.length || 0,
+          actionStates: allActions?.map(a => a.state) || [],
+          actionDueDates: allActions?.map(a => a.due_date) || [],
+          activePins: activePins?.length || 0,
+        });
+        
+        return { 
+          success: false, 
+          error: "No candidate actions available for plan generation. You need actions with state NEW or SNOOZED that are due today or in the past. If you have active pins, actions should be created automatically." 
+        };
+      }
     }
 
     // Score and sort actions

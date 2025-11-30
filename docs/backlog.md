@@ -133,7 +133,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Paywall analytics & copy polish** (trial/past-due variants, event tracking)
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)
-- [ ] **Content Ideas list page** (saved prompts CRUD + empty state)
+- [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
 - [ ] **Trial expiration & read-only grace period** (Day 15-21: read-only mode, banner messaging, subscription prompts. Use Stripe API for trial management - lightest lift)
 - [ ] **Trial reminders** (Day 12 + Day 14 email via Resend + push notifications)
 - [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
