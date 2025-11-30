@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "@sentry/nextjs": "^10.27.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.85.0",
@@ -22,7 +21,6 @@
     "next": "16.0.4",
     "openai": "^6.9.1",
     "openid-client": "^6.8.1",
-    "posthog-js": "^1.298.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "resend": "^6.5.2",

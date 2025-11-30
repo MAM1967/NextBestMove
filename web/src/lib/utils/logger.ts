@@ -1,11 +1,8 @@
 /**
- * Centralized logging utility with Sentry integration
+ * Centralized logging utility
+ * Simple console logging - logs appear in Vercel dashboard
  * Use this for structured logging throughout the application
  */
-
-import * as Sentry from "@sentry/nextjs";
-
-type LogLevel = "info" | "warn" | "error" | "debug";
 
 interface LogContext {
   [key: string]: unknown;
@@ -16,13 +13,6 @@ interface LogContext {
  */
 export function logInfo(message: string, context?: LogContext) {
   console.log(`[INFO] ${message}`, context || "");
-  if (context) {
-    Sentry.addBreadcrumb({
-      message,
-      level: "info",
-      data: context,
-    });
-  }
 }
 
 /**
@@ -30,17 +20,10 @@ export function logInfo(message: string, context?: LogContext) {
  */
 export function logWarn(message: string, context?: LogContext) {
   console.warn(`[WARN] ${message}`, context || "");
-  if (context) {
-    Sentry.addBreadcrumb({
-      message,
-      level: "warning",
-      data: context,
-    });
-  }
 }
 
 /**
- * Log an error message and capture in Sentry
+ * Log an error message
  */
 export function logError(
   message: string,
@@ -48,27 +31,6 @@ export function logError(
   context?: LogContext
 ) {
   console.error(`[ERROR] ${message}`, error || "", context || "");
-
-  if (error instanceof Error) {
-    Sentry.captureException(error, {
-      tags: context ? (Object.fromEntries(
-        Object.entries(context).filter(([_, v]) => 
-          typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
-        )
-      ) as Record<string, string | number | boolean>) : undefined,
-      extra: context,
-    });
-  } else {
-    Sentry.captureMessage(message, {
-      level: "error",
-      tags: context ? (Object.fromEntries(
-        Object.entries(context).filter(([_, v]) => 
-          typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
-        )
-      ) as Record<string, string | number | boolean>) : undefined,
-      extra: { ...context, error },
-    });
-  }
 }
 
 /**
@@ -86,16 +48,6 @@ export function logBillingEvent(
 ) {
   const logMessage = `[BILLING] ${event}`;
   console.log(logMessage, context);
-
-  Sentry.addBreadcrumb({
-    message: logMessage,
-    level: "info",
-    category: "billing",
-    data: context,
-  });
-
-  // Also send as event for analytics (if PostHog is added later)
-  // This structure makes it easy to add analytics tracking
 }
 
 /**
@@ -112,42 +64,25 @@ export function logWebhookEvent(
 ) {
   const logMessage = `[WEBHOOK] ${event}`;
   console.log(logMessage, context);
-
-  Sentry.addBreadcrumb({
-    message: logMessage,
-    level: "info",
-    category: "webhook",
-    data: context,
-  });
-
-  // Capture webhook errors specifically
+  
+  // Log webhook errors with extra detail
   if (context.status === "error" || context.status === "failed") {
-    const tags: Record<string, string | number | boolean> = {};
-    if (context.webhookType) tags.webhookType = String(context.webhookType);
-    if (context.eventId) tags.eventId = String(context.eventId);
-    
-    Sentry.captureMessage(`Webhook ${event} failed`, {
-      level: "error",
-      tags: Object.keys(tags).length > 0 ? tags : undefined,
-      extra: context,
-    });
+    console.error(`[WEBHOOK ERROR] ${event}`, context);
   }
 }
 
 /**
- * Set user context for Sentry (call after user logs in)
+ * Set user context (no-op, kept for API compatibility)
  */
 export function setUserContext(userId: string, email?: string) {
-  Sentry.setUser({
-    id: userId,
-    email: email,
-  });
+  // No-op - kept for API compatibility
+  // Can add user context logging here if needed
 }
 
 /**
- * Clear user context (call on logout)
+ * Clear user context (no-op, kept for API compatibility)
  */
 export function clearUserContext() {
-  Sentry.setUser(null);
+  // No-op - kept for API compatibility
 }
 

@@ -133,9 +133,11 @@ DISABLE_TELEMETRY=true
 ### GlitchTip (Error Tracking)
 
 **Required in Next.js app:**
+
 - `NEXT_PUBLIC_GLITCHTIP_DSN` - Your GlitchTip DSN (format: `https://project@domain.com/project-id`)
 
 **Example:**
+
 ```bash
 NEXT_PUBLIC_GLITCHTIP_DSN=https://nextbestmove@glitchtip.com/123
 ```
@@ -145,26 +147,31 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://nextbestmove@glitchtip.com/123
 ### Umami (Analytics)
 
 **Required in Next.js app:**
+
 - `NEXT_PUBLIC_UMAMI_URL` - Your Umami instance URL
 - `NEXT_PUBLIC_UMAMI_WEBSITE_ID` - Website ID from Umami dashboard
 
 **Example:**
+
 ```bash
 NEXT_PUBLIC_UMAMI_URL=https://analytics.nextbestmove.app
 NEXT_PUBLIC_UMAMI_WEBSITE_ID=12345678-1234-1234-1234-123456789abc
 ```
 
-**GitHub Secret names:** 
+**GitHub Secret names:**
+
 - `UMAMI_URL` or `NEXT_PUBLIC_UMAMI_URL`
 - `UMAMI_WEBSITE_ID` or `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
 
 **If self-hosting Umami (separate deployment):**
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `APP_SECRET` - Random secret key (generate with: `openssl rand -base64 32`)
 
 ### Adding to GitHub Secrets
 
 For the sync workflow to work, add these to GitHub Secrets:
+
 - `GLITCHTIP_DSN` (or `NEXT_PUBLIC_GLITCHTIP_DSN`)
 - `UMAMI_URL` (or `NEXT_PUBLIC_UMAMI_URL`)
 - `UMAMI_WEBSITE_ID` (or `NEXT_PUBLIC_UMAMI_WEBSITE_ID`)

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { formatDateForDisplay } from "@/lib/utils/dateUtils";
-import { trackEvent } from "@/lib/analytics/posthog";
 
 type ContentPrompt = {
   id: string;
@@ -61,10 +60,6 @@ export default function ContentIdeasPage() {
     try {
       await navigator.clipboard.writeText(prompt.content);
       setCopiedId(prompt.id);
-      trackEvent("content_prompt_copied", {
-        promptId: prompt.id,
-        promptType: prompt.type,
-      });
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
@@ -82,11 +77,6 @@ export default function ContentIdeasPage() {
       if (!response.ok) {
         throw new Error("Failed to update prompt");
       }
-
-      trackEvent("content_prompt_status_updated", {
-        promptId,
-        newStatus,
-      });
 
       await fetchPrompts();
     } catch (err) {
@@ -108,10 +98,6 @@ export default function ContentIdeasPage() {
       if (!response.ok) {
         throw new Error("Failed to delete prompt");
       }
-
-      trackEvent("content_prompt_deleted", {
-        promptId,
-      });
 
       await fetchPrompts();
     } catch (err) {
