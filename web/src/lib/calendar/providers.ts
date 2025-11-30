@@ -16,7 +16,7 @@ const PROVIDERS: Record<CalendarProvider, ProviderConfig> = {
     scope: "openid email https://www.googleapis.com/auth/calendar.readonly",
     extraAuthParams: {
       access_type: "offline",
-      prompt: "consent",
+      prompt: "select_account consent",
     },
     clientIdEnv: "GOOGLE_CLIENT_ID",
     clientSecretEnv: "GOOGLE_CLIENT_SECRET",
