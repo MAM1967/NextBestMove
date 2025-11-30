@@ -23,17 +23,42 @@ Automatically syncs GitHub Secrets to Vercel on push to `main` or manual trigger
 3. Click **"New repository secret"**
 4. Add each secret:
 
+**Required for Workflow:**
 | Secret Name | Description | Example |
 |------------|-------------|---------|
 | `VERCEL_TOKEN` | Vercel API token | Get from Vercel Dashboard → Settings → Tokens |
 | `VERCEL_ORG_ID` | Vercel organization ID | Get from Vercel Dashboard → Settings → General |
 | `VERCEL_PROJECT_ID` | Vercel project ID | Get from Vercel Dashboard → Settings → General |
+
+**Application Secrets (Production):**
+| Secret Name | Description | Example |
+|------------|-------------|---------|
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | `eyJ...` (JWT format) |
 | `STRIPE_SECRET_KEY` | Stripe secret key | `sk_test_...` or `sk_live_...` |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret | `whsec_...` |
+| `STRIPE_PRICE_ID_STANDARD_MONTHLY` | Stripe price ID | `price_...` |
+| `STRIPE_PRICE_ID_STANDARD_YEARLY` | Stripe price ID | `price_...` |
+| `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` | Stripe price ID (optional) | `price_...` |
+| `STRIPE_PRICE_ID_PROFESSIONAL_YEARLY` | Stripe price ID (optional) | `price_...` |
 | `RESEND_API_KEY` | Resend API key | `re_...` |
 | `CRON_SECRET` | Cron job authentication secret | Random string |
 | `OPENAI_API_KEY` | OpenAI API key (optional) | `sk-proj-...` |
+| `CALENDAR_ENCRYPTION_KEY` | Calendar token encryption key | 32-byte base64 or hex string |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | `...apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | `GOCSPX-...` |
+| `OUTLOOK_CLIENT_ID` | Outlook OAuth client ID | UUID format |
+| `OUTLOOK_CLIENT_SECRET` | Outlook OAuth client secret | Random string |
+| `OUTLOOK_TENANT_ID` | Outlook tenant ID | `common` or specific tenant |
+| `SENTRY_DSN` | Sentry DSN for error tracking | `https://...@...sentry.io/...` |
+| `POSTHOG_KEY` | PostHog API key | `phc_...` |
+| `POSTHOG_HOST` | PostHog host | `https://app.posthog.com` |
+
+**Public Variables (Safe for all environments):**
+| Secret Name | Description | Example |
+|------------|-------------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://...supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | `eyJ...` (JWT format) |
+| `NEXT_PUBLIC_APP_URL` | Production app URL | `https://nextbestmove.app` |
 
 #### Step 2: Get Vercel Credentials
 
@@ -54,11 +79,19 @@ Automatically syncs GitHub Secrets to Vercel on push to `main` or manual trigger
 
 #### Step 3: Trigger Sync
 
-The workflow runs automatically on push to `main`, or you can trigger it manually:
+**Automatic Sync:**
+- The workflow runs automatically on push to `main` (excluding markdown and workflow file changes)
+- Syncs to **production** environment by default
 
+**Manual Sync:**
 1. Go to **Actions** tab in GitHub
 2. Select **"Sync Environment Variables to Vercel"**
 3. Click **"Run workflow"**
+4. Choose the target environment (production, preview, or development)
+5. Type `sync` to confirm
+6. Click **"Run workflow"**
+
+**Note:** Sensitive secrets are only synced to production. Public variables (`NEXT_PUBLIC_*`) are synced to all environments.
 
 ---
 
