@@ -148,79 +148,20 @@ export function BillingSection({
   // The error handling in handleSubscribe already sets isLoading to false
   // But we need to ensure the modal can be reopened
 
-  async function handleSyncSubscription() {
-    setIsLoading(true);
-    try {
-      console.log("Starting subscription sync...");
-      const response = await fetch("/api/billing/sync-subscription", {
-        method: "POST",
-      });
-
-      const responseText = await response.text();
-      console.log("Sync response status:", response.status);
-      console.log("Sync response:", responseText);
-
-      if (!response.ok) {
-        let errorData: any = {};
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          errorData = { error: responseText || "Failed to sync subscription" };
-        }
-        throw new Error(errorData.error || errorData.details || "Failed to sync subscription");
-      }
-
-      const data = JSON.parse(responseText);
-      console.log("Sync successful:", data);
-      
-      // Small delay to ensure database write completes
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Reload the page to show updated subscription
-      window.location.reload();
-    } catch (error: any) {
-      console.error("Error syncing subscription:", error);
-      alert(`Unable to sync subscription: ${error.message || "Please try again later."}`);
-      setIsLoading(false);
-    }
-  }
-
   // Button visibility is based on subscription status, NOT modal state or customer existence
   // This ensures the button always reappears after canceling the modal or hitting back from Stripe
-  // Edge case: If user hits back from Stripe checkout, hasCustomer might be true but no subscription exists
-  // In that case, show "Sync Subscription" button to manually sync from Stripe
   if (!subscription) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
         <p className="text-sm font-medium text-zinc-900">No active subscription</p>
-        {hasCustomer ? (
-          // If customer exists but no subscription, offer to sync (fallback only)
-          // In production, webhook should handle this automatically
-          <div className="mt-4 space-y-2">
-            <p className="text-xs text-zinc-600">
-              If you just completed checkout, your subscription should appear automatically.
-              If it doesn't, click below to sync.
-            </p>
-            <button
-              type="button"
-              onClick={handleSyncSubscription}
-              disabled={isLoading}
-              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-            >
-              {isLoading ? "Syncing..." : "Sync Subscription"}
-            </button>
-          </div>
-        ) : (
-          // No customer, show "Start Free Trial"
-          <button
-            type="button"
-            onClick={() => setShowPlanSelection(true)}
-            disabled={isLoading}
-            className="mt-4 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-          >
-            {isLoading ? "Loading..." : "Start Free Trial"}
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowPlanSelection(true)}
+          disabled={isLoading}
+          className="mt-4 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+        >
+          {isLoading ? "Loading..." : "Start Free Trial"}
+        </button>
         <PlanSelectionModal
           isOpen={showPlanSelection}
           onClose={handleCloseModal}
