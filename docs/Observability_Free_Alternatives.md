@@ -12,6 +12,7 @@ This document outlines free alternatives to Sentry and PostHog for NextBestMove.
 ### Option 1: Minimal Setup (Recommended for MVP)
 
 **Error Tracking:** Console logging + Vercel logs
+
 - ✅ Free (included with Vercel)
 - ✅ No setup required
 - ✅ Vercel dashboard shows logs
@@ -19,6 +20,7 @@ This document outlines free alternatives to Sentry and PostHog for NextBestMove.
 - ❌ Manual log checking
 
 **Analytics:** Simple event logging to database
+
 - ✅ Free
 - ✅ Full control
 - ✅ Privacy-friendly
@@ -30,6 +32,7 @@ This document outlines free alternatives to Sentry and PostHog for NextBestMove.
 #### Error Tracking: GlitchTip (Recommended)
 
 **Why GlitchTip:**
+
 - ✅ Open source, Sentry-compatible SDK
 - ✅ Free tier: 1,000 events/month
 - ✅ Can self-host for unlimited events
@@ -37,11 +40,13 @@ This document outlines free alternatives to Sentry and PostHog for NextBestMove.
 - ✅ Simple setup
 
 **Setup:**
+
 1. Sign up at https://glitchtip.com (free tier available)
 2. Or self-host: https://glitchtip.com/documentation/install
 3. Get DSN and replace Sentry DSN
 
 **Environment Variables:**
+
 ```bash
 # GlitchTip DSN (same format as Sentry)
 NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/your-project-id
@@ -52,6 +57,7 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/your-project-id
 **Note:** GlitchTip uses the same DSN format as Sentry, so you can use the `@sentry/nextjs` SDK with GlitchTip's DSN.
 
 **Alternative: Rollbar**
+
 - ✅ Free tier with unlimited users
 - ✅ 5,000 events/month free
 - ❌ Less features than GlitchTip
@@ -59,6 +65,7 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/your-project-id
 #### Analytics: Umami (Recommended)
 
 **Why Umami:**
+
 - ✅ 100% open source
 - ✅ Privacy-focused (GDPR compliant)
 - ✅ Self-hostable (completely free)
@@ -66,6 +73,7 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/your-project-id
 - ✅ Easy setup
 
 **Setup:**
+
 1. Self-host on Vercel (free): https://umami.is/docs/self-host
 2. Or use Umami Cloud (free tier available)
 3. Get tracking script and replace PostHog
@@ -73,6 +81,7 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/your-project-id
 **Environment Variables:**
 
 For your Next.js app (client-side tracking):
+
 ```bash
 # Umami tracking URL (where your Umami instance is hosted)
 NEXT_PUBLIC_UMAMI_URL=https://your-umami-instance.com
@@ -84,6 +93,7 @@ NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id-here
 ```
 
 For self-hosting Umami (server-side):
+
 ```bash
 # Required
 DATABASE_URL=postgresql://user:password@host:5432/umami
@@ -98,6 +108,7 @@ DISABLE_TELEMETRY=true
 **Note:** You only need the `NEXT_PUBLIC_*` variables in your NextBestMove app. The server-side variables are only needed if you're self-hosting Umami itself.
 
 **Alternative: Simple Database Logging**
+
 - ✅ Completely free
 - ✅ Full control
 - ✅ No external dependencies
@@ -106,14 +117,57 @@ DISABLE_TELEMETRY=true
 ### Option 3: Self-Hosted (Most Control)
 
 #### Error Tracking: GlitchTip (Self-Hosted)
+
 - Deploy to Vercel, Railway, or Fly.io
 - Unlimited events
 - Full control
 
 #### Analytics: Umami (Self-Hosted)
+
 - Deploy to Vercel, Railway, or Fly.io
 - Unlimited events
 - Privacy-first
+
+## Environment Variables Summary
+
+### GlitchTip (Error Tracking)
+
+**Required in Next.js app:**
+- `NEXT_PUBLIC_GLITCHTIP_DSN` - Your GlitchTip DSN (format: `https://project@domain.com/project-id`)
+
+**Example:**
+```bash
+NEXT_PUBLIC_GLITCHTIP_DSN=https://nextbestmove@glitchtip.com/123
+```
+
+**GitHub Secret name:** `GLITCHTIP_DSN` or `NEXT_PUBLIC_GLITCHTIP_DSN`
+
+### Umami (Analytics)
+
+**Required in Next.js app:**
+- `NEXT_PUBLIC_UMAMI_URL` - Your Umami instance URL
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` - Website ID from Umami dashboard
+
+**Example:**
+```bash
+NEXT_PUBLIC_UMAMI_URL=https://analytics.nextbestmove.app
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=12345678-1234-1234-1234-123456789abc
+```
+
+**GitHub Secret names:** 
+- `UMAMI_URL` or `NEXT_PUBLIC_UMAMI_URL`
+- `UMAMI_WEBSITE_ID` or `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+
+**If self-hosting Umami (separate deployment):**
+- `DATABASE_URL` - PostgreSQL connection string
+- `APP_SECRET` - Random secret key (generate with: `openssl rand -base64 32`)
+
+### Adding to GitHub Secrets
+
+For the sync workflow to work, add these to GitHub Secrets:
+- `GLITCHTIP_DSN` (or `NEXT_PUBLIC_GLITCHTIP_DSN`)
+- `UMAMI_URL` (or `NEXT_PUBLIC_UMAMI_URL`)
+- `UMAMI_WEBSITE_ID` (or `NEXT_PUBLIC_UMAMI_WEBSITE_ID`)
 
 ## Migration Plan
 
@@ -171,18 +225,21 @@ CREATE TABLE analytics_events (
 ```
 
 Then query for insights:
+
 - Page views: `SELECT event_name, COUNT(*) FROM analytics_events GROUP BY event_name`
 - User actions: `SELECT * FROM analytics_events WHERE user_id = ?`
 
 ## Recommendation
 
 **For MVP/Startup:** Use **GlitchTip** (free tier) + **Umami** (self-hosted)
+
 - Both are free
 - Easy setup
 - Professional features
 - Can scale later
 
 **For Simplest Setup:** Use **Console logging** + **Database event logging**
+
 - Zero external dependencies
 - Full control
 - Free forever
@@ -191,4 +248,3 @@ Then query for insights:
 ---
 
 _Last updated: November 29, 2025_
-
