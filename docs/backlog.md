@@ -122,6 +122,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🟠 P1 – High Value Enhancements
 
+- [ ] **Optimize GitHub Actions env sync with change data capture** 🔄  
+       _Modify GitHub Actions workflow to only sync environment variables that don't already exist in Vercel. Fetch existing variables first, compare with GitHub Secrets, and skip existing ones. This reduces API calls, speeds up execution, and makes logs clearer. See `docs/Environment_Variables_Sync_Optimization_Plan.md` for implementation plan._
+
 - [x] **Account overview: Password change & timezone editing** ✅  
        _Allow users to change password and update timezone in Settings → Account overview. Timezone dropdown with common options for travelers/remote workers. Password change requires confirmation._
 
