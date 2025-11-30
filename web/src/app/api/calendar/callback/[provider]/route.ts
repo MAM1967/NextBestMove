@@ -59,6 +59,8 @@ export async function GET(
   let accessToken: string | undefined;
 
   try {
+    console.log("Calendar callback: Starting", { userId, provider, hasState: !!expectedState, hasVerifier: !!codeVerifier });
+    
     // Use admin client to bypass RLS since we're storing the connection server-side
     const supabase = createAdminClient();
     
@@ -73,6 +75,8 @@ export async function GET(
       console.error("Calendar callback: User not found", { userId, error: userError });
       throw new Error(`User not found: ${userId}`);
     }
+    
+    console.log("Calendar callback: User verified", { userId });
     
     const redirectUri = `${request.nextUrl.origin}/api/calendar/callback/${provider}`;
     const config = await getProviderConfiguration(provider);
@@ -118,7 +122,9 @@ export async function GET(
 
     const encryptedAccess = accessToken ? encryptSecret(accessToken) : null;
 
-    const { error } = await supabase
+    console.log("Calendar callback: Saving connection", { userId, provider, hasRefreshToken: !!encryptedRefresh, hasAccessToken: !!encryptedAccess });
+    
+    const { data: savedConnection, error } = await supabase
       .from("calendar_connections")
       .upsert(
         {
@@ -138,8 +144,11 @@ export async function GET(
       .single();
 
     if (error) {
+      console.error("Calendar callback: Database error", { error, userId, provider });
       throw error;
     }
+    
+    console.log("Calendar callback: Connection saved successfully", { connectionId: savedConnection?.id, userId, provider });
   } catch (error) {
     console.error("Calendar callback error:", {
       error,

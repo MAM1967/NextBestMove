@@ -11,6 +11,8 @@ import { EmailPreferencesSection } from "./EmailPreferencesSection";
 import { AccountDeletionSection } from "./AccountDeletionSection";
 import { AccountOverviewSection } from "./AccountOverviewSection";
 
+type SearchParams = Promise<{ calendar?: string }>;
+
 type CalendarConnection = {
   provider: string;
   status: string;
@@ -87,7 +89,14 @@ function CalendarStatusBadge({ status }: { status: string }) {
   );
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const calendarStatusParam = params.calendar; // "success" or "error"
+  
   const supabase = await createClient();
   const {
     data: { user },
@@ -203,6 +212,19 @@ export default async function SettingsPage() {
           description="Connect your calendar and configure planning preferences."
         >
           <div className="space-y-4">
+            {calendarStatusParam === "error" && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <p className="font-medium">Failed to connect calendar</p>
+                <p className="mt-1 text-xs text-red-700">
+                  Please check the error message below and try again. If the problem persists, check the server logs.
+                </p>
+              </div>
+            )}
+            {calendarStatusParam === "success" && (
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                <p className="font-medium">Calendar connected successfully!</p>
+              </div>
+            )}
             <CalendarConnectionSection
               connections={connections}
               connected={calendarStatus.connected}
