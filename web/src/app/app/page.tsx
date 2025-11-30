@@ -124,6 +124,7 @@ export default async function AppDashboardPage() {
           
           // Fetch events from calendar API
           let nextEventStart: Date | null = null;
+          let nextEventIsAllDay = false;
           
           if (connection.provider === "google") {
             const { google } = await import("googleapis");
@@ -134,19 +135,40 @@ export default async function AppDashboardPage() {
             const response = await calendar.events.list({
               calendarId: "primary",
               timeMin: now.toISOString(),
-              timeMax: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Next 2 days
+              timeMax: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Next 7 days to catch all-day events
               timeZone: userTimezone,
               singleEvents: true,
               orderBy: "startTime",
-              maxResults: 10,
+              maxResults: 20,
             });
             
-            // Find first timed event (not all-day)
+            // Find first event (timed or all-day)
             for (const item of response.data.items || []) {
               if (item.start?.dateTime) {
+                // Timed event
                 const eventStart = new Date(item.start.dateTime);
                 if (eventStart > now) {
                   nextEventStart = eventStart;
+                  nextEventIsAllDay = false;
+                  break;
+                }
+              } else if (item.start?.date) {
+                // All-day event - start is at midnight of that day
+                const eventDateStr = item.start.date;
+                const eventDate = new Date(eventDateStr + "T00:00:00");
+                // Get today at midnight in user's timezone for comparison
+                const todayStr = new Intl.DateTimeFormat("en-CA", {
+                  timeZone: userTimezone,
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                }).format(now);
+                const todayAtMidnight = new Date(todayStr + "T00:00:00");
+                
+                // Include if event is today or in the future
+                if (eventDate >= todayAtMidnight) {
+                  nextEventStart = eventDate;
+                  nextEventIsAllDay = true;
                   break;
                 }
               }
@@ -168,18 +190,21 @@ export default async function AppDashboardPage() {
               .api("/me/calendar/calendarView")
               .query({
                 startDateTime: now.toISOString(),
-                endDateTime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                endDateTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
               })
               .header("Prefer", `outlook.timezone="${userTimezone}"`)
-              .top(10)
+              .top(20)
               .get();
             
-            // Find first timed event (not all-day)
+            // Find first event (timed or all-day)
             for (const item of response.value || []) {
-              if (item.start?.dateTime && !item.isAllDay) {
+              if (item.start?.dateTime) {
                 const eventStart = new Date(item.start.dateTime);
+                const isAllDay = item.isAllDay || false;
+                
                 if (eventStart > now) {
                   nextEventStart = eventStart;
+                  nextEventIsAllDay = isAllDay;
                   break;
                 }
               }
@@ -188,24 +213,70 @@ export default async function AppDashboardPage() {
           
           // Format time until next event
           if (nextEventStart) {
-            const diffMs = nextEventStart.getTime() - now.getTime();
-            const minutes = Math.floor(diffMs / (1000 * 60));
-            
-            if (minutes < 0) {
-              timeUntilNextEvent = "No upcoming events";
-            } else if (minutes < 60) {
-              timeUntilNextEvent = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-            } else if (minutes < 1440) {
-              const hours = Math.floor(minutes / 60);
-              const remainingMinutes = minutes % 60;
-              if (remainingMinutes === 0) {
-                timeUntilNextEvent = `${hours} hour${hours !== 1 ? 's' : ''}`;
+            if (nextEventIsAllDay) {
+              // For all-day events, show the date or relative time
+              const todayStr = new Intl.DateTimeFormat("en-CA", {
+                timeZone: userTimezone,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              }).format(now);
+              const eventDateStr = new Intl.DateTimeFormat("en-CA", {
+                timeZone: userTimezone,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+              }).format(nextEventStart);
+              
+              if (eventDateStr === todayStr) {
+                timeUntilNextEvent = "All day today";
               } else {
-                timeUntilNextEvent = `${hours}h ${remainingMinutes}m`;
+                // Calculate days until event
+                const todayAtMidnight = new Date(todayStr + "T00:00:00");
+                const eventAtMidnight = new Date(eventDateStr + "T00:00:00");
+                const diffMs = eventAtMidnight.getTime() - todayAtMidnight.getTime();
+                const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                
+                if (days === 1) {
+                  timeUntilNextEvent = "All day tomorrow";
+                } else if (days < 7) {
+                  // Show day name
+                  const dayName = new Intl.DateTimeFormat("en-US", {
+                    timeZone: userTimezone,
+                    weekday: "long",
+                  }).format(nextEventStart);
+                  timeUntilNextEvent = `All day ${dayName}`;
+                } else {
+                  // Show date
+                  const dateStr = new Intl.DateTimeFormat("en-US", {
+                    timeZone: userTimezone,
+                    month: "short",
+                    day: "numeric",
+                  }).format(nextEventStart);
+                  timeUntilNextEvent = `All day ${dateStr}`;
+                }
               }
             } else {
-              const days = Math.floor(minutes / 1440);
-              timeUntilNextEvent = `${days} day${days !== 1 ? 's' : ''}`;
+              // Timed event - show time until
+              const diffMs = nextEventStart.getTime() - now.getTime();
+              const minutes = Math.floor(diffMs / (1000 * 60));
+              
+              if (minutes < 0) {
+                timeUntilNextEvent = "No upcoming events";
+              } else if (minutes < 60) {
+                timeUntilNextEvent = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+              } else if (minutes < 1440) {
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                if (remainingMinutes === 0) {
+                  timeUntilNextEvent = `${hours} hour${hours !== 1 ? 's' : ''}`;
+                } else {
+                  timeUntilNextEvent = `${hours}h ${remainingMinutes}m`;
+                }
+              } else {
+                const days = Math.floor(minutes / 1440);
+                timeUntilNextEvent = `${days} day${days !== 1 ? 's' : ''}`;
+              }
             }
           } else {
             timeUntilNextEvent = "No upcoming events";
