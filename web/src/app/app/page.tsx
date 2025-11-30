@@ -153,20 +153,24 @@ export default async function AppDashboardPage() {
                   break;
                 }
               } else if (item.start?.date) {
-                // All-day event - start is at midnight of that day
+                // All-day event - date is in YYYY-MM-DD format
                 const eventDateStr = item.start.date;
-                const eventDate = new Date(eventDateStr + "T00:00:00");
-                // Get today at midnight in user's timezone for comparison
+                // Parse the date string to create a Date object at noon UTC to avoid timezone issues
+                const [year, month, day] = eventDateStr.split('-').map(Number);
+                const eventDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+                
+                // Get today's date string in user's timezone
                 const todayStr = new Intl.DateTimeFormat("en-CA", {
                   timeZone: userTimezone,
                   year: "numeric",
                   month: "2-digit",
                   day: "2-digit",
                 }).format(now);
-                const todayAtMidnight = new Date(todayStr + "T00:00:00");
+                const [todayYear, todayMonth, todayDay] = todayStr.split('-').map(Number);
+                const todayAtNoon = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0));
                 
                 // Include if event is today or in the future
-                if (eventDate >= todayAtMidnight) {
+                if (eventDate >= todayAtNoon) {
                   nextEventStart = eventDate;
                   nextEventIsAllDay = true;
                   break;
