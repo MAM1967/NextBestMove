@@ -17,7 +17,7 @@ export default async function AppDashboardPage() {
   // Check if user has completed onboarding
   const { data: userProfile } = await supabase
     .from("users")
-    .select("onboarding_completed, streak_count")
+    .select("onboarding_completed, streak_count, exclude_weekends, calendar_connected")
     .eq("id", user.id)
     .single();
 
@@ -26,6 +26,12 @@ export default async function AppDashboardPage() {
   }
 
   const today = new Date().toISOString().split("T")[0];
+  
+  // Check if today is a weekend
+  const todayDate = new Date();
+  const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
   // Fetch today's daily plan
   const { data: dailyPlan } = await supabase
@@ -87,6 +93,18 @@ export default async function AppDashboardPage() {
   const freeMinutes = dailyPlan?.free_minutes ?? null;
   const capacity = dailyPlan?.capacity ?? "default";
 
+  // Check calendar connection status
+  const calendarConnected = userProfile?.calendar_connected ?? false;
+  
+  // Also check calendar_connections table for active connections
+  const { data: calendarConnections } = await supabase
+    .from("calendar_connections")
+    .select("provider, status")
+    .eq("user_id", user.id)
+    .eq("status", "active");
+  
+  const hasActiveCalendarConnection = (calendarConnections && calendarConnections.length > 0) || calendarConnected;
+
   // Format calendar availability
   let timeUntilNextEvent = "Calendar not connected";
   if (freeMinutes !== null) {
@@ -99,6 +117,9 @@ export default async function AppDashboardPage() {
     } else {
       timeUntilNextEvent = "Good availability";
     }
+  } else if (hasActiveCalendarConnection) {
+    // Calendar is connected but no free minutes calculated yet (plan not generated or calendar sync pending)
+    timeUntilNextEvent = "Calendar connected";
   }
 
   return (
@@ -161,15 +182,28 @@ export default async function AppDashboardPage() {
 
         {!dailyPlan && (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm text-amber-800 mb-3">
-              No plan generated for today yet.
-            </p>
-            <Link
-              href="/app/plan"
-              className="inline-block rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-            >
-              Generate Daily Plan
-            </Link>
+            {isWeekend && excludeWeekends ? (
+              <>
+                <p className="text-sm text-amber-800 mb-2">
+                  Plans aren&apos;t generated on weekends based on your preferences.
+                </p>
+                <p className="text-xs text-amber-700">
+                  You can change this setting in your account preferences if you&apos;d like to receive plans on weekends.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-amber-800 mb-3">
+                  No plan generated for today yet.
+                </p>
+                <Link
+                  href="/app/plan"
+                  className="inline-block rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  Generate Daily Plan
+                </Link>
+              </>
+            )}
           </div>
         )}
 
