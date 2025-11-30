@@ -1,12 +1,54 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+// GET /api/content-prompts/[id] - Fetch a single content prompt
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: contentPrompt, error } = await supabase
+      .from("content_prompts")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching content prompt:", error);
+      return NextResponse.json(
+        { error: "Content prompt not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ contentPrompt });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH /api/content-prompts/[id] - Update prompt status (archive, mark as posted, etc.)
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const {
       data: { user },
@@ -29,7 +71,7 @@ export async function PATCH(
     const { data: prompt, error: fetchError } = await supabase
       .from("content_prompts")
       .select("id, user_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .single();
 
@@ -44,7 +86,7 @@ export async function PATCH(
     const { data: updated, error: updateError } = await supabase
       .from("content_prompts")
       .update({ status })
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single();
@@ -70,9 +112,10 @@ export async function PATCH(
 // DELETE /api/content-prompts/[id] - Delete a content prompt
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const {
       data: { user },
@@ -86,7 +129,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from("content_prompts")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (deleteError) {
