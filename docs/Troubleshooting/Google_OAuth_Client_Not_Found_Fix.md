@@ -27,10 +27,13 @@ This error occurs when:
 
 **If the client exists:**
 - ✅ Verify it's **enabled** (not disabled)
-- ✅ Check **Authorized redirect URIs** include:
+- ✅ Check **Authorized redirect URIs** include **EXACTLY** (case-sensitive, no trailing slashes):
   - `https://nextbestmove.app/api/calendar/callback/google` (production)
-  - `http://localhost:3000/api/calendar/callback/google` (local)
+  - `http://localhost:3000/api/calendar/callback/google` (local development)
 - ✅ Verify **Application type** is "Web application"
+- ✅ **CRITICAL:** Check OAuth consent screen:
+  - If in **Testing** mode, ensure `mcddsl@gmail.com` is added to **Test users** list
+  - If in **Production** mode, ensure app is published (or use Testing mode for now)
 
 **If the client doesn't exist:**
 - You'll need to create a new one (see Step 2)
@@ -55,7 +58,8 @@ This error occurs when:
    - **User support email:** Your email
    - **Developer contact:** Your email
    - **Scopes:** Add `https://www.googleapis.com/auth/calendar.readonly`
-   - **Test users:** (Optional) Add test emails if in testing mode
+   - **Publishing status:** Set to **Testing** (for now)
+   - **Test users:** **REQUIRED if in Testing mode** - Add `mcddsl@gmail.com` and any other test accounts
 4. Create OAuth client:
    - **Application type:** Web application
    - **Name:** NextBestMove Calendar Integration
@@ -151,6 +155,42 @@ When you switch between **Testing** and **Production** in Google Cloud Console:
 ---
 
 ## Common Issues
+
+### Issue: "OAuth client was not found" - Redirect URI Mismatch
+
+**Symptoms:**
+- Error 401: invalid_client
+- OAuth client exists and is enabled
+- Client ID/secret are correct
+
+**Cause:** The redirect URI in the OAuth request doesn't match what's configured in Google Cloud Console.
+
+**Fix:**
+1. Check what redirect URI your app is sending:
+   - Production: `https://nextbestmove.app/api/calendar/callback/google`
+   - Local: `http://localhost:3000/api/calendar/callback/google`
+2. In Google Cloud Console → OAuth client → **Authorized redirect URIs**:
+   - Ensure the URI matches **EXACTLY** (case-sensitive, no trailing slash)
+   - Add both production and local URIs if testing both
+3. Save changes and wait 1-2 minutes for propagation
+4. Try connecting again
+
+### Issue: "OAuth client was not found" - Test User Not Added
+
+**Symptoms:**
+- Error 401: invalid_client
+- OAuth consent screen is in **Testing** mode
+- Trying to authenticate with an account not in test users list
+
+**Cause:** OAuth consent screen is in Testing mode, but the account (`mcddsl@gmail.com`) is not added as a test user.
+
+**Fix:**
+1. Go to Google Cloud Console → **APIs & Services** → **OAuth consent screen**
+2. Scroll to **Test users** section
+3. Click **"+ ADD USERS"**
+4. Add `mcddsl@gmail.com` (and any other test accounts)
+5. Save changes
+6. Try connecting again - you should now see the account picker and be able to select `mcddsl@gmail.com`
 
 ### Issue: "OAuth client was not found" after switching to testing
 

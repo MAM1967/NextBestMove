@@ -15,11 +15,13 @@
 5. **Search for:** `732850218816-6b8ft52uum9dh2m18uk86jo4o8dk96cm`
 
 **If found:**
+
 - ✅ Check if it's **enabled** (not disabled)
 - ✅ Verify redirect URIs include your callback URL
 - ✅ Copy the Client ID and Client Secret
 
 **If NOT found:**
+
 - The client was deleted or never existed
 - You need to create a new one (see below)
 
@@ -28,6 +30,7 @@
 ### 2. Check Environment Variables
 
 **Local (.env.local):**
+
 ```bash
 # Check what's currently set
 cat .env.local | grep GOOGLE_CLIENT_ID
@@ -35,11 +38,13 @@ cat .env.local | grep GOOGLE_CLIENT_SECRET
 ```
 
 **Vercel:**
+
 1. Go to Vercel Dashboard → Project → Settings → Environment Variables
 2. Check `GOOGLE_CLIENT_ID` value
 3. Does it match `732850218816-6b8ft52uum9dh2m18uk86jo4o8dk96cm`?
 
 **If they don't match:**
+
 - The environment variable has the wrong client ID
 - Update it to match an existing OAuth client
 
@@ -54,6 +59,7 @@ When you switch between **Testing** and **Production** in Google Cloud Console:
 - **Test users list applies in testing mode**
 
 **If you're getting "client not found":**
+
 - The OAuth client was likely **deleted** or **disabled**
 - Or the environment variables point to a **non-existent client**
 
@@ -68,6 +74,7 @@ When you switch between **Testing** and **Production** in Google Cloud Console:
 3. Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
 
 4. **If prompted to configure OAuth consent screen:**
+
    - **User Type:** External
    - **App name:** NextBestMove
    - **User support email:** Your email
@@ -81,6 +88,7 @@ When you switch between **Testing** and **Production** in Google Cloud Console:
    - Click "Back to Dashboard"
 
 5. **Create OAuth Client:**
+
    - **Application type:** Web application
    - **Name:** NextBestMove Calendar (Production)
    - **Authorized JavaScript origins:**
@@ -103,12 +111,14 @@ When you switch between **Testing** and **Production** in Google Cloud Console:
 #### Local Development
 
 Edit `web/.env.local`:
+
 ```bash
 GOOGLE_CLIENT_ID=your-new-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-new-client-secret
 ```
 
-**Important:** 
+**Important:**
+
 - No quotes around values
 - No trailing spaces or newlines
 - Restart your dev server after updating
@@ -132,6 +142,7 @@ GOOGLE_CLIENT_SECRET=your-new-client-secret
 ### Step 3: Reconnect Calendar
 
 1. **Disconnect:**
+
    - Settings → Calendar → Click "Disconnect"
 
 2. **Reconnect:**
@@ -147,28 +158,33 @@ GOOGLE_CLIENT_SECRET=your-new-client-secret
 
 ✅ **Application type:** Web application  
 ✅ **Authorized redirect URIs:**
-   - `https://nextbestmove.app/api/calendar/callback/google` (production)
-   - `http://localhost:3000/api/calendar/callback/google` (local)
+
+- `https://nextbestmove.app/api/calendar/callback/google` (production)
+- `http://localhost:3000/api/calendar/callback/google` (local)
 
 ✅ **OAuth consent screen:**
-   - Status: Testing or Published
-   - Scopes: `https://www.googleapis.com/auth/calendar.readonly`
+
+- Status: Testing or Published
+- Scopes: `https://www.googleapis.com/auth/calendar.readonly`
 
 ✅ **Environment variables:**
-   - `GOOGLE_CLIENT_ID` matches the client ID in Google Cloud Console
-   - `GOOGLE_CLIENT_SECRET` matches the client secret in Google Cloud Console
+
+- `GOOGLE_CLIENT_ID` matches the client ID in Google Cloud Console
+- `GOOGLE_CLIENT_SECRET` matches the client secret in Google Cloud Console
 
 ---
 
 ## Testing Mode vs Production Mode
 
 ### Testing Mode
+
 - ✅ No video required
 - ✅ Only test users can authenticate
 - ✅ OAuth client works normally
 - ✅ Good for development
 
 ### Production Mode
+
 - ⚠️ Requires verification (including video)
 - ✅ Available to all users
 - ✅ OAuth client ID/secret don't change
@@ -196,15 +212,18 @@ When you click "Connect Google", the OAuth URL should contain your client ID. If
 ## Still Not Working?
 
 1. **Double-check OAuth client exists:**
+
    - Google Cloud Console → Credentials
    - Verify client ID matches exactly
 
 2. **Check redirect URIs:**
+
    - Must match exactly: `https://nextbestmove.app/api/calendar/callback/google`
    - No trailing slashes
    - Must be HTTPS for production
 
 3. **Verify environment variables:**
+
    - Check for typos
    - Check for extra spaces/newlines
    - Restart dev server / redeploy Vercel
@@ -216,4 +235,3 @@ When you click "Connect Google", the OAuth URL should contain your client ID. If
 ---
 
 _Last updated: November 30, 2025_
-

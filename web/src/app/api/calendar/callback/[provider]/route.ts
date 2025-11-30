@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getProviderConfiguration,
   isSupportedProvider,
@@ -55,8 +55,25 @@ export async function GET(
     );
   }
 
+  let refreshToken: string | undefined;
+  let accessToken: string | undefined;
+
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS since we're storing the connection server-side
+    const supabase = createAdminClient();
+    
+    // Verify the user exists before proceeding
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", userId)
+      .single();
+    
+    if (userError || !userData) {
+      console.error("Calendar callback: User not found", { userId, error: userError });
+      throw new Error(`User not found: ${userId}`);
+    }
+    
     const redirectUri = `${request.nextUrl.origin}/api/calendar/callback/${provider}`;
     const config = await getProviderConfiguration(provider);
 
@@ -70,8 +87,8 @@ export async function GET(
       }
     );
 
-    const refreshToken = tokenSet.refresh_token;
-    const accessToken = tokenSet.access_token;
+    refreshToken = tokenSet.refresh_token;
+    accessToken = tokenSet.access_token;
     const expiresAt = tokenSet.expires_in
       ? Math.floor(Date.now() / 1000) + tokenSet.expires_in
       : null;
@@ -124,7 +141,36 @@ export async function GET(
       throw error;
     }
   } catch (error) {
-    console.error("Calendar callback error:", error);
+    console.error("Calendar callback error:", {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      userId,
+      provider,
+      hasRefreshToken: !!refreshToken,
+      hasAccessToken: !!accessToken,
+    });
+    
+    // Try to save error message to database for debugging
+    try {
+      const supabase = createAdminClient();
+      await supabase
+        .from("calendar_connections")
+        .upsert(
+          {
+            user_id: userId,
+            provider,
+            status: "error",
+            error_message: error instanceof Error ? error.message : String(error),
+            refresh_token: "", // Empty since connection failed
+            calendar_id: "primary",
+          },
+          { onConflict: "user_id,provider" }
+        );
+    } catch (dbError) {
+      console.error("Failed to save error to database:", dbError);
+    }
+    
     return NextResponse.redirect(
       buildRedirectUrl(request.nextUrl.origin, "error", callbackUrl)
     );
