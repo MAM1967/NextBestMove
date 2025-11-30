@@ -15,3 +15,4 @@ COMMENT ON COLUMN users.email_follow_up_alerts IS 'Receive alerts when follow-up
 COMMENT ON COLUMN users.email_weekly_summary IS 'Receive weekly summary email on Sunday/Monday';
 COMMENT ON COLUMN users.email_unsubscribed IS 'Global unsubscribe flag (overrides all preferences)';
 
+

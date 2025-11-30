@@ -35,3 +35,4 @@ export function isValidOpenAIKey(key: string): boolean {
   return key.startsWith("sk-") && key.length >= 20;
 }
 
+

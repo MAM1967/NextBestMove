@@ -114,3 +114,4 @@ Once you have a premium subscription:
 - Check that `userModel` is passed to `generateWithAI`
 - Verify model name is valid OpenAI model
 
+

@@ -75,6 +75,8 @@ export async function sendEmail({
 
 /**
  * Email template for trial reminders
+ * Day 12: 2 days remaining (encouraging)
+ * Day 14: 0 days remaining (urgent)
  */
 export async function sendTrialReminder({
   to,
@@ -85,10 +87,26 @@ export async function sendTrialReminder({
   userName: string;
   daysRemaining: number;
 }) {
-  const subject =
-    daysRemaining === 2
-      ? "2 days left in your trial"
-      : "Last day of trial — Subscribe to keep your rhythm";
+  const isDay12 = daysRemaining === 2;
+  const isDay14 = daysRemaining === 0;
+
+  const subject = isDay12
+    ? "2 days left in your trial — Keep your rhythm going"
+    : isDay14
+    ? "Last day of trial — Subscribe to keep your rhythm"
+    : `${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your trial`;
+
+  const mainMessage = isDay12
+    ? "You have 2 days left in your free trial of NextBestMove. You're building momentum — don't let it stop."
+    : isDay14
+    ? "Today is the last day of your free trial. Subscribe now to keep your rhythm going and avoid losing access."
+    : `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your free trial of NextBestMove.`;
+
+  const secondaryMessage = isDay12
+    ? "You'll know in 48 hours if this works. No commitment required."
+    : isDay14
+    ? "After today, your account will enter read-only mode for 7 days. Subscribe now to keep generating plans and stay on track."
+    : "Subscribe to continue your daily rhythm and keep your streak alive.";
 
   const html = `
     <!DOCTYPE html>
@@ -101,22 +119,24 @@ export async function sendTrialReminder({
         <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Hi ${userName || "there"},</h1>
         
         <p style="margin-bottom: 16px;">
-          ${daysRemaining === 2 ? "You have 2 days left" : "Today is the last day"} in your free trial of NextBestMove.
+          ${mainMessage}
         </p>
         
         <p style="margin-bottom: 16px;">
-          You'll know in 48 hours if this works. No commitment required.
+          ${secondaryMessage}
         </p>
         
         <div style="margin: 32px 0;">
           <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-            Subscribe Now
+            ${isDay14 ? "Subscribe Now — Last Chance" : "Subscribe Now"}
           </a>
         </div>
         
         <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
-          Your data is safe and nothing is lost. Subscribe to resume your rhythm.
+          ${isDay14 
+            ? "Your data is safe and nothing is lost. Subscribe to resume your rhythm and keep your streak alive." 
+            : "Your data is safe and nothing is lost. Subscribe to resume your rhythm."}
         </p>
       </body>
     </html>

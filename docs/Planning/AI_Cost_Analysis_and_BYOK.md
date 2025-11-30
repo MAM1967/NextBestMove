@@ -238,3 +238,4 @@ async function getAIClient(userId: string) {
 3. **Cost Monitoring**: Set up usage tracking and alerts
 4. **Documentation**: User guide for BYOK setup
 
+

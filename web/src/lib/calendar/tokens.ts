@@ -96,7 +96,21 @@ export async function refreshAccessToken(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Token refresh failed: ${errorText}`);
+      let errorMessage = `Token refresh failed: ${errorText}`;
+      
+      // Parse error for better messaging
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error === "invalid_client") {
+          errorMessage = `OAuth client mismatch: The refresh token was issued by a different OAuth client. Please disconnect and reconnect your calendar. Original error: ${errorText}`;
+        } else if (errorData.error === "invalid_grant") {
+          errorMessage = `Refresh token invalid or expired: Please disconnect and reconnect your calendar. Original error: ${errorText}`;
+        }
+      } catch {
+        // If parsing fails, use original error message
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const tokenSet = await response.json();

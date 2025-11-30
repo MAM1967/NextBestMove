@@ -46,3 +46,4 @@ JOIN billing_subscriptions bs ON bs.billing_customer_id = bc.id
 WHERE u.email = 'mcddsl+test1@gmail.com' -- CHANGE THIS EMAIL
 ORDER BY bs.created_at DESC;
 
+

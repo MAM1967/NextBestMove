@@ -122,6 +122,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🟠 P1 – High Value Enhancements
 
+**📋 Execution Plan:** See `docs/Planning/P1_Backlog_Execution_Plan.md` for detailed implementation plan, timeline, and prioritization.
+
 - [ ] **Optimize GitHub Actions env sync with change data capture** 🔄  
        _Modify GitHub Actions workflow to only sync environment variables that don't already exist in Vercel. Fetch existing variables first, compare with GitHub Secrets, and skip existing ones. This reduces API calls, speeds up execution, and makes logs clearer. See `docs/Environment_Variables_Sync_Optimization_Plan.md` for implementation plan._
 

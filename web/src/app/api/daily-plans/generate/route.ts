@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { generateDailyPlanForUser } from "@/lib/plans/generate-daily-plan";
+import { canGeneratePlans } from "@/lib/billing/subscription-status";
 
 /**
  * POST /api/daily-plans/generate - Generate a daily plan
@@ -17,6 +18,42 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check subscription status and grace period
+    const { data: billingCustomer } = await supabase
+      .from("billing_customers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    let subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null = null;
+    let trialEndsAt: string | null = null;
+
+    if (billingCustomer) {
+      const { data: subscription } = await supabase
+        .from("billing_subscriptions")
+        .select("status, trial_ends_at")
+        .eq("billing_customer_id", billingCustomer.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (subscription) {
+        subscriptionStatus = subscription.status;
+        trialEndsAt = subscription.trial_ends_at;
+      }
+    }
+
+    // Block plan generation during grace period
+    if (!canGeneratePlans(subscriptionStatus, trialEndsAt)) {
+      return NextResponse.json(
+        { 
+          error: "Your trial has ended. Subscribe to continue generating daily plans.",
+          gracePeriod: true 
+        },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();

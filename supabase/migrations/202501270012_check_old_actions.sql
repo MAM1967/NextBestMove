@@ -42,3 +42,4 @@ WHERE a.created_at::DATE IN ('2025-11-17', '2025-11-19')
 ORDER BY a.created_at;
 
 
+

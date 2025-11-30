@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
+import { GracePeriodBanner } from "./components/GracePeriodBanner";
 
 export default async function AppDashboardPage() {
   const supabase = await createClient();
@@ -23,6 +25,28 @@ export default async function AppDashboardPage() {
 
   if (!userProfile?.onboarding_completed) {
     redirect("/onboarding");
+  }
+
+  // Fetch subscription status for grace period check
+  const { data: billingCustomer } = await supabase
+    .from("billing_customers")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  let subscriptionInfo = null;
+  if (billingCustomer) {
+    const { data: subscription } = await supabase
+      .from("billing_subscriptions")
+      .select("status, trial_ends_at")
+      .eq("billing_customer_id", billingCustomer.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (subscription) {
+      subscriptionInfo = getSubscriptionInfo(subscription.status, subscription.trial_ends_at);
+    }
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -373,6 +397,12 @@ export default async function AppDashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Grace Period Banner */}
+      {subscriptionInfo?.isInGracePeriod && (
+        <GracePeriodBanner
+          daysRemaining={subscriptionInfo.daysUntilGracePeriodEnds ?? 0}
+        />
+      )}
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           Today&apos;s next best move

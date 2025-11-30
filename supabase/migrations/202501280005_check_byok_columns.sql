@@ -15,3 +15,4 @@ ORDER BY column_name;
 -- If the above returns 0 rows, the migration hasn't been run yet
 -- Run: supabase/migrations/202501280000_add_byok_fields.sql first
 
+

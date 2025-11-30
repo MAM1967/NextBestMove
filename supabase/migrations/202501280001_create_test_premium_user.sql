@@ -90,3 +90,4 @@ WHERE bs.status IN ('active', 'trialing')
 ORDER BY bs.created_at DESC
 LIMIT 5;
 
+

@@ -11,3 +11,4 @@ COMMENT ON COLUMN users.ai_provider IS 'AI provider: system (uses our key) or op
 COMMENT ON COLUMN users.ai_api_key_encrypted IS 'Encrypted OpenAI API key (only for premium users with BYOK)';
 COMMENT ON COLUMN users.ai_model IS 'AI model to use: gpt-4o-mini, gpt-4, gpt-4-turbo, etc.';
 
+

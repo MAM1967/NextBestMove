@@ -347,3 +347,4 @@ Before pushing code, verify:
 - [Next.js TypeScript Guide](https://nextjs.org/docs/app/building-your-application/configuring/typescript)
 
 
+

@@ -318,7 +318,7 @@ export default function DailyPlanPage() {
         <PaywallOverlay
           subscriptionStatus={subscriptionStatus}
           isReadOnly={isReadOnly}
-          trialEndsAt={trialEndsAt}
+          trialEndsAt={trialEndsAt ? trialEndsAt.toISOString() : null}
           onDismiss={() => setShowPaywall(false)}
         />
       )}

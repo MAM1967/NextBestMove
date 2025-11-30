@@ -116,7 +116,31 @@ export function CalendarConnectionSection({
                   : "never"}
               </p>
               {conn.error_message && (
-                <p className="text-red-600">Error: {conn.error_message}</p>
+                <div className="mt-2 space-y-2">
+                  <p className="text-red-600 font-medium">Error: {conn.error_message}</p>
+                  {conn.error_message.includes("OAuth client mismatch") || 
+                   conn.error_message.includes("invalid_client") ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
+                      <p className="text-xs text-amber-800 mb-2">
+                        This error usually means the OAuth client credentials changed. Please disconnect and reconnect your calendar.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Disconnect first
+                          await handleDisconnect();
+                          // Then reconnect
+                          setTimeout(() => {
+                            handleConnect(conn.provider as "google" | "outlook");
+                          }, 500);
+                        }}
+                        className="text-xs font-medium text-amber-900 hover:text-amber-950 underline"
+                      >
+                        Reconnect Calendar →
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               )}
             </div>
           ))}
@@ -128,7 +152,7 @@ export function CalendarConnectionSection({
       )}
 
       <div className="flex flex-wrap gap-2">
-        {!connected ? (
+        {connections.length === 0 ? (
           <>
             <button
               type="button"
@@ -147,14 +171,16 @@ export function CalendarConnectionSection({
           </>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-            >
-              {isRefreshing ? "Refreshing..." : "Refresh Calendar"}
-            </button>
+            {connected && (
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                {isRefreshing ? "Refreshing..." : "Refresh Calendar"}
+              </button>
+            )}
             <button
               type="button"
               onClick={handleDisconnect}
@@ -163,6 +189,15 @@ export function CalendarConnectionSection({
             >
               {isDisconnecting ? "Disconnecting..." : "Disconnect"}
             </button>
+            {!connected && (
+              <button
+                type="button"
+                onClick={() => handleConnect(connections[0]?.provider as "google" | "outlook" || "google")}
+                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Reconnect {connections[0]?.provider ? connections[0].provider.charAt(0).toUpperCase() + connections[0].provider.slice(1) : "Calendar"}
+              </button>
+            )}
           </>
         )}
       </div>

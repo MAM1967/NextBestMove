@@ -10,3 +10,4 @@ CREATE POLICY "Users can update own weekly summaries" ON weekly_summaries
   FOR UPDATE USING (auth.uid() = user_id);
 
 
+
