@@ -1,22 +1,47 @@
 name: Sync Environment Variables to Vercel
 
 on:
-  workflow_dispatch: # Manual trigger only (for security)
+  workflow_dispatch: # Manual trigger
     inputs:
-      confirm:
-        description: 'Type "sync" to confirm environment variable sync'
+      environment:
+        description: 'Environment to sync to'
         required: true
+        type: choice
+        options:
+          - production
+          - preview
+          - development
+      confirm:
+        description: 'Type "sync" to confirm'
+        required: true
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.github/workflows/**'
 
 jobs:
   sync-env:
     runs-on: ubuntu-latest
-    if: github.event.inputs.confirm == 'sync'
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'sync')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "env=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "env=production" >> $GITHUB_OUTPUT
+          fi
 
       - name: Sync GitHub Secrets to Vercel
         run: |
@@ -26,33 +51,61 @@ jobs:
           export VERCEL_TOKEN="${{ secrets.VERCEL_TOKEN }}"
           export VERCEL_ORG_ID="${{ secrets.VERCEL_ORG_ID }}"
           export VERCEL_PROJECT_ID="${{ secrets.VERCEL_PROJECT_ID }}"
+          TARGET_ENV="${{ steps.env.outputs.env }}"
+          
+          echo "🔄 Syncing environment variables to $TARGET_ENV..."
           
           # Function to add env var if secret exists
           sync_var() {
             local var_name=$1
             local secret_value=$2
+            local env_type=$3
             if [ -n "$secret_value" ]; then
-              echo "Syncing $var_name..."
-              echo "$secret_value" | vercel env add "$var_name" production \
+              echo "📤 Syncing $var_name to $env_type..."
+              echo "$secret_value" | vercel env add "$var_name" "$env_type" \
                 --token="$VERCEL_TOKEN" \
                 --scope="$VERCEL_ORG_ID" \
                 --yes \
-                --force || echo "⚠️  $var_name may already exist or failed to sync"
+                --force 2>&1 | grep -v "already exists" || echo "✅ $var_name synced (or already exists)"
             else
               echo "⏭️  Skipping $var_name (not set in GitHub Secrets)"
             fi
           }
           
-          # Sync all environment variables
-          sync_var "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
-          sync_var "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}"
-          sync_var "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}"
-          sync_var "RESEND_API_KEY" "${{ secrets.RESEND_API_KEY }}"
-          sync_var "CRON_SECRET" "${{ secrets.CRON_SECRET }}"
-          sync_var "OPENAI_API_KEY" "${{ secrets.OPENAI_API_KEY }}"
+          # Sync sensitive secrets (production only)
+          if [ "$TARGET_ENV" == "production" ]; then
+            sync_var "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" "$TARGET_ENV"
+            sync_var "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}" "$TARGET_ENV"
+            sync_var "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}" "$TARGET_ENV"
+            sync_var "RESEND_API_KEY" "${{ secrets.RESEND_API_KEY }}" "$TARGET_ENV"
+            sync_var "CRON_SECRET" "${{ secrets.CRON_SECRET }}" "$TARGET_ENV"
+            sync_var "OPENAI_API_KEY" "${{ secrets.OPENAI_API_KEY }}" "$TARGET_ENV"
+            sync_var "CALENDAR_ENCRYPTION_KEY" "${{ secrets.CALENDAR_ENCRYPTION_KEY }}" "$TARGET_ENV"
+            sync_var "GOOGLE_CLIENT_ID" "${{ secrets.GOOGLE_CLIENT_ID }}" "$TARGET_ENV"
+            sync_var "GOOGLE_CLIENT_SECRET" "${{ secrets.GOOGLE_CLIENT_SECRET }}" "$TARGET_ENV"
+            sync_var "OUTLOOK_CLIENT_ID" "${{ secrets.OUTLOOK_CLIENT_ID }}" "$TARGET_ENV"
+            sync_var "OUTLOOK_CLIENT_SECRET" "${{ secrets.OUTLOOK_CLIENT_SECRET }}" "$TARGET_ENV"
+            sync_var "OUTLOOK_TENANT_ID" "${{ secrets.OUTLOOK_TENANT_ID }}" "$TARGET_ENV"
+            sync_var "SENTRY_DSN" "${{ secrets.SENTRY_DSN }}" "$TARGET_ENV"
+            sync_var "POSTHOG_KEY" "${{ secrets.POSTHOG_KEY }}" "$TARGET_ENV"
+            sync_var "POSTHOG_HOST" "${{ secrets.POSTHOG_HOST }}" "$TARGET_ENV"
+            
+            # Stripe Price IDs (non-sensitive but should be in secrets for consistency)
+            sync_var "STRIPE_PRICE_ID_STANDARD_MONTHLY" "${{ secrets.STRIPE_PRICE_ID_STANDARD_MONTHLY }}" "$TARGET_ENV"
+            sync_var "STRIPE_PRICE_ID_STANDARD_YEARLY" "${{ secrets.STRIPE_PRICE_ID_STANDARD_YEARLY }}" "$TARGET_ENV"
+            sync_var "STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY" "${{ secrets.STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY }}" "$TARGET_ENV"
+            sync_var "STRIPE_PRICE_ID_PROFESSIONAL_YEARLY" "${{ secrets.STRIPE_PRICE_ID_PROFESSIONAL_YEARLY }}" "$TARGET_ENV"
+          fi
           
-          echo "✅ Environment variable sync completed"
-          echo "📝 Note: Non-sensitive variables (NEXT_PUBLIC_*) should be set manually in Vercel Dashboard"
+          # Sync public variables (safe for all environments)
+          sync_var "NEXT_PUBLIC_SUPABASE_URL" "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" "$TARGET_ENV"
+          sync_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" "$TARGET_ENV"
+          sync_var "NEXT_PUBLIC_APP_URL" "${{ secrets.NEXT_PUBLIC_APP_URL }}" "$TARGET_ENV"
+          
+          echo ""
+          echo "✅ Environment variable sync completed for $TARGET_ENV"
+          echo "📝 Note: Review Vercel Dashboard to ensure all variables are set correctly"
+          echo "🔄 Trigger a redeploy in Vercel to apply new environment variables"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
