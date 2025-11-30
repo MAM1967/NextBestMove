@@ -31,10 +31,11 @@
 
 **A:** Calendar data enables capacity-based planning:
 
-1. **Calculate capacity:** Free time determines how many actions to suggest
+1. **Calculate capacity:** Free time determines how many actions to suggest (behind the scenes)
    - 4 hours free → 7-8 revenue-generating actions
    - 1 hour free → 3-4 actions
    - 30 min free → 1-2 actions
+   - Users see: "You have X actions planned for today" where X matches their availability
 
 2. **Generate action plans:** Plans include revenue-generating activities:
    - Outreach to prospects

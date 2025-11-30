@@ -1,4 +1,5 @@
 # Google OAuth Verification Video Script
+
 ## NextBestMove Calendar Integration Demo
 
 **Duration:** 2-3 minutes  
@@ -41,15 +42,15 @@
 
 ## Scene 3: Capacity Calculation (0:40 - 1:00)
 
-**[Screen: Dashboard showing calendar events]**
+**[Screen: Dashboard showing calendar connection status]**
 
 **Narration:**
-"Based on their calendar, we calculate free time between 9 AM and 5 PM. Here, the user has meetings from 10-11 AM and 2-3 PM, leaving about 4 hours of free time."
+"Based on their calendar, we calculate free time between 9 AM and 5 PM. The system automatically determines how many actions they can realistically complete based on their schedule."
 
-**[Screen: Capacity indicator showing "Heavy" capacity, 7-8 actions]**
+**[Screen: Dashboard showing "You have 7 actions planned for today"]**
 
 **Narration:**
-"With 4 hours free, we suggest 7-8 revenue-generating actions. If they only had 30 minutes free, we'd suggest 1-2 actions instead."
+"If they have 4 hours free, we suggest 7 revenue-generating actions. If they only had 30 minutes free, we'd suggest 1-2 actions instead. The action count automatically adjusts based on their calendar availability - users see 'You have X actions planned for today' where X matches their available time."
 
 ---
 
@@ -139,4 +140,3 @@
 ---
 
 _Last updated: January 2025_
-

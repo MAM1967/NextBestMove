@@ -22,11 +22,12 @@ NextBestMove uses Google Calendar data to calculate a user's available time and 
 
 ### 2. **Action Plan Generation**
 - **What we generate:** Daily action plans with a specific number of revenue-generating activities
-- **Capacity mapping:**
+- **Capacity mapping (behind the scenes):**
   - < 30 min free time → 1-2 actions (micro plan)
   - 30-60 min free time → 3-4 actions (light plan)
   - 60-120 min free time → 5-6 actions (standard plan)
   - > 120 min free time → 7-8 actions (heavy plan)
+- **User sees:** "You have X actions planned for today" (where X matches their available time)
 - **Purpose:** Match action volume to available time, ensuring users complete their plans
 
 ### 3. **Revenue-Generating Activities**
