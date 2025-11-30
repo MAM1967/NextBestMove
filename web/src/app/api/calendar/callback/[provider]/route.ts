@@ -124,6 +124,9 @@ export async function GET(
 
     console.log("Calendar callback: Saving connection", { userId, provider, hasRefreshToken: !!encryptedRefresh, hasAccessToken: !!encryptedAccess });
     
+    // Set last_sync_at to now since we successfully got tokens (connection is working)
+    const now = new Date().toISOString();
+    
     const { data: savedConnection, error } = await supabase
       .from("calendar_connections")
       .upsert(
@@ -135,7 +138,7 @@ export async function GET(
           expires_at: expiresAt,
           calendar_id: "primary",
           status: "active",
-          last_sync_at: null,
+          last_sync_at: now, // Set to now since connection is active
           error_message: null,
         },
         { onConflict: "user_id,provider" }
@@ -148,7 +151,7 @@ export async function GET(
       throw error;
     }
     
-    console.log("Calendar callback: Connection saved successfully", { connectionId: savedConnection?.id, userId, provider });
+    console.log("Calendar callback: Connection saved successfully", { connectionId: savedConnection?.id, userId, provider, lastSyncAt: now });
   } catch (error) {
     console.error("Calendar callback error:", {
       error,
