@@ -68,17 +68,18 @@ jobs:
             if [ -n "$secret_value" ]; then
               echo ""
               echo "📤 Syncing $var_name to $env_type..."
+              # Vercel CLI env add accepts input via stdin when piping
+              # Remove --yes flag as it's not supported in newer CLI versions
               OUTPUT=$(echo "$secret_value" | vercel env add "$var_name" "$env_type" \
                 --token="$VERCEL_TOKEN" \
-                --scope="$VERCEL_ORG_ID" \
-                --yes 2>&1)
+                --scope="$VERCEL_ORG_ID" 2>&1)
               EXIT_CODE=$?
               
               if [ $EXIT_CODE -eq 0 ]; then
                 echo "✅ $var_name successfully synced to $env_type"
               else
                 # Check if it's just "already exists" error
-                if echo "$OUTPUT" | grep -q "already exists\|already added"; then
+                if echo "$OUTPUT" | grep -qi "already exists\|already added\|already present"; then
                   echo "ℹ️  $var_name already exists in $env_type (skipping)"
                 else
                   echo "❌ Failed to sync $var_name:"
