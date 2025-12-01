@@ -66,33 +66,46 @@ jobs:
           EXISTING_VARS_JSON=$(vercel env ls "$TARGET_ENV" \
             --token="$VERCEL_TOKEN" \
             --scope="$VERCEL_ORG_ID" \
-            --json 2>/dev/null || echo "[]")
+            --json 2>&1)
+          FETCH_EXIT_CODE=$?
           
-          # Extract variable names from JSON output
-          if command -v jq >/dev/null 2>&1; then
-            EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | jq -r '.[].key' | sort || echo "")
-          else
-            # Fallback: use grep/awk if jq is not available
-            EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | grep -o '"key":"[^"]*"' | sed 's/"key":"\([^"]*\)"/\1/' | sort || echo "")
-          fi
-          
-          if [ -z "$EXISTING_VARS" ] || [ "$EXISTING_VARS_JSON" == "[]" ]; then
-            echo "⚠️  Could not fetch existing variables or no variables found, will sync all"
+          # Check if fetch was successful
+          USE_FALLBACK_MODE=false
+          if [ $FETCH_EXIT_CODE -ne 0 ] || [ -z "$EXISTING_VARS_JSON" ] || [ "$EXISTING_VARS_JSON" == "[]" ]; then
+            echo "⚠️  Could not fetch existing variables (exit code: $FETCH_EXIT_CODE), will use fallback mode (--force)"
+            if [ $FETCH_EXIT_CODE -ne 0 ]; then
+              echo "   Error output: $EXISTING_VARS_JSON"
+            fi
+            USE_FALLBACK_MODE=true
             EXISTING_VARS=""
             EXISTING_COUNT=0
           else
-            EXISTING_COUNT=$(echo "$EXISTING_VARS" | grep -c . || echo "0")
-            echo "✅ Found $EXISTING_COUNT existing variables in $TARGET_ENV"
-            if [ "$EXISTING_COUNT" -lt 10 ]; then
-              echo "   Existing: $(echo "$EXISTING_VARS" | tr '\n' ' ')"
+            # Extract variable names from JSON output
+            if command -v jq >/dev/null 2>&1; then
+              EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | jq -r '.[].key' 2>/dev/null | sort || echo "")
+            else
+              # Fallback: use grep/awk if jq is not available
+              EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | grep -o '"key":"[^"]*"' | sed 's/"key":"\([^"]*\)"/\1/' | sort || echo "")
+            fi
+            
+            if [ -z "$EXISTING_VARS" ]; then
+              echo "⚠️  No existing variables found, will sync all"
+              USE_FALLBACK_MODE=true
+              EXISTING_COUNT=0
+            else
+              EXISTING_COUNT=$(echo "$EXISTING_VARS" | grep -c . || echo "0")
+              echo "✅ Found $EXISTING_COUNT existing variables in $TARGET_ENV"
+              if [ "$EXISTING_COUNT" -lt 10 ]; then
+                echo "   Existing: $(echo "$EXISTING_VARS" | tr '\n' ' ')"
+              fi
             fi
           fi
           
           # Function to check if variable exists
           var_exists() {
             local var_name=$1
-            if [ -z "$EXISTING_VARS" ]; then
-              return 1  # No existing vars list, assume it doesn't exist
+            if [ "$USE_FALLBACK_MODE" = "true" ] || [ -z "$EXISTING_VARS" ]; then
+              return 1  # No existing vars list, assume it doesn't exist (will use --force)
             fi
             echo "$EXISTING_VARS" | grep -q "^${var_name}$"
           }
@@ -124,10 +137,20 @@ jobs:
             # Variable doesn't exist, sync it
             echo ""
             echo "📤 Syncing $var_name to $env_type..."
-            OUTPUT=$(echo "$secret_value" | vercel env add "$var_name" "$env_type" \
-              --token="$VERCEL_TOKEN" \
-              --scope="$VERCEL_ORG_ID" \
-              2>&1)
+            
+            # Use --force flag if we're in fallback mode (couldn't fetch existing vars)
+            if [ "$USE_FALLBACK_MODE" = "true" ]; then
+              OUTPUT=$(echo "$secret_value" | vercel env add "$var_name" "$env_type" \
+                --token="$VERCEL_TOKEN" \
+                --scope="$VERCEL_ORG_ID" \
+                --force \
+                2>&1)
+            else
+              OUTPUT=$(echo "$secret_value" | vercel env add "$var_name" "$env_type" \
+                --token="$VERCEL_TOKEN" \
+                --scope="$VERCEL_ORG_ID" \
+                2>&1)
+            fi
             EXIT_CODE=$?
             
             if [ $EXIT_CODE -eq 0 ]; then
@@ -142,9 +165,10 @@ jobs:
                 return 1  # Return code 1 = skipped (exists)
               else
                 echo "⚠️  Warning: Issue syncing $var_name (exit code: $EXIT_CODE):"
-                echo "$OUTPUT" | head -5
+                echo "$OUTPUT" | head -10
                 echo "   Continuing with other variables..."
-                return 0  # Don't fail the entire workflow, but count as attempted
+                # Don't fail the entire workflow - just log and continue
+                return 0
               fi
             fi
           }
