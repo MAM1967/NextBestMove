@@ -64,10 +64,11 @@ export default function DailyPlanPage() {
       setIsReadOnly(data.isReadOnly || false);
       setTrialEndsAt(data.trialEndsAt ? new Date(data.trialEndsAt) : null);
 
-      // Show paywall if no access
+      // Show paywall if no access or payment issue
       if (
         data.status === "none" ||
         data.status === "canceled" ||
+        data.status === "past_due" ||
         data.isReadOnly
       ) {
         setShowPaywall(true);
