@@ -15,11 +15,19 @@ import { sendFastWinReminderEmail } from "@/lib/email/notifications";
  */
 export async function GET(request: Request) {
   try {
-    // Verify cron secret (Vercel Cron sends this header)
+    // Verify cron secret - support both Authorization header (Vercel Cron) and query param (cron-job.org)
     const authHeader = request.headers.get("authorization");
+    const { searchParams } = new URL(request.url);
+    const querySecret = searchParams.get("secret");
     const cronSecret = process.env.CRON_SECRET;
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Check Authorization header first (Vercel Cron), then query param (cron-job.org)
+    const isAuthorized = cronSecret && (
+      authHeader === `Bearer ${cronSecret}` || 
+      querySecret === cronSecret
+    );
+    
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
