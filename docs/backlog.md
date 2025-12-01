@@ -135,12 +135,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 - [x] **Notification preferences wiring** ✅ (morning plan, fast win reminder, follow-up alerts, weekly summary)
        _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
-- [ ] **Paywall analytics & copy polish** (trial/past-due variants, event tracking)
+- [x] **Paywall analytics & copy polish** ✅ (trial/past-due variants, event tracking. Completed and tested - all variants implemented with analytics tracking.)
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
-- [ ] **Trial expiration & read-only grace period** (Day 15-21: read-only mode, banner messaging, subscription prompts. Use Stripe API for trial management - lightest lift)
-- [ ] **Trial reminders** (Day 12 + Day 14 email via Resend + push notifications)
+- [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
+- [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
 - [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
 - [ ] **Streak break detection & recovery** (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7)
 - [ ] **Payment failure recovery flow** (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window)
