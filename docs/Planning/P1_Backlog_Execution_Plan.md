@@ -118,7 +118,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ### 🚨 Group 2: Payment & Churn Recovery (Revenue Critical) ✅ COMPLETE
 **Goal:** Recover failed payments and reduce involuntary churn  
-**Status:** ✅ Completed (January 2025)
+**Status:** ✅ Completed (January 2025) - All 3 items implemented, ready for testing
 
 #### 2.1 Payment Failure Recovery Flow ✅
 **Priority:** P1 - High  
@@ -158,31 +158,32 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ---
 
-#### 2.2 Past-Due & Cancellation Banners ⏱
+#### 2.2 Past-Due & Cancellation Banners ✅
 **Priority:** P1 - Medium  
 **Estimated Effort:** 1-2 days  
+**Status:** ✅ Complete  
 **Dependencies:** Payment failure flow (can be done in parallel)
 
 **What:** Dashboard alerts with billing portal CTA
 
 **Implementation:**
-- [ ] Create `BillingAlertBanner` component
-- [ ] Check subscription status on dashboard load
-- [ ] Show banner for `past_due` status
-- [ ] Show banner for `cancel_at_period_end` status
-- [ ] Include billing portal link
-- [ ] Dismissible (optional)
+- [x] Create `BillingAlertBanner` component ✅
+- [x] Check subscription status on dashboard load ✅
+- [x] Show banner for `past_due` status ✅
+- [x] Show banner for `cancel_at_period_end` status ✅
+- [x] Include billing portal link ✅
+- [x] Dismissible (optional) ✅
 
-**Files to create/modify:**
-- `web/src/app/app/components/BillingAlertBanner.tsx`
-- `web/src/app/app/page.tsx` (add banner to dashboard)
-- `web/src/lib/billing/plans.ts` (status helpers)
+**Files created/modified:**
+- `web/src/app/app/components/BillingAlertBanner.tsx` ✅
+- `web/src/app/app/components/BillingAlertBannerClient.tsx` ✅
+- `web/src/app/app/page.tsx` (banner added to dashboard) ✅
 
 **Acceptance Criteria:**
-- Banner appears for past-due subscriptions
-- Banner appears for pending cancellations
-- Banner includes billing portal CTA
-- Banner is visually distinct but not intrusive
+- ✅ Banner appears for past-due subscriptions
+- ✅ Banner appears for pending cancellations
+- ✅ Banner includes billing portal CTA
+- ✅ Banner is visually distinct but not intrusive
 
 ---
 

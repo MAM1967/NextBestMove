@@ -136,7 +136,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Notification preferences wiring** ✅ (morning plan, fast win reminder, follow-up alerts, weekly summary)
       _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
 - [x] **Paywall analytics & copy polish** ✅ (trial/past-due variants, event tracking. Completed and tested - all variants implemented with analytics tracking.)
-- [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
+- [x] **Past-due & cancellation banners** ✅ (dashboard alerts with billing portal CTA. Completed - BillingAlertBanner component created and integrated into dashboard.)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
 - [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
