@@ -21,6 +21,8 @@ export function BillingAlertBanner({
   }
 
   const handleManageBilling = async () => {
+    if (!onManageBilling) return;
+    
     setIsLoading(true);
     try {
       await onManageBilling();
