@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSubscriptionStatus, checkGracePeriod } from "@/lib/billing/subscription-status";
+import {
+  getSubscriptionStatus,
+  checkGracePeriod,
+} from "@/lib/billing/subscription-status";
 
 type PaywallOverlayProps = {
   subscriptionStatus: "none" | "trialing" | "active" | "past_due" | "canceled";
@@ -21,11 +24,15 @@ export function PaywallOverlay({
   const [isLoading, setIsLoading] = useState(false);
 
   // Convert "none" to null for getSubscriptionStatus
-  const normalizedStatus = subscriptionStatus === "none" ? null : subscriptionStatus;
-  
+  const normalizedStatus =
+    subscriptionStatus === "none" ? null : subscriptionStatus;
+
   // Analytics tracking
   useEffect(() => {
-    const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
+    const effectiveStatus = getSubscriptionStatus(
+      normalizedStatus,
+      trialEndsAt
+    );
     console.log("[Paywall Analytics] Paywall viewed", {
       status: effectiveStatus,
       subscriptionStatus,
@@ -36,7 +43,10 @@ export function PaywallOverlay({
   }, [subscriptionStatus, trialEndsAt, isReadOnly, normalizedStatus]);
 
   const handleSubscribe = async () => {
-    const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
+    const effectiveStatus = getSubscriptionStatus(
+      normalizedStatus,
+      trialEndsAt
+    );
     console.log("[Paywall Analytics] Subscribe CTA clicked", {
       status: effectiveStatus,
       subscriptionStatus,
@@ -67,7 +77,10 @@ export function PaywallOverlay({
       const { url } = await response.json();
       window.location.href = url;
     } catch (error) {
-      const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
+      const effectiveStatus = getSubscriptionStatus(
+        normalizedStatus,
+        trialEndsAt
+      );
       console.error("[Paywall Analytics] Checkout error", {
         error,
         status: effectiveStatus,
@@ -86,20 +99,38 @@ export function PaywallOverlay({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to open billing portal");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error opening billing portal:", {
+          status: response.status,
+          error: errorData.error || "Failed to open billing portal",
+          details: errorData.details,
+        });
+        throw new Error(errorData.error || "Failed to open billing portal");
       }
 
       const { url } = await response.json();
+      if (!url) {
+        throw new Error("No portal URL returned");
+      }
       window.location.href = url;
     } catch (error) {
-      console.error("Error opening billing portal:", error);
+      const effectiveStatus = getSubscriptionStatus(
+        normalizedStatus,
+        trialEndsAt
+      );
+      console.error("[Paywall Analytics] Billing portal error", {
+        error,
+        status: effectiveStatus,
+        timestamp: new Date().toISOString(),
+      });
       alert("Unable to open billing portal. Please try again later.");
       setIsLoading(false);
     }
   };
 
   // Check grace period status
-  const { isInGracePeriod, daysUntilGracePeriodEnds } = checkGracePeriod(trialEndsAt);
+  const { isInGracePeriod, daysUntilGracePeriodEnds } =
+    checkGracePeriod(trialEndsAt);
   const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
 
   // Grace period - read-only mode (Day 15-21)
@@ -114,7 +145,9 @@ export function PaywallOverlay({
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
               {daysRemaining > 0
-                ? `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left to subscribe and keep your rhythm going. Your data is safe.`
+                ? `You have ${daysRemaining} day${
+                    daysRemaining !== 1 ? "s" : ""
+                  } left to subscribe and keep your rhythm going. Your data is safe.`
                 : "Subscribe to resume your rhythm. Your data is safe and nothing is lost."}
             </p>
           </div>
@@ -154,7 +187,8 @@ export function PaywallOverlay({
               Payment failed — Update to keep your streak alive
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              Update your payment method to keep your rhythm going. Your data is safe.
+              Update your payment method to keep your rhythm going. Your data is
+              safe.
             </p>
           </div>
 
@@ -196,10 +230,11 @@ export function PaywallOverlay({
   let headline = "Subscribe to unlock this feature";
   let description = "Start your 14-day free trial. No credit card required.";
   let ctaText = "Start Free Trial";
-  
+
   if (effectiveStatus === "canceled") {
     headline = "Your plan is paused";
-    description = "Reactivate anytime — your data stays safe. Subscribe to resume your rhythm.";
+    description =
+      "Reactivate anytime — your data stays safe. Subscribe to resume your rhythm.";
     ctaText = "Reactivate Subscription";
   } else if (normalizedStatus === "past_due") {
     // This should be handled above, but just in case
@@ -212,12 +247,8 @@ export function PaywallOverlay({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-zinc-900">
-            {headline}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-600">
-            {description}
-          </p>
+          <h2 className="text-xl font-semibold text-zinc-900">{headline}</h2>
+          <p className="mt-2 text-sm text-zinc-600">{description}</p>
         </div>
 
         <div className="space-y-3">
@@ -247,6 +278,3 @@ export function PaywallOverlay({
     </div>
   );
 }
-
-
-

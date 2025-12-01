@@ -29,9 +29,10 @@ export async function POST(request: Request) {
 
     // Build return URL
     // Try to get base URL from request headers first (for production), then env var, then fallback
-    const requestUrl = request.headers.get("referer") || request.headers.get("origin");
+    const requestUrl =
+      request.headers.get("referer") || request.headers.get("origin");
     let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-    
+
     if (!baseUrl && requestUrl) {
       // Extract base URL from referer/origin (e.g., "https://nextbestmove.app")
       try {
@@ -41,25 +42,44 @@ export async function POST(request: Request) {
         // If URL parsing fails, fall back to env or localhost
       }
     }
-    
+
     // Final fallback to localhost for local development
     baseUrl = baseUrl || "http://localhost:3000";
     const returnUrl = `${baseUrl}/app/settings`;
 
     // Create billing portal session
+    console.log("Creating billing portal session", {
+      customerId: customer.stripe_customer_id,
+      returnUrl,
+    });
+
     const session = await stripe.billingPortal.sessions.create({
       customer: customer.stripe_customer_id,
       return_url: returnUrl,
     });
 
+    console.log("Billing portal session created", {
+      sessionId: session.id,
+      url: session.url,
+    });
+
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
-    console.error("Error creating customer portal session:", error);
+    console.error("Error creating customer portal session:", {
+      error: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+      customerId: customer?.stripe_customer_id,
+    });
     return NextResponse.json(
-      { error: "Failed to create portal session", details: error.message },
+      {
+        error: "Failed to create portal session",
+        details: error.message,
+        type: error.type,
+        code: error.code,
+      },
       { status: 500 }
     );
   }
 }
-
-
