@@ -78,7 +78,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Metrics grid, narrative card, insight, focus confirmation, content prompts section_
 
 - [x] **Content prompt generation** ✅  
-      _Template + AI fallback for win/insight posts, saved to `content_prompts` table. OpenAI integration with BYOK support for premium users._
+       _Template + AI fallback for win/insight posts, saved to `content_prompts` table. OpenAI integration with BYOK support for premium users._
 
 - [x] **Copy to clipboard for content prompts** ✅  
        _Add "Copy to clipboard" button for content prompts on Weekly Summary page_
@@ -97,10 +97,10 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _BillingSection component showing plan, status badge, renewal date, manage billing CTA_
 
 - [x] **Data export endpoint** ✅  
-      _Download JSON of pins/actions/plans/summaries + button in Settings_
+       _Download JSON of pins/actions/plans/summaries + button in Settings_
 
 - [x] **Email preferences & account deletion controls** ✅  
-      _Email preferences UI with toggles for morning plan, fast win reminder, follow-up alerts, weekly summary. Unsubscribe from all emails option. Account deletion with full data removal and auth.users deletion. High P1 – required to meet compliance expectations._
+       _Email preferences UI with toggles for morning plan, fast win reminder, follow-up alerts, weekly summary. Unsubscribe from all emails option. Account deletion with full data removal and auth.users deletion. High P1 – required to meet compliance expectations._
 
 ### Background Jobs & Observability
 
@@ -124,8 +124,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 **📋 Execution Plan:** See `docs/Planning/P1_Backlog_Execution_Plan.md` for detailed implementation plan, timeline, and prioritization.
 
-- [ ] **Optimize GitHub Actions env sync with change data capture** 🔄  
-       _Modify GitHub Actions workflow to only sync environment variables that don't already exist in Vercel. Fetch existing variables first, compare with GitHub Secrets, and skip existing ones. This reduces API calls, speeds up execution, and makes logs clearer. See `docs/Environment_Variables_Sync_Optimization_Plan.md` for implementation plan._
+- [x] **Optimize GitHub Actions env sync with change data capture** ✅  
+       _Modified GitHub Actions workflow to only sync environment variables that don't already exist in Vercel. Fetches existing variables first using 'vercel env ls', compares with GitHub Secrets, and skips existing ones. Reduces API calls, speeds up execution, and provides clearer logs with sync statistics. See `docs/Environment_Variables_Sync_Optimization_Plan.md` for details._
 
 - [x] **Account overview: Password change & timezone editing** ✅  
        _Allow users to change password and update timezone in Settings → Account overview. Timezone dropdown with common options for travelers/remote workers. Password change requires confirmation._
@@ -134,7 +134,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Implement "Forgot password?" link on sign-in page, password reset email flow, and reset password page. Use Supabase `resetPasswordForEmail` and `updateUser` APIs. Includes forgot password page, reset password page with token validation, and proper session handling._
 
 - [x] **Notification preferences wiring** ✅ (morning plan, fast win reminder, follow-up alerts, weekly summary)
-       _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
+      _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
 - [x] **Paywall analytics & copy polish** ✅ (trial/past-due variants, event tracking. Completed and tested - all variants implemented with analytics tracking.)
 - [ ] **Past-due & cancellation banners** (dashboard alerts with billing portal CTA)
 - [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)

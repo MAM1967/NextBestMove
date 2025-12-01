@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getSubscriptionInfo as getServerSubscriptionInfo } from "@/lib/billing/subscription";
 import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
 import { GracePeriodBanner } from "./components/GracePeriodBanner";
+import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
 
 export default async function AppDashboardPage() {
   const supabase = await createClient();
@@ -27,7 +29,10 @@ export default async function AppDashboardPage() {
     redirect("/onboarding");
   }
 
-  // Fetch subscription status for grace period check
+  // Fetch subscription status for grace period check and billing alerts
+  const serverSubscriptionInfo = await getServerSubscriptionInfo(user.id);
+  
+  // Get subscription data for client-side helpers
   const { data: billingCustomer } = await supabase
     .from("billing_customers")
     .select("id")
@@ -401,6 +406,20 @@ export default async function AppDashboardPage() {
       {subscriptionInfo?.isInGracePeriod && (
         <GracePeriodBanner
           daysRemaining={subscriptionInfo.daysUntilGracePeriodEnds ?? 0}
+        />
+      )}
+      
+      {/* Billing Alert Banners */}
+      {serverSubscriptionInfo.status === "past_due" && (
+        <BillingAlertBannerClient
+          status="past_due"
+          currentPeriodEnd={serverSubscriptionInfo.currentPeriodEnd}
+        />
+      )}
+      {serverSubscriptionInfo.cancelAtPeriodEnd && serverSubscriptionInfo.status === "active" && (
+        <BillingAlertBannerClient
+          status="cancel_at_period_end"
+          currentPeriodEnd={serverSubscriptionInfo.currentPeriodEnd}
         />
       )}
       <header className="flex flex-col gap-2">
