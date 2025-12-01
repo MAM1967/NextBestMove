@@ -62,36 +62,52 @@ jobs:
           vercel --version || echo "⚠️  Vercel CLI check failed"
 
           # Step 1: Fetch existing variables from Vercel (Change Data Capture)
+          # Use Vercel REST API directly since CLI doesn't support --json flag
           echo ""
           echo "📋 Fetching existing Vercel environment variables for $TARGET_ENV..."
 
-          # Try to fetch existing variables, but don't fail if it doesn't work
-          # Use || true to prevent script from exiting on error
+          # Use Vercel REST API to get environment variables as JSON
+          # API endpoint: GET /v9/projects/{id}/env
           EXISTING_VARS_JSON=""
           FETCH_EXIT_CODE=0
-          # Suppress telemetry notice and try to fetch existing variables
-          # Note: vercel env ls may fail if project is not linked, so we handle errors gracefully
-          EXISTING_VARS_JSON=$(VERCEL_TELEMETRY_DISABLED=1 vercel env ls "$TARGET_ENV" \
-            --token="$VERCEL_TOKEN" \
-            --scope="$VERCEL_ORG_ID" \
-            --project="$VERCEL_PROJECT_ID" \
-            --json 2>&1) || {
+          
+          # Map environment names to API values
+          case "$TARGET_ENV" in
+            production)
+              API_ENV="production"
+              ;;
+            preview)
+              API_ENV="preview"
+              ;;
+            development)
+              API_ENV="development"
+              ;;
+            *)
+              API_ENV="production"
+              ;;
+          esac
+          
+          # Fetch using Vercel REST API
+          EXISTING_VARS_JSON=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID/env?target=$API_ENV" \
+            2>&1) || {
             FETCH_EXIT_CODE=$?
-            # If project flag doesn't work, try without it
-            if [ "$FETCH_EXIT_CODE" -ne 0 ]; then
-              echo "⚠️  vercel env ls failed with exit code $FETCH_EXIT_CODE, trying without --project flag..."
-              EXISTING_VARS_JSON=$(VERCEL_TELEMETRY_DISABLED=1 vercel env ls "$TARGET_ENV" \
-                --token="$VERCEL_TOKEN" \
-                --scope="$VERCEL_ORG_ID" \
-                --json 2>&1) || {
-                FETCH_EXIT_CODE=$?
-                echo "⚠️  vercel env ls failed again with exit code $FETCH_EXIT_CODE"
-              }
-            fi
+            echo "⚠️  Failed to fetch environment variables via API (exit code: $FETCH_EXIT_CODE)"
           }
           
-          # Filter out telemetry notice, version info, and empty lines from output
-          EXISTING_VARS_JSON=$(echo "$EXISTING_VARS_JSON" | grep -v "telemetry\|NOTE:\|Vercel CLI\|^$" || echo "$EXISTING_VARS_JSON")
+          # Extract HTTP status code (last line) and response body
+          HTTP_CODE=$(echo "$EXISTING_VARS_JSON" | tail -n1)
+          EXISTING_VARS_JSON=$(echo "$EXISTING_VARS_JSON" | sed '$d')
+          
+          # Check if API call was successful (HTTP 200)
+          if [ "$HTTP_CODE" != "200" ]; then
+            FETCH_EXIT_CODE=1
+            echo "⚠️  API returned HTTP $HTTP_CODE"
+            if [ -n "$EXISTING_VARS_JSON" ]; then
+              echo "   Response: $(echo "$EXISTING_VARS_JSON" | head -3)"
+            fi
+          fi
 
           # Check if fetch was successful
           USE_FALLBACK_MODE=false
@@ -108,11 +124,13 @@ jobs:
             EXISTING_VARS=""
             EXISTING_COUNT=0
           else
-            # Extract variable names from JSON output
+            # Extract variable names from JSON output (Vercel API returns { envs: [...] })
             if command -v jq >/dev/null 2>&1; then
-              EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | jq -r '.[].key' 2>/dev/null | sort || echo "")
+              # Try both formats: direct array or { envs: [...] }
+              EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | jq -r 'if type == "object" and has("envs") then .envs[].key else .[].key end' 2>/dev/null | sort || echo "")
             else
               # Fallback: use grep/awk if jq is not available
+              # Try to extract from both formats
               EXISTING_VARS=$(echo "$EXISTING_VARS_JSON" | grep -o '"key":"[^"]*"' | sed 's/"key":"\([^"]*\)"/\1/' | sort || echo "")
             fi
 
