@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/billing/stripe";
 
 export async function POST(request: Request) {
+  let customer: { stripe_customer_id: string } | null = null;
+  
   try {
     const supabase = await createClient();
     const {
@@ -14,11 +16,13 @@ export async function POST(request: Request) {
     }
 
     // Get Stripe customer ID
-    const { data: customer } = await supabase
+    const { data: customerData } = await supabase
       .from("billing_customers")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
+
+    customer = customerData;
 
     if (!customer?.stripe_customer_id) {
       return NextResponse.json(
