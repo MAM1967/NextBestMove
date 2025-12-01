@@ -80,7 +80,45 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existingCustomer?.stripe_customer_id) {
-      customerId = existingCustomer.stripe_customer_id;
+      // Verify customer exists in Stripe (in case it was deleted or is a test ID)
+      try {
+        await stripe.customers.retrieve(existingCustomer.stripe_customer_id);
+        customerId = existingCustomer.stripe_customer_id;
+        console.log("Using existing Stripe customer:", customerId);
+      } catch (error: any) {
+        // Customer doesn't exist in Stripe, create a new one
+        console.warn("Existing customer ID not found in Stripe, creating new customer:", {
+          customerId: existingCustomer.stripe_customer_id,
+          error: error.message,
+        });
+        
+        // Create new Stripe customer
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            user_id: user.id,
+          },
+        });
+        customerId = customer.id;
+
+        // Update database with new customer ID
+        const { error: updateError } = await supabase
+          .from("billing_customers")
+          .update({ stripe_customer_id: customerId })
+          .eq("user_id", user.id);
+
+        if (updateError) {
+          console.error("Error updating billing customer:", updateError);
+          return NextResponse.json(
+            { 
+              error: "Failed to update customer record", 
+              details: updateError.message 
+            },
+            { status: 500 }
+          );
+        }
+        console.log("Created new Stripe customer and updated database:", customerId);
+      }
     } else {
       // Create new Stripe customer
       const customer = await stripe.customers.create({
@@ -108,6 +146,7 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
+      console.log("Created new Stripe customer:", customerId);
     }
 
     // Build success and cancel URLs
