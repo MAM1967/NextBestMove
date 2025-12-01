@@ -119,38 +119,41 @@ This plan organizes P1 backlog items into strategic groups based on:
 ### 🚨 Group 2: Payment & Churn Recovery (Revenue Critical)
 **Goal:** Recover failed payments and reduce involuntary churn
 
-#### 2.1 Payment Failure Recovery Flow ⏱
+#### 2.1 Payment Failure Recovery Flow ✅
 **Priority:** P1 - High  
 **Estimated Effort:** 3-4 days  
+**Status:** ✅ Complete  
 **Dependencies:** Stripe webhook handling (already exists)
 
 **What:** Day 0 email, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation
 
 **Implementation:**
-- [ ] Enhance webhook handler for `invoice.payment_failed`
-- [ ] Create `payment_failure_tracking` table or use metadata
-- [ ] Day 0: Send email immediately on failure
-- [ ] Day 3: Show modal on dashboard + send email
-- [ ] Day 7: Enter read-only mode (similar to grace period)
-- [ ] Day 14: Archive account (soft delete)
-- [ ] 30-day reactivation window
-- [ ] Create email templates for each stage
-- [ ] Create cron job to check payment failure dates
+- [x] Enhance webhook handler for `invoice.payment_failed` ✅
+- [x] Create `payment_failed_at` column in billing_subscriptions ✅
+- [x] Day 0: Send email immediately on failure ✅
+- [x] Day 3: Show modal on dashboard + send email ✅
+- [x] Day 7: Enter read-only mode (similar to grace period) ✅
+- [x] Day 14: Archive account (soft delete) ✅
+- [x] 30-day reactivation window (handled by canceled status) ✅
+- [x] Create email templates for each stage ✅
+- [x] Create cron job to check payment failure dates ✅
 
-**Files to create/modify:**
-- `web/src/app/api/billing/webhook/route.ts` (enhance payment_failed handling)
-- `web/src/app/api/cron/payment-failure-recovery/route.ts`
-- `web/src/lib/email/templates/payment-failed-*.tsx` (multiple templates)
-- `web/src/app/app/components/PaymentFailureModal.tsx`
-- Database migration for payment failure tracking (or use Stripe metadata)
+**Files created/modified:**
+- `supabase/migrations/202501300000_add_payment_failed_at.sql` ✅
+- `web/src/app/api/billing/webhook/route.ts` ✅
+- `web/src/app/api/cron/payment-failure-recovery/route.ts` ✅
+- `web/src/lib/email/resend.ts` (email templates already existed) ✅
+- `web/src/app/app/components/PaymentFailureModal.tsx` ✅
+- `web/src/app/app/components/PaymentFailureModalClient.tsx` ✅
+- `web/src/lib/billing/subscription.ts` ✅
 
 **Acceptance Criteria:**
-- Email sent immediately on payment failure
-- Modal appears on Day 3 with payment update CTA
-- Read-only mode activated on Day 7
-- Account archived on Day 14
-- Users can reactivate within 30 days
-- All stages tracked and logged
+- ✅ Email sent immediately on payment failure
+- ✅ Modal appears on Day 3 with payment update CTA
+- ✅ Read-only mode activated on Day 7
+- ✅ Account archived on Day 14
+- ✅ Users can reactivate within 30 days (via canceled status)
+- ✅ All stages tracked and logged
 
 ---
 
