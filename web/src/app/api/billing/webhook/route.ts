@@ -100,14 +100,18 @@ export async function POST(request: Request) {
 
       case "invoice.paid": {
         // event.data.object may have expanded properties not in the base Invoice type
-        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | Stripe.Subscription | null;
+        };
         await handleInvoicePaid(supabase, invoice);
         break;
       }
 
       case "invoice.payment_failed": {
         // event.data.object may have expanded properties not in the base Invoice type
-        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | Stripe.Subscription | null;
+        };
         await handleInvoicePaymentFailed(supabase, invoice);
         break;
       }
@@ -155,9 +159,13 @@ async function handleCheckoutCompleted(
   });
 
   if (!customerId || !subscriptionId) {
-    logError("Missing customer or subscription ID in checkout session", undefined, {
-      sessionId: session.id,
-    });
+    logError(
+      "Missing customer or subscription ID in checkout session",
+      undefined,
+      {
+        sessionId: session.id,
+      }
+    );
     return;
   }
 
@@ -197,7 +205,7 @@ async function handleCheckoutCompleted(
     status: subscription.status,
     customerId,
   });
-  
+
   await handleSubscriptionUpdated(supabase, subscription, customer.id);
   logBillingEvent("Subscription updated in database", {
     subscriptionId: subscription.id,
@@ -236,28 +244,31 @@ export async function handleSubscriptionUpdated(
   let status: "trialing" | "active" | "past_due" | "canceled" = "active";
   if (subscription.status === "trialing") status = "trialing";
   else if (subscription.status === "past_due") status = "past_due";
-  else if (subscription.status === "canceled" || subscription.status === "unpaid")
+  else if (
+    subscription.status === "canceled" ||
+    subscription.status === "unpaid"
+  )
     status = "canceled";
   else if (subscription.status === "active") status = "active";
 
   // Upsert subscription
   // Use type guards to safely access Stripe.Subscription properties
-  const currentPeriodEnd = subscription && 
-    'current_period_end' in subscription && 
-    typeof subscription.current_period_end === 'number'
-    ? new Date(subscription.current_period_end * 1000).toISOString()
-    : new Date().toISOString(); // Fallback to now if not available
+  const currentPeriodEnd =
+    subscription &&
+    "current_period_end" in subscription &&
+    typeof subscription.current_period_end === "number"
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : new Date().toISOString(); // Fallback to now if not available
 
-  const cancelAtPeriodEnd = subscription && 
-    'cancel_at_period_end' in subscription
-    ? subscription.cancel_at_period_end || false
-    : false;
+  const cancelAtPeriodEnd =
+    subscription && "cancel_at_period_end" in subscription
+      ? subscription.cancel_at_period_end || false
+      : false;
 
-  const trialEndsAt = subscription && 
-    'trial_end' in subscription &&
-    subscription.trial_end
-    ? new Date(subscription.trial_end * 1000).toISOString()
-    : null;
+  const trialEndsAt =
+    subscription && "trial_end" in subscription && subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : null;
 
   logBillingEvent("Upserting subscription to database", {
     subscriptionId: subscription.id,
@@ -325,15 +336,18 @@ async function handleSubscriptionDeleted(
 }
 
 async function handleInvoicePaid(
-  supabase: any, 
-  invoice: Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
+  supabase: any,
+  invoice: Stripe.Invoice & {
+    subscription?: string | Stripe.Subscription | null;
+  }
 ) {
   // Invoice.subscription can be a string ID or a Subscription object
   if (!invoice.subscription) return;
-  
-  const subscriptionId = typeof invoice.subscription === 'string' 
-    ? invoice.subscription 
-    : invoice.subscription.id;
+
+  const subscriptionId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription.id;
   if (!subscriptionId) return;
 
   // Get subscription from Stripe to update our records
@@ -343,20 +357,25 @@ async function handleInvoicePaid(
 
 async function handleInvoicePaymentFailed(
   supabase: any,
-  invoice: Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
+  invoice: Stripe.Invoice & {
+    subscription?: string | Stripe.Subscription | null;
+  }
 ) {
   // Invoice.subscription can be a string ID or a Subscription object
   if (!invoice.subscription) return;
-  
-  const subscriptionId = typeof invoice.subscription === 'string' 
-    ? invoice.subscription 
-    : invoice.subscription.id;
+
+  const subscriptionId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription.id;
   if (!subscriptionId) return;
 
   // Get subscription to check if payment_failed_at is already set
   const { data: existingSubscription } = await supabase
     .from("billing_subscriptions")
-    .select("id, payment_failed_at, billing_customer_id, billing_customers!inner(user_id, users!inner(email, name))")
+    .select(
+      "id, payment_failed_at, billing_customer_id, billing_customers!inner(user_id, users!inner(email, name))"
+    )
     .eq("stripe_subscription_id", subscriptionId)
     .maybeSingle();
 
@@ -375,7 +394,7 @@ async function handleInvoicePaymentFailed(
   const updateData: any = {
     status: "past_due",
   };
-  
+
   if (isFirstFailure) {
     updateData.payment_failed_at = now;
   }
@@ -411,4 +430,3 @@ async function handleInvoicePaymentFailed(
     }
   }
 }
-
