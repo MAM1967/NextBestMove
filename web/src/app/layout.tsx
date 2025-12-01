@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UmamiScript } from "@/components/UmamiScript";
 // Import Sentry client config to ensure it's loaded
+// This ensures GlitchTip SDK initializes on client-side
 import "../../sentry.client.config";
 
 const geistSans = Geist({
