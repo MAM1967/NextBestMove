@@ -65,21 +65,6 @@
 
 ---
 
-### M - Observability Setup
-**Effort:** 6-10 hours  
-**Complexity:** Medium  
-**Dependencies:** Sentry account, analytics tool (PostHog/Mixpanel)  
-**Why:** Important for production, but can be incremental.
-
-**Tasks:**
-- Install and configure Sentry
-- Set up error boundaries
-- Add analytics events (key user actions)
-- Add structured logging for billing/webhooks
-- Test error tracking
-
----
-
 ## Large Effort (L) - Significant Work
 
 ### L - Background Jobs
@@ -138,10 +123,9 @@
 **Total:** ~16-24 hours, essential for launch
 
 ### Phase 3: Infrastructure (Week 3)
-5. **Observability Setup** (M) - 6-10 hours
-6. **Background Jobs** (L) - 12-16 hours
+5. **Background Jobs** (L) - 12-16 hours
 
-**Total:** ~18-26 hours, production readiness
+**Total:** ~12-16 hours, production readiness
 
 ### Phase 4: User Experience (Week 4)
 7. **Onboarding Flow** (XL) - 16-24 hours
@@ -157,7 +141,6 @@ If you have multiple developers or want to parallelize:
 **Track 1 (Backend/Automation):**
 - Weekly Summary Metrics Job
 - Background Jobs
-- Observability Setup
 
 **Track 2 (User Features):**
 - Data Export
@@ -178,7 +161,6 @@ If you have multiple developers or want to parallelize:
 
 **Medium Risk:**
 - Weekly Summary Metrics Job (AI integration complexity)
-- Observability (third-party dependencies)
 
 **High Risk:**
 - Background Jobs (scheduling, reliability, monitoring)
@@ -190,11 +172,11 @@ If you have multiple developers or want to parallelize:
 
 - XS: 2-4 hours
 - S: 4-8 hours
-- M: 22-34 hours (3 items)
+- M: 16-24 hours (2 items)
 - L: 12-16 hours
 - XL: 16-24 hours
 
-**Total: 56-86 hours** (~7-11 days of focused work)
+**Total: 50-76 hours** (~6-10 days of focused work)
 
 ---
 
@@ -207,6 +189,7 @@ If you have multiple developers or want to parallelize:
 **Then Email Preferences (M)** - Compliance requirement, straightforward.
 
 This gives you 3 completed items in ~14-24 hours, then you can tackle the larger items.
+
 
 
 
