@@ -132,6 +132,17 @@ export function PaywallOverlay({
   const { isInGracePeriod, daysUntilGracePeriodEnds } =
     checkGracePeriod(trialEndsAt);
   const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
+  
+  // Debug logging for canceled status
+  if (normalizedStatus === "canceled" || effectiveStatus === "canceled") {
+    console.log("[Paywall Debug] Canceled status check", {
+      subscriptionStatus: normalizedStatus,
+      effectiveStatus,
+      trialEndsAt,
+      isInGracePeriod,
+      daysUntilGracePeriodEnds,
+    });
+  }
 
   // Grace period - read-only mode (Day 15-21)
   if (effectiveStatus === "grace_period" || isReadOnly || isInGracePeriod) {
