@@ -5,6 +5,7 @@ import { getSubscriptionInfo as getServerSubscriptionInfo } from "@/lib/billing/
 import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
 import { GracePeriodBanner } from "./components/GracePeriodBanner";
 import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
+import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
 
 export default async function AppDashboardPage() {
   const supabase = await createClient();
@@ -21,7 +22,9 @@ export default async function AppDashboardPage() {
   // Check if user has completed onboarding
   const { data: userProfile } = await supabase
     .from("users")
-    .select("onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone")
+    .select(
+      "onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone"
+    )
     .eq("id", user.id)
     .single();
 
@@ -31,7 +34,7 @@ export default async function AppDashboardPage() {
 
   // Fetch subscription status for grace period check and billing alerts
   const serverSubscriptionInfo = await getServerSubscriptionInfo(user.id);
-  
+
   // Get subscription data for client-side helpers
   const { data: billingCustomer } = await supabase
     .from("billing_customers")
@@ -40,22 +43,32 @@ export default async function AppDashboardPage() {
     .maybeSingle();
 
   let subscriptionInfo = null;
+  let showPaymentFailureModal = false;
   if (billingCustomer) {
     const { data: subscription } = await supabase
       .from("billing_subscriptions")
-      .select("status, trial_ends_at")
+      .select("status, trial_ends_at, metadata")
       .eq("billing_customer_id", billingCustomer.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (subscription) {
-      subscriptionInfo = getSubscriptionInfo(subscription.status, subscription.trial_ends_at);
+      subscriptionInfo = getSubscriptionInfo(
+        subscription.status,
+        subscription.trial_ends_at
+      );
+      
+      // Check if Day 3 payment failure modal should be shown
+      const metadata = subscription.metadata as any;
+      showPaymentFailureModal = 
+        subscription.status === "past_due" &&
+        metadata?.show_payment_failure_modal === true;
     }
   }
 
   const today = new Date().toISOString().split("T")[0];
-  
+
   // Check if today is a weekend
   const todayDate = new Date();
   const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
@@ -101,12 +114,20 @@ export default async function AppDashboardPage() {
           if (planAction.is_fast_win) {
             fastWinCount = 1;
             fastWinDescription = action.description;
-            if (action.state === "DONE" || action.state === "REPLIED" || action.state === "SENT") {
+            if (
+              action.state === "DONE" ||
+              action.state === "REPLIED" ||
+              action.state === "SENT"
+            ) {
               completedCount++;
             }
           } else {
             regularActionCount++;
-            if (action.state === "DONE" || action.state === "REPLIED" || action.state === "SENT") {
+            if (
+              action.state === "DONE" ||
+              action.state === "REPLIED" ||
+              action.state === "SENT"
+            ) {
               completedCount++;
             }
           }
@@ -116,7 +137,8 @@ export default async function AppDashboardPage() {
   }
 
   const totalActions = fastWinCount + regularActionCount;
-  const progressPercentage = totalActions > 0 ? (completedCount / totalActions) * 100 : 0;
+  const progressPercentage =
+    totalActions > 0 ? (completedCount / totalActions) * 100 : 0;
 
   // Get calendar free minutes from daily plan if available
   const freeMinutes = dailyPlan?.free_minutes ?? null;
@@ -124,53 +146,62 @@ export default async function AppDashboardPage() {
 
   // Check calendar connection status
   const calendarConnected = userProfile?.calendar_connected ?? false;
-  
+
   // Also check calendar_connections table for active connections
   const { data: calendarConnections } = await supabase
     .from("calendar_connections")
     .select("provider, status")
     .eq("user_id", user.id)
     .eq("status", "active");
-  
-  const hasActiveCalendarConnection = (calendarConnections && calendarConnections.length > 0) || calendarConnected;
+
+  const hasActiveCalendarConnection =
+    (calendarConnections && calendarConnections.length > 0) ||
+    calendarConnected;
 
   // Fetch next calendar event to show time until next event
   let timeUntilNextEvent = "Calendar not connected";
-  
+
   if (hasActiveCalendarConnection) {
     try {
       // Import calendar functions
-      const { getActiveConnection, getValidAccessToken } = await import("@/lib/calendar/tokens");
+      const { getActiveConnection, getValidAccessToken } = await import(
+        "@/lib/calendar/tokens"
+      );
       const connection = await getActiveConnection(supabase, user.id);
-      
+
       if (connection) {
         const accessToken = await getValidAccessToken(supabase, connection);
-        
+
         if (accessToken) {
           // Get user timezone
           const userTimezone = userProfile?.timezone || "UTC";
           const now = new Date();
-          
+
           // Fetch events from calendar API
           let nextEventStart: Date | null = null;
           let nextEventIsAllDay = false;
-          
+
           if (connection.provider === "google") {
             const { google } = await import("googleapis");
             const oauth2Client = new google.auth.OAuth2();
             oauth2Client.setCredentials({ access_token: accessToken });
-            const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-            
+            const calendar = google.calendar({
+              version: "v3",
+              auth: oauth2Client,
+            });
+
             const response = await calendar.events.list({
               calendarId: "primary",
               timeMin: now.toISOString(),
-              timeMax: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Next 7 days to catch all-day events
+              timeMax: new Date(
+                now.getTime() + 7 * 24 * 60 * 60 * 1000
+              ).toISOString(), // Next 7 days to catch all-day events
               timeZone: userTimezone,
               singleEvents: true,
               orderBy: "startTime",
               maxResults: 20,
             });
-            
+
             // Find first event (timed or all-day)
             for (const item of response.data.items || []) {
               if (item.start?.dateTime) {
@@ -185,9 +216,11 @@ export default async function AppDashboardPage() {
                 // All-day event - date is in YYYY-MM-DD format
                 const eventDateStr = item.start.date;
                 // Parse the date string to create a Date object at noon UTC to avoid timezone issues
-                const [year, month, day] = eventDateStr.split('-').map(Number);
-                const eventDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-                
+                const [year, month, day] = eventDateStr.split("-").map(Number);
+                const eventDate = new Date(
+                  Date.UTC(year, month - 1, day, 12, 0, 0)
+                );
+
                 // Get today's date string in user's timezone
                 const todayStr = new Intl.DateTimeFormat("en-CA", {
                   timeZone: userTimezone,
@@ -195,9 +228,13 @@ export default async function AppDashboardPage() {
                   month: "2-digit",
                   day: "2-digit",
                 }).format(now);
-                const [todayYear, todayMonth, todayDay] = todayStr.split('-').map(Number);
-                const todayAtNoon = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0));
-                
+                const [todayYear, todayMonth, todayDay] = todayStr
+                  .split("-")
+                  .map(Number);
+                const todayAtNoon = new Date(
+                  Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0)
+                );
+
                 // Include if event is today or in the future
                 if (eventDate >= todayAtNoon) {
                   nextEventStart = eventDate;
@@ -207,34 +244,38 @@ export default async function AppDashboardPage() {
               }
             }
           } else if (connection.provider === "outlook") {
-            const { Client } = await import("@microsoft/microsoft-graph-client");
+            const { Client } = await import(
+              "@microsoft/microsoft-graph-client"
+            );
             // Ensure fetch is available for Microsoft Graph client
-            if (typeof globalThis.fetch === 'undefined') {
+            if (typeof globalThis.fetch === "undefined") {
               await import("isomorphic-fetch" as any);
             }
-            
+
             const client = Client.init({
               authProvider: (done) => {
                 done(null, accessToken);
               },
             });
-            
+
             const response = await client
               .api("/me/calendar/calendarView")
               .query({
                 startDateTime: now.toISOString(),
-                endDateTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                endDateTime: new Date(
+                  now.getTime() + 7 * 24 * 60 * 60 * 1000
+                ).toISOString(),
               })
               .header("Prefer", `outlook.timezone="${userTimezone}"`)
               .top(20)
               .get();
-            
+
             // Find first event (timed or all-day)
             for (const item of response.value || []) {
               if (item.start?.dateTime) {
                 const eventStart = new Date(item.start.dateTime);
                 const isAllDay = item.isAllDay || false;
-                
+
                 if (eventStart > now) {
                   nextEventStart = eventStart;
                   nextEventIsAllDay = isAllDay;
@@ -243,7 +284,7 @@ export default async function AppDashboardPage() {
               }
             }
           }
-          
+
           // Format time until next event
           if (nextEventStart) {
             if (nextEventIsAllDay) {
@@ -255,7 +296,7 @@ export default async function AppDashboardPage() {
                 month: "2-digit",
                 day: "2-digit",
               }).format(now);
-              
+
               // Get event date in user's timezone
               // For Google Calendar all-day events, item.start.date is already YYYY-MM-DD
               // For Outlook, we need to format the dateTime
@@ -278,23 +319,31 @@ export default async function AppDashboardPage() {
                   day: "2-digit",
                 }).format(nextEventStart);
               }
-              
+
               if (eventDateStr === todayStr) {
                 timeUntilNextEvent = "All day today";
               } else {
                 // Calculate days until event by comparing date strings
                 // Parse dates as YYYY-MM-DD and calculate difference
                 // Use UTC dates at noon to avoid timezone/DST issues
-                const [todayYear, todayMonth, todayDay] = todayStr.split('-').map(Number);
-                const [eventYear, eventMonth, eventDay] = eventDateStr.split('-').map(Number);
-                
+                const [todayYear, todayMonth, todayDay] = todayStr
+                  .split("-")
+                  .map(Number);
+                const [eventYear, eventMonth, eventDay] = eventDateStr
+                  .split("-")
+                  .map(Number);
+
                 // Create dates at noon UTC to avoid timezone/DST issues
-                const todayDate = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0));
-                const eventDate = new Date(Date.UTC(eventYear, eventMonth - 1, eventDay, 12, 0, 0));
-                
+                const todayDate = new Date(
+                  Date.UTC(todayYear, todayMonth - 1, todayDay, 12, 0, 0)
+                );
+                const eventDate = new Date(
+                  Date.UTC(eventYear, eventMonth - 1, eventDay, 12, 0, 0)
+                );
+
                 const diffMs = eventDate.getTime() - todayDate.getTime();
                 const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                
+
                 // Debug logging
                 console.log("All-day event date calculation:", {
                   todayStr,
@@ -303,7 +352,7 @@ export default async function AppDashboardPage() {
                   todayDate: todayDate.toISOString(),
                   eventDate: eventDate.toISOString(),
                 });
-                
+
                 if (days === 1) {
                   timeUntilNextEvent = "All day tomorrow";
                 } else if (days < 7 && days > 0) {
@@ -330,22 +379,24 @@ export default async function AppDashboardPage() {
               // Timed event - show time until
               const diffMs = nextEventStart.getTime() - now.getTime();
               const minutes = Math.floor(diffMs / (1000 * 60));
-              
+
               if (minutes < 0) {
                 timeUntilNextEvent = "No upcoming events";
               } else if (minutes < 60) {
-                timeUntilNextEvent = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+                timeUntilNextEvent = `${minutes} minute${
+                  minutes !== 1 ? "s" : ""
+                }`;
               } else if (minutes < 1440) {
                 const hours = Math.floor(minutes / 60);
                 const remainingMinutes = minutes % 60;
                 if (remainingMinutes === 0) {
-                  timeUntilNextEvent = `${hours} hour${hours !== 1 ? 's' : ''}`;
+                  timeUntilNextEvent = `${hours} hour${hours !== 1 ? "s" : ""}`;
                 } else {
                   timeUntilNextEvent = `${hours}h ${remainingMinutes}m`;
                 }
               } else {
                 const days = Math.floor(minutes / 1440);
-                timeUntilNextEvent = `${days} day${days !== 1 ? 's' : ''}`;
+                timeUntilNextEvent = `${days} day${days !== 1 ? "s" : ""}`;
               }
             }
           } else {
@@ -386,7 +437,7 @@ export default async function AppDashboardPage() {
       }
     }
   }
-  
+
   // Fallback to free minutes display if no next event found
   if (timeUntilNextEvent === "Calendar not connected" && freeMinutes !== null) {
     if (freeMinutes < 30) {
@@ -408,7 +459,12 @@ export default async function AppDashboardPage() {
           daysRemaining={subscriptionInfo.daysUntilGracePeriodEnds ?? 0}
         />
       )}
-      
+
+      {/* Payment Failure Modal (Day 3) */}
+      {showPaymentFailureModal && (
+        <PaymentFailureModalClient showModal={showPaymentFailureModal} />
+      )}
+
       {/* Billing Alert Banners */}
       {serverSubscriptionInfo.status === "past_due" && (
         <BillingAlertBannerClient
@@ -416,19 +472,22 @@ export default async function AppDashboardPage() {
           currentPeriodEnd={serverSubscriptionInfo.currentPeriodEnd}
         />
       )}
-      {serverSubscriptionInfo.cancelAtPeriodEnd && serverSubscriptionInfo.status === "active" && (
-        <BillingAlertBannerClient
-          status="cancel_at_period_end"
-          currentPeriodEnd={serverSubscriptionInfo.currentPeriodEnd}
-        />
-      )}
+      {serverSubscriptionInfo.cancelAtPeriodEnd &&
+        serverSubscriptionInfo.status === "active" && (
+          <BillingAlertBannerClient
+            status="cancel_at_period_end"
+            currentPeriodEnd={serverSubscriptionInfo.currentPeriodEnd}
+          />
+        )}
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           Today&apos;s next best move
         </h1>
         <p className="text-sm text-zinc-600">
           {dailyPlan
-            ? `You have ${totalActions} action${totalActions !== 1 ? "s" : ""} planned for today`
+            ? `You have ${totalActions} action${
+                totalActions !== 1 ? "s" : ""
+              } planned for today`
             : "Generate your daily plan to get started"}
         </p>
       </header>
@@ -445,9 +504,7 @@ export default async function AppDashboardPage() {
           <h2 className="text-sm font-medium text-zinc-900">
             Time until next event
           </h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            {timeUntilNextEvent}
-          </p>
+          <p className="mt-1 text-sm text-zinc-600">{timeUntilNextEvent}</p>
           {freeMinutes !== null && (
             <p className="mt-1 text-xs text-zinc-500">
               {freeMinutes} minutes available today
@@ -459,7 +516,9 @@ export default async function AppDashboardPage() {
           <p className="mt-1 text-2xl font-semibold text-zinc-900">
             🔥 {userProfile?.streak_count ?? 0}
           </p>
-          <p className="mt-1 text-xs text-zinc-500">day{userProfile?.streak_count !== 1 ? "s" : ""}</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            day{userProfile?.streak_count !== 1 ? "s" : ""}
+          </p>
         </div>
       </section>
 
@@ -483,10 +542,12 @@ export default async function AppDashboardPage() {
             {isWeekend && excludeWeekends ? (
               <>
                 <p className="text-sm text-amber-800 mb-2">
-                  Plans aren&apos;t generated on weekends based on your preferences.
+                  Plans aren&apos;t generated on weekends based on your
+                  preferences.
                 </p>
                 <p className="text-xs text-amber-700">
-                  You can change this setting in your account preferences if you&apos;d like to receive plans on weekends.
+                  You can change this setting in your account preferences if
+                  you&apos;d like to receive plans on weekends.
                 </p>
               </>
             ) : (
@@ -508,7 +569,8 @@ export default async function AppDashboardPage() {
         {dailyPlan && totalActions === 0 && (
           <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-sm text-zinc-600">
-              Your plan has been generated but no actions are available yet. Add some pins to get started.
+              Your plan has been generated but no actions are available yet. Add
+              some pins to get started.
             </p>
           </div>
         )}
@@ -524,7 +586,9 @@ export default async function AppDashboardPage() {
             <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
               <div
                 className="h-full bg-purple-600 transition-all duration-300"
-                style={{ width: `${Math.min(100, Math.max(0, progressPercentage))}%` }}
+                style={{
+                  width: `${Math.min(100, Math.max(0, progressPercentage))}%`,
+                }}
               />
             </div>
             {fastWinCount > 0 && fastWinDescription && (
@@ -534,15 +598,14 @@ export default async function AppDashboardPage() {
                     FAST WIN
                   </span>
                 </div>
-                <p className="text-sm text-zinc-700">
-                  {fastWinDescription}
-                </p>
+                <p className="text-sm text-zinc-700">{fastWinDescription}</p>
               </div>
             )}
             {regularActionCount > 0 && (
               <div className="mt-3">
                 <p className="text-xs font-medium text-zinc-500 mb-2">
-                  {regularActionCount} regular action{regularActionCount !== 1 ? "s" : ""}
+                  {regularActionCount} regular action
+                  {regularActionCount !== 1 ? "s" : ""}
                 </p>
                 <Link
                   href="/app/plan"

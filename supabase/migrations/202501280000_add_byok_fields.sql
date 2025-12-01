@@ -12,3 +12,4 @@ COMMENT ON COLUMN users.ai_api_key_encrypted IS 'Encrypted OpenAI API key (only 
 COMMENT ON COLUMN users.ai_model IS 'AI model to use: gpt-4o-mini, gpt-4, gpt-4-turbo, etc.';
 
 
+

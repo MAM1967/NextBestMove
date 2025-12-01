@@ -9,11 +9,13 @@ NextBestMove uses cron-job.org to schedule background tasks. All cron endpoints 
 All cron endpoints accept authentication in three ways:
 
 1. **Query Parameter** (for cron-job.org with secret):
+
    ```
    https://nextbestmove.app/api/cron/daily-plans?secret=YOUR_CRON_SECRET
    ```
 
 2. **Authorization Header with CRON_SECRET** (for Vercel Cron):
+
    ```
    Authorization: Bearer YOUR_CRON_SECRET
    ```
@@ -28,11 +30,13 @@ All cron endpoints accept authentication in three ways:
 Set these in Vercel environment variables:
 
 **CRON_SECRET** (for query param or Vercel Cron):
+
 ```
 CRON_SECRET=99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da
 ```
 
 **CRON_JOB_ORG_API_KEY** (for cron-job.org Authorization header):
+
 ```
 CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 ```
@@ -42,41 +46,49 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 ## Cron Jobs Configuration
 
 ### 1. Daily Plans Generation
+
 **Endpoint:** `GET /api/cron/daily-plans?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 1:00 AM UTC  
 **Purpose:** Generates daily plans for all active users
 
 ### 2. Auto-Archive
+
 **Endpoint:** `GET /api/cron/auto-archive?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 9:00 PM UTC  
 **Purpose:** Archives DONE actions older than 90 days
 
 ### 3. Auto-Unsnooze
+
 **Endpoint:** `GET /api/cron/auto-unsnooze?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 2:00 AM UTC  
 **Purpose:** Automatically unsnoozes actions and pins when their snooze date arrives
 
 ### 4. Weekly Summaries
+
 **Endpoint:** `GET /api/cron/weekly-summaries?secret=YOUR_CRON_SECRET`  
 **Schedule:** Monday at 1:00 AM UTC (Sunday night / Monday morning)  
 **Purpose:** Generates weekly summaries for the previous week
 
 ### 5. Trial Reminders
+
 **Endpoint:** `GET /api/cron/trial-reminders?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 8:00 AM UTC  
 **Purpose:** Sends trial reminder emails (Day 12 and Day 14)
 
 ### 6. Morning Plan Emails
+
 **Endpoint:** `GET /api/notifications/morning-plan?secret=YOUR_CRON_SECRET`  
 **Schedule:** Hourly (to catch users at 8am in their timezone)  
 **Purpose:** Sends morning plan emails to users who have it enabled
 
 ### 7. Follow-Up Alerts
+
 **Endpoint:** `GET /api/notifications/follow-up-alerts?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 10:00 AM UTC  
 **Purpose:** Sends alerts for overdue follow-up actions
 
 ### 8. Fast Win Reminders
+
 **Endpoint:** `GET /api/notifications/fast-win-reminder?secret=YOUR_CRON_SECRET`  
 **Schedule:** Hourly (to catch users at 2pm in their timezone)  
 **Purpose:** Sends fast win reminder emails at 2pm
@@ -84,7 +96,7 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 ## Setting Up in cron-job.org
 
 1. **Create a new cron job** for each endpoint above
-2. **URL Format (Option 1 - Query Parameter):** 
+2. **URL Format (Option 1 - Query Parameter):**
    ```
    https://nextbestmove.app/api/cron/[endpoint]?secret=99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da
    ```
@@ -108,7 +120,8 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 ### All jobs showing "Failed (HTTP error)"
 
 **Possible causes:**
-1. **Incorrect secret/API key:** 
+
+1. **Incorrect secret/API key:**
    - If using query parameter: Verify the `CRON_SECRET` in Vercel matches the one in cron-job.org URLs
    - If using API key: Verify `CRON_JOB_ORG_API_KEY` is set in Vercel and matches your cron-job.org API key
 2. **Missing query parameter:** If using query param method, ensure `?secret=...` is included in the URL
@@ -133,4 +146,3 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
 ## Future: Vercel Cron
 
 When upgrading to Vercel Pro, you can switch to Vercel Cron which automatically sends the Authorization header. No code changes needed - the endpoints already support both methods.
-

@@ -75,7 +75,7 @@ if (glitchTipDsn) {
 
       // Only upload source maps in production
       silent: process.env.NODE_ENV !== "production",
-      
+
       // Source maps configuration
       sourcemaps: {
         assets: "./.next/**",
@@ -89,7 +89,10 @@ if (glitchTipDsn) {
       widenClientFileUpload: true,
     });
   } catch (error) {
-    console.warn("Failed to wrap with Sentry config, using basic config:", error);
+    console.warn(
+      "Failed to wrap with Sentry config, using basic config:",
+      error
+    );
     // Fall back to basic config if Sentry wrapping fails
     finalConfig = nextConfig;
   }

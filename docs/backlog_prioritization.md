@@ -3,12 +3,14 @@
 ## Quick Wins (XS-S) - Do These First
 
 ### XS - Data Export Endpoint
+
 **Effort:** 2-4 hours  
 **Complexity:** Low  
 **Dependencies:** None  
 **Why:** Simple API endpoint + button. Good user value, low risk.
 
 **Tasks:**
+
 - Create `/api/export` endpoint
 - Query all user data (pins, actions, plans, summaries)
 - Format as JSON
@@ -18,12 +20,14 @@
 ---
 
 ### S - Content Prompt Generation
+
 **Effort:** 4-8 hours  
 **Complexity:** Low-Medium  
 **Dependencies:** OpenAI API key, weekly summary data  
 **Why:** Template-based with AI fallback. Can start simple, enhance later.
 
 **Tasks:**
+
 - Create template system for win/insight posts
 - Add OpenAI integration (GPT-4)
 - Save to `content_prompts` table
@@ -35,12 +39,14 @@
 ## Medium Effort (M) - Important but Manageable
 
 ### M - Email Preferences & Account Deletion
+
 **Effort:** 8-12 hours  
 **Complexity:** Medium  
 **Dependencies:** Resend setup (already done), compliance review  
 **Why:** Required for compliance. Straightforward but needs careful handling.
 
 **Tasks:**
+
 - Add email preferences UI to Settings
 - Create unsubscribe endpoints
 - Add "Delete my account" flow
@@ -50,12 +56,14 @@
 ---
 
 ### M - Weekly Summary Metrics Job
+
 **Effort:** 8-12 hours  
 **Complexity:** Medium  
 **Dependencies:** Database queries, AI integration (if narrative needed)  
 **Why:** Core feature, but can start with basic metrics, add AI later.
 
 **Tasks:**
+
 - Create metrics aggregation queries
 - Generate basic narrative (can be template-based initially)
 - Create insight generation logic
@@ -68,12 +76,14 @@
 ## Large Effort (L) - Significant Work
 
 ### L - Background Jobs
+
 **Effort:** 12-16 hours  
 **Complexity:** Medium-High  
 **Dependencies:** Vercel Cron or Supabase functions, database functions  
 **Why:** Multiple jobs, scheduling complexity, testing overhead.
 
 **Tasks:**
+
 - Set up Vercel Cron (or Supabase scheduled functions)
 - Daily plan generation cron
 - Weekly summary cron
@@ -86,12 +96,14 @@
 ---
 
 ### XL - Onboarding Flow (6 Steps)
+
 **Effort:** 16-24 hours  
 **Complexity:** High  
 **Dependencies:** All core features working, state management  
 **Why:** Complex multi-step flow, significant UI/UX work, state management.
 
 **Tasks:**
+
 - Design 6-step flow UI
 - Welcome screen
 - Pin creation step
@@ -111,23 +123,27 @@
 ## Recommended Order
 
 ### Phase 1: Quick Wins (This Week)
+
 1. **Data Export** (XS) - 2-4 hours
 2. **Content Prompt Generation** (S) - 4-8 hours
 
 **Total:** ~6-12 hours, high value, low risk
 
 ### Phase 2: Compliance & Core Features (Next Week)
+
 3. **Email Preferences & Account Deletion** (M) - 8-12 hours
 4. **Weekly Summary Metrics Job** (M) - 8-12 hours
 
 **Total:** ~16-24 hours, essential for launch
 
 ### Phase 3: Infrastructure (Week 3)
+
 5. **Background Jobs** (L) - 12-16 hours
 
 **Total:** ~12-16 hours, production readiness
 
 ### Phase 4: User Experience (Week 4)
+
 7. **Onboarding Flow** (XL) - 16-24 hours
 
 **Total:** ~16-24 hours, polish for launch
@@ -139,15 +155,18 @@
 If you have multiple developers or want to parallelize:
 
 **Track 1 (Backend/Automation):**
+
 - Weekly Summary Metrics Job
 - Background Jobs
 
 **Track 2 (User Features):**
+
 - Data Export
 - Content Prompt Generation
 - Email Preferences & Account Deletion
 
 **Track 3 (UX/Design):**
+
 - Onboarding Flow (can start design/planning while others work)
 
 ---
@@ -155,14 +174,17 @@ If you have multiple developers or want to parallelize:
 ## Risk Assessment
 
 **Low Risk:**
+
 - Data Export
 - Content Prompt Generation (can start with templates)
 - Email Preferences
 
 **Medium Risk:**
+
 - Weekly Summary Metrics Job (AI integration complexity)
 
 **High Risk:**
+
 - Background Jobs (scheduling, reliability, monitoring)
 - Onboarding Flow (complex state, UX critical)
 
@@ -189,7 +211,3 @@ If you have multiple developers or want to parallelize:
 **Then Email Preferences (M)** - Compliance requirement, straightforward.
 
 This gives you 3 completed items in ~14-24 hours, then you can tackle the larger items.
-
-
-
-

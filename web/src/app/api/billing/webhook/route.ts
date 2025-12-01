@@ -353,12 +353,62 @@ async function handleInvoicePaymentFailed(
     : invoice.subscription.id;
   if (!subscriptionId) return;
 
-  // Update subscription status to past_due
+  // Get subscription to check if payment_failed_at is already set
+  const { data: existingSubscription } = await supabase
+    .from("billing_subscriptions")
+    .select("id, payment_failed_at, billing_customer_id, billing_customers!inner(user_id, users!inner(email, name))")
+    .eq("stripe_subscription_id", subscriptionId)
+    .maybeSingle();
+
+  if (!existingSubscription) {
+    logError("Subscription not found for payment failure", undefined, {
+      subscriptionId,
+      invoiceId: invoice.id,
+    });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const isFirstFailure = !existingSubscription.payment_failed_at;
+
+  // Update subscription status to past_due and set payment_failed_at if first failure
+  const updateData: any = {
+    status: "past_due",
+  };
+  
+  if (isFirstFailure) {
+    updateData.payment_failed_at = now;
+  }
+
   await supabase
     .from("billing_subscriptions")
-    .update({
-      status: "past_due",
-    })
+    .update(updateData)
     .eq("stripe_subscription_id", subscriptionId);
+
+  // Send Day 0 email immediately on first failure
+  if (isFirstFailure) {
+    const user = (existingSubscription.billing_customers as any)?.users;
+    if (user?.email) {
+      try {
+        const { sendPaymentFailureEmail } = await import("@/lib/email/resend");
+        await sendPaymentFailureEmail({
+          to: user.email,
+          userName: user.name || "there",
+          daysSinceFailure: 0,
+        });
+        logBillingEvent("Payment failure Day 0 email sent", {
+          userId: user.id,
+          subscriptionId,
+          invoiceId: invoice.id,
+        });
+      } catch (emailError) {
+        logError("Failed to send payment failure email", emailError, {
+          userId: user.id,
+          subscriptionId,
+          invoiceId: invoice.id,
+        });
+      }
+    }
+  }
 }
 

@@ -4,7 +4,7 @@ import { stripe } from "@/lib/billing/stripe";
 
 export async function POST(request: Request) {
   let customer: { stripe_customer_id: string } | null = null;
-  
+
   try {
     const supabase = await createClient();
     const {
@@ -55,12 +55,15 @@ export async function POST(request: Request) {
     console.log("Creating billing portal session", {
       customerId: customer.stripe_customer_id,
       returnUrl,
-      stripeApiKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
+      stripeApiKeyPrefix:
+        process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
     });
 
     // Verify customer exists in Stripe first
     try {
-      const stripeCustomer = await stripe.customers.retrieve(customer.stripe_customer_id);
+      const stripeCustomer = await stripe.customers.retrieve(
+        customer.stripe_customer_id
+      );
       console.log("Stripe customer verified", {
         customerId: stripeCustomer.id,
         email: "email" in stripeCustomer ? stripeCustomer.email : "N/A",
@@ -102,21 +105,28 @@ export async function POST(request: Request) {
       type: error.type,
       code: error.code,
       statusCode: error.statusCode,
-      rawError: error.raw ? {
-        message: error.raw.message,
-        type: error.raw.type,
-        code: error.raw.code,
-      } : undefined,
+      rawError: error.raw
+        ? {
+            message: error.raw.message,
+            type: error.raw.type,
+            code: error.raw.code,
+          }
+        : undefined,
       customerId: customer?.stripe_customer_id,
-      stripeApiKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
+      stripeApiKeyPrefix:
+        process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
     };
 
     console.error("Error creating customer portal session:", errorDetails);
 
     // Return more specific error message
     let userMessage = "Failed to create portal session";
-    if (error.type === "StripeConnectionError" || error.type === "StripeAPIError") {
-      userMessage = "Unable to connect to payment provider. Please try again in a moment.";
+    if (
+      error.type === "StripeConnectionError" ||
+      error.type === "StripeAPIError"
+    ) {
+      userMessage =
+        "Unable to connect to payment provider. Please try again in a moment.";
     } else if (error.code === "resource_missing") {
       userMessage = "Customer account not found. Please contact support.";
     }

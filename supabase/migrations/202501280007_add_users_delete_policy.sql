@@ -6,3 +6,4 @@ CREATE POLICY "Users can delete own profile" ON users
   USING (auth.uid() = id);
 
 
+

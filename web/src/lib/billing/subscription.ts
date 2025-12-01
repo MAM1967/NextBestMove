@@ -58,7 +58,7 @@ export async function getSubscriptionInfo(
     // Get most recent subscription (including trialing, canceled, etc.)
     const { data: latestSubscription } = await supabase
       .from("billing_subscriptions")
-      .select("*")
+      .select("*, payment_failed_at")
       .eq("billing_customer_id", customer.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -98,12 +98,26 @@ export async function getSubscriptionInfo(
   }
 
   // Check if in read-only mode
-  // Read-only if: trial expired but within 7-day grace period
-  const isReadOnly =
+  // Read-only if:
+  // 1. Trial expired but within 7-day grace period
+  // 2. Payment failed 7+ days ago (Day 7-14 of payment failure recovery)
+  const paymentFailedAt = subscription.payment_failed_at
+    ? new Date(subscription.payment_failed_at)
+    : null;
+  
+  const isTrialGracePeriod =
     status === "trialing" &&
     trialEndsAt !== null &&
     trialEndsAt < new Date() &&
     trialEndsAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const isPaymentFailureReadOnly =
+    status === "past_due" &&
+    paymentFailedAt !== null &&
+    paymentFailedAt <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) &&
+    paymentFailedAt > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+  const isReadOnly = isTrialGracePeriod || isPaymentFailureReadOnly;
 
   return {
     status,
@@ -129,7 +143,7 @@ export async function hasFeatureAccess(
     return false;
   }
 
-  // Read-only mode = no write access
+  // Read-only mode = no write access (grace period or payment failure Day 7-14)
   if (subscription.isReadOnly) {
     return false;
   }
@@ -139,7 +153,13 @@ export async function hasFeatureAccess(
     return true;
   }
 
-  // Past due or canceled = no access
+  // Past due (Day 0-6) = still has access (just needs to update payment)
+  // Past due (Day 7-14) = read-only (handled above)
+  // Canceled = no access
+  if (subscription.status === "past_due") {
+    return true; // Day 0-6: still has access, just needs payment update
+  }
+
   return false;
 }
 

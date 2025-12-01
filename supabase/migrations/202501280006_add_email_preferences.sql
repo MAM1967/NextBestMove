@@ -16,3 +16,4 @@ COMMENT ON COLUMN users.email_weekly_summary IS 'Receive weekly summary email on
 COMMENT ON COLUMN users.email_unsubscribed IS 'Global unsubscribe flag (overrides all preferences)';
 
 
+

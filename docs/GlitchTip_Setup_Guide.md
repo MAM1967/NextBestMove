@@ -5,6 +5,7 @@ This guide explains how to set up GlitchTip error tracking for NextBestMove.
 ## Overview
 
 GlitchTip is an open-source, Sentry-compatible error tracking platform that provides:
+
 - Automatic error capture
 - Error grouping and aggregation
 - Stack traces with source maps
@@ -27,6 +28,7 @@ GlitchTip is an open-source, Sentry-compatible error tracking platform that prov
 4. Copy your DSN (format: `https://key@domain.com/project-id`)
 
 **Your DSN:**
+
 ```
 https://f192e61a926c4f8e9d757b7c42a8a4f6@app.glitchtip.com/13904
 ```
@@ -45,8 +47,8 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://f192e61a926c4f8e9d757b7c42a8a4f6@app.glitchtip
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
 2. Add:
    - `NEXT_PUBLIC_GLITCHTIP_DSN` = `https://f192e61a926c4f8e9d757b7c42a8a4f6@app.glitchtip.com/13904`
-2. Set for **Production**, **Preview**, and **Development** environments
-3. Redeploy your application
+3. Set for **Production**, **Preview**, and **Development** environments
+4. Redeploy your application
 
 ### 4. Verify Installation
 
@@ -60,6 +62,7 @@ NEXT_PUBLIC_GLITCHTIP_DSN=https://f192e61a926c4f8e9d757b7c42a8a4f6@app.glitchtip
 ### Automatic Error Capture
 
 GlitchTip automatically captures:
+
 - Unhandled exceptions
 - Unhandled promise rejections
 - React component errors (via Error Boundaries)
@@ -128,6 +131,7 @@ Sentry.addBreadcrumb({
 ## Error Filtering
 
 The configuration filters out known non-critical errors:
+
 - Browser extension errors
 - Network errors (handled gracefully)
 - Stripe errors (handled with user feedback)
@@ -142,6 +146,7 @@ This prevents cluttering GlitchTip with development errors.
 ## Performance Monitoring
 
 GlitchTip automatically tracks:
+
 - Page load times
 - API route performance
 - Database query times (if instrumented)
@@ -151,16 +156,19 @@ GlitchTip automatically tracks:
 ### Errors Not Appearing in GlitchTip
 
 1. **Check Environment Variable:**
+
    - Verify `NEXT_PUBLIC_GLITCHTIP_DSN` is set correctly
    - Ensure it's prefixed with `NEXT_PUBLIC_` (required for client-side)
    - Check for trailing whitespace/newlines
 
 2. **Check GlitchTip Dashboard:**
+
    - Verify project is active
    - Check DSN matches your environment variable
    - Ensure you're looking at the correct project
 
 3. **Check Browser Console:**
+
    - Look for GlitchTip initialization errors
    - Verify script is loading
 
@@ -171,6 +179,7 @@ GlitchTip automatically tracks:
 ### Source Maps Not Working
 
 1. **Check Build Configuration:**
+
    - Source maps are generated automatically
    - Verify `hideSourceMaps: false` in `next.config.ts`
 
@@ -181,6 +190,7 @@ GlitchTip automatically tracks:
 ## Best Practices
 
 1. **Use Structured Logging:**
+
    ```typescript
    logError("Action failed", error, {
      actionId: "123",
@@ -190,11 +200,13 @@ GlitchTip automatically tracks:
    ```
 
 2. **Add User Context:**
+
    - Set user context after login
    - Clear on logout
    - Helps identify which users are affected
 
 3. **Add Breadcrumbs:**
+
    - Track important user actions
    - Helps debug error paths
 
@@ -220,4 +232,3 @@ logError("Payment failed", error, {
 - [GlitchTip Documentation](https://glitchtip.com/documentation)
 - [Sentry SDK Documentation](https://docs.sentry.io/platforms/javascript/guides/nextjs/) (GlitchTip uses same SDK)
 - [GlitchTip Free Tier](https://glitchtip.com/pricing)
-

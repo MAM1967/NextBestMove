@@ -3,6 +3,7 @@
 This document captures coding lessons, best practices, and solutions to common problems encountered during development. Use this for code reviews and to prevent similar issues in the future.
 
 ## Table of Contents
+
 - [TypeScript Type Safety](#typescript-type-safety)
 - [Next.js 15+ API Changes](#nextjs-15-api-changes)
 - [Stripe TypeScript Types](#stripe-typescript-types)
@@ -20,11 +21,13 @@ This document captures coding lessons, best practices, and solutions to common p
 **Problem:** Passing props that don't match the component's interface causes TypeScript build errors.
 
 **Solution:**
+
 1. Always check the component's interface/type definition before passing props
 2. Use your IDE's "Go to Definition" feature to see the exact prop types
 3. Look at how the component is used elsewhere in the codebase for reference
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - passing props that don't exist
 <ActionNoteModal
@@ -54,17 +57,18 @@ This document captures coding lessons, best practices, and solutions to common p
 **Solution:** Use `Awaited<ReturnType<typeof createClient>>` to extract the resolved type.
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - using ReturnType directly
 async function myFunction(
-  supabase: ReturnType<typeof createClient>  // This is Promise<SupabaseClient>
+  supabase: ReturnType<typeof createClient> // This is Promise<SupabaseClient>
 ) {
   // Type error!
 }
 
 // ✅ Correct - using Awaited to get resolved type
 async function myFunction(
-  supabase: Awaited<ReturnType<typeof createClient>>  // This is SupabaseClient
+  supabase: Awaited<ReturnType<typeof createClient>> // This is SupabaseClient
 ) {
   // Works correctly
 }
@@ -81,17 +85,18 @@ async function myFunction(
 **Solution:** Always await these values before using them.
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - Next.js 14 style
 export async function GET(request: Request) {
-  const cookies = cookies();  // Not a Promise in Next.js 14
-  const token = cookies.get('token');
+  const cookies = cookies(); // Not a Promise in Next.js 14
+  const token = cookies.get("token");
 }
 
 // ✅ Correct - Next.js 15+ style
 export async function GET(request: Request) {
-  const cookieStore = await cookies();  // Must await
-  const token = cookieStore.get('token');
+  const cookieStore = await cookies(); // Must await
+  const token = cookieStore.get("token");
 }
 ```
 
@@ -108,24 +113,29 @@ export async function GET(request: Request) {
 **Solution:** Use intersection types to extend the base type with additional properties.
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - TypeScript doesn't recognize subscription property
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const subscriptionId = invoice.subscription;  // Type error!
+  const subscriptionId = invoice.subscription; // Type error!
 }
 
 // ✅ Correct - Use intersection type to extend
 async function handleInvoicePaid(
-  invoice: Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
+  invoice: Stripe.Invoice & {
+    subscription?: string | Stripe.Subscription | null;
+  }
 ) {
   if (!invoice.subscription) return;
-  const subscriptionId = typeof invoice.subscription === 'string' 
-    ? invoice.subscription 
-    : invoice.subscription.id;
+  const subscriptionId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription.id;
 }
 ```
 
 **Alternative Approach (if intersection types don't work):**
+
 ```typescript
 // Use 'as any' as a last resort, but document why
 const subscription = (invoice as any).subscription;
@@ -142,9 +152,10 @@ const subscription = (invoice as any).subscription;
 **Solution:** Use type guards to safely access properties.
 
 **Example:**
+
 ```typescript
 // ✅ Safe approach with type guards
-if (subscription && typeof subscription.current_period_end === 'number') {
+if (subscription && typeof subscription.current_period_end === "number") {
   const periodEnd = new Date(subscription.current_period_end * 1000);
 }
 ```
@@ -160,11 +171,13 @@ if (subscription && typeof subscription.current_period_end === 'number') {
 **Problem:** When passing callback functions as props, the signature must match exactly what the component expects.
 
 **Solution:**
+
 1. Check the component's prop interface for the exact signature
 2. Ensure parameter types and return types match
 3. Look at how the component is used elsewhere in the codebase
 
 **Example:**
+
 ```typescript
 // Component expects:
 onAddNote: (actionId: string) => void;
@@ -190,20 +203,24 @@ const handleAddNote = (actionId: string) => {
 **Problem:** Missing required props causes TypeScript errors.
 
 **Solution:**
+
 1. Check the component interface for all required props
 2. Use conditional rendering with `isOpen` prop for modals
 3. Ensure all required callbacks are provided
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - missing isOpen prop
-{snoozeActionId && (
-  <SnoozeActionModal
-    actionId={snoozeActionId}
-    onClose={() => setSnoozeActionId(null)}
-    onSnooze={handleSnooze}
-  />
-)}
+{
+  snoozeActionId && (
+    <SnoozeActionModal
+      actionId={snoozeActionId}
+      onClose={() => setSnoozeActionId(null)}
+      onSnooze={handleSnooze}
+    />
+  );
+}
 
 // ✅ Correct - include all required props
 <SnoozeActionModal
@@ -211,7 +228,7 @@ const handleAddNote = (actionId: string) => {
   actionId={snoozeActionId}
   onClose={() => setSnoozeActionId(null)}
   onSnooze={handleSnooze}
-/>
+/>;
 ```
 
 **Validation:** Fixed `SnoozeActionModal` and `ActionNoteModal` usage in `StaleActionsSection.tsx`.
@@ -227,6 +244,7 @@ const handleAddNote = (actionId: string) => {
 **Solution:** Use TypeScript's `Awaited` utility type to extract the resolved type.
 
 **Example:**
+
 ```typescript
 // createClient() returns Promise<SupabaseClient>
 const supabase = await createClient();
@@ -253,11 +271,13 @@ function myFunction(supabase: Awaited<ReturnType<typeof createClient>>) {
 **Problem:** Defining the same type in multiple files with different structures causes TypeScript errors: "Two different types with this name exist, but they are unrelated."
 
 **Solution:**
+
 1. Define types in a shared location (e.g., `types.ts` file)
 2. Import and extend shared types rather than redefining them
 3. Use intersection types (`&`) to add additional properties
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - duplicate type definitions
 // page.tsx
@@ -295,20 +315,25 @@ type StaleAction = Action & {
 ## General Best Practices
 
 ### 1. Always Check Type Definitions First
+
 Before using a component or function, check its type definition to understand the exact interface.
 
 ### 2. Look for Similar Usage Patterns
+
 When fixing a type error, check how the same component/function is used elsewhere in the codebase.
 
 ### 3. Use TypeScript's Utility Types
+
 - `Awaited<T>` - Extract resolved type from Promise
 - `ReturnType<T>` - Extract return type from function
 - Intersection types (`&`) - Extend types with additional properties
 
 ### 4. Document Workarounds
+
 When using type assertions (`as any`) or intersection types to work around type system limitations, add comments explaining why.
 
 ### 5. Test Builds Early and Often
+
 Run `npm run build` locally before pushing to catch TypeScript errors early.
 
 ---
@@ -316,11 +341,13 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 ## Research Validation
 
 ### Stripe Invoice.subscription Property
+
 **Research Finding:** The `invoice.subscription` property exists in Stripe's API but may not be included in the base TypeScript type definition. This is a known issue with Stripe's type definitions.
 
 **Solution Validated:** Using intersection types (`Stripe.Invoice & { subscription?: ... }`) is the recommended approach for extending types with properties that exist in the API but not in the type definitions.
 
 ### Next.js 15+ Breaking Changes
+
 **Research Finding:** Next.js 15+ introduced breaking changes where `cookies()`, `params`, and `createClient()` return Promises instead of direct values.
 
 **Solution Validated:** Always await these values and use `Awaited<ReturnType<...>>` for function parameters that expect the resolved type.
@@ -334,12 +361,14 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 **Problem:** Multiple TypeScript errors can accumulate across commits, causing a cascade of build failures that are difficult to debug.
 
 **Solution:**
+
 1. Add `type-check` script to `package.json`: `"type-check": "tsc --noEmit"`
 2. Run `npm run type-check` before every commit/push
 3. Set up pre-commit hooks to automatically run type checks
 4. Add type checking to CI/CD pipeline before build step
 
 **Example:**
+
 ```json
 // package.json
 {
@@ -350,6 +379,7 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 ```
 
 **Why it matters:**
+
 - Catches errors locally before they reach CI/CD
 - Prevents error cascades where one error masks others
 - Faster feedback loop (seconds vs minutes)
@@ -364,11 +394,13 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 ### Lesson: Always Consider Timezone When Working with Dates
 
 **Problem:** JavaScript's `Date` object and date string parsing can cause subtle timezone-related bugs, especially when comparing dates or calculating day differences. For example:
+
 - `new Date('2025-11-29')` is interpreted as UTC midnight, which may be a different day in the user's local timezone
 - Creating dates from strings like `"2025-11-29T00:00:00"` uses the server's local timezone, causing off-by-one errors
 - Calendar events from different timezones can be incorrectly compared
 
 **Solution:**
+
 1. **Use `date-fns` library** for reliable date parsing and comparison
 2. **Always parse dates explicitly** using timezone-aware methods
 3. **Use UTC dates at noon** (12:00 UTC) when calculating day differences to avoid DST/timezone edge cases
@@ -376,6 +408,7 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 5. **Centralize date utilities** in `web/src/lib/utils/dateUtils.ts` to ensure consistent handling
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - timezone issues
 const dueDate = new Date(action.due_date); // Interprets as UTC midnight
@@ -387,11 +420,11 @@ const eventDate = new Date(eventDateStr + "T00:00:00"); // Uses server timezone
 const todayAtMidnight = new Date(todayStr + "T00:00:00"); // Different timezone interpretation
 
 // ✅ Correct - using date-fns for local date parsing
-import { parse, startOfDay, differenceInDays } from 'date-fns';
+import { parse, startOfDay, differenceInDays } from "date-fns";
 
 function parseLocalDate(dateString: string): Date {
-  const dateOnly = dateString.split('T')[0]; // Get YYYY-MM-DD part
-  const parsed = parse(dateOnly, 'yyyy-MM-dd', new Date());
+  const dateOnly = dateString.split("T")[0]; // Get YYYY-MM-DD part
+  const parsed = parse(dateOnly, "yyyy-MM-dd", new Date());
   return startOfDay(parsed); // Normalize to local midnight
 }
 
@@ -400,7 +433,7 @@ const today = startOfDay(new Date());
 const daysDiff = differenceInDays(today, dueDate); // Accurate day difference
 
 // ✅ Correct - UTC dates at noon for day calculations
-const [year, month, day] = dateStr.split('-').map(Number);
+const [year, month, day] = dateStr.split("-").map(Number);
 const dateAtNoonUTC = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 // Using noon UTC avoids DST transitions and timezone edge cases
 
@@ -414,6 +447,7 @@ const todayStr = new Intl.DateTimeFormat("en-CA", {
 ```
 
 **Key Principles:**
+
 1. **Parse dates as local dates** when comparing with "today" in the user's timezone
 2. **Use UTC dates at noon** when calculating day differences to avoid DST issues
 3. **Always specify timezone** when formatting dates for display
@@ -423,12 +457,14 @@ const todayStr = new Intl.DateTimeFormat("en-CA", {
 **Package Used:** `date-fns` - A lightweight, modular date utility library that provides timezone-aware date operations.
 
 **Validation:** Fixed date comparison bugs in:
+
 - `ActionCard.tsx` - Fixed overdue date calculations
 - `PriorityIndicator.tsx` - Fixed snooze date comparisons
 - `app/page.tsx` - Fixed all-day calendar event date calculations showing "tomorrow" instead of correct day
 - Created `dateUtils.ts` with centralized date handling functions
 
 **Common Pitfalls:**
+
 - ❌ Don't use `new Date('YYYY-MM-DD')` - it's interpreted as UTC midnight
 - ❌ Don't create dates from strings without timezone context
 - ❌ Don't calculate day differences using millisecond math without timezone consideration
@@ -443,12 +479,14 @@ const todayStr = new Intl.DateTimeFormat("en-CA", {
 ### Lesson: Always Trim Whitespace from Environment Variables
 
 **Problem:** Environment variables in deployment platforms (Vercel, Heroku, etc.) can contain trailing whitespace, newlines, or other invisible characters. This causes subtle bugs like:
+
 - API keys with trailing newlines failing authentication (`"sk_test_...\n"` → `invalid_client`)
 - Price IDs with newlines causing Stripe errors (`"price_123\n"` → `No such price`)
 - Database connection strings with spaces breaking connections
 - URLs with trailing spaces causing 404 errors
 
 **Solution:** Always trim and sanitize environment variables when reading them, especially for:
+
 - API keys (Stripe, Supabase, etc.)
 - Database connection strings
 - URLs
@@ -456,6 +494,7 @@ const todayStr = new Intl.DateTimeFormat("en-CA", {
 - Any string that will be used in API calls or database queries
 
 **Example:**
+
 ```typescript
 // ❌ Wrong - using environment variable directly
 const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -463,7 +502,7 @@ const priceId = process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY;
 
 // Stripe API fails with "invalid_client" or "No such price"
 await stripe.customers.create({ ... }); // Uses key with trailing \n
-await stripe.checkout.sessions.create({ 
+await stripe.checkout.sessions.create({
   line_items: [{ price: priceId }] // priceId has trailing \n
 });
 
@@ -475,19 +514,19 @@ function getStripeKey(): string {
   }
   // Trim whitespace and remove all whitespace characters (including newlines)
   const sanitized = key.trim().replace(/\s+/g, "");
-  
+
   // Validate format
   if (!sanitized.match(/^sk_(test|live)_[a-zA-Z0-9]+$/)) {
     throw new Error(`Invalid STRIPE_SECRET_KEY format`);
   }
-  
+
   return sanitized;
 }
 
 function getPriceId(plan: string, interval: string): string | null {
   const envVar = process.env[`STRIPE_PRICE_ID_${plan.toUpperCase()}_${interval.toUpperCase()}`];
   if (!envVar) return null;
-  
+
   // Trim whitespace and newlines
   const cleaned = envVar.trim().replace(/\s+/g, "");
   return cleaned || null;
@@ -499,6 +538,7 @@ const priceId = getPriceId("standard", "month");
 ```
 
 **Best Practice Pattern:**
+
 ```typescript
 // Create a utility function for reading environment variables
 function getEnvVar(key: string, required = false): string | null {
@@ -519,6 +559,7 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 ```
 
 **Key Principles:**
+
 1. **Always trim** environment variables before use
 2. **Remove all whitespace** (spaces, tabs, newlines) with `.replace(/\s+/g, "")`
 3. **Validate format** after sanitization (e.g., API key format, URL format)
@@ -526,17 +567,20 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 5. **Create utility functions** to centralize environment variable reading
 
 **Common Issues:**
+
 - Vercel environment variables can have trailing newlines when copied/pasted
 - Environment files (`.env.local`) can have trailing spaces
 - CI/CD platforms may add whitespace when setting variables
 - Multi-line values can introduce hidden characters
 
 **Validation:** Fixed in:
+
 - `web/src/lib/billing/stripe.ts` - Stripe API key and price ID sanitization
 - Prevents "invalid_client" errors from trailing newlines in API keys
 - Prevents "No such price" errors from trailing newlines in price IDs
 
 **When to Apply:**
+
 - ✅ API keys (Stripe, Supabase, OAuth secrets)
 - ✅ Database connection strings
 - ✅ URLs (webhook URLs, redirect URIs)
@@ -555,4 +599,3 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 - Document any third-party library type limitations in this file
 - Regular type audits to catch duplicate definitions and inconsistencies
 - Add timezone testing to CI/CD pipeline to catch date-related bugs
-

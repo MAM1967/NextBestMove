@@ -132,7 +132,7 @@ export function PaywallOverlay({
   const { isInGracePeriod, daysUntilGracePeriodEnds } =
     checkGracePeriod(trialEndsAt);
   const effectiveStatus = getSubscriptionStatus(normalizedStatus, trialEndsAt);
-  
+
   // Debug logging for canceled status
   if (normalizedStatus === "canceled" || effectiveStatus === "canceled") {
     console.log("[Paywall Debug] Canceled status check", {
