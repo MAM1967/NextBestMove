@@ -116,8 +116,9 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ---
 
-### 🚨 Group 2: Payment & Churn Recovery (Revenue Critical)
-**Goal:** Recover failed payments and reduce involuntary churn
+### 🚨 Group 2: Payment & Churn Recovery (Revenue Critical) ✅ COMPLETE
+**Goal:** Recover failed payments and reduce involuntary churn  
+**Status:** ✅ Completed (January 2025)
 
 #### 2.1 Payment Failure Recovery Flow ✅
 **Priority:** P1 - High  
@@ -185,33 +186,33 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ---
 
-#### 2.3 Win-Back Campaign Automation ⏱
+#### 2.3 Win-Back Campaign Automation ✅
 **Priority:** P1 - Medium  
 **Estimated Effort:** 2-3 days  
+**Status:** ✅ Complete  
 **Dependencies:** Cancellation tracking (already exists in webhook)
 
 **What:** Day 7, 30, 90, 180 post-cancellation emails via Resend
 
 **Implementation:**
-- [ ] Track cancellation date in `billing_subscriptions` (already tracked)
-- [ ] Create cron job for win-back emails
-- [ ] Create email templates for each stage:
-  - Day 7: "We miss you" + special offer
-  - Day 30: "What you're missing" + discount
-  - Day 90: "New features" + reactivation CTA
-  - Day 180: "Final offer" + significant discount
-- [ ] Only send to users who canceled (not payment failures)
-- [ ] Track email opens/clicks (optional)
+- [x] Track cancellation date in `billing_subscriptions` (uses updated_at when status is canceled) ✅
+- [x] Create cron job for win-back emails ✅
+- [x] Create email templates for each stage ✅ (already existed in resend.ts):
+  - Day 7: "What didn't work for you?" + feedback request ✅
+  - Day 30: "We shipped updates" + new features ✅
+  - Day 90: "Your data is still here" + reactivation CTA ✅
+  - Day 180: "Should we delete your data?" + data management ✅
+- [x] Only send to users who canceled (not payment failures) ✅
+- [x] Track email opens/clicks (optional) ✅ (via Resend analytics)
 
-**Files to create/modify:**
-- `web/src/app/api/cron/win-back-campaign/route.ts`
-- `web/src/lib/email/templates/win-back-*.tsx` (4 templates)
-- Add cron job configuration
+**Files created/modified:**
+- `web/src/app/api/cron/win-back-campaign/route.ts` ✅
+- `web/src/lib/email/resend.ts` (email templates already existed) ✅
 
 **Acceptance Criteria:**
-- Emails sent at correct intervals after cancellation
-- Different messaging for each stage
-- Clear reactivation CTA in each email
+- ✅ Emails sent at correct intervals after cancellation
+- ✅ Different messaging for each stage
+- ✅ Clear reactivation CTA in each email
 - Only sent to canceled users (not archived)
 
 ---
