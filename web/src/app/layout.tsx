@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UmamiScript } from "@/components/UmamiScript";
+// Import Sentry client config to ensure it's loaded
+import "../../sentry.client.config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
