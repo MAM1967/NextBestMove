@@ -438,6 +438,114 @@ const todayStr = new Intl.DateTimeFormat("en-CA", {
 
 ---
 
+## Environment Variable Handling
+
+### Lesson: Always Trim Whitespace from Environment Variables
+
+**Problem:** Environment variables in deployment platforms (Vercel, Heroku, etc.) can contain trailing whitespace, newlines, or other invisible characters. This causes subtle bugs like:
+- API keys with trailing newlines failing authentication (`"sk_test_...\n"` → `invalid_client`)
+- Price IDs with newlines causing Stripe errors (`"price_123\n"` → `No such price`)
+- Database connection strings with spaces breaking connections
+- URLs with trailing spaces causing 404 errors
+
+**Solution:** Always trim and sanitize environment variables when reading them, especially for:
+- API keys (Stripe, Supabase, etc.)
+- Database connection strings
+- URLs
+- Price IDs
+- Any string that will be used in API calls or database queries
+
+**Example:**
+```typescript
+// ❌ Wrong - using environment variable directly
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+const priceId = process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY;
+
+// Stripe API fails with "invalid_client" or "No such price"
+await stripe.customers.create({ ... }); // Uses key with trailing \n
+await stripe.checkout.sessions.create({ 
+  line_items: [{ price: priceId }] // priceId has trailing \n
+});
+
+// ✅ Correct - trim and sanitize environment variables
+function getStripeKey(): string {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
+  // Trim whitespace and remove all whitespace characters (including newlines)
+  const sanitized = key.trim().replace(/\s+/g, "");
+  
+  // Validate format
+  if (!sanitized.match(/^sk_(test|live)_[a-zA-Z0-9]+$/)) {
+    throw new Error(`Invalid STRIPE_SECRET_KEY format`);
+  }
+  
+  return sanitized;
+}
+
+function getPriceId(plan: string, interval: string): string | null {
+  const envVar = process.env[`STRIPE_PRICE_ID_${plan.toUpperCase()}_${interval.toUpperCase()}`];
+  if (!envVar) return null;
+  
+  // Trim whitespace and newlines
+  const cleaned = envVar.trim().replace(/\s+/g, "");
+  return cleaned || null;
+}
+
+// Use sanitized values
+const stripeKey = getStripeKey();
+const priceId = getPriceId("standard", "month");
+```
+
+**Best Practice Pattern:**
+```typescript
+// Create a utility function for reading environment variables
+function getEnvVar(key: string, required = false): string | null {
+  const value = process.env[key];
+  if (!value) {
+    if (required) {
+      throw new Error(`${key} is required but not set`);
+    }
+    return null;
+  }
+  // Always trim whitespace and newlines
+  return value.trim().replace(/\s+/g, "");
+}
+
+// Use it everywhere
+const stripeKey = getEnvVar("STRIPE_SECRET_KEY", true);
+const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
+```
+
+**Key Principles:**
+1. **Always trim** environment variables before use
+2. **Remove all whitespace** (spaces, tabs, newlines) with `.replace(/\s+/g, "")`
+3. **Validate format** after sanitization (e.g., API key format, URL format)
+4. **Log sanitized values** (first few characters only) for debugging
+5. **Create utility functions** to centralize environment variable reading
+
+**Common Issues:**
+- Vercel environment variables can have trailing newlines when copied/pasted
+- Environment files (`.env.local`) can have trailing spaces
+- CI/CD platforms may add whitespace when setting variables
+- Multi-line values can introduce hidden characters
+
+**Validation:** Fixed in:
+- `web/src/lib/billing/stripe.ts` - Stripe API key and price ID sanitization
+- Prevents "invalid_client" errors from trailing newlines in API keys
+- Prevents "No such price" errors from trailing newlines in price IDs
+
+**When to Apply:**
+- ✅ API keys (Stripe, Supabase, OAuth secrets)
+- ✅ Database connection strings
+- ✅ URLs (webhook URLs, redirect URIs)
+- ✅ Price IDs, customer IDs, subscription IDs
+- ✅ Any string used in external API calls
+- ❌ Don't trim if whitespace is intentional (rare, but possible)
+
+---
+
 ## Future Considerations
 
 - Consider creating a shared types file for commonly used extended types (e.g., `StripeInvoiceWithSubscription`)
