@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -55,4 +56,43 @@ const nextConfig: NextConfig = {
   // In Next.js, non-NEXT_PUBLIC_ vars are automatically server-only, but this ensures it's accessible
 };
 
-export default nextConfig;
+// Wrap with Sentry config (GlitchTip uses same SDK)
+// Only wrap if DSN is configured
+const glitchTipDsn = process.env.NEXT_PUBLIC_GLITCHTIP_DSN;
+
+// For GlitchTip, we can use Sentry SDK without build-time integration
+// The runtime SDK will work fine without withSentryConfig
+// However, withSentryConfig provides source maps support
+let finalConfig: NextConfig = nextConfig;
+
+if (glitchTipDsn) {
+  try {
+    finalConfig = withSentryConfig(nextConfig, {
+      // GlitchTip doesn't use org/project, but Sentry SDK requires them
+      // Use dummy values - they won't be used
+      org: "glitchtip",
+      project: "nextbestmove",
+
+      // Only upload source maps in production
+      silent: process.env.NODE_ENV !== "production",
+      
+      // Source maps configuration
+      sourcemaps: {
+        assets: "./.next/**",
+        ignore: ["node_modules"],
+      },
+
+      // Disable Sentry telemetry
+      telemetry: false,
+
+      // Don't fail build if source maps fail
+      widenClientFileUpload: true,
+    });
+  } catch (error) {
+    console.warn("Failed to wrap with Sentry config, using basic config:", error);
+    // Fall back to basic config if Sentry wrapping fails
+    finalConfig = nextConfig;
+  }
+}
+
+export default finalConfig;

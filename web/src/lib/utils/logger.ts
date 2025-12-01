@@ -1,8 +1,10 @@
 /**
  * Centralized logging utility
- * Simple console logging - logs appear in Vercel dashboard
+ * Logs to console (Vercel dashboard) and GlitchTip (error tracking)
  * Use this for structured logging throughout the application
  */
+
+import * as Sentry from "@sentry/nextjs";
 
 interface LogContext {
   [key: string]: unknown;
@@ -20,10 +22,22 @@ export function logInfo(message: string, context?: LogContext) {
  */
 export function logWarn(message: string, context?: LogContext) {
   console.warn(`[WARN] ${message}`, context || "");
+  
+  // Send warnings to GlitchTip as breadcrumbs
+  try {
+    Sentry.addBreadcrumb({
+      message,
+      level: "warning",
+      data: context,
+    });
+  } catch {
+    // Ignore errors - logging shouldn't break the app
+  }
 }
 
 /**
  * Log an error message
+ * Automatically sends to GlitchTip if configured
  */
 export function logError(
   message: string,
@@ -31,6 +45,38 @@ export function logError(
   context?: LogContext
 ) {
   console.error(`[ERROR] ${message}`, error || "", context || "");
+
+  // Send errors to GlitchTip
+  try {
+    if (error instanceof Error) {
+      Sentry.captureException(error, {
+        tags: {
+          error_type: "application_error",
+        },
+        extra: {
+          message,
+          ...context,
+        },
+      });
+    } else if (error) {
+      // Non-Error objects
+      Sentry.captureMessage(message, {
+        level: "error",
+        extra: {
+          error: String(error),
+          ...context,
+        },
+      });
+    } else {
+      // Just a message
+      Sentry.captureMessage(message, {
+        level: "error",
+        extra: context,
+      });
+    }
+  } catch {
+    // Ignore errors - logging shouldn't break the app
+  }
 }
 
 /**
