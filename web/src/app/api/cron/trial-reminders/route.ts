@@ -15,11 +15,13 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const querySecret = searchParams.get("secret");
   const cronSecret = process.env.CRON_SECRET;
+  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
 
-  // Check Authorization header first (Vercel Cron), then query param (cron-job.org)
-  const isAuthorized = cronSecret && (
-    authHeader === `Bearer ${cronSecret}` || 
-    querySecret === cronSecret
+  // Check Authorization header (Vercel Cron secret or cron-job.org API key), then query param (cron-job.org secret)
+  const isAuthorized = (
+    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    (cronJobOrgApiKey && authHeader === `Bearer ${cronJobOrgApiKey}`) ||
+    (cronSecret && querySecret === cronSecret)
   );
 
   if (!isAuthorized) {
