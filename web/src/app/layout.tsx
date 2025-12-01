@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UmamiScript } from "@/components/UmamiScript";
-// Import Sentry client config to ensure it's loaded
-// This ensures GlitchTip SDK initializes on client-side
-import "../../sentry.client.config";
+import { GlitchTipInit } from "@/components/GlitchTipInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <GlitchTipInit />
         {children}
         <UmamiScript />
       </body>
