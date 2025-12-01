@@ -36,10 +36,7 @@ const envLocal = readEnvLocal();
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Enable instrumentation hook for Sentry/GlitchTip
-  experimental: {
-    instrumentationHook: true,
-  },
+  // instrumentation.ts is automatically enabled in Next.js 16+
   // Read env vars directly from .env.local file to work around parsing issues
   env: {
     NEXT_PUBLIC_SUPABASE_URL:
