@@ -9,7 +9,18 @@ function getStripe(): Stripe {
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
-    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    // Sanitize the API key: remove any whitespace, newlines, or invalid characters
+    const sanitizedKey = process.env.STRIPE_SECRET_KEY.trim().replace(/\s+/g, "");
+    
+    // Validate key format
+    if (!sanitizedKey.match(/^sk_(test|live)_[a-zA-Z0-9]+$/)) {
+      throw new Error(
+        `Invalid STRIPE_SECRET_KEY format. Expected format: sk_test_... or sk_live_... ` +
+        `Got: ${sanitizedKey.substring(0, 20)}... (length: ${sanitizedKey.length})`
+      );
+    }
+    
+    stripeInstance = new Stripe(sanitizedKey, {
       apiVersion: "2025-11-17.clover",
       typescript: true,
     });
