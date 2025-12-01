@@ -69,18 +69,29 @@ jobs:
           # Use || true to prevent script from exiting on error
           EXISTING_VARS_JSON=""
           FETCH_EXIT_CODE=0
-          # Suppress telemetry notice and use --yes to skip prompts
+          # Suppress telemetry notice and try to fetch existing variables
+          # Note: vercel env ls may fail if project is not linked, so we handle errors gracefully
           EXISTING_VARS_JSON=$(VERCEL_TELEMETRY_DISABLED=1 vercel env ls "$TARGET_ENV" \
             --token="$VERCEL_TOKEN" \
             --scope="$VERCEL_ORG_ID" \
-            --yes \
+            --project="$VERCEL_PROJECT_ID" \
             --json 2>&1) || {
             FETCH_EXIT_CODE=$?
-            echo "⚠️  vercel env ls failed with exit code $FETCH_EXIT_CODE"
+            # If project flag doesn't work, try without it
+            if [ "$FETCH_EXIT_CODE" -ne 0 ]; then
+              echo "⚠️  vercel env ls failed with exit code $FETCH_EXIT_CODE, trying without --project flag..."
+              EXISTING_VARS_JSON=$(VERCEL_TELEMETRY_DISABLED=1 vercel env ls "$TARGET_ENV" \
+                --token="$VERCEL_TOKEN" \
+                --scope="$VERCEL_ORG_ID" \
+                --json 2>&1) || {
+                FETCH_EXIT_CODE=$?
+                echo "⚠️  vercel env ls failed again with exit code $FETCH_EXIT_CODE"
+              }
+            fi
           }
           
-          # Filter out telemetry notice from output if present
-          EXISTING_VARS_JSON=$(echo "$EXISTING_VARS_JSON" | grep -v "telemetry\|NOTE:" || echo "$EXISTING_VARS_JSON")
+          # Filter out telemetry notice, version info, and empty lines from output
+          EXISTING_VARS_JSON=$(echo "$EXISTING_VARS_JSON" | grep -v "telemetry\|NOTE:\|Vercel CLI\|^$" || echo "$EXISTING_VARS_JSON")
 
           # Check if fetch was successful
           USE_FALLBACK_MODE=false
@@ -239,8 +250,7 @@ jobs:
           VERCEL_TELEMETRY_DISABLED=1 vercel env ls "$TARGET_ENV" \
             --token="$VERCEL_TOKEN" \
             --scope="$VERCEL_ORG_ID" \
-            --yes \
-            2>&1 | grep -v "telemetry\|NOTE:" | head -20 || echo "⚠️  Could not list environment variables"
+            2>&1 | grep -v "telemetry\|NOTE:\|Vercel CLI" | head -20 || echo "⚠️  Could not list environment variables"
 
           echo ""
           echo "✅ Environment variable sync completed for $TARGET_ENV"
