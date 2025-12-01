@@ -50,7 +50,11 @@ function getPriceIdFromEnv(plan: PlanType, interval: IntervalType): string | nul
   
   const key = `${plan}_${interval === "month" ? "month" : "year"}`;
   const priceId = envVarMap[key];
-  return priceId || null;
+  
+  // Trim whitespace and newlines (common issue with Vercel env vars)
+  const cleanedPriceId = priceId ? priceId.trim().replace(/\s+/g, "") : null;
+  
+  return cleanedPriceId || null;
 }
 
 export const PLANS = PLAN_CONFIG;
