@@ -3,21 +3,22 @@ import { NextResponse } from "next/server";
 import { sendMorningPlanEmail } from "@/lib/email/notifications";
 
 /**
- * POST /api/notifications/morning-plan
+ * GET /api/notifications/morning-plan
  * 
  * Sends morning plan emails to users who have email_morning_plan enabled.
  * Should be called by a cron job that runs frequently (e.g., every hour)
  * to catch users at 8am in their timezone.
  * 
- * Query params:
- * - secret: CRON_SECRET for authentication
+ * This endpoint is called by Vercel Cron and requires authentication via
+ * the Authorization header with a secret token.
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    // Verify cron secret
-    const { searchParams } = new URL(request.url);
-    const secret = searchParams.get("secret");
-    if (secret !== process.env.CRON_SECRET) {
+    // Verify cron secret (Vercel Cron sends this header)
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -66,8 +67,8 @@ export async function POST(request: Request) {
 
         // Only send if it's 8am (within a 1-hour window to account for cron frequency)
         // For testing: allow ?test=true to bypass timezone check
-        const { searchParams: testParams } = new URL(request.url);
-        const isTestMode = testParams.get("test") === "true";
+        const { searchParams } = new URL(request.url);
+        const isTestMode = searchParams.get("test") === "true";
         
         if (!isTestMode && userHour !== 8) {
           skipReasons.push(`${user.email}: Not 8am (current hour: ${userHour})`);

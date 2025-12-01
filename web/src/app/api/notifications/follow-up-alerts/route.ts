@@ -3,21 +3,22 @@ import { NextResponse } from "next/server";
 import { sendFollowUpAlertEmail } from "@/lib/email/notifications";
 
 /**
- * POST /api/notifications/follow-up-alerts
+ * GET /api/notifications/follow-up-alerts
  * 
  * Sends follow-up alert emails to users who have email_follow_up_alerts enabled
  * and have actions that are overdue (SENT state with no reply after due date).
  * Should be called by a cron job that runs daily.
  * 
- * Query params:
- * - secret: CRON_SECRET for authentication
+ * This endpoint is called by Vercel Cron and requires authentication via
+ * the Authorization header with a secret token.
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    // Verify cron secret
-    const { searchParams } = new URL(request.url);
-    const secret = searchParams.get("secret");
-    if (secret !== process.env.CRON_SECRET) {
+    // Verify cron secret (Vercel Cron sends this header)
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -3,22 +3,23 @@ import { NextResponse } from "next/server";
 import { sendFastWinReminderEmail } from "@/lib/email/notifications";
 
 /**
- * POST /api/notifications/fast-win-reminder
+ * GET /api/notifications/fast-win-reminder
  * 
  * Sends fast win reminder emails at 2pm to users who have email_fast_win_reminder enabled
  * and haven't completed their fast win yet.
  * Should be called by a cron job that runs frequently (e.g., every hour)
  * to catch users at 2pm in their timezone.
  * 
- * Query params:
- * - secret: CRON_SECRET for authentication
+ * This endpoint is called by Vercel Cron and requires authentication via
+ * the Authorization header with a secret token.
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    // Verify cron secret
-    const { searchParams } = new URL(request.url);
-    const secret = searchParams.get("secret");
-    if (secret !== process.env.CRON_SECRET) {
+    // Verify cron secret (Vercel Cron sends this header)
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
