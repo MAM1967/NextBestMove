@@ -5,6 +5,15 @@ import * as Sentry from "@sentry/nextjs";
 
 const dsn = process.env.NEXT_PUBLIC_GLITCHTIP_DSN;
 
+// Debug logging (only in production to avoid spam)
+if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+  console.log("[GlitchTip] Initializing...", {
+    hasDsn: !!dsn,
+    dsnPrefix: dsn ? dsn.substring(0, 30) + "..." : "missing",
+    environment: process.env.NODE_ENV,
+  });
+}
+
 Sentry.init({
   dsn: dsn || undefined,
   
@@ -21,6 +30,9 @@ Sentry.init({
   enabled: process.env.NODE_ENV === "production" && !!dsn,
 
   environment: process.env.NODE_ENV || "development",
+  
+  // Debug mode to see what's happening
+  debug: process.env.NODE_ENV === "production" && !!dsn,
 
   // Filter out known non-critical errors
   ignoreErrors: [
@@ -43,7 +55,20 @@ Sentry.init({
       console.error("[GlitchTip] Error captured (not sent in dev):", event);
       return null;
     }
+    
+    // Log in production for debugging
+    console.log("[GlitchTip] Sending error to GlitchTip:", {
+      message: event.message,
+      level: event.level,
+      url: event.request?.url,
+    });
+    
     return event;
+  },
+  
+  // Add transport options to see network requests
+  transportOptions: {
+    // This will help debug network issues
   },
 });
 
