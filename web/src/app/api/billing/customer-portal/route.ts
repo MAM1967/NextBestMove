@@ -55,7 +55,34 @@ export async function POST(request: Request) {
     console.log("Creating billing portal session", {
       customerId: customer.stripe_customer_id,
       returnUrl,
+      stripeApiKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
     });
+
+    // Verify customer exists in Stripe first
+    try {
+      const stripeCustomer = await stripe.customers.retrieve(customer.stripe_customer_id);
+      console.log("Stripe customer verified", {
+        customerId: stripeCustomer.id,
+        email: "email" in stripeCustomer ? stripeCustomer.email : "N/A",
+        deleted: "deleted" in stripeCustomer ? stripeCustomer.deleted : false,
+      });
+    } catch (verifyError: any) {
+      console.error("Failed to verify Stripe customer:", {
+        error: verifyError.message,
+        type: verifyError.type,
+        code: verifyError.code,
+        statusCode: verifyError.statusCode,
+      });
+      return NextResponse.json(
+        {
+          error: "Invalid customer",
+          details: verifyError.message,
+          type: verifyError.type,
+          code: verifyError.code,
+        },
+        { status: 400 }
+      );
+    }
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customer.stripe_customer_id,
@@ -69,16 +96,34 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
-    console.error("Error creating customer portal session:", {
-      error: error.message,
+    // Enhanced error logging
+    const errorDetails = {
+      message: error.message,
       type: error.type,
       code: error.code,
       statusCode: error.statusCode,
+      rawError: error.raw ? {
+        message: error.raw.message,
+        type: error.raw.type,
+        code: error.raw.code,
+      } : undefined,
       customerId: customer?.stripe_customer_id,
-    });
+      stripeApiKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7) || "not set",
+    };
+
+    console.error("Error creating customer portal session:", errorDetails);
+
+    // Return more specific error message
+    let userMessage = "Failed to create portal session";
+    if (error.type === "StripeConnectionError" || error.type === "StripeAPIError") {
+      userMessage = "Unable to connect to payment provider. Please try again in a moment.";
+    } else if (error.code === "resource_missing") {
+      userMessage = "Customer account not found. Please contact support.";
+    }
+
     return NextResponse.json(
       {
-        error: "Failed to create portal session",
+        error: userMessage,
         details: error.message,
         type: error.type,
         code: error.code,
