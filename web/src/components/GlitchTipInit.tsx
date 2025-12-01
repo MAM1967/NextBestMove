@@ -8,7 +8,9 @@ export function GlitchTipInit() {
   // Verify Sentry is loaded
   if (typeof window !== "undefined") {
     // Check if Sentry is available after import
-    if (typeof window.Sentry === "undefined") {
+    // Use type assertion to avoid TypeScript error
+    const windowWithSentry = window as typeof window & { Sentry?: unknown };
+    if (typeof windowWithSentry.Sentry === "undefined") {
       console.error("[GlitchTip] Sentry SDK not loaded after import");
       console.log("[GlitchTip] Check if DSN is set:", !!process.env.NEXT_PUBLIC_GLITCHTIP_DSN);
     } else {
