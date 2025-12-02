@@ -147,7 +147,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
 - [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
 - [ ] **Plan downgrade handling** (Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation)
-- [ ] **Display weekly focus on Daily Plan page** (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Currently shows hardcoded placeholder. Part of US-7.6 - high priority for user engagement and context.)
+- [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented and tested. Weekly focus displays when no adaptive recovery message exists. Priority hierarchy: Adaptive Recovery > Weekly Focus > Placeholder.)
 
 ---
 
