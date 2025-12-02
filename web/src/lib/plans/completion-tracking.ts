@@ -62,20 +62,28 @@ export async function getPlanCompletionRate(
 export async function getCompletionHistory(
   supabase: SupabaseClient,
   userId: string,
-  days: number = 7
+  days: number = 7,
+  excludeToday: boolean = false
 ): Promise<Array<{ date: string; completionRate: number }>> {
   const today = new Date();
   const startDate = new Date(today);
   startDate.setDate(startDate.getDate() - days);
 
-  // Get all plans in the date range
-  const { data: plans } = await supabase
+  // Get all plans in the date range (exclude today if requested)
+  const todayStr = today.toISOString().split("T")[0];
+  let query = supabase
     .from("daily_plans")
     .select("id, date")
     .eq("user_id", userId)
     .gte("date", startDate.toISOString().split("T")[0])
-    .lte("date", today.toISOString().split("T")[0])
+    .lte("date", todayStr)
     .order("date", { ascending: false });
+  
+  if (excludeToday) {
+    query = query.neq("date", todayStr);
+  }
+  
+  const { data: plans } = await query;
 
   if (!plans || plans.length === 0) {
     return [];
@@ -122,13 +130,14 @@ export async function hasHighCompletionStreak(
   supabase: SupabaseClient,
   userId: string
 ): Promise<boolean> {
-  const history = await getCompletionHistory(supabase, userId, 7);
+  // Exclude today's plan from streak check (it hasn't been completed yet)
+  const history = await getCompletionHistory(supabase, userId, 7, true);
   
   if (history.length < 7) {
     return false;
   }
 
-  // Check last 7 days
+  // Check last 7 days (excluding today)
   const last7Days = history.slice(0, 7);
   const highCompletionDays = last7Days.filter((day) => day.completionRate >= 80).length;
 

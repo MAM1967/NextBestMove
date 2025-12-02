@@ -203,11 +203,14 @@ export async function generateDailyPlanForUser(
       adaptiveReason = "low_completion";
     }
     // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
-    else if (highStreak && capacityLevel === "standard") {
-      // Boost to heavy if they're consistently completing
-      capacityLevel = "heavy";
-      actionCount = 8;
-      adaptiveReason = "high_streak";
+    else if (highStreak) {
+      // Boost to heavy if they're consistently completing (from any base capacity)
+      // If already heavy, keep it; otherwise boost from standard/light to heavy
+      if (capacityLevel !== "heavy") {
+        capacityLevel = "heavy";
+        actionCount = 8;
+        adaptiveReason = "high_streak";
+      }
     }
 
     // For backward compatibility, calculate freeMinutes (approximate)
