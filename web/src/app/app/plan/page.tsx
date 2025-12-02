@@ -354,8 +354,8 @@ export default function DailyPlanPage() {
         {/* Celebration Banner */}
         <CelebrationBanner />
 
-        {/* Weekly Focus Card */}
-        {weeklyFocus && (
+        {/* Weekly Focus Card or Adaptive Recovery Message */}
+        {(dailyPlan?.focus_statement || weeklyFocus) && (
           <div className="rounded-xl border border-zinc-200 bg-white p-6">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600">
@@ -375,10 +375,10 @@ export default function DailyPlanPage() {
               </div>
               <div className="flex-1">
                 <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
-                  This Week&apos;s Focus
+                  {dailyPlan?.focus_statement ? "Today's Focus" : "This Week's Focus"}
                 </h2>
                 <p className="mt-1 text-lg font-semibold text-zinc-900">
-                  {weeklyFocus}
+                  {dailyPlan?.focus_statement || weeklyFocus}
                 </p>
               </div>
             </div>
@@ -408,7 +408,10 @@ export default function DailyPlanPage() {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    Calendar-based capacity
+                    {dailyPlan.capacity === "light" && "Light capacity (adaptive recovery)"}
+                    {dailyPlan.capacity === "micro" && "Micro capacity (comeback plan)"}
+                    {dailyPlan.capacity === "heavy" && "Heavy capacity (high streak)"}
+                    {dailyPlan.capacity === "standard" && "Calendar-based capacity"}
                   </span>
                 )}
               </div>
