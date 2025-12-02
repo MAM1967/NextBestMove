@@ -45,12 +45,27 @@ export function PaymentFailureModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-xl border border-amber-200 bg-white p-6 shadow-xl">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={(e) => {
+        // Close modal when clicking backdrop
+        if (e.target === e.currentTarget) {
+          handleDismiss();
+        }
+      }}
+    >
+      <div 
+        className="relative w-full max-w-md rounded-xl border border-amber-200 bg-white p-6 shadow-xl"
+        onClick={(e) => {
+          // Prevent clicks inside modal from closing it
+          e.stopPropagation();
+        }}
+      >
         <button
           onClick={handleDismiss}
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 transition"
+          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 transition z-10"
           aria-label="Close modal"
+          type="button"
         >
           <svg
             className="h-5 w-5"
@@ -99,6 +114,7 @@ export function PaymentFailureModal({
             onClick={handleManageBilling}
             disabled={isLoading}
             className="w-full rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
           >
             {isLoading ? "Opening..." : "Update Payment Method"}
           </button>
@@ -106,6 +122,7 @@ export function PaymentFailureModal({
           <button
             onClick={handleDismiss}
             className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
+            type="button"
           >
             Remind Me Later
           </button>
