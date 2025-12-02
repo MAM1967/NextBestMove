@@ -7,6 +7,7 @@ import { AddPersonModal } from "./AddPersonModal";
 import { EditPersonModal } from "./EditPersonModal";
 import { SnoozeModal } from "./SnoozeModal";
 import { FloatingActionButton } from "./FloatingActionButton";
+import { UpgradeModal } from "../components/UpgradeModal";
 
 export type PinStatus = "ACTIVE" | "SNOOZED" | "ARCHIVED";
 export type PinFilter = "ALL" | PinStatus;
@@ -34,6 +35,11 @@ export default function PinsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
   const [snoozePinId, setSnoozePinId] = useState<string | null>(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [pinLimitInfo, setPinLimitInfo] = useState<{
+    currentCount: number;
+    limit: number;
+  } | null>(null);
 
   // Load pins
   const loadPins = async () => {
@@ -50,6 +56,35 @@ export default function PinsPage() {
       setError(err instanceof Error ? err.message : "Failed to load pins");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Check pin limit before opening add modal
+  const handleAddPinClick = async () => {
+    try {
+      const response = await fetch("/api/billing/check-pin-limit");
+      if (!response.ok) {
+        // If check fails, still allow opening modal (graceful degradation)
+        setIsAddModalOpen(true);
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.canAdd) {
+        // Pin limit reached - show upgrade modal
+        setPinLimitInfo({
+          currentCount: data.currentCount,
+          limit: data.limit,
+        });
+        setIsUpgradeModalOpen(true);
+      } else {
+        // Can add pin - open add modal
+        setIsAddModalOpen(true);
+      }
+    } catch (err) {
+      console.error("Error checking pin limit:", err);
+      // On error, allow opening modal (graceful degradation)
+      setIsAddModalOpen(true);
     }
   };
 
@@ -247,7 +282,7 @@ export default function PinsPage() {
       )}
 
       <FloatingActionButton
-        onClick={() => setIsAddModalOpen(true)}
+        onClick={handleAddPinClick}
         label="Pin a Person"
       />
 
@@ -276,9 +311,19 @@ export default function PinsPage() {
         pinId={snoozePinId}
         onSnooze={handlePinSnooze}
       />
+
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        trigger="pin_limit"
+        currentCount={pinLimitInfo?.currentCount}
+        limit={pinLimitInfo?.limit}
+      />
     </div>
   );
 }
+
+
 
 
 
