@@ -33,7 +33,21 @@ export default async function AppDashboardPage() {
   }
 
   // Fetch subscription status for grace period check and billing alerts
-  const serverSubscriptionInfo = await getServerSubscriptionInfo(user.id);
+  let serverSubscriptionInfo;
+  try {
+    serverSubscriptionInfo = await getServerSubscriptionInfo(user.id);
+  } catch (error) {
+    console.error("Error fetching subscription info:", error);
+    // Fallback to default values
+    serverSubscriptionInfo = {
+      status: "none" as const,
+      plan: "none" as const,
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      isReadOnly: false,
+    };
+  }
 
   // Get subscription data for client-side helpers
   const { data: billingCustomer } = await supabase
