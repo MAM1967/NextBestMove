@@ -22,9 +22,21 @@ export async function GET(request: NextRequest) {
   );
 
   if (!isAuthorized) {
+    // Debug info (remove in production)
+    const debugInfo = {
+      hasCronSecret: !!cronSecret,
+      cronSecretLength: cronSecret?.length || 0,
+      cronSecretStartsWith: cronSecret?.substring(0, 10) || "N/A",
+      querySecretLength: querySecret?.length || 0,
+      querySecretStartsWith: querySecret?.substring(0, 10) || "N/A",
+      secretsMatch: cronSecret === querySecret,
+      hasAuthHeader: !!authHeader,
+    };
+    
     return NextResponse.json({ 
       error: "Unauthorized",
-      hint: "Use ?secret=CRON_SECRET or Authorization: Bearer CRON_SECRET"
+      hint: "Use ?secret=CRON_SECRET or Authorization: Bearer CRON_SECRET",
+      debug: process.env.NODE_ENV === "development" ? debugInfo : undefined
     }, { status: 401 });
   }
 
