@@ -62,8 +62,12 @@ export function PaymentFailureModal({
         }}
       >
         <button
-          onClick={handleDismiss}
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 transition z-10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleDismiss();
+          }}
+          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 transition z-10 cursor-pointer"
           aria-label="Close modal"
           type="button"
         >
@@ -111,17 +115,25 @@ export function PaymentFailureModal({
 
         <div className="flex flex-col gap-3">
           <button
-            onClick={handleManageBilling}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleManageBilling();
+            }}
             disabled={isLoading}
-            className="w-full rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             type="button"
           >
             {isLoading ? "Opening..." : "Update Payment Method"}
           </button>
 
           <button
-            onClick={handleDismiss}
-            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDismiss();
+            }}
+            className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition cursor-pointer"
             type="button"
           >
             Remind Me Later

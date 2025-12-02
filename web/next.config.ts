@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://nextbestmove.app 'strict-dynamic'", // Next.js requires unsafe-eval for development, strict-dynamic allows scripts loaded by trusted scripts
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline for chunks and runtime
               "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
