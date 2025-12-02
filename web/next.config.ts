@@ -38,6 +38,46 @@ const nextConfig: NextConfig = {
   /* config options here */
   // instrumentation.ts is automatically enabled in Next.js 16+
   // Read env vars directly from .env.local file to work around parsing issues
+  
+  // Security headers
+  async headers() {
+    return [
+      {
+        // Apply these headers to all routes
+        source: '/:path*',
+        headers: [
+          // Fix Issue 1: Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+          },
+          // Fix Issue 2: Anti-clickjacking Protection
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          // Additional Security Headers
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=()'
+          }
+        ],
+      },
+    ];
+  },
+  
   env: {
     NEXT_PUBLIC_SUPABASE_URL:
       envLocal.NEXT_PUBLIC_SUPABASE_URL ||
