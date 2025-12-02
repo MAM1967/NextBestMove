@@ -74,10 +74,15 @@ export default async function AppDashboardPage() {
       );
       
       // Check if Day 3 payment failure modal should be shown
-      const metadata = subscription.metadata as any;
-      showPaymentFailureModal = 
-        subscription.status === "past_due" &&
-        metadata?.show_payment_failure_modal === true;
+      try {
+        const metadata = subscription.metadata as any;
+        showPaymentFailureModal = 
+          subscription.status === "past_due" &&
+          metadata?.show_payment_failure_modal === true;
+      } catch (error) {
+        console.error("Error checking payment failure modal:", error);
+        showPaymentFailureModal = false;
+      }
     }
   }
 
