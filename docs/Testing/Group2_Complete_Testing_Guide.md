@@ -408,16 +408,27 @@ ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_up
 
 **Option A: Use test endpoint (recommended for testing feedback form)**
 
-```bash
-# Send Day 7 win-back email directly (no need to run full cron job)
-curl -X POST \
-  -H "Authorization: Bearer YOUR_CRON_SECRET" \
-  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceCancellation=7"
+   ```bash
+   # Send Day 7 win-back email directly (no need to run full cron job)
+   # IMPORTANT: URL-encode the email address (replace + with %2B)
+   curl -X POST \
+     -H "Authorization: Bearer YOUR_CRON_SECRET" \
+     "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7"
 
-# Or using query param
-curl -X POST \
-  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
-```
+   # Or using query param (also URL-encode the email)
+   curl -X POST \
+     "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
+   ```
+
+   **Note:** If your email contains special characters like `+`, you must URL-encode them:
+   - `+` becomes `%2B`
+   - `@` becomes `%40` (though usually works without encoding)
+   - Or use `--data-urlencode` flag: `curl -X POST --data-urlencode "userEmail=mcddsl+onboard2@gmail.com" "https://..."`
+
+   **Example with proper encoding:**
+   ```bash
+   curl -X POST "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
+   ```
 
 **Note:** This sends the email without requiring the subscription to be exactly 7 days canceled. Perfect for testing the feedback form without duplicate emails.
 
