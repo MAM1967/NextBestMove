@@ -82,9 +82,20 @@ export async function GET(request: NextRequest) {
 
           if (daysSinceCreation === 3) {
             // Day 3: Send recovery email
-            await sendStreakRecoveryEmail(user.email, user.name || "there");
-            day3Count++;
-            logInfo("Sent Day 3 streak recovery email", { userId: user.id, email: user.email });
+            try {
+              const emailResult = await sendStreakRecoveryEmail(user.email, user.name || "there");
+              day3Count++;
+              logInfo("Sent Day 3 streak recovery email", { 
+                userId: user.id, 
+                email: user.email,
+                emailId: emailResult?.id || "unknown"
+              });
+            } catch (emailError) {
+              const errorMessage = `Failed to send Day 3 email to ${user.email}: ${emailError instanceof Error ? emailError.message : "Unknown error"}`;
+              errors.push(errorMessage);
+              logError(errorMessage, emailError);
+              // Don't increment day3Count if email failed
+            }
           } else if (daysSinceCreation === 7) {
             // Day 7: Offer billing pause (TODO: implement billing pause)
             // For now, just log
@@ -102,9 +113,20 @@ export async function GET(request: NextRequest) {
 
           if (daysSinceLastAction === 3) {
             // Day 3: Send recovery email
-            await sendStreakRecoveryEmail(user.email, user.name || "there");
-            day3Count++;
-            logInfo("Sent Day 3 streak recovery email", { userId: user.id, email: user.email });
+            try {
+              const emailResult = await sendStreakRecoveryEmail(user.email, user.name || "there");
+              day3Count++;
+              logInfo("Sent Day 3 streak recovery email", { 
+                userId: user.id, 
+                email: user.email,
+                emailId: emailResult?.id || "unknown"
+              });
+            } catch (emailError) {
+              const errorMessage = `Failed to send Day 3 email to ${user.email}: ${emailError instanceof Error ? emailError.message : "Unknown error"}`;
+              errors.push(errorMessage);
+              logError(errorMessage, emailError);
+              // Don't increment day3Count if email failed
+            }
           } else if (daysSinceLastAction === 7) {
             // Day 7: Offer billing pause (TODO: implement billing pause)
             // For now, just log
