@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCapacityForDate } from "@/lib/calendar/capacity";
+import {
+  hasLowCompletionPattern,
+  isInactive7PlusDays,
+  hasHighCompletionStreak,
+} from "./completion-tracking";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
@@ -172,9 +177,38 @@ export async function generateDailyPlanForUser(
     }
 
     // Calculate capacity from calendar (or use default)
-    const capacityInfo = await getCapacityForDate(supabase, userId, date);
-    const capacityLevel = capacityInfo.level;
-    const actionCount = capacityInfo.actionsPerDay;
+    let capacityInfo = await getCapacityForDate(supabase, userId, date);
+    let capacityLevel = capacityInfo.level;
+    let actionCount = capacityInfo.actionsPerDay;
+
+    // Adaptive Recovery Logic: Override capacity based on user patterns
+    const [lowCompletion, inactive7Plus, highStreak] = await Promise.all([
+      hasLowCompletionPattern(supabase, userId),
+      isInactive7PlusDays(supabase, userId),
+      hasHighCompletionStreak(supabase, userId),
+    ]);
+
+    let adaptiveReason: string | null = null;
+
+    // Case 1: 7+ days inactive → Micro plan (1-2 actions)
+    if (inactive7Plus) {
+      capacityLevel = "micro";
+      actionCount = 2;
+      adaptiveReason = "comeback";
+    }
+    // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
+    else if (lowCompletion) {
+      capacityLevel = "light";
+      actionCount = 3;
+      adaptiveReason = "low_completion";
+    }
+    // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
+    else if (highStreak && capacityLevel === "standard") {
+      // Boost to heavy if they're consistently completing
+      capacityLevel = "heavy";
+      actionCount = 8;
+      adaptiveReason = "high_streak";
+    }
 
     // For backward compatibility, calculate freeMinutes (approximate)
     let freeMinutes: number | null = null;
@@ -375,7 +409,16 @@ export async function generateDailyPlanForUser(
 
     // Get weekly focus statement (if available)
     // TODO: Fetch from weekly_summaries table
-    const focusStatement = null;
+    let focusStatement: string | null = null;
+
+    // Add adaptive messaging based on recovery reason
+    if (adaptiveReason === "comeback") {
+      focusStatement = "Welcome back. One small win to restart your momentum.";
+    } else if (adaptiveReason === "low_completion") {
+      focusStatement = "Let's ease back in — here are your highest-impact moves for today.";
+    } else if (adaptiveReason === "high_streak") {
+      focusStatement = "You're on a roll! Here's your plan for today.";
+    }
 
     // Create daily_plan record
     const { data: dailyPlan, error: planError } = await supabase

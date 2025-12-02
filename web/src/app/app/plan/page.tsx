@@ -7,6 +7,7 @@ import { FollowUpSchedulingModal } from "../actions/FollowUpSchedulingModal";
 import { SnoozeActionModal } from "../actions/SnoozeActionModal";
 import { ActionNoteModal } from "../actions/ActionNoteModal";
 import { PaywallOverlay } from "../components/PaywallOverlay";
+import { CelebrationBanner } from "../components/CelebrationBanner";
 import { Action } from "../actions/types";
 
 interface DailyPlan {
@@ -349,6 +350,9 @@ export default function DailyPlanPage() {
             </button>
           )}
         </div>
+
+        {/* Celebration Banner */}
+        <CelebrationBanner />
 
         {/* Weekly Focus Card */}
         {weeklyFocus && (

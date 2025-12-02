@@ -93,6 +93,29 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 **Schedule:** Hourly (to catch users at 2pm in their timezone)  
 **Purpose:** Sends fast win reminder emails at 2pm
 
+### 9. Streak Recovery
+
+**Endpoint:** `GET /api/cron/streak-recovery?secret=YOUR_CRON_SECRET`  
+**Schedule:** Daily at 3:00 AM UTC  
+**Purpose:** Detects users with broken streaks and sends recovery emails
+
+**What it does:**
+- Finds users with `streak_count = 0` and `last_action_date > 1 day ago`
+- Day 3: Sends streak recovery email via Resend
+- Day 7: Logs billing pause offer (not yet implemented)
+- Day 2: Micro Mode is automatically enabled via adaptive recovery logic in plan generation
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Streak recovery cron completed",
+  "processed": 5,
+  "day3EmailsSent": 2,
+  "day7BillingPauseOffers": 1
+}
+```
+
 ## Setting Up in cron-job.org
 
 1. **Create a new cron job** for each endpoint above

@@ -12,11 +12,13 @@ echo $NEXT_PUBLIC_GLITCHTIP_DSN
 ```
 
 **Expected format:**
+
 ```
 https://your-key@your-glitchtip-domain.com/project-id
 ```
 
 **Common issues:**
+
 - ❌ Missing `NEXT_PUBLIC_` prefix (won't be available client-side)
 - ❌ DSN has trailing whitespace/newlines
 - ❌ DSN is incorrect format
@@ -28,10 +30,12 @@ https://your-key@your-glitchtip-domain.com/project-id
 Open browser DevTools Console and look for:
 
 **If GlitchTip is working:**
+
 - No errors related to Sentry/GlitchTip
 - Errors should be captured silently
 
 **If GlitchTip is NOT working:**
+
 - `[GlitchTip] Error captured (not sent in dev):` - This is normal in development
 - `Sentry is not initialized` - DSN missing or invalid
 - `Failed to send event` - Network/DSN issue
@@ -42,17 +46,20 @@ Open browser DevTools Console and look for:
 ### 3. Verify DSN Format
 
 Your GlitchTip DSN should look like:
+
 ```
 https://abc123def456@glitchtip.com/789
 ```
 
 **Where to find it:**
+
 1. Log into GlitchTip: https://app.glitchtip.com
 2. Go to your project
 3. Navigate to **Settings** → **Client Keys (DSN)**
 4. Copy the DSN
 
 **Common mistakes:**
+
 - Using API key instead of DSN
 - Missing `https://` prefix
 - Wrong project ID
@@ -69,6 +76,7 @@ enabled: process.env.NODE_ENV === "production" && !!dsn,
 ```
 
 **To test in development:**
+
 1. Temporarily change to: `enabled: !!dsn,`
 2. Or test in production/staging environment
 
@@ -79,6 +87,7 @@ enabled: process.env.NODE_ENV === "production" && !!dsn,
 **Manual test in production:**
 
 1. Add a test error button to your app (temporary):
+
 ```typescript
 // In a component
 const testError = () => {
@@ -90,6 +99,7 @@ const testError = () => {
 3. Check GlitchTip dashboard for the error
 
 **Or trigger via logger:**
+
 ```typescript
 import { logError } from "@/lib/utils/logger";
 
@@ -107,10 +117,12 @@ Open browser DevTools → Network tab:
 3. Look for POST requests to GlitchTip domain
 
 **If you see requests:**
+
 - ✅ GlitchTip is receiving errors
 - Check GlitchTip dashboard for events
 
 **If you don't see requests:**
+
 - ❌ DSN might be wrong
 - ❌ GlitchTip might be disabled
 - ❌ Network/CORS issue
@@ -122,10 +134,12 @@ Open browser DevTools → Network tab:
 In GlitchTip dashboard:
 
 1. **Project Settings** → **Client Keys**
+
    - Verify DSN matches your env var
    - Check if key is active/enabled
 
 2. **Project Settings** → **Rate Limits**
+
    - Check if you've hit rate limits
    - Free tier: 1,000 events/month
 
@@ -140,6 +154,7 @@ In GlitchTip dashboard:
 #### Issue: "Sentry is not initialized"
 
 **Fix:**
+
 - Check `NEXT_PUBLIC_GLITCHTIP_DSN` is set
 - Verify DSN format is correct
 - Ensure environment variable is available at build time
@@ -147,6 +162,7 @@ In GlitchTip dashboard:
 #### Issue: "CORS error" or "Failed to fetch"
 
 **Fix:**
+
 - Check GlitchTip domain allows requests from your domain
 - Verify DSN domain matches your GlitchTip instance
 - Check if GlitchTip instance is accessible
@@ -154,12 +170,14 @@ In GlitchTip dashboard:
 #### Issue: "No events in GlitchTip dashboard"
 
 **Possible causes:**
+
 - Errors only sent in production (check `NODE_ENV`)
 - DSN is incorrect
 - Rate limit exceeded
 - GlitchTip project is paused/disabled
 
 **Fix:**
+
 - Verify `NODE_ENV === "production"`
 - Double-check DSN format
 - Check GlitchTip dashboard for rate limits
@@ -168,6 +186,7 @@ In GlitchTip dashboard:
 #### Issue: "Events sent but not showing"
 
 **Fix:**
+
 - Check GlitchTip dashboard filters
 - Verify you're looking at the correct project
 - Check if events are being grouped/filtered
@@ -180,6 +199,7 @@ In GlitchTip dashboard:
 **Step 1: Verify DSN is loaded**
 
 Add temporary logging:
+
 ```typescript
 // In sentry.client.config.ts
 console.log("GlitchTip DSN:", dsn ? "Set" : "Missing");
@@ -237,4 +257,3 @@ try {
 ---
 
 _Last updated: January 2025_
-
