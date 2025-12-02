@@ -406,19 +406,40 @@ ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_up
 
 **Test Steps:**
 
-1. **Trigger the cron job manually:**
+**Option A: Use test endpoint (recommended for testing feedback form)**
 
-   ```bash
-   # Using API key (production)
-   curl -H "Authorization: Bearer tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=" \
-     "https://nextbestmove.app/api/cron/win-back-campaign"
+```bash
+# Send Day 7 win-back email directly (no need to run full cron job)
+curl -X POST \
+  -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceCancellation=7"
 
-   # Or using query param
-   curl "https://nextbestmove.app/api/cron/win-back-campaign?secret=99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da"
-   ```
+# Or using query param
+curl -X POST \
+  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
+```
+
+**Note:** This sends the email without requiring the subscription to be exactly 7 days canceled. Perfect for testing the feedback form without duplicate emails.
+
+**Option B: Trigger the cron job manually:**
+
+```bash
+# Using API key (production)
+curl -H "Authorization: Bearer tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=" \
+  "https://nextbestmove.app/api/cron/win-back-campaign"
+
+# Or using query param
+curl "https://nextbestmove.app/api/cron/win-back-campaign?secret=99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da"
+```
+
+**Warning:** Running the cron job again will send duplicate emails if `daysSinceCancellation` still equals 7. Use Option A or a different test user to avoid duplicates.
+
+**Option C: Test feedback form directly (no email needed)**
+
+Simply navigate to `/app/feedback` while logged in. The form works independently of the email.
 
 2. **Check the response:**
-   ✅ **Expected:** Response shows `day7Emails: 1` (or more if other users match)
+   ✅ **Expected:** Response shows `day7Emails: 1` (if using cron job) or `success: true` (if using test endpoint)
 
 3. **Check email inbox:**
    ✅ **Expected:** Email with subject "What didn't work for you?"
