@@ -11,8 +11,10 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const { searchParams } = new URL(request.url);
   const querySecret = searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET?.trim();
-  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim();
+  
+  // Trim whitespace and newlines from environment variables (Vercel sometimes adds trailing newlines)
+  const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, '');
+  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(/\r?\n/g, '');
 
   // Normalize secrets for comparison (trim whitespace)
   const normalizedQuerySecret = querySecret?.trim();
