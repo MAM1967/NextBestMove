@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type BillingAlertBannerProps = {
   status: "past_due" | "cancel_at_period_end";
@@ -15,6 +15,21 @@ export function BillingAlertBanner({
 }: BillingAlertBannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check localStorage on mount to persist dismissal state
+  useEffect(() => {
+    const storageKey = `billing_banner_dismissed_${status}`;
+    const dismissed = localStorage.getItem(storageKey);
+    if (dismissed === "true") {
+      setIsDismissed(true);
+    }
+  }, [status]);
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    const storageKey = `billing_banner_dismissed_${status}`;
+    localStorage.setItem(storageKey, "true");
+  };
 
   if (isDismissed) {
     return null;
@@ -63,9 +78,10 @@ export function BillingAlertBanner({
             </button>
           </div>
           <button
-            onClick={() => setIsDismissed(true)}
+            onClick={handleDismiss}
             className="text-amber-600 hover:text-amber-800 transition"
             aria-label="Dismiss banner"
+            type="button"
           >
             <svg
               className="h-5 w-5"
@@ -107,9 +123,10 @@ export function BillingAlertBanner({
           </button>
         </div>
         <button
-          onClick={() => setIsDismissed(true)}
+          onClick={handleDismiss}
           className="text-blue-600 hover:text-blue-800 transition"
           aria-label="Dismiss banner"
+          type="button"
         >
           <svg
             className="h-5 w-5"
