@@ -47,20 +47,32 @@ export async function GET(request: NextRequest) {
   }
 
   const email = searchParams.get("email");
+  const userId = searchParams.get("userId");
 
-  if (!email) {
-    return NextResponse.json({ error: "email parameter required" }, { status: 400 });
+  if (!email && !userId) {
+    return NextResponse.json({ error: "email or userId parameter required" }, { status: 400 });
   }
 
   try {
     const supabase = createAdminClient();
 
-    // Get user
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("id, email, name")
-      .eq("email", email)
-      .maybeSingle();
+    // Get user by UUID or email
+    let user, error;
+    if (userId) {
+      ({ data: user, error } = await supabase
+        .from("users")
+        .select("id, email, name")
+        .eq("id", userId)
+        .maybeSingle());
+    } else {
+      // URL decode email to handle + signs properly
+      const decodedEmail = decodeURIComponent(email || "");
+      ({ data: user, error } = await supabase
+        .from("users")
+        .select("id, email, name")
+        .eq("email", decodedEmail)
+        .maybeSingle());
+    }
 
     if (error || !user) {
       return NextResponse.json({ error: `User not found: ${email}`, details: error }, { status: 404 });
