@@ -14,15 +14,8 @@ export function PaymentFailureModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  useEffect(() => {
-    // Mark modal as shown in localStorage to prevent showing again
-    const hasShown = localStorage.getItem("payment_failure_modal_shown");
-    if (hasShown) {
-      setIsDismissed(true);
-    } else {
-      localStorage.setItem("payment_failure_modal_shown", "true");
-    }
-  }, []);
+  // Note: localStorage check is handled by PaymentFailureModalClient
+  // This component just renders the modal UI when it's shown
 
   const handleManageBilling = async () => {
     setIsLoading(true);

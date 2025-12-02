@@ -14,14 +14,9 @@ export function PaymentFailureModalClient({
 
   useEffect(() => {
     if (showModal) {
-      // If server says to show modal, check localStorage
-      // But if payment failure is still active (server says show), respect that over localStorage
-      const hasShown = localStorage.getItem("payment_failure_modal_shown");
-      // Show modal if:
-      // 1. Server says to show it (showModal === true) AND
-      // 2. Either it hasn't been shown before, OR we want to show it again if condition persists
-      // For now, we'll show it if server says to show it, regardless of localStorage
+      // Server says to show modal - always show it if server says so
       // This ensures users see the modal if payment failure condition still exists
+      console.log("PaymentFailureModal: Server says to show modal, opening...");
       setIsOpen(true);
     } else {
       // If server says not to show, clear localStorage flag so it can show again if condition returns
