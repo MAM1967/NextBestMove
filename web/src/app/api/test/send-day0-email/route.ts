@@ -7,27 +7,28 @@ import { sendPaymentFailureEmail } from "@/lib/email/resend";
  * Usage: GET /api/test/send-day0-email?email=mcddsl+onboard2@gmail.com&secret=YOUR_SECRET
  */
 export async function GET(request: NextRequest) {
+  // Match the same auth pattern as other cron endpoints
+  const authHeader = request.headers.get("authorization");
   const { searchParams } = new URL(request.url);
+  const querySecret = searchParams.get("secret");
+  const cronSecret = process.env.CRON_SECRET;
+  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
+
+  // Check Authorization header (Vercel Cron secret or cron-job.org API key), then query param (cron-job.org secret)
+  const isAuthorized = (
+    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    (cronJobOrgApiKey && authHeader === `Bearer ${cronJobOrgApiKey}`) ||
+    (cronSecret && querySecret === cronSecret)
+  );
+
+  if (!isAuthorized) {
+    return NextResponse.json({ 
+      error: "Unauthorized",
+      hint: "Use ?secret=CRON_SECRET or Authorization: Bearer CRON_SECRET"
+    }, { status: 401 });
+  }
+
   const email = searchParams.get("email");
-  const secret = searchParams.get("secret");
-  const requiredSecret = process.env.CRON_SECRET || process.env.TEST_ENDPOINT_SECRET;
-
-  // Simple auth check with better error message
-  if (!requiredSecret) {
-    return NextResponse.json({ 
-      error: "Unauthorized - CRON_SECRET not configured",
-      hint: "Check Vercel environment variables"
-    }, { status: 401 });
-  }
-
-  if (secret !== requiredSecret) {
-    return NextResponse.json({ 
-      error: "Unauthorized - Secret mismatch",
-      hint: "Check that the secret parameter matches CRON_SECRET in Vercel",
-      providedLength: secret?.length || 0,
-      expectedLength: requiredSecret.length
-    }, { status: 401 });
-  }
 
   if (!email) {
     return NextResponse.json({ error: "email parameter required" }, { status: 400 });
