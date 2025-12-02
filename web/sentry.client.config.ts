@@ -72,3 +72,13 @@ Sentry.init({
   },
 });
 
+// Expose Sentry on window for manual testing and debugging
+if (typeof window !== "undefined") {
+  (window as typeof window & { Sentry: typeof Sentry }).Sentry = Sentry;
+  
+  // Log when Sentry is available
+  if (process.env.NODE_ENV === "production") {
+    console.log("[GlitchTip] Sentry exposed on window.Sentry for testing");
+  }
+}
+
