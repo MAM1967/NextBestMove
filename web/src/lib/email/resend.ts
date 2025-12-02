@@ -460,4 +460,55 @@ export async function sendWelcomeEmail({
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Email template for streak recovery (Day 3 after streak break)
+ */
+export async function sendStreakRecoveryEmail(
+  to: string,
+  userName: string
+) {
+  const subject = "Let's get your streak back on track";
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Hey ${userName || "there"},</h1>
+        
+        <p style="margin-bottom: 16px;">
+          We noticed you haven't been active for a few days. No worries — life happens!
+        </p>
+        
+        <p style="margin-bottom: 16px;">
+          The good news? Your streak might be paused, but your momentum can start right back up with just one small action today.
+        </p>
+        
+        <p style="margin-bottom: 16px;">
+          We've set up a lighter plan for you today — just 1-2 high-impact actions to help you ease back in. Think of it as your comeback plan.
+        </p>
+        
+        <div style="margin: 32px 0;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/plan" 
+             style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            View Your Comeback Plan
+          </a>
+        </div>
+        
+        <p style="margin-bottom: 16px;">
+          Remember: consistency beats perfection. One action today is better than zero.
+        </p>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+          You've got this! 💪
+        </p>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 
