@@ -159,6 +159,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] Notification delivery channels (email/push) beyond toggles
 - [ ] Pricing page UI (Standard vs Professional comparison, annual savings, clear value props)
 - [ ] Billing pause feature (30-day pause for users inactive 7+ days)
+- [ ] **Cancellation feedback analytics page**  
+       _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
 
 ---
 

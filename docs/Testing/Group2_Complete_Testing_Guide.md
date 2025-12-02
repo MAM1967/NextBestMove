@@ -40,11 +40,13 @@ WHERE email = 'your-test-email@example.com';
 
 ### Test 1.1: Day 0 - Immediate Payment Failure Email
 
+**Important:** Day 0 email is sent automatically by the **webhook handler** when Stripe sends `invoice.payment_failed` event. It's NOT sent by a cron job.
+
 **Setup SQL:**
 
 ```sql
--- Set user to payment failure (Day 0)
 -- First, ensure user has an active subscription
+-- Then set payment failure state (for testing, we'll manually trigger the email)
 UPDATE billing_subscriptions
 SET status = 'past_due',
     payment_failed_at = NOW(),
@@ -57,12 +59,57 @@ WHERE billing_customer_id = (
 
 **Test Steps:**
 
-1. **Simulate payment failure via Stripe webhook** (or manually set `payment_failed_at`)
-2. **Check email inbox:**
-   ✅ **Expected:** Email with subject "Payment failed — Update to keep your rhythm going"
+1. **Set up payment failure state:**
+
+   ```sql
+   -- Set user to payment failure (Day 0)
+   UPDATE billing_subscriptions
+   SET status = 'past_due',
+       payment_failed_at = NOW(),
+       current_period_end = NOW() + INTERVAL '30 days'
+   WHERE billing_customer_id = (
+     SELECT id FROM billing_customers
+     WHERE user_id = '<your_test_user_id>'
+   );
+   ```
+
+   **Note:** Manually setting `payment_failed_at` won't trigger the email automatically. The webhook handler only sends Day 0 email when `payment_failed_at` is NULL (first failure). For testing, use the test endpoint below.
+
+2. **Trigger Day 0 email manually:**
+
+   **Option A: Use test API endpoint (for production testing)**
+
+   ```bash
+   # Using Authorization header with CRON_SECRET
+   curl -X POST \
+     -H "Authorization: Bearer YOUR_CRON_SECRET" \
+     "https://nextbestmove.app/api/test/send-payment-failure-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceFailure=0"
+
+   # Or using query parameter
+   curl -X POST \
+     "https://nextbestmove.app/api/test/send-payment-failure-email?userEmail=mcddsl+onboard2@gmail.com&daysSinceFailure=0&secret=YOUR_CRON_SECRET"
+   ```
+
+   **Note:** Replace `YOUR_CRON_SECRET` with your actual `CRON_SECRET` or `TEST_ENDPOINT_SECRET` from Vercel environment variables.
+
+   **Option B: Use test script (for local testing only)**
+
+   ```bash
+   cd /Users/michaelmcdermott/NextBestMove
+   npx tsx scripts/test-payment-failure-email.ts
+   ```
+
+   **Option C: Simulate webhook (most realistic)**
+
+   - Reset `payment_failed_at` to NULL first
+   - Then trigger Stripe webhook `invoice.payment_failed` event
+   - The webhook handler will automatically send Day 0 email
+
+3. **Check email inbox:**
+   ✅ **Expected:** Email with subject "Your payment failed — Update to keep your rhythm"
    ✅ **Expected:** Email body includes urgent message about payment failure
    ✅ **Expected:** CTA button: "Update Payment Method"
-   ✅ **Expected:** Link points to billing portal
+   ✅ **Expected:** Link points to billing portal (`/app/settings`)
 
 **Verification Checklist:**
 
@@ -330,16 +377,32 @@ WHERE billing_customer_id = (
 **Setup SQL:**
 
 ```sql
--- Set user to canceled (voluntary cancellation, not payment failure)
+-- IMPORTANT: The billing_subscriptions table has a trigger that auto-updates updated_at
+-- We need to temporarily disable it to set a past timestamp
+
+-- Step 1: Temporarily disable the trigger
+ALTER TABLE billing_subscriptions DISABLE TRIGGER update_billing_subscriptions_updated_at;
+
+-- Step 2: Set user to canceled (voluntary cancellation, not payment failure)
+-- Note: Set updated_at to 7 days + 12 hours ago to ensure cron job calculation equals exactly 7 days
+-- The cron job uses Math.floor(), so we need at least 7 full days (168 hours)
 UPDATE billing_subscriptions
 SET status = 'canceled',
     payment_failed_at = NULL,  -- Important: no payment failure
-    updated_at = NOW() - INTERVAL '7 days'  -- Cancelled 7 days ago
+    updated_at = NOW() - INTERVAL '7 days' - INTERVAL '12 hours'  -- Cancelled 7.5 days ago (ensures floor() = 7)
 WHERE billing_customer_id = (
   SELECT id FROM billing_customers
   WHERE user_id = '<your_test_user_id>'
 );
+
+-- Step 3: Re-enable the trigger
+ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_updated_at;
 ```
+
+**Important:**
+
+- The `billing_subscriptions` table has a trigger that automatically sets `updated_at = now()` on any UPDATE. You must disable it temporarily to set a past timestamp.
+- The cron job calculates days using `Math.floor()`, so `updated_at` must be at least 7 full days (168 hours) ago. Setting it to `NOW() - INTERVAL '7 days' - INTERVAL '12 hours'` ensures the calculation equals exactly 7 days regardless of when the cron runs.
 
 **Test Steps:**
 
@@ -359,15 +422,20 @@ WHERE billing_customer_id = (
 
 3. **Check email inbox:**
    ✅ **Expected:** Email with subject "What didn't work for you?"
-   ✅ **Expected:** Email body includes feedback request
-   ✅ **Expected:** CTA: "Reactivate Subscription"
+   ✅ **Expected:** Email body includes feedback request: "We'd love to hear what didn't work for you. Your feedback helps us improve."
+   ✅ **Expected:** CTA button: "Share Feedback"
+   ✅ **Expected:** CTA links to `/app/feedback` (feedback survey form)
 
 **Verification Checklist:**
 
 - [ ] Email sent on Day 7 after cancellation
 - [ ] Subject: "What didn't work for you?"
 - [ ] Body includes feedback request
-- [ ] CTA: "Reactivate Subscription"
+- [ ] CTA button text: "Share Feedback"
+- [ ] CTA links to feedback page (`/app/feedback`)
+- [ ] Feedback form displays correctly with cancellation reasons
+- [ ] Form submission works and saves to database
+- [ ] Success message displays after submission
 - [ ] Cron response shows `day7Emails: 1`
 - [ ] Only sent to voluntary cancellations (not payment failures)
 
@@ -378,15 +446,22 @@ WHERE billing_customer_id = (
 **Setup SQL:**
 
 ```sql
+-- Temporarily disable the trigger to set past timestamp
+ALTER TABLE billing_subscriptions DISABLE TRIGGER update_billing_subscriptions_updated_at;
+
 -- Set user to canceled 30 days ago
+-- Note: Add 12 hours to ensure cron job calculation equals exactly 30 days
 UPDATE billing_subscriptions
 SET status = 'canceled',
     payment_failed_at = NULL,
-    updated_at = NOW() - INTERVAL '30 days'
+    updated_at = NOW() - INTERVAL '30 days' - INTERVAL '12 hours'
 WHERE billing_customer_id = (
   SELECT id FROM billing_customers
   WHERE user_id = '<your_test_user_id>'
 );
+
+-- Re-enable the trigger
+ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_updated_at;
 ```
 
 **Test Steps:**
@@ -395,15 +470,18 @@ WHERE billing_customer_id = (
 2. **Check the response:**
    ✅ **Expected:** Response shows `day30Emails: 1`
 3. **Check email inbox:**
-   ✅ **Expected:** Email with subject about new features/updates
-   ✅ **Expected:** Email mentions "We shipped updates"
+   ✅ **Expected:** Email with subject "We shipped updates since you left"
+   ✅ **Expected:** Email body: "We've made improvements based on feedback. One of them might solve the issue you mentioned."
+   ✅ **Expected:** CTA button: "See What's New"
+   ✅ **Expected:** CTA links to `/app/settings`
 
 **Verification Checklist:**
 
 - [ ] Email sent on Day 30
-- [ ] Subject mentions new features/updates
-- [ ] Body includes new features
-- [ ] CTA: "Reactivate Subscription"
+- [ ] Subject: "We shipped updates since you left"
+- [ ] Body mentions improvements/updates
+- [ ] CTA button text: "See What's New"
+- [ ] CTA links to settings page (`/app/settings`)
 - [ ] Cron response shows `day30Emails: 1`
 
 ---
@@ -413,15 +491,22 @@ WHERE billing_customer_id = (
 **Setup SQL:**
 
 ```sql
+-- Temporarily disable the trigger to set past timestamp
+ALTER TABLE billing_subscriptions DISABLE TRIGGER update_billing_subscriptions_updated_at;
+
 -- Set user to canceled 90 days ago
+-- Note: Add 12 hours to ensure cron job calculation equals exactly 90 days
 UPDATE billing_subscriptions
 SET status = 'canceled',
     payment_failed_at = NULL,
-    updated_at = NOW() - INTERVAL '90 days'
+    updated_at = NOW() - INTERVAL '90 days' - INTERVAL '12 hours'
 WHERE billing_customer_id = (
   SELECT id FROM billing_customers
   WHERE user_id = '<your_test_user_id>'
 );
+
+-- Re-enable the trigger
+ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_updated_at;
 ```
 
 **Test Steps:**
@@ -430,15 +515,18 @@ WHERE billing_customer_id = (
 2. **Check the response:**
    ✅ **Expected:** Response shows `day90Emails: 1`
 3. **Check email inbox:**
-   ✅ **Expected:** Email with subject "Your data is still here"
-   ✅ **Expected:** Email mentions data retention
+   ✅ **Expected:** Email with subject "Your past data is still here"
+   ✅ **Expected:** Email body: "Your past data is still here. Reactivate in one click and pick up where you left off."
+   ✅ **Expected:** CTA button: "Reactivate"
+   ✅ **Expected:** CTA links to `/app/settings`
 
 **Verification Checklist:**
 
 - [ ] Email sent on Day 90
-- [ ] Subject: "Your data is still here"
-- [ ] Body mentions data retention
-- [ ] CTA: "Reactivate Subscription"
+- [ ] Subject: "Your past data is still here"
+- [ ] Body mentions data retention/reactivation
+- [ ] CTA button text: "Reactivate"
+- [ ] CTA links to settings page (`/app/settings`)
 - [ ] Cron response shows `day90Emails: 1`
 
 ---
@@ -448,15 +536,22 @@ WHERE billing_customer_id = (
 **Setup SQL:**
 
 ```sql
+-- Temporarily disable the trigger to set past timestamp
+ALTER TABLE billing_subscriptions DISABLE TRIGGER update_billing_subscriptions_updated_at;
+
 -- Set user to canceled 180 days ago
+-- Note: Add 12 hours to ensure cron job calculation equals exactly 180 days
 UPDATE billing_subscriptions
 SET status = 'canceled',
     payment_failed_at = NULL,
-    updated_at = NOW() - INTERVAL '180 days'
+    updated_at = NOW() - INTERVAL '180 days' - INTERVAL '12 hours'
 WHERE billing_customer_id = (
   SELECT id FROM billing_customers
   WHERE user_id = '<your_test_user_id>'
 );
+
+-- Re-enable the trigger
+ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_updated_at;
 ```
 
 **Test Steps:**
@@ -465,15 +560,18 @@ WHERE billing_customer_id = (
 2. **Check the response:**
    ✅ **Expected:** Response shows `day180Emails: 1`
 3. **Check email inbox:**
-   ✅ **Expected:** Email with subject "Should we delete your data?"
-   ✅ **Expected:** Email mentions data management
+   ✅ **Expected:** Email with subject "Should we delete your data or keep it?"
+   ✅ **Expected:** Email body: "It's been 180 days since you canceled. Should we delete your data or keep it for a bit longer?"
+   ✅ **Expected:** CTA button: "Manage Data"
+   ✅ **Expected:** CTA links to `/app/settings`
 
 **Verification Checklist:**
 
 - [ ] Email sent on Day 180
-- [ ] Subject: "Should we delete your data?"
-- [ ] Body mentions data management
-- [ ] CTA: "Reactivate Subscription"
+- [ ] Subject: "Should we delete your data or keep it?"
+- [ ] Body mentions data management/deletion
+- [ ] CTA button text: "Manage Data"
+- [ ] CTA links to settings page (`/app/settings`)
 - [ ] Cron response shows `day180Emails: 1`
 
 ---
@@ -539,11 +637,18 @@ SELECT
   bs.payment_failed_at,
   bs.cancel_at_period_end,
   bs.current_period_end,
+  bs.updated_at,
   bs.metadata,
   CASE
     WHEN bs.payment_failed_at IS NULL THEN 'No payment failure'
     ELSE CONCAT('Payment failed ', CEIL(EXTRACT(EPOCH FROM (NOW() - bs.payment_failed_at)) / 86400), ' days ago')
-  END as payment_failure_state
+  END as payment_failure_state,
+  -- Calculate days since cancellation (matches cron job logic)
+  CASE
+    WHEN bs.status = 'canceled' AND bs.updated_at IS NOT NULL THEN
+      FLOOR(EXTRACT(EPOCH FROM (NOW() - bs.updated_at)) / 86400)
+    ELSE NULL
+  END as days_since_cancellation
 FROM users u
 LEFT JOIN billing_customers bc ON bc.user_id = u.id
 LEFT JOIN billing_subscriptions bs ON bs.billing_customer_id = bc.id
@@ -615,9 +720,12 @@ LIMIT 1;
 
 - Check subscription status is `canceled`
 - Check `payment_failed_at` is NULL (voluntary cancellation)
-- Check `updated_at` matches target day (7, 30, 90, or 180)
+- **CRITICAL: Disable trigger before updating** - The `billing_subscriptions` table has a trigger that automatically sets `updated_at = now()` on any UPDATE. You must disable it with `ALTER TABLE billing_subscriptions DISABLE TRIGGER update_billing_subscriptions_updated_at;` before setting a past timestamp, then re-enable it.
+- **Check `days_since_cancellation` calculation** - The cron job uses `Math.floor()`, so `updated_at` must be at least N full days ago (where N is 7, 30, 90, or 180). Use the diagnostic SQL query above to verify the actual days since cancellation.
+- If `days_since_cancellation` shows 6 instead of 7, update SQL to use `NOW() - INTERVAL '7 days' - INTERVAL '12 hours'` to ensure it's definitely more than 7 full days.
 - Check Resend dashboard for delivery status
 - Verify cron job response shows correct email count
+- The cron job only sends emails on **exact** days (7, 30, 90, 180) - if it's day 8, 31, 91, or 181, no email will be sent
 
 **Cron job failing?**
 
@@ -642,4 +750,3 @@ LIMIT 1;
 ---
 
 _Last updated: January 2025_
-

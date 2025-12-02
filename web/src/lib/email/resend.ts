@@ -267,22 +267,28 @@ export async function sendWinBackEmail({
   let message: string;
   let ctaText: string;
 
+  let ctaUrl: string;
+  
   if (daysSinceCancellation === 7) {
     subject = "What didn't work for you?";
     message = "We'd love to hear what didn't work for you. Your feedback helps us improve.";
     ctaText = "Share Feedback";
+    ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/feedback`;
   } else if (daysSinceCancellation === 30) {
     subject = "We shipped updates since you left";
     message = "We've made improvements based on feedback. One of them might solve the issue you mentioned.";
     ctaText = "See What's New";
+    ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings`;
   } else if (daysSinceCancellation === 90) {
     subject = "Your past data is still here";
     message = "Your past data is still here. Reactivate in one click and pick up where you left off.";
     ctaText = "Reactivate";
+    ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings`;
   } else {
     subject = "Should we delete your data or keep it?";
     message = "It's been 180 days since you canceled. Should we delete your data or keep it for a bit longer?";
     ctaText = "Manage Data";
+    ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings`;
   }
 
   const html = `
@@ -300,7 +306,7 @@ export async function sendWinBackEmail({
         </p>
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
+          <a href="${ctaUrl}" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
             ${ctaText}
           </a>
