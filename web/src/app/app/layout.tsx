@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./SignOutButton";
 import { ensureUserProfile } from "@/lib/supabase/userProfile";
 import { syncCalendarOnLogin } from "@/lib/calendar/sync-on-login";
+import { DowngradeWarningChecker } from "./components/DowngradeWarningChecker";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -115,7 +116,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <SignOutButton />
         </div>
       </aside>
-      <main className="flex-1 px-8 py-8">{children}</main>
+      <main className="flex-1 px-8 py-8">
+        {children}
+        <DowngradeWarningChecker />
+      </main>
     </div>
   );
 }
