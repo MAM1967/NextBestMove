@@ -39,6 +39,9 @@ const nextConfig: NextConfig = {
   // instrumentation.ts is automatically enabled in Next.js 16+
   // Read env vars directly from .env.local file to work around parsing issues
   
+  // Remove X-Powered-By header
+  poweredByHeader: false,
+
   // Security headers
   async headers() {
     return [
@@ -46,32 +49,54 @@ const nextConfig: NextConfig = {
         // Apply these headers to all routes
         source: '/:path*',
         headers: [
-          // Fix Issue 1: Content Security Policy
+          // Stricter Content Security Policy (without unsafe-inline/unsafe-eval for scripts)
+          // Note: This uses 'strict-dynamic' which is more secure for Next.js
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'strict-dynamic'", // Allows Next.js scripts safely
+              "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              // External API connections
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://billing.stripe.com https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://login.microsoftonline.com https://graph.microsoft.com https://api.resend.com https://app.glitchtip.com https://cloud.umami.is https://api-gateway.umami.dev",
+              // Stripe checkout/billing portal iframes
+              "frame-src 'self' https://checkout.stripe.com https://billing.stripe.com https://js.stripe.com",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; ')
           },
-          // Fix Issue 2: Anti-clickjacking Protection
+          // Anti-clickjacking Protection
           {
             key: 'X-Frame-Options',
             value: 'SAMEORIGIN'
           },
-          // Additional Security Headers
+          // Prevent MIME type sniffing
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff'
           },
+          // XSS Protection (legacy but harmless)
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block'
           },
+          // Referrer Policy
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin'
           },
+          // Permissions Policy
           {
             key: 'Permissions-Policy',
             value: 'geolocation=(), microphone=(), camera=()'
+          },
+          // Strict Transport Security (HTTPS only)
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
           }
         ],
       },
