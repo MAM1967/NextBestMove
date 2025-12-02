@@ -20,8 +20,8 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
     const { searchParams } = new URL(request.url);
     const querySecret = searchParams.get("secret");
-    const cronSecret = process.env.CRON_SECRET;
-    const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
+    const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, '');
+    const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(/\r?\n/g, '');
     
     // Check Authorization header (Vercel Cron secret or cron-job.org API key), then query param (cron-job.org secret)
     const isAuthorized = (

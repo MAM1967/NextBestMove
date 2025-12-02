@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
   // Authentication
   const authHeader = request.headers.get("authorization");
   const secret = request.nextUrl.searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
+  const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, '');
+  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(/\r?\n/g, '');
 
   const isAuthorized =
     (authHeader === `Bearer ${cronSecret}`) ||
