@@ -137,16 +137,17 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Email templates created, API endpoints implemented, cron jobs configured via cron-job.org. Rate limiting protection added. DMARC configured for improved deliverability._
 - [x] **Paywall analytics & copy polish** ✅ (trial/past-due variants, event tracking. Completed and tested - all variants implemented with analytics tracking.)
 - [x] **Past-due & cancellation banners** ✅ (dashboard alerts with billing portal CTA. Completed - BillingAlertBanner component created and integrated into dashboard.)
-- [ ] **Adaptive recovery & celebration flows** (low completion micro-plan, 7+ day comeback, high completion boost)
+- [x] **Adaptive recovery & celebration flows** ✅ (low completion micro-plan, 7+ day comeback, high completion boost. Completed and tested - all Group 3 tests passed: low completion detection, 7+ day inactivity comeback plan, high completion streak boost, celebration banner, Day 2-6 micro mode auto-enable, Day 3 email, Day 7 billing pause detection.)
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
 - [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
 - [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
 - [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
-- [ ] **Streak break detection & recovery** (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7)
-- [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented.)
-- [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures.)
+- [x] **Streak break detection & recovery** ✅ (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7. Completed and tested - Day 2-6 micro mode auto-enable, Day 3 email delivery, Day 7 billing pause detection and logging. Push notifications deferred to future. All Group 3 tests passed.)
+- [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed and tested - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented. All Group 2 tests passed.)
+- [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
 - [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
 - [ ] **Plan downgrade handling** (Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation)
+- [ ] **Display weekly focus on Daily Plan page** (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Currently shows hardcoded placeholder. Part of US-7.6 - high priority for user engagement and context.)
 
 ---
 
