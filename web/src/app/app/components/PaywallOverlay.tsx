@@ -144,8 +144,67 @@ export function PaywallOverlay({
     });
   }
 
-  // Grace period - read-only mode (Day 15-21)
-  if (effectiveStatus === "grace_period" || isReadOnly || isInGracePeriod) {
+  // Past due - show payment failure message FIRST (even if in read-only mode)
+  // This ensures payment failure read-only mode (Day 7-14) shows correct message
+  if (subscriptionStatus === "past_due") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="mx-4 w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-xl">
+          <div className="mb-4">
+            <div className="mb-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+              Payment Failed
+            </div>
+            <h2 className="text-xl font-semibold text-zinc-900">
+              {isReadOnly 
+                ? "Payment failed — Account is read-only"
+                : "Payment failed — Update to keep your streak alive"}
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              {isReadOnly
+                ? "Your account is in read-only mode. Update your payment method to restore full access. Your data is safe."
+                : "Update your payment method to keep your rhythm going. Your data is safe."}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                console.log("[Paywall Analytics] Update payment CTA clicked", {
+                  status: "past_due",
+                  isReadOnly,
+                  timestamp: new Date().toISOString(),
+                });
+                handleManageBilling();
+              }}
+              disabled={isLoading}
+              className="w-full rounded-full bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+            >
+              {isLoading ? "Loading..." : "Update Payment Method"}
+            </button>
+            {onDismiss && !isReadOnly && (
+              <button
+                onClick={() => {
+                  console.log("[Paywall Analytics] Paywall dismissed", {
+                    status: "past_due",
+                    timestamp: new Date().toISOString(),
+                  });
+                  onDismiss();
+                }}
+                className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Grace period - read-only mode (Day 15-21) - only for trial expiration, not payment failure
+  // Note: past_due is already handled above, so this only applies to trial expiration
+  // isReadOnly can be true for trial grace period, so check that status is not canceled
+  if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled") || isInGracePeriod) {
     const daysRemaining = daysUntilGracePeriodEnds ?? 0;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -185,57 +244,6 @@ export function PaywallOverlay({
     );
   }
 
-  // Past due - variant messaging
-  if (subscriptionStatus === "past_due") {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="mx-4 w-full max-w-md rounded-2xl border border-amber-200 bg-white p-6 shadow-xl">
-          <div className="mb-4">
-            <div className="mb-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-              Payment Failed
-            </div>
-            <h2 className="text-xl font-semibold text-zinc-900">
-              Payment failed — Update to keep your streak alive
-            </h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              Update your payment method to keep your rhythm going. Your data is
-              safe.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                console.log("[Paywall Analytics] Update payment CTA clicked", {
-                  status: "past_due",
-                  timestamp: new Date().toISOString(),
-                });
-                handleManageBilling();
-              }}
-              disabled={isLoading}
-              className="w-full rounded-full bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
-            >
-              {isLoading ? "Loading..." : "Update Payment Method"}
-            </button>
-            {onDismiss && (
-              <button
-                onClick={() => {
-                  console.log("[Paywall Analytics] Paywall dismissed", {
-                    status: "past_due",
-                    timestamp: new Date().toISOString(),
-                  });
-                  onDismiss();
-                }}
-                className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
-              >
-                Dismiss
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Canceled or no subscription - variant messaging
   let headline = "Subscribe to unlock this feature";
