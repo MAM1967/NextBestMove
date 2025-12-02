@@ -173,6 +173,7 @@ export async function GET(request: Request) {
 
           // Only send email if not already sent today (prevent duplicates)
           if (lastEmailSentDate !== today) {
+            // Update metadata first (for tracking)
             const { error: updateError } = await supabase
               .from("billing_subscriptions")
               .update({
@@ -180,7 +181,6 @@ export async function GET(request: Request) {
                   ...currentMetadata,
                   payment_failure_read_only_mode: true,
                   payment_failure_read_only_since: now.toISOString(),
-                  day7_email_sent_date: today,
                 },
               })
               .eq("id", subscription.id);
@@ -194,18 +194,44 @@ export async function GET(request: Request) {
               throw updateError;
             }
 
-            await sendPaymentFailureEmail({
-              to: user.email,
-              userName: user.name || "there",
-              daysSinceFailure: 7,
-            });
+            // Send email (with error handling)
+            try {
+              await sendPaymentFailureEmail({
+                to: user.email,
+                userName: user.name || "there",
+                daysSinceFailure: 7,
+              });
 
-            logInfo("Payment failure Day 7 - read-only mode activated", {
-              userId: user.id,
-              subscriptionId: subscription.id,
-              daysSinceFailure,
-              context: "payment_failure_recovery_cron",
-            });
+              // Only mark email as sent if it succeeded
+              await supabase
+                .from("billing_subscriptions")
+                .update({
+                  metadata: {
+                    ...currentMetadata,
+                    payment_failure_read_only_mode: true,
+                    payment_failure_read_only_since: now.toISOString(),
+                    day7_email_sent_date: today,
+                  },
+                })
+                .eq("id", subscription.id);
+
+              logInfo("Payment failure Day 7 - read-only mode activated and email sent", {
+                userId: user.id,
+                subscriptionId: subscription.id,
+                daysSinceFailure,
+                email: user.email,
+                context: "payment_failure_recovery_cron",
+              });
+            } catch (emailError) {
+              logError("Failed to send Day 7 payment failure email", emailError, {
+                userId: user.id,
+                subscriptionId: subscription.id,
+                email: user.email,
+                daysSinceFailure,
+                context: "payment_failure_recovery_cron",
+              });
+              // Don't throw - read-only mode is still activated even if email fails
+            }
 
             day7ReadOnly++;
           } else {
