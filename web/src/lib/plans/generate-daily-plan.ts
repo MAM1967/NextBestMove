@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCapacityForDate } from "@/lib/calendar/capacity";
 import {
   hasLowCompletionPattern,
+  isInactive2To6Days,
   isInactive7PlusDays,
   hasHighCompletionStreak,
 } from "./completion-tracking";
@@ -182,8 +183,9 @@ export async function generateDailyPlanForUser(
     let actionCount = capacityInfo.actionsPerDay;
 
     // Adaptive Recovery Logic: Override capacity based on user patterns
-    const [lowCompletion, inactive7Plus, highStreak] = await Promise.all([
+    const [lowCompletion, inactive2To6, inactive7Plus, highStreak] = await Promise.all([
       hasLowCompletionPattern(supabase, userId),
+      isInactive2To6Days(supabase, userId),
       isInactive7PlusDays(supabase, userId),
       hasHighCompletionStreak(supabase, userId),
     ]);
@@ -195,6 +197,12 @@ export async function generateDailyPlanForUser(
       capacityLevel = "micro";
       actionCount = 2;
       adaptiveReason = "comeback";
+    }
+    // Case 1b: 2-6 days inactive (Day 2-6 streak break) → Micro plan (2 actions)
+    else if (inactive2To6) {
+      capacityLevel = "micro";
+      actionCount = 2;
+      adaptiveReason = "streak_break";
     }
     // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
     else if (lowCompletion) {
@@ -417,6 +425,8 @@ export async function generateDailyPlanForUser(
     // Add adaptive messaging based on recovery reason
     if (adaptiveReason === "comeback") {
       focusStatement = "Welcome back. One small win to restart your momentum.";
+    } else if (adaptiveReason === "streak_break") {
+      focusStatement = "Let's ease back in — here are your highest-impact moves for today.";
     } else if (adaptiveReason === "low_completion") {
       focusStatement = "Let's ease back in — here are your highest-impact moves for today.";
     } else if (adaptiveReason === "high_streak") {
