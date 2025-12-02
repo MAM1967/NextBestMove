@@ -113,11 +113,30 @@ export default function DailyPlanPage() {
 
   const fetchWeeklyFocus = async () => {
     try {
-      // TODO: Fetch weekly focus from weekly_summaries table
-      // For now, use a placeholder
+      // Fetch most recent weekly summary
+      const response = await fetch("/api/weekly-summaries?limit=1");
+      
+      if (response.ok) {
+        const data = await response.json();
+        // The API returns { summary: {...}, summaries: [...] }
+        // summary is the most recent one
+        if (data?.summary?.next_week_focus) {
+          setWeeklyFocus(data.summary.next_week_focus);
+          return;
+        }
+        // Fallback: check summaries array
+        if (data?.summaries?.[0]?.next_week_focus) {
+          setWeeklyFocus(data.summaries[0].next_week_focus);
+          return;
+        }
+      }
+      
+      // Fallback: placeholder if no weekly summary exists
       setWeeklyFocus("Build consistent revenue rhythm");
     } catch (err) {
       console.error("Failed to fetch weekly focus:", err);
+      // Fallback on error
+      setWeeklyFocus("Build consistent revenue rhythm");
     }
   };
 
