@@ -35,12 +35,12 @@ export async function POST(request: Request) {
     // Try to get base URL from request headers first (for production), then env var, then fallback
     const requestUrl =
       request.headers.get("referer") || request.headers.get("origin");
-    let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\r?\n/g, '');
 
     if (!baseUrl && requestUrl) {
       // Extract base URL from referer/origin (e.g., "https://nextbestmove.app")
       try {
-        const url = new URL(requestUrl);
+        const url = new URL(requestUrl.trim().replace(/\r?\n/g, ''));
         baseUrl = `${url.protocol}//${url.host}`;
       } catch {
         // If URL parsing fails, fall back to env or localhost
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Final fallback to localhost for local development
-    baseUrl = baseUrl || "http://localhost:3000";
+    baseUrl = (baseUrl || "http://localhost:3000").trim().replace(/\r?\n/g, '');
     const returnUrl = `${baseUrl}/app/settings`;
 
     // Create billing portal session
