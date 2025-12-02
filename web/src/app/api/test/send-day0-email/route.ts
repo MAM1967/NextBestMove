@@ -11,14 +11,18 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const { searchParams } = new URL(request.url);
   const querySecret = searchParams.get("secret");
-  const cronSecret = process.env.CRON_SECRET;
-  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim();
+
+  // Normalize secrets for comparison (trim whitespace)
+  const normalizedQuerySecret = querySecret?.trim();
+  const normalizedAuthHeader = authHeader?.trim();
 
   // Check Authorization header (Vercel Cron secret or cron-job.org API key), then query param (cron-job.org secret)
   const isAuthorized = (
-    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-    (cronJobOrgApiKey && authHeader === `Bearer ${cronJobOrgApiKey}`) ||
-    (cronSecret && querySecret === cronSecret)
+    (cronSecret && normalizedAuthHeader === `Bearer ${cronSecret}`) ||
+    (cronJobOrgApiKey && normalizedAuthHeader === `Bearer ${cronJobOrgApiKey}`) ||
+    (cronSecret && normalizedQuerySecret === cronSecret)
   );
 
   if (!isAuthorized) {
