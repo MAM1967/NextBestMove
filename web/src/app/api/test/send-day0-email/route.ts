@@ -12,9 +12,21 @@ export async function GET(request: NextRequest) {
   const secret = searchParams.get("secret");
   const requiredSecret = process.env.CRON_SECRET || process.env.TEST_ENDPOINT_SECRET;
 
-  // Simple auth check
-  if (!requiredSecret || secret !== requiredSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Simple auth check with better error message
+  if (!requiredSecret) {
+    return NextResponse.json({ 
+      error: "Unauthorized - CRON_SECRET not configured",
+      hint: "Check Vercel environment variables"
+    }, { status: 401 });
+  }
+
+  if (secret !== requiredSecret) {
+    return NextResponse.json({ 
+      error: "Unauthorized - Secret mismatch",
+      hint: "Check that the secret parameter matches CRON_SECRET in Vercel",
+      providedLength: secret?.length || 0,
+      expectedLength: requiredSecret.length
+    }, { status: 401 });
   }
 
   if (!email) {
