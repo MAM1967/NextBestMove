@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline for chunks and runtime
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cloud.umami.is", // Next.js requires unsafe-eval and unsafe-inline for chunks and runtime, Umami analytics
               "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",

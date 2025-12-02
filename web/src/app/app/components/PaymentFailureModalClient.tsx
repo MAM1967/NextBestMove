@@ -35,19 +35,33 @@ export function PaymentFailureModalClient({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to open billing portal");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}: Failed to open billing portal`;
+        console.error("Failed to open billing portal:", {
+          status: response.status,
+          error: errorMessage,
+          errorData,
+        });
+        // Show error to user instead of silently redirecting
+        alert(`Unable to open billing portal: ${errorMessage}. Please try again or go to Settings to manage billing.`);
+        // Still redirect to settings as fallback, but user knows why
+        window.location.href = "/app/settings";
+        return;
       }
 
       const { url } = await response.json();
       if (url) {
+        // Redirect directly to Stripe billing portal
         window.location.href = url;
       } else {
         throw new Error("No billing portal URL returned");
       }
     } catch (error) {
       console.error("Failed to open billing portal:", error);
-      // Fallback: redirect to settings page
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      // Show error to user instead of silently redirecting
+      alert(`Unable to open billing portal: ${errorMessage}. Please try again or go to Settings to manage billing.`);
+      // Redirect to settings as fallback
       window.location.href = "/app/settings";
     }
   };
