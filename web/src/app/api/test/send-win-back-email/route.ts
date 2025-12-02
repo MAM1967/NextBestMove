@@ -13,7 +13,7 @@ import { logError, logInfo } from "@/lib/utils/logger";
 export async function POST(request: NextRequest) {
   // Simple auth check - require a secret token for production testing
   const authHeader = request.headers.get("authorization");
-  const testSecret = process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET;
+  const testSecret = (process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET)?.trim().replace(/\r?\n/g, '');
   
   if (process.env.NODE_ENV === "production") {
     if (!testSecret) {
@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const providedSecret = authHeader?.replace("Bearer ", "") || 
-                          new URL(request.url).searchParams.get("secret");
+    const providedSecret = (authHeader?.replace("Bearer ", "") || 
+                          new URL(request.url).searchParams.get("secret"))?.trim();
     
     if (providedSecret !== testSecret) {
       return NextResponse.json(
