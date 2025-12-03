@@ -277,6 +277,16 @@ export async function handleSubscriptionUpdated(
     billingCustomerId,
   });
 
+  // Get old subscription BEFORE upsert to detect downgrades
+  const { data: oldSubscriptionData } = await supabase
+    .from("billing_subscriptions")
+    .select("metadata")
+    .eq("stripe_subscription_id", subscription.id)
+    .maybeSingle();
+
+  const oldPlanType = (oldSubscriptionData?.metadata as any)?.plan_type;
+  const newPlanType = planMetadata.plan_type || "standard";
+
   const { data: upsertedData, error: upsertError } = await supabase
     .from("billing_subscriptions")
     .upsert(
@@ -322,9 +332,6 @@ export async function handleSubscriptionUpdated(
 
   // Detect plan downgrade (Premium → Standard)
   if (upsertedData && upsertedData.length > 0) {
-    const oldSubscription = upsertedData[0];
-    const oldPlanType = (oldSubscription.metadata as any)?.plan_type;
-    const newPlanType = planMetadata.plan_type || "standard";
 
     // Check if downgrading from Premium to Standard
     if (
@@ -350,10 +357,13 @@ export async function handleSubscriptionUpdated(
         const pinCount = count || 0;
         if (pinCount > 10) {
           // Store downgrade warning flag in metadata
+          // Merge with existing metadata to preserve other fields
+          const existingMetadata = upsertedData[0].metadata as any || {};
           await supabase
             .from("billing_subscriptions")
             .update({
               metadata: {
+                ...existingMetadata,
                 ...planMetadata,
                 downgrade_warning_shown: false, // Frontend will check and show modal
                 downgrade_pin_count: pinCount,
