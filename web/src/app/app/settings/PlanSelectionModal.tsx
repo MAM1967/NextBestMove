@@ -23,8 +23,8 @@ const PLANS: { type: PlanType; name: string; features: string[] }[] = [
     ],
   },
   {
-    type: "professional",
-    name: "Professional",
+    type: "premium",
+    name: "Premium",
     features: [
       "Everything in Standard",
       "Unlimited pins",
@@ -86,8 +86,8 @@ export function PlanSelectionModal({
 
   const standardMonthly = getPlanMetadata("standard", "month");
   const standardYearly = getPlanMetadata("standard", "year");
-  const professionalMonthly = getPlanMetadata("professional", "month");
-  const professionalYearly = getPlanMetadata("professional", "year");
+  const premiumMonthly = getPlanMetadata("premium", "month");
+  const premiumYearly = getPlanMetadata("premium", "year");
 
   const monthlySavings =
     standardYearly && standardMonthly
@@ -97,11 +97,11 @@ export function PlanSelectionModal({
             100
         )
       : 0;
-  const professionalYearlySavings =
-    professionalYearly && professionalMonthly
+  const premiumYearlySavings =
+    premiumYearly && premiumMonthly
       ? Math.round(
-          ((professionalMonthly.amount * 12 - professionalYearly.amount) /
-            (professionalMonthly.amount * 12)) *
+          ((premiumMonthly.amount * 12 - premiumYearly.amount) /
+            (premiumMonthly.amount * 12)) *
             100
         )
       : 0;
@@ -164,7 +164,7 @@ export function PlanSelectionModal({
                 Yearly
                 {selectedInterval === "year" && (
                   <span className="ml-1.5 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-semibold text-purple-700">
-                    Save {selectedPlan === "standard" ? monthlySavings : professionalYearlySavings}%
+                    Save {selectedPlan === "standard" ? monthlySavings : premiumYearlySavings}%
                   </span>
                 )}
               </button>
@@ -179,7 +179,7 @@ export function PlanSelectionModal({
                   ? getPlanMetadata(plan.type, "month")
                   : getPlanMetadata(plan.type, "year");
               const isSelected = selectedPlan === plan.type;
-              const isProfessional = plan.type === "professional";
+              const isPremium = plan.type === "premium";
 
               if (!metadata) {
                 return null;
@@ -216,7 +216,7 @@ export function PlanSelectionModal({
                     </div>
                   )}
 
-                  {isProfessional && (
+                  {isPremium && (
                     <div className="mb-2 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">
                       Most Popular
                     </div>

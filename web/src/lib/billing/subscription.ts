@@ -7,7 +7,7 @@ export type SubscriptionStatus =
   | "canceled"
   | "none";
 
-export type PlanType = "standard" | "professional" | "none";
+export type PlanType = "standard" | "premium" | "none";
 
 export interface SubscriptionInfo {
   status: SubscriptionStatus;
@@ -86,14 +86,15 @@ export async function getSubscriptionInfo(
     : null;
 
   // Determine plan from metadata
-  // Note: Internal type uses "professional" (matches Stripe), but metadata uses "premium" as display name
+  // Internal type is "premium" (display name is also "Premium")
   let plan: PlanType = "none";
   if (subscription.metadata) {
     const planType = (subscription.metadata as any)?.plan_type?.toLowerCase();
     const planName = (subscription.metadata as any)?.plan_name?.toLowerCase();
     if (planType === "standard" || planName === "standard") plan = "standard";
+    // Support both "premium" and legacy "professional" for backward compatibility
     if (planType === "premium" || planType === "professional" || planName === "premium" || planName === "professional") {
-      plan = "professional"; // Use "professional" for type (matches Stripe), "premium" is just display name
+      plan = "premium";
     }
   }
 
@@ -164,7 +165,7 @@ export async function hasFeatureAccess(
 }
 
 /**
- * Check if user can access Professional feature
+ * Check if user can access Premium feature
  */
 export async function hasProfessionalFeature(
   userId: string,
@@ -172,8 +173,8 @@ export async function hasProfessionalFeature(
 ): Promise<boolean> {
   const subscription = await getSubscriptionInfo(userId);
 
-  // Must be on Premium plan (internal type is "professional")
-  if (subscription.plan !== "professional") {
+  // Must be on Premium plan
+  if (subscription.plan !== "premium") {
     return false;
   }
 
@@ -213,7 +214,7 @@ export async function checkPinLimit(userId: string): Promise<{
     .eq("status", "ACTIVE");
 
   const currentCount = count || 0;
-  const limit = subscription.plan === "professional" ? Infinity : 50;
+  const limit = subscription.plan === "premium" ? Infinity : 50;
   const canAdd = currentCount < limit;
 
   return {

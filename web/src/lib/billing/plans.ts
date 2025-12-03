@@ -3,7 +3,7 @@
  * This file can be imported in client components without requiring Stripe initialization
  */
 
-export type PlanType = "standard" | "professional";
+export type PlanType = "standard" | "premium";
 export type IntervalType = "month" | "year";
 
 export const PLAN_CONFIG: Record<
@@ -22,15 +22,15 @@ export const PLAN_CONFIG: Record<
       interval: "year",
     },
   },
-  professional: {
+  premium: {
     month: {
       amount: 7900, // $79.00 in cents
-      name: "Professional",
+      name: "Premium",
       interval: "month",
     },
     year: {
       amount: 64900, // $649.00 in cents
-      name: "Professional",
+      name: "Premium",
       interval: "year",
     },
   },
@@ -59,6 +59,8 @@ export function getPlanMetadata(
     interval: metadata.interval,
   };
 }
+
+
 
 
 

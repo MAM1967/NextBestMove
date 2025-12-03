@@ -57,8 +57,8 @@ function getPriceIdFromEnv(
   const envVarMap: Record<string, string> = {
     standard_month: process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY || "",
     standard_year: process.env.STRIPE_PRICE_ID_STANDARD_YEARLY || "",
-    professional_month: process.env.STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY || "",
-    professional_year: process.env.STRIPE_PRICE_ID_PROFESSIONAL_YEARLY || "",
+    premium_month: process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY || "",
+    premium_year: process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY || "",
   };
 
   const key = `${plan}_${interval === "month" ? "month" : "year"}`;
@@ -91,12 +91,12 @@ export function getPriceId(
         .STRIPE_PRICE_ID_STANDARD_YEARLY
         ? "set"
         : "missing",
-      STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY: process.env
-        .STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY
+      STRIPE_PRICE_ID_PREMIUM_MONTHLY: process.env
+        .STRIPE_PRICE_ID_PREMIUM_MONTHLY
         ? "set"
         : "missing",
-      STRIPE_PRICE_ID_PROFESSIONAL_YEARLY: process.env
-        .STRIPE_PRICE_ID_PROFESSIONAL_YEARLY
+      STRIPE_PRICE_ID_PREMIUM_YEARLY: process.env
+        .STRIPE_PRICE_ID_PREMIUM_YEARLY
         ? "set"
         : "missing",
     });

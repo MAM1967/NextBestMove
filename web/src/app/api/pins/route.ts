@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkPinLimit } from "@/lib/billing/subscription";
 
 // GET /api/pins - List all pins for the authenticated user
 export async function GET(request: Request) {
@@ -93,6 +94,19 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Please enter a valid URL (https://...) or email address" },
         { status: 400 }
+      );
+    }
+
+    // Check pin limit before creating
+    const limitInfo = await checkPinLimit(user.id);
+    if (!limitInfo.canAdd) {
+      return NextResponse.json(
+        {
+          error: "Pin limit reached",
+          message: `You've reached your limit of ${limitInfo.limit} pins on the ${limitInfo.plan === "premium" ? "Premium" : "Standard"} plan. Upgrade to Premium for unlimited pins.`,
+          limitInfo,
+        },
+        { status: 403 }
       );
     }
 

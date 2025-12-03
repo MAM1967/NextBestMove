@@ -319,18 +319,86 @@ export async function handleSubscriptionUpdated(
     databaseId: upsertedData?.[0]?.id,
     billingCustomerId,
   });
+
+  // Detect plan downgrade (Premium → Standard)
+  if (upsertedData && upsertedData.length > 0) {
+    const oldSubscription = upsertedData[0];
+    const oldPlanType = (oldSubscription.metadata as any)?.plan_type;
+    const newPlanType = planMetadata.plan_type || "standard";
+
+    // Check if downgrading from Premium to Standard
+    if (
+      (oldPlanType === "premium" || oldPlanType === "professional") &&
+      newPlanType === "standard" &&
+      status === "active"
+    ) {
+      // Get user ID to check pin count
+      const { data: customer } = await supabase
+        .from("billing_customers")
+        .select("user_id")
+        .eq("id", billingCustomerId)
+        .single();
+
+      if (customer) {
+        // Check pin count
+        const { count } = await supabase
+          .from("person_pins")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", customer.user_id)
+          .eq("status", "ACTIVE");
+
+        const pinCount = count || 0;
+        if (pinCount > 50) {
+          // Store downgrade warning flag in metadata
+          await supabase
+            .from("billing_subscriptions")
+            .update({
+              metadata: {
+                ...planMetadata,
+                downgrade_warning_shown: false, // Frontend will check and show modal
+                downgrade_pin_count: pinCount,
+                downgrade_detected_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", upsertedData[0].id);
+
+          logBillingEvent("Plan downgrade detected with pin limit exceeded", {
+            subscriptionId: subscription.id,
+            userId: customer.user_id,
+            pinCount,
+            oldPlan: oldPlanType,
+            newPlan: newPlanType,
+          });
+        }
+      }
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(
   supabase: any,
   subscription: Stripe.Subscription
 ) {
-  // Update subscription status to canceled
+  // Get existing subscription to preserve metadata
+  const { data: existingSubscription } = await supabase
+    .from("billing_subscriptions")
+    .select("metadata")
+    .eq("stripe_subscription_id", subscription.id)
+    .maybeSingle();
+
+  const existingMetadata = (existingSubscription?.metadata as any) || {};
+
+  // Update subscription status to canceled and store canceled_at timestamp
+  // This enables 30-day reactivation window
   await supabase
     .from("billing_subscriptions")
     .update({
       status: "canceled",
       cancel_at_period_end: false,
+      metadata: {
+        ...existingMetadata,
+        canceled_at: new Date().toISOString(),
+      },
     })
     .eq("stripe_subscription_id", subscription.id);
 }
