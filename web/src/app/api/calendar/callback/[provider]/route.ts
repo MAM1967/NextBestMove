@@ -9,13 +9,57 @@ import {
 import { encryptSecret } from "@/lib/security/encryption";
 import * as client from "openid-client";
 
+/**
+ * Build a safe redirect URL, preventing open redirect vulnerabilities
+ * Only allows relative paths within the application
+ */
 function buildRedirectUrl(
   origin: string,
   status: "success" | "error",
   callbackUrl?: string | null
 ) {
-  // Use callbackUrl if provided (e.g., from onboarding), otherwise default to settings
-  const basePath = callbackUrl || "/app/settings";
+  // Whitelist of allowed callback paths (relative paths only)
+  const ALLOWED_PATHS = [
+    "/app/settings",
+    "/onboarding",
+    "/app",
+  ];
+
+  // Validate callbackUrl - must be a relative path starting with /
+  let basePath = "/app/settings"; // Default fallback
+  
+  if (callbackUrl) {
+    // Security: Only allow relative paths (must start with /)
+    // Reject absolute URLs (http://, https://, //) to prevent open redirect
+    if (
+      callbackUrl.startsWith("/") &&
+      !callbackUrl.startsWith("//") &&
+      !callbackUrl.startsWith("http://") &&
+      !callbackUrl.startsWith("https://")
+    ) {
+      // Check if path is in whitelist or is a subpath of allowed paths
+      const isAllowed = ALLOWED_PATHS.some(
+        (allowed) =>
+          callbackUrl === allowed || callbackUrl.startsWith(`${allowed}/`)
+      );
+      
+      if (isAllowed) {
+        basePath = callbackUrl;
+      } else {
+        // Log suspicious redirect attempt for security monitoring
+        console.warn(
+          `[Security] Blocked unauthorized redirect path: ${callbackUrl}`
+        );
+      }
+    } else {
+      // Log attempted open redirect attack
+      console.error(
+        `[Security] Blocked open redirect attempt: ${callbackUrl}`
+      );
+    }
+  }
+
+  // Always use origin (trusted) and basePath (validated relative path)
   const url = new URL(basePath, origin);
   if (status === "success") {
     url.searchParams.set("calendar", "success");
