@@ -44,12 +44,12 @@ export function UpgradeModal({
   const handleUpgrade = async () => {
     setIsLoading(true);
     try {
-      // Create checkout session for Professional plan (monthly)
+      // Create checkout session for Premium plan (monthly)
       const response = await fetch("/api/billing/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: "professional",
+          plan: "premium",
           interval: "month",
         }),
       });
@@ -79,20 +79,20 @@ export function UpgradeModal({
     if (trigger === "pin_limit") {
       return {
         title: "You've reached your pin limit",
-        description: `You're currently using ${currentCount} of ${limit} pins on the Standard plan. Upgrade to Professional for unlimited pins and premium features.`,
-        cta: "Upgrade to Professional",
+        description: `You're currently using ${currentCount} of ${limit} pins on the Standard plan. Upgrade to Premium for unlimited pins and premium features.`,
+        cta: "Upgrade to Premium",
       };
     } else if (trigger === "premium_feature") {
       return {
-        title: `${featureName || "This feature"} is available on Professional`,
-        description: `Upgrade to Professional to unlock ${featureName || "this feature"} and more premium capabilities.`,
-        cta: "Upgrade to Professional",
+        title: `${featureName || "This feature"} is available on Premium`,
+        description: `Upgrade to Premium to unlock ${featureName || "this feature"} and more premium capabilities.`,
+        cta: "Upgrade to Premium",
       };
     }
     return {
-      title: "Upgrade to Professional",
+      title: "Upgrade to Premium",
       description: "Unlock unlimited pins and premium features.",
-      cta: "Upgrade to Professional",
+      cta: "Upgrade to Premium",
     };
   };
 
@@ -153,10 +153,10 @@ export function UpgradeModal({
           <p className="mt-2 text-sm text-zinc-600">{message.description}</p>
         </div>
 
-        {/* Professional Plan Benefits */}
+        {/* Premium Plan Benefits */}
         <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Professional includes:
+            Premium includes:
           </p>
           <ul className="mt-2 space-y-1.5 text-sm text-zinc-700">
             <li className="flex items-start">

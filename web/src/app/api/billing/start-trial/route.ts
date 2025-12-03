@@ -32,9 +32,9 @@ export async function POST(request: Request) {
     const { plan = "standard", interval = "month" } = body;
 
     // Validate plan and interval
-    if (!["standard", "professional"].includes(plan)) {
+    if (!["standard", "premium"].includes(plan)) {
       return NextResponse.json(
-        { error: "Invalid plan. Must be 'standard' or 'professional'" },
+        { error: "Invalid plan. Must be 'standard' or 'premium'" },
         { status: 400 }
       );
     }

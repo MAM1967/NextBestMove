@@ -320,15 +320,15 @@ export async function handleSubscriptionUpdated(
     billingCustomerId,
   });
 
-  // Detect plan downgrade (Professional → Standard)
+  // Detect plan downgrade (Premium → Standard)
   if (upsertedData && upsertedData.length > 0) {
     const oldSubscription = upsertedData[0];
     const oldPlanType = (oldSubscription.metadata as any)?.plan_type;
     const newPlanType = planMetadata.plan_type || "standard";
 
-    // Check if downgrading from Professional to Standard
+    // Check if downgrading from Premium to Standard
     if (
-      oldPlanType === "professional" &&
+      (oldPlanType === "premium" || oldPlanType === "professional") &&
       newPlanType === "standard" &&
       status === "active"
     ) {

@@ -125,7 +125,7 @@ export function DowngradeWarningModal({
         </div>
 
         <p className="mt-4 text-center text-xs text-zinc-500">
-          You can upgrade back to Professional anytime to restore unlimited
+          You can upgrade back to Premium anytime to restore unlimited
           pins.
         </p>
       </div>

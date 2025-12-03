@@ -88,7 +88,7 @@ pins_to_add AS (
   WHERE (SELECT pin_count FROM current_pins) < 50
 )
 INSERT INTO person_pins (user_id, name, url, status)
-SELECT 
+SELECT
   (SELECT user_id FROM user_info),
   'Test Pin ' || generate_series(1, (SELECT count FROM pins_to_add)),
   'https://linkedin.com/in/test-' || generate_series(1, (SELECT count FROM pins_to_add)),
@@ -115,7 +115,7 @@ SET status = 'ARCHIVED'
 WHERE id IN (SELECT id FROM excess_pins);
 
 -- Verify pin count
-SELECT 
+SELECT
   COUNT(*) FILTER (WHERE status = 'ACTIVE') as active_pins,
   COUNT(*) FILTER (WHERE status = 'ARCHIVED') as archived_pins,
   COUNT(*) as total_pins
@@ -126,9 +126,10 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com');
 **Test Steps:**
 
 1. **Verify user has Standard plan:**
+
    ```sql
    -- Check subscription plan
-   SELECT 
+   SELECT
      bs.status,
      bs.metadata->>'plan_type' as plan_type,
      bs.metadata->>'plan_name' as plan_name
@@ -225,19 +226,20 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 
 ---
 
-### Test 1.3: Professional Plan User - No Pin Limit
+### Test 1.3: Premium Plan User - No Pin Limit
 
-**Goal:** Verify Professional plan users can add unlimited pins
+**Goal:** Verify Premium plan users can add unlimited pins
 
 **Setup SQL:**
 
 ```sql
--- Ensure user has Professional plan
+-- Ensure user has Premium plan
 -- First, check current subscription
-SELECT 
+SELECT
   bs.id,
   bs.status,
-  bs.metadata->>'plan_type' as plan_type
+  bs.metadata->>'plan_type' as plan_type,
+  bs.metadata->>'plan_name' as plan_name
 FROM billing_subscriptions bs
 JOIN billing_customers bc ON bc.id = bs.billing_customer_id
 JOIN users u ON u.id = bc.user_id
@@ -247,12 +249,12 @@ ORDER BY bs.created_at DESC
 LIMIT 1;
 
 -- If user has Standard plan, you'll need to upgrade via Stripe Dashboard
--- Or create a new Professional subscription via Stripe Checkout
+-- Or create a new Premium subscription via Stripe Checkout
 ```
 
 **Test Steps:**
 
-1. **Verify user has Professional plan** (run SQL above)
+1. **Verify user has Premium plan** (run SQL above - plan_type should be 'premium')
 2. **Navigate to Pins page** (`/app/pins`)
 3. **Add multiple pins** (try adding 5-10 pins)
 4. **Verify no upgrade modal appears**
@@ -337,7 +339,7 @@ WITH user_info AS (
 )
 -- Ensure user has at least 60 active pins
 INSERT INTO person_pins (user_id, name, url, status)
-SELECT 
+SELECT
   (SELECT user_id FROM user_info),
   'Test Pin ' || generate_series(1, 60),
   'https://linkedin.com/in/test-' || generate_series(1, 60),
@@ -357,6 +359,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 1. **Verify user has Professional plan and >50 pins** (run setup SQL)
 
 2. **Downgrade subscription via Stripe Dashboard:**
+
    - Go to Stripe Dashboard > Customers
    - Find test user's customer
    - Open subscription
@@ -384,7 +387,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 
 ```sql
 -- Check if downgrade was detected
-SELECT 
+SELECT
   bs.metadata->>'plan_type' as plan_type,
   bs.metadata->>'downgrade_detected_at' as downgrade_detected_at,
   bs.metadata->>'downgrade_warning_shown' as warning_shown,
@@ -457,7 +460,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 
 ```sql
 -- Check downgrade metadata
-SELECT 
+SELECT
   bs.metadata->>'plan_type' as plan_type,
   bs.metadata->>'downgrade_warning_shown' as warning_shown
 FROM billing_subscriptions bs
@@ -481,7 +484,7 @@ LIMIT 1;
 ```sql
 -- Ensure user has Standard plan
 -- Check current subscription
-SELECT 
+SELECT
   bs.id,
   bs.status,
   bs.metadata->>'plan_type' as plan_type
@@ -496,6 +499,7 @@ LIMIT 1;
 **Test Steps:**
 
 1. **Cancel subscription via Stripe Dashboard:**
+
    - Go to Stripe Dashboard > Customers
    - Find test user's customer
    - Open subscription
@@ -508,7 +512,7 @@ LIMIT 1;
 
 ```sql
 -- Verify canceled_at timestamp is stored
-SELECT 
+SELECT
   bs.status,
   bs.metadata->>'canceled_at' as canceled_at,
   bs.metadata->>'plan_type' as plan_type
@@ -550,11 +554,11 @@ LIMIT 1;
 
 ```sql
 -- Check if reactivation is possible (within 30 days)
-SELECT 
+SELECT
   bs.status,
   bs.metadata->>'canceled_at' as canceled_at,
-  CASE 
-    WHEN bs.metadata->>'canceled_at' IS NOT NULL 
+  CASE
+    WHEN bs.metadata->>'canceled_at' IS NOT NULL
       AND (NOW() - (bs.metadata->>'canceled_at')::timestamp) < INTERVAL '30 days'
     THEN 'Reactivation available'
     ELSE 'Reactivation expired'
@@ -584,6 +588,7 @@ LIMIT 1;
 **Test:** Standard user with 50 pins upgrades to Professional
 
 **Expected:**
+
 - ✅ Upgrade completes successfully
 - ✅ User can now add unlimited pins
 - ✅ No downgrade warning appears
@@ -595,6 +600,7 @@ LIMIT 1;
 **Test:** User downgrades, then tries to downgrade again
 
 **Expected:**
+
 - ✅ Warning only shows once (marked as shown)
 - ✅ Subsequent page loads don't show warning
 
@@ -605,6 +611,7 @@ LIMIT 1;
 **Test:** User downgrades with 60 pins, then archives 15 pins
 
 **Expected:**
+
 - ✅ Warning was already shown (won't show again)
 - ✅ User can continue using app (now within limit)
 
@@ -629,6 +636,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 ```
 
 **Status Legend:**
+
 - ✅ Pass
 - ❌ Fail
 - ⚠️ Partial/Issues
@@ -641,7 +649,8 @@ EC-4      | ⬜      | Pin count changes after downgrade
 ### Issue: Upgrade modal doesn't appear
 
 **Check:**
-1. Verify user has Standard plan (not Professional)
+
+1. Verify user has Standard plan (not Premium)
 2. Verify pin count is exactly 50
 3. Check browser console for errors
 4. Verify API endpoint `/api/billing/check-pin-limit` returns correct data
@@ -649,6 +658,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 ### Issue: Downgrade warning doesn't appear
 
 **Check:**
+
 1. Verify downgrade was detected in webhook (check `downgrade_detected_at` in metadata)
 2. Verify user has >50 pins
 3. Check if warning was already shown (`downgrade_warning_shown: true`)
@@ -657,6 +667,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 ### Issue: Webhook not processing downgrade
 
 **Check:**
+
 1. Verify Stripe webhook is configured correctly
 2. Check Vercel logs for webhook processing
 3. Verify `customer.subscription.updated` event is being received
@@ -677,4 +688,3 @@ EC-4      | ⬜      | Pin count changes after downgrade
 ---
 
 **End of Group 4 Testing Guide**
-

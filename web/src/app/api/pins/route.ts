@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Pin limit reached",
-          message: `You've reached your limit of ${limitInfo.limit} pins on the ${limitInfo.plan === "professional" ? "Professional" : "Standard"} plan. Upgrade to Professional for unlimited pins.`,
+          message: `You've reached your limit of ${limitInfo.limit} pins on the ${limitInfo.plan === "premium" ? "Premium" : "Standard"} plan. Upgrade to Premium for unlimited pins.`,
           limitInfo,
         },
         { status: 403 }

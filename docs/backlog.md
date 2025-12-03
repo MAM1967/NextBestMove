@@ -142,12 +142,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
 - [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
 - [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
-- [x] **Streak break detection & recovery** ✅ (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7. Completed and tested - Day 2-6 micro mode auto-enable, Day 3 email delivery, Day 7 billing pause detection and logging. Push notifications deferred to future. All Group 3 tests passed.)
+- [ ] **Streak break detection & recovery** (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7)
 - [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed and tested - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented. All Group 2 tests passed.)
 - [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
 - [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
 - [ ] **Plan downgrade handling** (Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation)
-- [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented and tested. Weekly focus displays when no adaptive recovery message exists. Priority hierarchy: Adaptive Recovery > Weekly Focus > Placeholder.)
+- [ ] **Display weekly focus on Daily Plan page** (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Currently shows hardcoded placeholder. Part of US-7.6 - high priority for user engagement and context.)
 
 ---
 

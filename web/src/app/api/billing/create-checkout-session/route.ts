@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     const { plan, interval, isTrial = false } = body;
 
     // Validate plan and interval
-    if (!plan || !["standard", "professional"].includes(plan)) {
+    if (!plan || !["standard", "premium"].includes(plan)) {
       return NextResponse.json(
-        { error: "Invalid plan. Must be 'standard' or 'professional'" },
+        { error: "Invalid plan. Must be 'standard' or 'premium'" },
         { status: 400 }
       );
     }
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
       console.error("Environment check:", {
         STANDARD_MONTHLY: process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY ? "set" : "missing",
         STANDARD_YEARLY: process.env.STRIPE_PRICE_ID_STANDARD_YEARLY ? "set" : "missing",
-        PROFESSIONAL_MONTHLY: process.env.STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY ? "set" : "missing",
-        PROFESSIONAL_YEARLY: process.env.STRIPE_PRICE_ID_PROFESSIONAL_YEARLY ? "set" : "missing",
+        PREMIUM_MONTHLY: process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY ? "set" : "missing",
+        PREMIUM_YEARLY: process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY ? "set" : "missing",
       });
       return NextResponse.json(
         { 
