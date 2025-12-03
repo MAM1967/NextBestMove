@@ -1,0 +1,79 @@
+# Security Headers for nextbestmove.app
+
+# Fix Issue 1: Content Security Policy
+
+# Adjust these directives based on your site's needs
+
+Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+
+# Fix Issue 2: Anti-clickjacking Protection
+
+Header set X-Frame-Options "SAMEORIGIN"
+
+# Fix Issue 3: Remove X-Powered-By header
+
+Header unset X-Powered-By
+
+# Additional Security Headers (Best Practices)
+
+# Prevent MIME type sniffing
+
+Header set X-Content-Type-Options "nosniff"
+
+# Enable XSS protection in browsers
+
+Header set X-XSS-Protection "1; mode=block"
+
+# Referrer Policy - control how much referrer info is shared
+
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+# Permissions Policy - control browser features
+
+Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+# Force HTTPS (if you have SSL enabled)
+
+# Uncomment the lines below if you want to force HTTPS
+
+# <IfModule mod_rewrite.c>
+
+# RewriteEngine On
+
+# RewriteCond %{HTTPS} off
+
+# RewriteRule ^(.\*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# </IfModule>
+
+# Protect sensitive files
+
+<FilesMatch "^\.">
+Order allow,deny
+Deny from all
+</FilesMatch>
+
+# Disable directory browsing
+
+Options -Indexes
+
+# Protect wp-config.php (if using WordPress)
+
+<Files wp-config.php>
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Protect .htaccess itself
+
+<Files .htaccess>
+Order allow,deny
+Deny from all
+</Files>
+
+# Block access to readme and license files (common targets)
+
+<FilesMatch "^(readme|license|changelog)\.(txt|html)$">
+Order allow,deny
+Deny from all
+</FilesMatch>

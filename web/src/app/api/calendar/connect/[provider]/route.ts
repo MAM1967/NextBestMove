@@ -97,15 +97,42 @@ export async function GET(
     });
 
     // Store callbackUrl if provided (for onboarding redirect)
+    // Security: Validate callbackUrl to prevent open redirect attacks
     const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
     if (callbackUrl) {
-      cookieStore.set(`nbm_calendar_callback_${provider}`, callbackUrl, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge,
-      });
+      // Whitelist of allowed callback paths (relative paths only)
+      const ALLOWED_PATHS = [
+        "/app/settings",
+        "/onboarding",
+        "/app",
+      ];
+
+      // Validate: Only allow relative paths starting with /
+      // Reject absolute URLs to prevent open redirect
+      const isValidPath =
+        callbackUrl.startsWith("/") &&
+        !callbackUrl.startsWith("//") &&
+        !callbackUrl.startsWith("http://") &&
+        !callbackUrl.startsWith("https://") &&
+        ALLOWED_PATHS.some(
+          (allowed) =>
+            callbackUrl === allowed || callbackUrl.startsWith(`${allowed}/`)
+        );
+
+      if (isValidPath) {
+        cookieStore.set(`nbm_calendar_callback_${provider}`, callbackUrl, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge,
+        });
+      } else {
+        // Log suspicious redirect attempt for security monitoring
+        console.warn(
+          `[Security] Blocked invalid callbackUrl: ${callbackUrl}`
+        );
+      }
     }
 
     return NextResponse.redirect(authorizationUrl.toString());

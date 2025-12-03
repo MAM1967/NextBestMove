@@ -145,44 +145,69 @@ export async function hasHighCompletionStreak(
 }
 
 /**
+ * Get days since last action (for streak break detection)
+ * Returns number of days inactive, or null if user has never completed an action
+ */
+export async function getDaysSinceLastAction(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number | null> {
+  const { data: user } = await supabase
+    .from("users")
+    .select("last_action_date, created_at")
+    .eq("id", userId)
+    .single();
+
+  if (!user) {
+    return null;
+  }
+
+  if (user.last_action_date) {
+    const lastActionDate = new Date(user.last_action_date);
+    const daysSinceLastAction = Math.floor(
+      (Date.now() - lastActionDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysSinceLastAction;
+  }
+
+  // No last action date means user has never completed an action
+  // Check account creation date
+  if (user.created_at) {
+    const createdDate = new Date(user.created_at);
+    const daysSinceCreation = Math.floor(
+      (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysSinceCreation;
+  }
+
+  return null;
+}
+
+/**
+ * Check if user has been inactive for 2-6 days (Day 2-6 streak break recovery)
+ */
+export async function isInactive2To6Days(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const daysInactive = await getDaysSinceLastAction(supabase, userId);
+  if (daysInactive === null) {
+    return false;
+  }
+  return daysInactive >= 2 && daysInactive < 7;
+}
+
+/**
  * Check if user has been inactive for 7+ days
  */
 export async function isInactive7PlusDays(
   supabase: SupabaseClient,
   userId: string
 ): Promise<boolean> {
-  const { data: user } = await supabase
-    .from("users")
-    .select("last_action_date")
-    .eq("id", userId)
-    .single();
-
-  if (!user || !user.last_action_date) {
-    // No last action date means user has never completed an action
-    // Check account creation date
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("created_at")
-      .eq("id", userId)
-      .single();
-
-    if (!userProfile) {
-      return false;
-    }
-
-    const createdDate = new Date(userProfile.created_at);
-    const daysSinceCreation = Math.floor(
-      (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    return daysSinceCreation >= 7;
+  const daysInactive = await getDaysSinceLastAction(supabase, userId);
+  if (daysInactive === null) {
+    return false;
   }
-
-  const lastActionDate = new Date(user.last_action_date);
-  const daysSinceLastAction = Math.floor(
-    (Date.now() - lastActionDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  return daysSinceLastAction >= 7;
+  return daysInactive >= 7;
 }
 

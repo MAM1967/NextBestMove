@@ -408,27 +408,29 @@ ALTER TABLE billing_subscriptions ENABLE TRIGGER update_billing_subscriptions_up
 
 **Option A: Use test endpoint (recommended for testing feedback form)**
 
-   ```bash
-   # Send Day 7 win-back email directly (no need to run full cron job)
-   # IMPORTANT: URL-encode the email address (replace + with %2B)
-   curl -X POST \
-     -H "Authorization: Bearer YOUR_CRON_SECRET" \
-     "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7"
+```bash
+# Send Day 7 win-back email directly (no need to run full cron job)
+# IMPORTANT: URL-encode the email address (replace + with %2B)
+curl -X POST \
+  -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7"
 
-   # Or using query param (also URL-encode the email)
-   curl -X POST \
-     "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
-   ```
+# Or using query param (also URL-encode the email)
+curl -X POST \
+  "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
+```
 
-   **Note:** If your email contains special characters like `+`, you must URL-encode them:
-   - `+` becomes `%2B`
-   - `@` becomes `%40` (though usually works without encoding)
-   - Or use `--data-urlencode` flag: `curl -X POST --data-urlencode "userEmail=mcddsl+onboard2@gmail.com" "https://..."`
+**Note:** If your email contains special characters like `+`, you must URL-encode them:
 
-   **Example with proper encoding:**
-   ```bash
-   curl -X POST "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
-   ```
+- `+` becomes `%2B`
+- `@` becomes `%40` (though usually works without encoding)
+- Or use `--data-urlencode` flag: `curl -X POST --data-urlencode "userEmail=mcddsl+onboard2@gmail.com" "https://..."`
+
+**Example with proper encoding:**
+
+```bash
+curl -X POST "https://nextbestmove.app/api/test/send-win-back-email?userEmail=mcddsl%2Bonboard2@gmail.com&daysSinceCancellation=7&secret=YOUR_CRON_SECRET"
+```
 
 **Note:** This sends the email without requiring the subscription to be exactly 7 days canceled. Perfect for testing the feedback form without duplicate emails.
 
@@ -695,31 +697,33 @@ LIMIT 1;
 
 ### Scenario 1: Payment Failure Recovery Flow
 
-- [ ] Day 0: Email sent immediately on payment failure
-- [ ] Day 3: Email + modal displayed
-- [ ] Day 7: Read-only mode activated
-- [ ] Day 14: Account archived (status = canceled)
-- [ ] All stages tracked and logged correctly
-- [ ] Cron job authentication works
+- [x] Day 0: Email sent immediately on payment failure ✅
+- [x] Day 3: Email + modal displayed ✅
+- [x] Day 7: Read-only mode activated ✅
+- [x] Day 14: Account archived (status = canceled) ✅
+- [x] All stages tracked and logged correctly ✅
+- [x] Cron job authentication works ✅
 
 ### Scenario 2: Past-Due & Cancellation Banners
 
-- [ ] Banner appears for past-due subscriptions
-- [ ] Banner appears for pending cancellations
-- [ ] Banner includes billing portal CTA
-- [ ] Banner is dismissible
-- [ ] No banner for active subscriptions
-- [ ] Billing portal opens correctly
+- [x] Banner appears for past-due subscriptions ✅
+- [x] Banner appears for pending cancellations ✅
+- [x] Banner includes billing portal CTA ✅
+- [x] Banner is dismissible ✅
+- [x] No banner for active subscriptions ✅
+- [x] Billing portal opens correctly ✅
 
 ### Scenario 3: Win-Back Campaign
 
-- [ ] Day 7 email sent (voluntary cancellations only)
+- [x] Day 7 email sent (voluntary cancellations only) ✅
+- [x] Day 7 feedback form working ✅
+- [x] Feedback saved to database ✅
 - [ ] Day 30 email sent
 - [ ] Day 90 email sent
 - [ ] Day 180 email sent
 - [ ] Payment failures skipped (no emails)
-- [ ] Email content correct for each stage
-- [ ] Cron job authentication works
+- [x] Email content correct for each stage ✅
+- [x] Cron job authentication works ✅
 
 ---
 

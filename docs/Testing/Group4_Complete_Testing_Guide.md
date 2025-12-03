@@ -60,8 +60,8 @@ current_pins AS (
 )
 -- If user has < 50 pins, add pins to reach exactly 50
 -- If user has > 50 pins, archive excess pins
-SELECT
-  CASE
+SELECT 
+  CASE 
     WHEN (SELECT pin_count FROM current_pins) < 50 THEN
       -- Add pins to reach 50
       (SELECT 50 - (SELECT pin_count FROM current_pins))
@@ -650,7 +650,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 
 **Check:**
 
-1. Verify user has Standard plan (not Professional)
+1. Verify user has Standard plan (not Premium)
 2. Verify pin count is exactly 50
 3. Check browser console for errors
 4. Verify API endpoint `/api/billing/check-pin-limit` returns correct data
