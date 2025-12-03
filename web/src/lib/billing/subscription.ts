@@ -195,7 +195,7 @@ export async function hasProfessionalFeature(
 }
 
 /**
- * Check if user has reached pin limit (Standard plan = 50 pins max)
+ * Check if user has reached pin limit (Standard plan = 10 pins max)
  */
 export async function checkPinLimit(userId: string): Promise<{
   canAdd: boolean;
@@ -214,7 +214,7 @@ export async function checkPinLimit(userId: string): Promise<{
     .eq("status", "ACTIVE");
 
   const currentCount = count || 0;
-  const limit = subscription.plan === "premium" ? Infinity : 50;
+  const limit = subscription.plan === "premium" ? Infinity : 10;
   const canAdd = currentCount < limit;
 
   return {

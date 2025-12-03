@@ -18,7 +18,7 @@ const PLANS: { type: PlanType; name: string; features: string[] }[] = [
       "Daily action plans",
       "Weekly summaries",
       "AI insights",
-      "Up to 50 pins",
+      "Up to 10 pins",
       "Calendar integration",
     ],
   },

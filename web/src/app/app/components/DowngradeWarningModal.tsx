@@ -34,7 +34,7 @@ export function DowngradeWarningModal({
     }
   };
 
-  const pinsToArchive = currentPinCount - 50;
+  const pinsToArchive = currentPinCount - 10;
 
   return (
     <div
@@ -89,7 +89,7 @@ export function DowngradeWarningModal({
             Plan Downgrade Notice
           </h3>
           <p className="mt-2 text-sm text-zinc-600">
-            You&apos;ve downgraded to the Standard plan, which includes up to 50
+            You&apos;ve downgraded to the Standard plan, which includes up to 10
             pins. You currently have <strong>{currentPinCount} active pins</strong>.
           </p>
         </div>
@@ -102,7 +102,7 @@ export function DowngradeWarningModal({
           <p className="mt-1 text-sm text-yellow-700">
             To continue using the Standard plan, you&apos;ll need to archive or
             snooze at least <strong>{pinsToArchive} pin{pinsToArchive !== 1 ? "s" : ""}</strong> to
-            get below the 50 pin limit.
+            get below the 10 pin limit.
           </p>
         </div>
 

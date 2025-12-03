@@ -348,7 +348,7 @@ export async function handleSubscriptionUpdated(
           .eq("status", "ACTIVE");
 
         const pinCount = count || 0;
-        if (pinCount > 50) {
+        if (pinCount > 10) {
           // Store downgrade warning flag in metadata
           await supabase
             .from("billing_subscriptions")
