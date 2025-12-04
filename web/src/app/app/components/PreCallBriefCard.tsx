@@ -74,11 +74,11 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
       {/* Content area - different for Premium vs Standard */}
       {isPremium ? (
         // Premium: Show brief content with expandable/scrollable view
-        <div className="mt-3 flex-1 flex flex-col min-h-0">
+        <div className="mt-3 flex flex-col">
           {isExpanded ? (
             <>
               <div 
-                className="text-xs text-zinc-700 whitespace-pre-wrap overflow-y-auto flex-1 pr-1 scrollbar-thin"
+                className="text-xs text-zinc-700 whitespace-pre-wrap overflow-y-auto pr-1 scrollbar-thin"
                 style={{ maxHeight: '200px' }}>
                 {brief.briefContent}
               </div>
