@@ -121,6 +121,7 @@ export async function GET(request: Request) {
           follow_up_count: brief.followUpCount,
           next_step_suggestions: brief.nextStepSuggestions,
           user_notes: brief.userNotes,
+          has_video_conference: brief.hasVideoConference || false,
         })),
         {
           onConflict: "user_id,calendar_event_id",
