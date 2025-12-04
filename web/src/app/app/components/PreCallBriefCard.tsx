@@ -26,7 +26,7 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
   const showTeaser = !isPremium && brief.followUpCount > 0;
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm h-full min-h-[200px] flex flex-col">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">

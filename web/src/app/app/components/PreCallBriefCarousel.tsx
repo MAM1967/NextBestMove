@@ -17,16 +17,29 @@ export function PreCallBriefCarousel({
 }: PreCallBriefCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isScrollingRef = useRef(false);
 
   // Scroll to current index when it changes (only for button clicks, not scroll events)
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && !isScrollingRef.current) {
       const container = scrollContainerRef.current;
-      const cardWidth = container.clientWidth;
-      scrollContainerRef.current.scrollTo({
-        left: currentIndex * cardWidth,
-        behavior: "smooth",
-      });
+      const children = container.children;
+      
+      if (children[currentIndex]) {
+        const targetCard = children[currentIndex] as HTMLElement;
+        const scrollPosition = targetCard.offsetLeft - container.offsetLeft;
+        
+        isScrollingRef.current = true;
+        container.scrollTo({
+          left: scrollPosition,
+          behavior: "smooth",
+        });
+        
+        // Reset flag after scroll completes
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 300);
+      }
     }
   }, [currentIndex, briefs.length]);
 
@@ -39,13 +52,31 @@ export function PreCallBriefCarousel({
   };
 
   const handleScroll = () => {
+    // Ignore scroll events during programmatic scrolling
+    if (isScrollingRef.current) return;
+    
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const scrollLeft = container.scrollLeft;
-      const cardWidth = container.clientWidth;
-      const newIndex = Math.round(scrollLeft / cardWidth);
-      if (newIndex >= 0 && newIndex < briefs.length) {
-        setCurrentIndex(newIndex);
+      const children = container.children;
+      
+      // Find which card is currently most visible
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+      
+      for (let i = 0; i < children.length; i++) {
+        const card = children[i] as HTMLElement;
+        const cardLeft = card.offsetLeft - container.offsetLeft;
+        const distance = Math.abs(scrollLeft - cardLeft);
+        
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = i;
+        }
+      }
+      
+      if (closestIndex !== currentIndex) {
+        setCurrentIndex(closestIndex);
       }
     }
   };
@@ -137,8 +168,11 @@ export function PreCallBriefCarousel({
         {briefs.map((brief, index) => (
           <div
             key={brief.calendarEventId}
-            className="flex-shrink-0 w-full sm:w-[calc(100%-1rem)] md:w-[calc(50%-0.5rem)]"
-            style={{ scrollSnapAlign: "start" }}
+            className="flex-shrink-0 w-full"
+            style={{ 
+              scrollSnapAlign: "start",
+              minWidth: "100%",
+            }}
           >
             <PreCallBriefCard
               brief={brief}
