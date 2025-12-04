@@ -8,7 +8,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 ## 0. Final Inputs Needed
 
 - [x] Confirm Stripe pricing (plan name + amount) and launch date ✅  
-       _Standard: $29/mo or $249/year | Professional: $79/mo or $649/year | 14-day free trial (no credit card)_
+       _Standard: $29/mo or $249/year | Premium: $79/mo or $649/year | 14-day free trial (no credit card)_
 - [ ] Provision Google Cloud + Azure OAuth credentials for calendar access
 - [ ] Supabase project + environment variables available (service role, anon key, Stripe secrets)
 
@@ -25,7 +25,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _All core tables (users, pins, actions, plans, summaries, calendar, billing) + enums, RLS, helper functions_
 
 - [x] **Stripe API routes (checkout & portal)** ✅  
-       _`POST /api/billing/create-checkout-session` (support Standard/Professional plans, monthly/annual), `POST /api/billing/customer-portal`, env wiring. Support 14-day trial creation via Stripe API (no credit card required, `trial_period_days: 14`)_
+       _`POST /api/billing/create-checkout-session` (support Standard/Premium plans, monthly/annual), `POST /api/billing/customer-portal`, env wiring. Support 14-day trial creation via Stripe API (no credit card required, `trial_period_days: 14`)_
 
 - [x] **Stripe webhook + subscription sync** ✅  
        _Verify signature, store events, upsert `billing_customers` / `billing_subscriptions`, update session status. Handle trial expiration (via `customer.subscription.updated` when trial ends), payment failures, cancellations, and plan upgrades/downgrades. Stripe automatically manages trial status transitions_
@@ -34,7 +34,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Sign up / sign in, default timezone + streak info stored on user record_
 
 - [x] **Paywall middleware & base overlay** ✅  
-       _Read-only mode when subscription inactive, PaywallOverlay renders on gated pages. Support 14-day trial (full access), 7-day read-only grace period, and plan-based feature gating (Standard vs Professional). PaywallOverlay component created, subscription status checking implemented, plan page protected_
+       _Read-only mode when subscription inactive, PaywallOverlay renders on gated pages. Support 14-day trial (full access), 7-day read-only grace period, and plan-based feature gating (Standard vs Premium). PaywallOverlay component created, subscription status checking implemented, plan page protected_
 
 ### Pins & Actions
 
@@ -145,7 +145,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Streak break detection & recovery** ✅ (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7. Completed - cron job detects streak breaks, sends Day 3 recovery email, Day 7 billing pause offer for active subscribers, tracks notifications in metadata to prevent duplicates. Day 2 Micro Mode handled by plan generation. Day 1 push notification logged (infrastructure not yet implemented). See `docs/Testing/Group5_Streak_Break_Recovery_Testing_Guide.md` for test plan.)
 - [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed and tested - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented. All Group 2 tests passed.)
 - [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
-- [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
+- [ ] **Premium plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
 - [x] **Plan downgrade handling** ✅ (Premium → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 pins, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
 - [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented: fetches from API, displays in focus card with proper priority hierarchy (adaptive recovery > weekly focus > placeholder), graceful fallbacks. See `docs/Planning/Weekly_Focus_Display_Plan.md` for phased rollout plan.)
 
@@ -158,10 +158,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
 - [ ] Deeper analytics (deal progression metric, more insights)
 - [ ] Notification delivery channels (email/push) beyond toggles
-- [ ] Pricing page UI (Standard vs Professional comparison, annual savings, clear value props)
+- [ ] Pricing page UI (Standard vs Premium comparison, annual savings, clear value props)
 - [ ] Billing pause feature (30-day pause for users inactive 7+ days)
 - [ ] **Cancellation feedback analytics page**  
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
+- [ ] **Enhanced pre-call brief detection for video conferencing**  
+       _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
 
 ---
 

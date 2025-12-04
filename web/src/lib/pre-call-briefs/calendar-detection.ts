@@ -2,13 +2,16 @@ import type { CalendarEvent, PersonPin, DetectedCall } from "./types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Keywords that indicate a calendar event is likely a call
+ * Keywords and phrases that indicate a calendar event is likely a call/meeting
+ * 
+ * Note: Users should name calendar events with these keywords for pre-call briefs to work.
+ * Examples: "Call with John", "Zoom with Sarah", "Google Meet: Project Review", "Teams sync"
  */
 const CALL_KEYWORDS = [
+  // Single words
   "call",
   "phone",
   "zoom",
-  "meet",
   "teams",
   "meeting",
   "sync",
@@ -21,14 +24,34 @@ const CALL_KEYWORDS = [
   "check-in",
   "touch base",
   "catch up",
+  // Multi-word phrases (must match exactly)
+  "google meet",
+  "google hangouts",
+  "microsoft teams",
+  "zoom meeting",
+  "video call",
+  "phone call",
+  "conference call",
 ];
 
 /**
  * Detect if a calendar event is likely a call based on title
+ * 
+ * Checks for both single keywords and multi-word phrases.
+ * Users should name events with keywords like "call", "zoom", "Google Meet", "Teams" for this to work.
  */
 export function isLikelyCall(event: CalendarEvent): boolean {
   const titleLower = event.title.toLowerCase();
-  return CALL_KEYWORDS.some((keyword) => titleLower.includes(keyword));
+  
+  // Check multi-word phrases first (more specific)
+  const phrases = CALL_KEYWORDS.filter((keyword) => keyword.includes(" "));
+  if (phrases.some((phrase) => titleLower.includes(phrase))) {
+    return true;
+  }
+  
+  // Then check single words
+  const singleWords = CALL_KEYWORDS.filter((keyword) => !keyword.includes(" "));
+  return singleWords.some((keyword) => titleLower.includes(keyword));
 }
 
 /**
