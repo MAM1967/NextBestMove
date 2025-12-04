@@ -121,7 +121,7 @@
 ## Q10: What is your revenue model?
 
 **A:**
-- **Subscription-based:** Users pay monthly/yearly for Standard or Professional plans
+- **Subscription-based:** Users pay monthly/yearly for Standard or Premium plans
 - **Value proposition:** Calendar integration enables better plans = more completed actions = more revenue for users
 - **Retention:** Better experience = longer subscriptions
 - **Premium feature:** Calendar integration is a key differentiator for paid plans

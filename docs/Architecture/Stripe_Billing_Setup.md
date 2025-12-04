@@ -9,7 +9,7 @@
 
 Complete Stripe billing integration with support for:
 - 14-day free trial (no credit card required)
-- Standard ($29/mo or $249/year) and Professional ($79/mo or $649/year) plans
+- Standard ($29/mo or $249/year) and Premium ($79/mo or $649/year) plans
 - Monthly and annual billing intervals
 - Read-only grace period after trial expiration
 - Payment failure recovery
@@ -29,8 +29,8 @@ STRIPE_WEBHOOK_SECRET=whsec_6418a9d876b925a4ac79fbeafb4e2808b750b6eb51422a5ed526
 # Stripe Price IDs
 STRIPE_PRICE_ID_STANDARD_MONTHLY=price_1SYFH9IOD4SspTzky3YJ0aBY
 STRIPE_PRICE_ID_STANDARD_YEARLY=price_1SYFIDIOD4SspTzk483y8G2R
-STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY=price_1SYFKpIOD4SspTzkfoJTKLzG
-STRIPE_PRICE_ID_PROFESSIONAL_YEARLY=price_1SYFLOIOD4SspTzkSYxj5q8Y
+STRIPE_PRICE_ID_PREMIUM_MONTHLY=price_1SYFKpIOD4SspTzkfoJTKLzG
+STRIPE_PRICE_ID_PREMIUM_YEARLY=price_1SYFLOIOD4SspTzkSYxj5q8Y
 
 # App URL (for redirects)
 NEXT_PUBLIC_APP_URL=http://localhost:3000 # or your production URL
@@ -66,7 +66,7 @@ Creates a Stripe checkout session.
 **Request Body:**
 ```json
 {
-  "plan": "standard" | "professional",
+  "plan": "standard" | "premium",
   "interval": "month" | "year",
   "isTrial": boolean // Optional, defaults to false
 }
@@ -110,7 +110,7 @@ Returns current subscription status.
 ```json
 {
   "status": "trialing" | "active" | "past_due" | "canceled" | "none",
-  "plan": "standard" | "professional" | "none",
+  "plan": "standard" | "premium" | "none",
   "trialEndsAt": "2025-12-11T00:00:00Z" | null,
   "currentPeriodEnd": "2025-12-11T00:00:00Z" | null,
   "cancelAtPeriodEnd": false,
@@ -154,12 +154,12 @@ Returns current subscription status.
 
 ### Standard Plan Features
 - Daily plan generation
-- Up to 50 active pins
+- Up to 10 active pins
 - Weekly summary
 - 2 content prompts/week
 - Basic insights
 
-### Professional Plan Features (Standard +)
+### Premium Plan Features (Standard +)
 - Unlimited pins
 - Pattern detection
 - Pre-call briefs

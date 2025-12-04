@@ -1695,16 +1695,16 @@
 
 **As a** prospective subscriber  
 **I want** to start a Stripe Checkout session from inside the app  
-**So that** I can pay for Standard or Professional plan without leaving the flow
+**So that** I can pay for Standard or Premium plan without leaving the flow
 
 **Acceptance Criteria:**
 - [ ] API endpoint `POST /api/billing/create-checkout-session` returns checkout URL
-- [ ] Endpoint accepts `plan` (standard/professional) and `interval` (month/year) parameters
+- [ ] Endpoint accepts `plan` (standard/premium) and `interval` (month/year) parameters
 - [ ] Endpoint verifies user auth and uses configured `price_id` from Stripe
 - [ ] Success & cancel URLs return user to app with messaging
 - [ ] Errors are surfaced via toast ("Checkout unavailable, try again")
 - [ ] Works in test and production Stripe modes (env driven)
-- [ ] Supports both monthly and annual pricing ($29/mo, $249/year for Standard; $79/mo, $649/year for Professional)
+- [ ] Supports both monthly and annual pricing ($29/mo, $249/year for Standard; $79/mo, $649/year for Premium)
 
 **Technical Notes:**
 - Use Stripe SDK server-side; never expose secret key to client.
@@ -1758,7 +1758,7 @@
 - [ ] Pins + onboarding remain available (freemium preview)
 - [ ] Past due state blocks actions and shows warning copy
 - [ ] Paywall CTA triggers checkout or billing portal depending on status
-- [ ] Plan-based feature gating: Standard (50 pins max), Professional (unlimited pins + premium features)
+- [ ] Plan-based feature gating: Standard (10 pins max), Premium (unlimited pins + premium features)
 - [ ] Analytics event logged when paywall displayed and CTA clicked
 
 **Technical Notes:**
@@ -1870,20 +1870,20 @@
 
 **As a** Standard plan user  
 **I want** to see upgrade prompts when I hit limits or need premium features  
-**So that** I can unlock Professional features
+**So that** I can unlock Premium features
 
 **Acceptance Criteria:**
-- [ ] Pin limit hit (50): Modal "You've built a strong network of 50 relationships. Add unlimited Pins with Professional."
-- [ ] Attempting pattern detection: "Pattern detection is part of Professional. See when your outreach performs best."
+- [ ] Pin limit hit (10): Modal "You've built a strong network of 10 relationships. Add unlimited Pins with Premium."
+- [ ] Attempting pattern detection: "Pattern detection is part of Premium. See when your outreach performs best."
 - [ ] Before important call: "Pre-call brief available. Upgrade to prepare in 10 seconds."
-- [ ] Content drafting moment: "The Content Engine tailors posts to your voice. Try Professional."
+- [ ] Content drafting moment: "The Content Engine tailors posts to your voice. Try Premium."
 - [ ] Weekly Summary insight: "Want deeper insights next week? Try the Intelligence Layer."
-- [ ] All prompts include "Upgrade" CTA linking to checkout with Professional plan selected
+- [ ] All prompts include "Upgrade" CTA linking to checkout with Premium plan selected
 - [ ] Prompts only show when user is succeeding (high completion, active usage)
 
 **Technical Notes:**
 - Check `billing_subscriptions.metadata.plan_name` to determine current plan
-- Gate Professional features server-side
+- Gate Premium features server-side
 - Reference PRD Section 21.3
 
 ---

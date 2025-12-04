@@ -5,10 +5,11 @@ import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
 
 interface PreCallBriefCardProps {
   brief: PreCallBrief;
+  isPremium?: boolean;
   onViewFull?: () => void;
 }
 
-export function PreCallBriefCard({ brief, onViewFull }: PreCallBriefCardProps) {
+export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCallBriefCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const eventTime = new Date(brief.eventStart);
@@ -45,9 +46,13 @@ export function PreCallBriefCard({ brief, onViewFull }: PreCallBriefCardProps) {
         {onViewFull && (
           <button
             onClick={onViewFull}
-            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            className={`text-xs font-medium ${
+              isPremium
+                ? "text-blue-600 hover:text-blue-700"
+                : "text-blue-500 hover:text-blue-600"
+            }`}
           >
-            View Brief
+            {isPremium ? "View Brief" : "Upgrade to View"}
           </button>
         )}
       </div>
@@ -64,10 +69,20 @@ export function PreCallBriefCard({ brief, onViewFull }: PreCallBriefCardProps) {
 
       {hasMore && !isExpanded && (
         <button
-          onClick={() => setIsExpanded(true)}
-          className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700"
+          onClick={() => {
+            if (isPremium) {
+              setIsExpanded(true);
+            } else {
+              onViewFull?.();
+            }
+          }}
+          className={`mt-2 text-xs font-medium ${
+            isPremium
+              ? "text-blue-600 hover:text-blue-700"
+              : "text-blue-500 hover:text-blue-600"
+          }`}
         >
-          Show more
+          {isPremium ? "Show more" : "Upgrade to View Full Brief"}
         </button>
       )}
     </div>

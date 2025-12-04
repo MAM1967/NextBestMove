@@ -51,8 +51,8 @@ You need to create Products and Prices in Stripe first, then add the Price IDs:
 ```
 STRIPE_PRICE_ID_STANDARD_MONTHLY=price_...
 STRIPE_PRICE_ID_STANDARD_YEARLY=price_...
-STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY=price_...
-STRIPE_PRICE_ID_PROFESSIONAL_YEARLY=price_...
+STRIPE_PRICE_ID_PREMIUM_MONTHLY=price_...
+STRIPE_PRICE_ID_PREMIUM_YEARLY=price_...
 ```
 
 **How to create Products and Prices:**
@@ -62,8 +62,8 @@ STRIPE_PRICE_ID_PROFESSIONAL_YEARLY=price_...
 3. Create products:
    - **Standard Plan** (Monthly): $29/month
    - **Standard Plan** (Yearly): $249/year
-   - **Professional Plan** (Monthly): $79/month
-   - **Professional Plan** (Yearly): $649/year
+   - **Premium Plan** (Monthly): $79/month
+   - **Premium Plan** (Yearly): $649/year
 4. For each product, create a Price:
    - Click "Add price"
    - Set amount and billing period
@@ -87,8 +87,8 @@ STRIPE_PRICE_ID_PROFESSIONAL_YEARLY=price_...
 - [ ] `STRIPE_WEBHOOK_SECRET` added (test mode: `whsec_...`)
 - [ ] `STRIPE_PRICE_ID_STANDARD_MONTHLY` added
 - [ ] `STRIPE_PRICE_ID_STANDARD_YEARLY` added
-- [ ] `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` added
-- [ ] `STRIPE_PRICE_ID_PROFESSIONAL_YEARLY` added
+- [ ] `STRIPE_PRICE_ID_PREMIUM_MONTHLY` added
+- [ ] `STRIPE_PRICE_ID_PREMIUM_YEARLY` added
 - [ ] Webhook endpoint created in Stripe
 - [ ] Redeployed after adding variables
 

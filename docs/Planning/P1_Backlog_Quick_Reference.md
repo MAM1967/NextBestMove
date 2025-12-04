@@ -41,7 +41,7 @@
 
 **Week 4+:** Upsells & Features (ongoing)
 - Upgrade Triggers
-- Professional Plan Features (phased)
+- Premium Plan Features (phased)
 
 ---
 

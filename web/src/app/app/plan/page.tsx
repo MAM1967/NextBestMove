@@ -51,6 +51,7 @@ export default function DailyPlanPage() {
   const [preCallBriefs, setPreCallBriefs] = useState<PreCallBrief[]>([]);
   const [selectedBrief, setSelectedBrief] = useState<PreCallBrief | null>(null);
   const [showBriefModal, setShowBriefModal] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     fetchSubscriptionStatus();
@@ -88,6 +89,7 @@ export default function DailyPlanPage() {
       setSubscriptionStatus(data.status || "none");
       setIsReadOnly(data.isReadOnly || false);
       setTrialEndsAt(data.trialEndsAt ? new Date(data.trialEndsAt) : null);
+      setIsPremium(data.plan === "premium" || false);
 
       // Show paywall if no access or payment issue
       if (
@@ -518,9 +520,15 @@ export default function DailyPlanPage() {
               <PreCallBriefCard
                 key={brief.calendarEventId}
                 brief={brief}
+                isPremium={isPremium}
                 onViewFull={() => {
-                  setSelectedBrief(brief);
-                  setShowBriefModal(true);
+                  if (isPremium) {
+                    setSelectedBrief(brief);
+                    setShowBriefModal(true);
+                  } else {
+                    // Show upgrade prompt for Standard users
+                    window.location.href = "/app/settings?upgrade=premium";
+                  }
                 }}
               />
             ))}

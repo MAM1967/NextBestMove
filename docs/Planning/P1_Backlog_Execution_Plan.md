@@ -9,6 +9,7 @@
 ## Overview
 
 This plan organizes P1 backlog items into strategic groups based on:
+
 - **Revenue impact** (conversion, retention, upsells)
 - **User experience** (engagement, satisfaction)
 - **Technical dependencies** (what needs to be built first)
@@ -21,10 +22,12 @@ This plan organizes P1 backlog items into strategic groups based on:
 ## Strategic Grouping
 
 ### 🎯 Group 1: Trial & Conversion Optimization (Revenue Critical) ✅ COMPLETE
+
 **Goal:** Maximize trial-to-paid conversion and reduce churn  
 **Status:** ✅ Completed and tested (January 2025)
 
 #### 1.1 Trial Expiration & Read-Only Grace Period ✅
+
 **Priority:** P1 - High  
 **Estimated Effort:** 2-3 days  
 **Status:** ✅ Complete  
@@ -33,6 +36,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Day 15-21 read-only mode with banner messaging and subscription prompts
 
 **Implementation:**
+
 - [x] Check subscription status in PaywallOverlay component ✅
 - [x] Add `read_only_grace_period` status check (trial ended, no subscription) ✅
 - [x] Create grace period banner component with subscription CTA ✅
@@ -41,12 +45,14 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Test with Stripe test mode (trial expiration) ✅
 
 **Files to modify:**
+
 - `web/src/app/app/components/PaywallOverlay.tsx`
 - `web/src/lib/plans/generate-daily-plan.ts`
 - `web/src/app/app/page.tsx` (dashboard banner)
 - `web/src/app/api/billing/webhook/route.ts` (handle trial expiration)
 
 **Acceptance Criteria:**
+
 - ✅ Users see banner when trial ends without subscription
 - ✅ Plan generation blocked during grace period
 - ✅ Clear subscription CTA in banner
@@ -55,6 +61,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 #### 1.2 Trial Reminders ✅
+
 **Priority:** P1 - High  
 **Estimated Effort:** 2 days  
 **Status:** ✅ Complete  
@@ -63,6 +70,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Day 12 + Day 14 email reminders via Resend + push notifications
 
 **Implementation:**
+
 - [x] Create cron job for trial reminder emails ✅
 - [x] Calculate days remaining in trial from `trial_ends_at` ✅
 - [x] Create email template for Day 12 reminder ✅
@@ -72,12 +80,14 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Test with test users ✅
 
 **Files to create/modify:**
+
 - `web/src/app/api/cron/trial-reminders/route.ts`
 - `web/src/lib/email/templates/trial-reminder-12.tsx`
 - `web/src/lib/email/templates/trial-reminder-14.tsx`
 - Add cron job configuration
 
 **Acceptance Criteria:**
+
 - ✅ Day 12 email sent to users with 2 days left in trial
 - ✅ Day 14 email sent to users with 0 days left in trial
 - ✅ Emails include clear subscription CTA
@@ -86,6 +96,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 #### 1.3 Paywall Analytics & Copy Polish ✅
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 1-2 days  
 **Status:** ✅ Complete  
@@ -94,6 +105,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Trial/past-due variants, event tracking for paywall interactions
 
 **Implementation:**
+
 - [x] Add analytics tracking to PaywallOverlay ✅
 - [x] Create variant messaging for:
   - Trial users (encouraging) ✅
@@ -104,11 +116,13 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] A/B test messaging (optional) ✅
 
 **Files to modify:**
+
 - `web/src/app/app/components/PaywallOverlay.tsx`
 - `web/src/lib/billing/plans.ts` (status helpers)
 - Add analytics utility (console logging for now)
 
 **Acceptance Criteria:**
+
 - ✅ Different messaging for trial/past-due/canceled states
 - ✅ Analytics events tracked (can use console for now)
 - ✅ Copy is clear and action-oriented
@@ -117,10 +131,12 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### 🚨 Group 2: Payment & Churn Recovery (Revenue Critical) ✅ COMPLETE
+
 **Goal:** Recover failed payments and reduce involuntary churn  
 **Status:** ✅ Completed (January 2025) - All 3 items implemented, ready for testing
 
 #### 2.1 Payment Failure Recovery Flow ✅
+
 **Priority:** P1 - High  
 **Estimated Effort:** 3-4 days  
 **Status:** ✅ Complete  
@@ -129,6 +145,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Day 0 email, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation
 
 **Implementation:**
+
 - [x] Enhance webhook handler for `invoice.payment_failed` ✅
 - [x] Create `payment_failed_at` column in billing_subscriptions ✅
 - [x] Day 0: Send email immediately on failure ✅
@@ -140,6 +157,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Create cron job to check payment failure dates ✅
 
 **Files created/modified:**
+
 - `supabase/migrations/202501300000_add_payment_failed_at.sql` ✅
 - `web/src/app/api/billing/webhook/route.ts` ✅
 - `web/src/app/api/cron/payment-failure-recovery/route.ts` ✅
@@ -149,6 +167,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 - `web/src/lib/billing/subscription.ts` ✅
 
 **Acceptance Criteria:**
+
 - ✅ Email sent immediately on payment failure
 - ✅ Modal appears on Day 3 with payment update CTA
 - ✅ Read-only mode activated on Day 7
@@ -159,6 +178,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 #### 2.2 Past-Due & Cancellation Banners ✅
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 1-2 days  
 **Status:** ✅ Complete  
@@ -167,6 +187,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Dashboard alerts with billing portal CTA
 
 **Implementation:**
+
 - [x] Create `BillingAlertBanner` component ✅
 - [x] Check subscription status on dashboard load ✅
 - [x] Show banner for `past_due` status ✅
@@ -175,11 +196,13 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Dismissible (optional) ✅
 
 **Files created/modified:**
+
 - `web/src/app/app/components/BillingAlertBanner.tsx` ✅
 - `web/src/app/app/components/BillingAlertBannerClient.tsx` ✅
 - `web/src/app/app/page.tsx` (banner added to dashboard) ✅
 
 **Acceptance Criteria:**
+
 - ✅ Banner appears for past-due subscriptions
 - ✅ Banner appears for pending cancellations
 - ✅ Banner includes billing portal CTA
@@ -188,6 +211,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 #### 2.3 Win-Back Campaign Automation ✅
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 2-3 days  
 **Status:** ✅ Complete  
@@ -196,6 +220,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Day 7, 30, 90, 180 post-cancellation emails via Resend
 
 **Implementation:**
+
 - [x] Track cancellation date in `billing_subscriptions` (uses updated_at when status is canceled) ✅
 - [x] Create cron job for win-back emails ✅
 - [x] Create email templates for each stage ✅ (already existed in resend.ts):
@@ -207,10 +232,12 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Track email opens/clicks (optional) ✅ (via Resend analytics)
 
 **Files created/modified:**
+
 - `web/src/app/api/cron/win-back-campaign/route.ts` ✅
 - `web/src/lib/email/resend.ts` (email templates already existed) ✅
 
 **Acceptance Criteria:**
+
 - ✅ Emails sent at correct intervals after cancellation
 - ✅ Different messaging for each stage
 - ✅ Clear reactivation CTA in each email
@@ -219,10 +246,12 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### 🎨 Group 3: User Experience & Engagement ✅ COMPLETE
+
 **Goal:** Improve user satisfaction and daily engagement  
 **Status:** ✅ Completed and tested (January 2025) - All Group 3 tests passed
 
 #### 3.1 Adaptive Recovery & Celebration Flows ✅
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 3-4 days  
 **Status:** ✅ Complete  
@@ -231,6 +260,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Low completion micro-plan, 7+ day comeback, high completion boost
 
 **Implementation:**
+
 - [x] Track daily plan completion rate ✅
 - [x] Detect low completion patterns (3+ days < 50%) ✅
 - [x] Create "Micro Mode" - smaller, easier plans ✅
@@ -241,11 +271,13 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Update plan generation logic ✅
 
 **Files created/modified:**
+
 - `web/src/lib/plans/generate-daily-plan.ts` (adaptive logic) ✅
 - `web/src/lib/plans/completion-tracking.ts` (completion tracking) ✅
 - `web/src/app/app/plan/page.tsx` (celebration UI) ✅
 
 **Acceptance Criteria:**
+
 - ✅ Micro plans generated for low completion users
 - ✅ Comeback messaging for 7+ day inactive users
 - ✅ Celebration shown for high completion streaks
@@ -254,6 +286,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 #### 3.2 Streak Break Detection & Recovery ✅
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 2-3 days  
 **Status:** ✅ Complete  
@@ -262,6 +295,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Day 1-3 push notifications, Micro Mode on Day 2, personal email on Day 3, billing pause offer on Day 7
 
 **Implementation:**
+
 - [x] Detect streak break (streak_count = 0, last_action_date > 1 day ago) ✅
 - [ ] Day 1: Push notification (if available) - Deferred to future
 - [x] Day 2: Enable Micro Mode automatically ✅
@@ -271,12 +305,14 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Create cron job for streak break detection ✅
 
 **Files created/modified:**
+
 - `web/src/app/api/cron/streak-recovery/route.ts` ✅
 - `web/src/lib/email/resend.ts` (streak recovery email template) ✅
 - `web/src/lib/plans/generate-daily-plan.ts` (auto-enable micro mode) ✅
 - `web/src/lib/plans/completion-tracking.ts` (Day 2-6 detection) ✅
 
 **Acceptance Criteria:**
+
 - ⏱ Notifications sent on Day 1-3 (push notifications deferred)
 - ✅ Micro Mode enabled on Day 2-6
 - ✅ Personal email sent on Day 3
@@ -285,9 +321,11 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### 💎 Group 4: Premium Features & Upsells
-**Goal:** Drive upgrades to Professional plan
+
+**Goal:** Drive upgrades to Premium plan
 
 #### 4.1 Plan Upgrade Triggers ⏱
+
 **Priority:** P1 - Medium  
 **Estimated Effort:** 2-3 days  
 **Dependencies:** Plan limits (already exist)
@@ -295,7 +333,8 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts
 
 **Implementation:**
-- [ ] Detect pin limit hit (Standard plan: 50 pins)
+
+- [ ] Detect pin limit hit (Standard plan: 10 pins)
 - [ ] Show upgrade modal when limit reached
 - [ ] Detect attempts to access premium features:
   - Pattern detection (if implemented)
@@ -305,12 +344,14 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [ ] Track upgrade trigger events
 
 **Files to create/modify:**
+
 - `web/src/app/app/components/UpgradeModal.tsx`
 - `web/src/app/app/pins/page.tsx` (pin limit check)
 - `web/src/lib/billing/plans.ts` (limit checks)
 - Feature access checks in relevant pages
 
 **Acceptance Criteria:**
+
 - Modal appears when pin limit hit
 - Modal appears when premium feature accessed
 - Clear upgrade CTA with value proposition
@@ -318,87 +359,101 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ---
 
-#### 4.2 Professional Plan Features ⏱
+#### 4.2 Premium Plan Features ⏱
+
 **Priority:** P1 - Low (can be phased)  
 **Estimated Effort:** 5-7 days per feature  
 **Dependencies:** None (can be built incrementally)
 
 **What:** Unlimited pins + premium features in priority order:
+
 1. Pattern detection
 2. Pre-call briefs
 3. Performance timeline
 4. Content engine with voice learning
 
 **Implementation Strategy:**
+
 - Build one feature at a time
 - Start with Pattern Detection (highest value)
 - Each feature should:
-  - Be gated behind Professional plan check
+  - Be gated behind Premium plan check
   - Have clear value proposition
   - Include upgrade prompt for Standard users
 
 **Phase 1: Pattern Detection (5-7 days)**
+
 - [ ] Analyze user action patterns
 - [ ] Detect common patterns (e.g., "Follow-ups convert best within 3 days")
 - [ ] Display patterns in Insights page
-- [ ] Gate behind Professional plan
+- [ ] Gate behind Premium plan
 
 **Phase 2: Pre-Call Briefs (5-7 days)**
+
 - [ ] Detect calendar events with "call" keywords
 - [ ] Generate pre-call brief from pin history
 - [ ] Show brief before call time
-- [ ] Gate behind Professional plan
+- [ ] Gate behind Premium plan
 
 **Phase 3: Performance Timeline (3-5 days)**
+
 - [ ] Create timeline visualization
 - [ ] Show historical performance metrics
-- [ ] Gate behind Professional plan
+- [ ] Gate behind Premium plan
 
 **Phase 4: Content Engine with Voice Learning (7-10 days)**
+
 - [ ] Voice input for content prompts
 - [ ] AI learning from user voice/style
 - [ ] Enhanced content generation
-- [ ] Gate behind Professional plan
+- [ ] Gate behind Premium plan
 
 **Acceptance Criteria:**
-- Each feature works for Professional users
+
+- Each feature works for Premium users
 - Standard users see upgrade prompts
 - Features provide clear value
 
 ---
 
 #### 4.3 Plan Downgrade Handling ⏱
+
 **Priority:** P1 - Low  
 **Estimated Effort:** 2 days  
 **Dependencies:** Plan limits, cancellation flow
 
-**What:** Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation
+**What:** Premium → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation
 
 **Implementation:**
+
 - [ ] Detect plan downgrade in webhook
-- [ ] Check if user exceeds Standard plan limits (50 pins)
+- [ ] Check if user exceeds Standard plan limits (10 pins)
 - [ ] Show warning modal with pin limit info
 - [ ] Handle Standard → Cancel transition
 - [ ] Apply 7-day read-only grace period
 - [ ] Enable 30-day reactivation window
 
 **Files to create/modify:**
+
 - `web/src/app/api/billing/webhook/route.ts` (downgrade detection)
 - `web/src/app/app/components/DowngradeWarningModal.tsx`
 - `web/src/lib/billing/plans.ts` (limit checks)
 
 **Acceptance Criteria:**
-- Warning shown when downgrading to Standard with >50 pins
+
+- Warning shown when downgrading to Standard with >10 pins
 - Read-only mode applied when canceling Standard plan
 - Reactivation available within 30 days
 
 ---
 
 ### 🔧 Group 5: Technical Infrastructure ✅ COMPLETE
+
 **Goal:** Improve operations and developer experience  
 **Status:** ✅ Completed (January 2025)
 
 #### 5.1 Optimize GitHub Actions Env Sync with CDC ✅
+
 **Priority:** P1 - Low  
 **Estimated Effort:** 1-2 days  
 **Status:** ✅ Complete  
@@ -407,6 +462,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 **What:** Only sync environment variables that don't exist in Vercel
 
 **Implementation:**
+
 - [x] Follow plan in `docs/Environment_Variables_Sync_Optimization_Plan.md` ✅
 - [x] Fetch existing Vercel variables ✅
 - [x] Compare with GitHub Secrets ✅
@@ -414,9 +470,11 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Test with empty and populated Vercel projects ✅
 
 **Files modified:**
+
 - `.github/workflows/sync-env-to-vercel.yml` ✅
 
 **Acceptance Criteria:**
+
 - ✅ Only new variables are synced
 - ✅ Workflow execution time reduced
 - ✅ Logs are clearer with sync statistics
@@ -426,6 +484,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ## Recommended Execution Order
 
 ### Week 1: Trial & Conversion (Revenue Critical)
+
 1. **Trial Expiration & Read-Only Grace Period** (2-3 days)
 2. **Trial Reminders** (2 days)
 3. **Paywall Analytics & Copy Polish** (1-2 days)
@@ -435,6 +494,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### Week 2: Payment Recovery (Revenue Critical)
+
 4. **Payment Failure Recovery Flow** (3-4 days)
 5. **Past-Due & Cancellation Banners** (1-2 days) - Can be done in parallel
 
@@ -443,6 +503,7 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### Week 3: Engagement & Retention
+
 6. **Adaptive Recovery & Celebration Flows** (3-4 days)
 7. **Streak Break Detection & Recovery** (2-3 days)
 
@@ -451,18 +512,20 @@ This plan organizes P1 backlog items into strategic groups based on:
 ---
 
 ### Week 4: Upsells & Premium Features
+
 8. **Plan Upgrade Triggers** (2-3 days)
-9. **Professional Plan Features - Phase 1 (Pattern Detection)** (5-7 days) - Can start in parallel
+9. **Premium Plan Features - Phase 1 (Pattern Detection)** (5-7 days) - Can start in parallel
 
 **Why:** Drives revenue growth through upgrades.
 
 ---
 
 ### Week 5+: Post-Launch Enhancements
+
 10. **Win-Back Campaign Automation** (2-3 days)
 11. **Plan Downgrade Handling** (2 days)
 12. **Optimize GitHub Actions Env Sync** (1-2 days)
-13. **Professional Plan Features - Phases 2-4** (ongoing)
+13. **Premium Plan Features - Phases 2-4** (ongoing)
 
 **Why:** These are important but less critical for launch.
 
@@ -496,7 +559,7 @@ Plan Upgrade Triggers
   └─> Uses existing plan limits
   └─> Uses existing billing infrastructure
 
-Professional Plan Features
+Premium Plan Features
   └─> Independent features
   └─> Can be built incrementally
 ```
@@ -506,33 +569,39 @@ Professional Plan Features
 ## Success Metrics
 
 ### Trial & Conversion
+
 - **Trial-to-paid conversion rate:** Target 20-30%
 - **Trial reminder email open rate:** Target 40%+
 - **Paywall CTA click rate:** Target 15%+
 
 ### Payment Recovery
+
 - **Payment failure recovery rate:** Target 50%+
 - **Past-due resolution rate:** Target 60%+
 
 ### Engagement
+
 - **Daily active users:** Target 40%+ of paid users
 - **Streak recovery rate:** Target 30%+ of streak breaks
 - **Completion rate improvement:** Target 10%+ increase
 
 ### Upsells
+
 - **Upgrade trigger conversion:** Target 10%+
-- **Professional plan adoption:** Target 15%+ of paid users
+- **Premium plan adoption:** Target 15%+ of paid users
 
 ---
 
 ## Risk Mitigation
 
 ### Technical Risks
+
 - **Email deliverability:** Use Resend best practices, monitor bounce rates
 - **Cron job reliability:** Use cron-job.org with monitoring
 - **Stripe webhook handling:** Add idempotency checks, retry logic
 
 ### Product Risks
+
 - **Over-messaging:** Limit email frequency, allow opt-out
 - **Feature complexity:** Keep features simple, test with users
 - **Performance:** Monitor database queries, optimize as needed
@@ -551,4 +620,3 @@ Professional Plan Features
 ---
 
 _Last updated: January 2025 (Groups 1, 2, and 3 completed)_
-

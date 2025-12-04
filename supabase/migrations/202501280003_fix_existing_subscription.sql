@@ -13,7 +13,7 @@ WHERE u.email = 'mcddsl+test1@gmail.com' -- CHANGE THIS EMAIL
 ORDER BY bs.created_at DESC
 LIMIT 5;
 
--- Update subscription metadata to use 'premium' (handles both 'professional' and any other value)
+-- Update subscription metadata to use 'premium' (handles legacy values)
 UPDATE billing_subscriptions
 SET metadata = jsonb_set(
   jsonb_set(
@@ -45,6 +45,7 @@ JOIN billing_customers bc ON bc.user_id = u.id
 JOIN billing_subscriptions bs ON bs.billing_customer_id = bc.id
 WHERE u.email = 'mcddsl+test1@gmail.com' -- CHANGE THIS EMAIL
 ORDER BY bs.created_at DESC;
+
 
 
 

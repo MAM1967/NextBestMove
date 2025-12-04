@@ -36,7 +36,7 @@ BEGIN
   WHERE billing_customer_id = customer_id 
     AND stripe_subscription_id LIKE 'sub_test_%';
   
-  -- Create professional subscription
+  -- Create premium subscription
   INSERT INTO billing_subscriptions (
     billing_customer_id,
     stripe_subscription_id,
@@ -49,7 +49,7 @@ BEGIN
   VALUES (
     customer_id,
     'sub_test_' || gen_random_uuid()::text,
-    'price_test_professional', -- Placeholder, not used for testing
+    'price_test_premium', -- Placeholder, not used for testing
     'active',
     NOW() + INTERVAL '30 days',
     false,

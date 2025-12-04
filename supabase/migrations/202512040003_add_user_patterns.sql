@@ -1,5 +1,5 @@
 -- 202512040003_add_user_patterns.sql
--- Professional plan Phase 1: Pattern Detection
+-- Premium plan Phase 1: Pattern Detection
 -- Adds user_patterns table for storing detected behavior patterns and insights
 
 BEGIN;

@@ -32,7 +32,7 @@
 
 1. **Navigate to Settings → Billing**
 2. **Click "Start Free Trial" or "Upgrade"**
-3. **Select "Professional" plan**
+3. **Select "Premium" plan**
 4. **Complete checkout (use Stripe test mode)**
 
 ### Testing BYOK
@@ -100,7 +100,7 @@ Once you have a premium subscription:
 
 ### "Premium subscription required" error
 - Verify subscription status is "active" or "trialing"
-- Verify `metadata->>'plan_type'` is "professional"
+- Verify `metadata->>'plan_type'` is "premium"
 - Check that `billing_customers` record exists
 
 ### API key not working
@@ -113,6 +113,7 @@ Once you have a premium subscription:
 - Verify `ai_model` is saved in database
 - Check that `userModel` is passed to `generateWithAI`
 - Verify model name is valid OpenAI model
+
 
 
 

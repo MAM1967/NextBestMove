@@ -643,7 +643,7 @@ v0.1: No. In-app only. Consider opt-in email in v0.2.
 	•	Auto-archiving pins?
 v0.1: No auto-archive. Only explicit user archive. Add “Cleanup mode” later.
 	•	Pricing / plans?
-	See Section 21 for complete pricing model: 14-day free trial (no credit card), Standard ($29/mo or $249/year), Professional ($79/mo or $649/year), with detailed churn prevention and upgrade triggers.
+	See Section 21 for complete pricing model: 14-day free trial (no credit card), Standard ($29/mo or $249/year), Premium ($79/mo or $649/year), with detailed churn prevention and upgrade triggers.
 
 ⸻
 
@@ -744,7 +744,7 @@ Includes:
 	•	Daily plan (Fast Win + 3–8 actions/day)
 	•	Calendar-aware action sizing
 	•	Smart follow-up engine
-	•	Up to 50 active Pins
+	•	Up to 10 active Pins
 	•	Weekly Summary + single actionable insight
 	•	2 content prompts per week
 	•	Consistency score
@@ -755,7 +755,7 @@ Includes:
 
 This is the foundational "habit plan." 80% of users belong here.
 
-PROFESSIONAL — $79/mo or $649/year
+PREMIUM — $79/mo or $649/year
 (Save $299 — 4 months free)
 
 Hero Value Proposition: "A smart intelligence layer for complex pipelines."
@@ -798,20 +798,20 @@ This is "fractional revops" for one person.
 
 Upsells must appear ONLY when the user is succeeding.
 
-1. Pin Limit (Standard hits 50)
-Modal: "You've built a strong network of 50 relationships. Add unlimited Pins with Professional."
+1. Pin Limit (Standard hits 10)
+Modal: "You've built a strong network of 10 relationships. Add unlimited Pins with Premium."
 
 2. Weekly Summary Insight (Standard)
 "Want deeper insights next week? Try the Intelligence Layer."
 
 3. Attempting to view pattern detection
-"Pattern detection is part of Professional. See when your outreach performs best."
+"Pattern detection is part of Premium. See when your outreach performs best."
 
 4. Before important call
 "Pre-call brief available. Upgrade to prepare in 10 seconds."
 
 5. Content drafting moment
-"The Content Engine tailors posts to your voice. Try Professional."
+"The Content Engine tailors posts to your voice. Try Premium."
 
 21.4 Churn Prevention (Active, Not Passive)
 
@@ -852,8 +852,8 @@ This can recover 20–40% of lost subscribers.
 
 21.4.3 Downgrade Policy (Clarity to Reduce Anxiety)
 
-Professional → Standard:
-Effective next billing cycle. Warning: "You have 87 active Pins. Standard supports 50. Archive 37 or stay on Professional."
+Premium → Standard:
+Effective next billing cycle. Warning: "You have 87 active Pins. Standard supports 10. Archive 77 or stay on Premium."
 
 Standard → Cancel:
 	•	7-day read-only
@@ -886,7 +886,7 @@ Try free for 14 days. No credit card.
 STANDARD — $29/mo or $249/year
 "All you need to build a daily revenue rhythm."
 
-PROFESSIONAL — $79/mo or $649/year
+PREMIUM — $79/mo or $649/year
 "An intelligence layer for complex pipelines."
 
 Pricing page includes:
@@ -917,11 +917,11 @@ Trial:
 
 Plans:
 	•	Standard: $29/mo | $249/year
-	•	Professional: $79/mo | $649/year
+	•	Premium: $79/mo | $649/year
 
 Highlights:
 	•	Standard = Habit Layer
-	•	Professional = Intelligence Layer
+	•	Premium = Intelligence Layer
 
 Behavioral Upsells:
 	•	Pin limit

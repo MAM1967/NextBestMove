@@ -1,5 +1,5 @@
 -- 202512040005_add_pre_call_briefs.sql
--- Professional plan Phase 2: Pre-Call Briefs
+-- Premium plan Phase 2: Pre-Call Briefs
 -- Adds pre_call_briefs table for storing auto-generated call preparation briefs
 
 BEGIN;

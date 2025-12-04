@@ -26,15 +26,62 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await hasProfessionalFeature(
-      user.id,
-      "pre_call_briefs"
-    );
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: "Upgrade required", code: "UPGRADE_REQUIRED" },
-        { status: 402 }
-      );
+    // Check if user has Premium - we'll still return briefs for Standard users
+    // but they'll see an upgrade prompt when trying to view them
+    const { getSubscriptionInfo } = await import("@/lib/billing/subscription");
+    const subscription = await getSubscriptionInfo(user.id);
+    const isPremium = subscription.plan === "premium" && 
+                     (subscription.status === "active" || subscription.status === "trialing") &&
+                     !subscription.isReadOnly;
+
+    // Only generate briefs if user has Premium
+    // Standard users will see existing briefs but can't view full content
+    if (!isPremium) {
+      // For Standard users, return existing briefs from database (if any)
+      // but don't generate new ones
+      const adminSupabase = createAdminClient();
+      const { data: existingBriefs } = await adminSupabase
+        .from("pre_call_briefs")
+        .select(`
+          *,
+          person_pins!pre_call_briefs_person_pin_id_fkey(name)
+        `)
+        .eq("user_id", user.id)
+        .gte("event_start", new Date().toISOString())
+        .lte("event_start", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
+        .order("event_start", { ascending: true });
+
+      if (existingBriefs && existingBriefs.length > 0) {
+        // Transform existing briefs to match our type
+        const briefs = existingBriefs.map((b: any) => ({
+          id: b.id,
+          calendarEventId: b.calendar_event_id,
+          eventTitle: b.event_title,
+          eventStart: new Date(b.event_start),
+          personPinId: b.person_pin_id,
+          personName: b.person_pins?.name || null,
+          briefContent: b.brief_content,
+          lastInteractionDate: b.last_interaction_date ? new Date(b.last_interaction_date) : null,
+          followUpCount: b.follow_up_count || 0,
+          nextStepSuggestions: b.next_step_suggestions || [],
+          userNotes: b.user_notes,
+          hasVideoConference: false, // We'd need to store this, but for now it's okay
+        }));
+
+        return NextResponse.json({
+          success: true,
+          briefs,
+          requiresUpgrade: true,
+        });
+      }
+
+      // No existing briefs for Standard user
+      return NextResponse.json({
+        success: true,
+        briefs: [],
+        requiresUpgrade: true,
+        message: "Upgrade to Premium to get pre-call briefs",
+      });
     }
 
     // Check if calendar is connected
@@ -137,6 +184,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       briefs,
+      requiresUpgrade: false,
     });
   } catch (error) {
     logError("Failed to fetch pre-call briefs", error);

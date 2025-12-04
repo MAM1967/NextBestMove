@@ -38,7 +38,7 @@ BEGIN
     SELECT id INTO customer_id FROM billing_customers WHERE user_id = test_user_id;
   END IF;
   
-  -- Create professional subscription (active status)
+  -- Create premium subscription (active status)
   INSERT INTO billing_subscriptions (
     billing_customer_id,
     stripe_subscription_id,
@@ -51,13 +51,13 @@ BEGIN
   VALUES (
     customer_id,
     'sub_test_premium_' || gen_random_uuid()::text,
-    'price_test_professional_monthly', -- This is just a placeholder
+    'price_test_premium_monthly', -- This is just a placeholder
     'active',
     NOW() + INTERVAL '30 days',
     false,
     jsonb_build_object(
-      'plan_name', 'Professional',
-      'plan_type', 'professional',
+      'plan_name', 'Premium',
+      'plan_type', 'premium',
       'interval', 'month'
     )
   )
@@ -65,8 +65,8 @@ BEGIN
   SET 
     status = 'active',
     metadata = jsonb_build_object(
-      'plan_name', 'Professional',
-      'plan_type', 'professional',
+      'plan_name', 'Premium',
+      'plan_type', 'premium',
       'interval', 'month'
     );
   
@@ -89,6 +89,7 @@ LEFT JOIN billing_subscriptions bs ON bs.billing_customer_id = bc.id
 WHERE bs.status IN ('active', 'trialing')
 ORDER BY bs.created_at DESC
 LIMIT 5;
+
 
 
 

@@ -3,7 +3,7 @@
 **Date:** 2025-11-27  
 **Source Document:** Trial Subscription and Churn Model.md  
 **Status:** ✅ Integrated into PRD and related documentation  
-**Decisions Made:** ✅ Email service (Resend), Push notifications (Yes), Stripe trial (API-based), Professional features priority
+**Decisions Made:** ✅ Email service (Resend), Push notifications (Yes), Stripe trial (API-based), Premium features priority
 
 ---
 
@@ -27,8 +27,8 @@
 **Key Details Added:**
 - 14-day free trial (no credit card required)
 - 7-day read-only grace period after trial
-- Standard Plan: $29/mo or $249/year (50 pins max)
-- Professional Plan: $79/mo or $649/year (unlimited pins + premium features)
+- Standard Plan: $29/mo or $249/year (10 pins max)
+- Premium Plan: $79/mo or $649/year (unlimited pins + premium features)
 - Complete churn prevention strategy
 - Win-back campaign automation
 
@@ -41,7 +41,7 @@
 - ✅ Updated "Final Inputs Needed" - marked pricing as confirmed
 - ✅ Updated P0 items:
   - Paywall middleware (now includes trial + read-only grace period support)
-  - Stripe API routes (now supports Standard/Professional, monthly/annual, trial creation)
+  - Stripe API routes (now supports Standard/Premium, monthly/annual, trial creation)
   - Stripe webhook (now handles trial expiration, plan metadata)
   - Onboarding flow (now includes trial start step, no early pricing screens)
   - Billing section UI (marked as complete ✅)
@@ -52,7 +52,7 @@
   - Streak break detection & recovery (Day 1-3-7 flow, Micro Mode, billing pause)
   - Payment failure recovery flow (Day 0-3-7-14)
   - Win-back campaign automation (Day 7-30-90-180)
-  - Professional plan features (unlimited pins, pattern detection, pre-call briefs, content engine, performance timeline)
+  - Premium plan features (unlimited pins, pattern detection, pre-call briefs, content engine, performance timeline)
   - Plan downgrade handling
 - ✅ Added P2 items:
   - Pricing page UI
@@ -109,11 +109,11 @@
 ### 2. Feature Gating Logic
 - **Standard Plan Features:**
   - Daily plan generation
-  - Up to 50 active pins
+  - Up to 10 active pins
   - Weekly summary
   - 2 content prompts/week
   - Basic insights
-- **Professional Plan Features (Standard +):**
+- **Premium Plan Features (Standard +):**
   - Unlimited pins
   - Pattern detection
   - Pre-call briefs
@@ -138,25 +138,25 @@
 
 ### Immediate (P0 - MVP Must-Haves):
 1. **Verify Database Schema** - Check if `trial_ends_at` exists, create migration if needed
-2. **Update Stripe Checkout** - Support Standard/Professional plans, monthly/annual intervals, trial creation
+2. **Update Stripe Checkout** - Support Standard/Premium plans, monthly/annual intervals, trial creation
 3. **Update Webhook Handler** - Handle trial tracking, plan metadata storage
 4. **Implement Read-Only Mode** - Trial expiration logic, feature gating
 5. **Update Onboarding Flow** - Add Step 6: Start 14-day trial (no credit card)
-6. **Plan-Based Feature Gating** - Pin limit enforcement (50 for Standard), Professional feature checks
+6. **Plan-Based Feature Gating** - Pin limit enforcement (10 for Standard), Premium feature checks
 
 ### High Priority (P1 - High Value):
 1. **Trial Reminders** - Day 12 + Day 14 email (Resend) + push notifications
 2. **Upgrade Triggers** - Pin limit modal, pattern detection gate, pre-call brief prompts
 3. **Streak Break Detection** - Day 1-3-7 recovery flow (push notifications), Micro Mode, billing pause
 4. **Payment Failure Recovery** - Day 0-3-7-14 sequence (Resend emails + in-app)
-5. **Professional Plan Features** (in priority order):
+5. **Premium Plan Features** (in priority order):
    - **Pattern Detection** (Priority 1)
    - **Pre-Call Briefs** (Priority 2)
    - **Performance Timeline** (Priority 3)
    - **Content Engine** (Priority 4)
 
 ### Medium Priority (P2 - Nice-to-Have):
-1. **Pricing Page UI** - Standard vs Professional comparison
+1. **Pricing Page UI** - Standard vs Premium comparison
 2. **Billing Pause Feature** - 30-day pause for inactive users
 
 ---
@@ -164,8 +164,8 @@
 ## Key Decisions Made
 
 1. **Trial Model:** 14 days, no credit card, full access → 7-day read-only grace → inactive
-2. **Pricing:** Standard ($29/mo or $249/year) vs Professional ($79/mo or $649/year)
-3. **Feature Differentiation:** Pin limits (50 vs unlimited) + Professional-only features
+2. **Pricing:** Standard ($29/mo or $249/year) vs Premium ($79/mo or $649/year)
+3. **Feature Differentiation:** Pin limits (10 vs unlimited) + Premium-only features
 4. **Churn Prevention:** Active recovery flows, not passive monitoring
 5. **Win-Back Strategy:** 4-touch email campaign (Day 7, 30, 90, 180)
 6. **Onboarding:** No early pricing screens - let rhythm sell the plan
@@ -178,7 +178,7 @@
 2. **Email Service:** ✅ **Resend** - Will be used for trial reminders, payment failure, and win-back campaigns
 3. **Push Notifications:** ✅ **Yes** - Will be used for trial reminders and streak break detection (requires push service setup)
 4. **Stripe Trial Setup:** ✅ **Stripe API** - Recommended approach (see details below)
-5. **Professional Features Priority:** ✅ **Order:** 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine
+5. **Premium Features Priority:** ✅ **Order:** 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine
 
 ### Stripe Trial Setup Recommendation
 

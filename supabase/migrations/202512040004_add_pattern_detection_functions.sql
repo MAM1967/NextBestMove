@@ -1,5 +1,5 @@
 -- 202512040004_add_pattern_detection_functions.sql
--- Professional plan Phase 1: Pattern Detection SQL Functions
+-- Premium plan Phase 1: Pattern Detection SQL Functions
 -- Functions to detect user behavior patterns from actions data
 
 BEGIN;

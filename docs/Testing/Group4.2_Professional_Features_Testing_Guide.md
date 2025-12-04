@@ -1,4 +1,4 @@
-# Group 4.2: Professional Plan Features Testing Guide
+# Group 4.2: Premium Plan Features Testing Guide
 
 **Date:** December 2024  
 **Status:** Ready for Testing  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This guide tests the first two Professional plan features:
+This guide tests the first two Premium plan features:
 - **Phase 1: Pattern Detection** - AI-powered insights about outreach patterns
 - **Phase 2: Pre-Call Briefs** - Auto-generated call preparation summaries
 
