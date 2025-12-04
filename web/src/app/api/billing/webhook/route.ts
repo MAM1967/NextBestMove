@@ -287,6 +287,20 @@ export async function handleSubscriptionUpdated(
   const oldPlanType = (oldSubscriptionData?.metadata as any)?.plan_type;
   const newPlanType = planMetadata.plan_type || "standard";
 
+  // Cancel any other active/trialing subscriptions for this customer
+  // This ensures only one active subscription per customer
+  if (status === "active" || status === "trialing") {
+    await supabase
+      .from("billing_subscriptions")
+      .update({
+        status: "canceled",
+        cancel_at_period_end: false,
+      })
+      .eq("billing_customer_id", billingCustomerId)
+      .in("status", ["active", "trialing"])
+      .neq("stripe_subscription_id", subscription.id);
+  }
+
   const { data: upsertedData, error: upsertError } = await supabase
     .from("billing_subscriptions")
     .upsert(

@@ -147,6 +147,17 @@ export async function POST(request: Request) {
       status: status,
     });
 
+    // Cancel any other active/trialing subscriptions for this customer
+    // This ensures only one active subscription per customer
+    await adminClient
+      .from("billing_subscriptions")
+      .update({
+        status: "canceled",
+        cancel_at_period_end: false,
+      })
+      .eq("billing_customer_id", billingCustomerId)
+      .in("status", ["active", "trialing"]);
+
     // Store subscription in database using admin client
     const { error: subError } = await adminClient
       .from("billing_subscriptions")
