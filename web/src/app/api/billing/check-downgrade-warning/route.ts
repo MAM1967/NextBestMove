@@ -27,7 +27,11 @@ export async function GET() {
       .maybeSingle();
 
     if (!customer) {
-      return NextResponse.json({ shouldShow: false });
+      return NextResponse.json({ 
+        shouldShow: false, 
+        reason: "no_customer",
+        debug: { userId: user.id }
+      });
     }
 
     // Get active or trialing subscription
@@ -42,7 +46,24 @@ export async function GET() {
 
     if (!subscription) {
       console.log("❌ No subscription found for customer:", customer.id);
-      return NextResponse.json({ shouldShow: false, reason: "no_subscription" });
+      // Check if there are any subscriptions at all
+      const { data: allSubs } = await supabase
+        .from("billing_subscriptions")
+        .select("id, status, metadata")
+        .eq("billing_customer_id", customer.id);
+      
+      return NextResponse.json({ 
+        shouldShow: false, 
+        reason: "no_subscription",
+        debug: {
+          customerId: customer.id,
+          allSubscriptions: allSubs?.map(s => ({
+            id: s.id,
+            status: s.status,
+            plan_type: (s.metadata as any)?.plan_type
+          }))
+        }
+      });
     }
 
     console.log("📊 Subscription found:", {
