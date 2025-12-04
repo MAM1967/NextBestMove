@@ -53,8 +53,12 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
   };
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm h-full min-h-[200px] flex flex-col">
-      <div className="flex items-start justify-between">
+    <div 
+      className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm flex flex-col"
+      style={{ 
+        height: isExpanded ? '400px' : '220px'
+      }}>
+      <div className="flex items-start justify-between flex-shrink-0">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-blue-700">
@@ -74,17 +78,17 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
       {/* Content area - different for Premium vs Standard */}
       {isPremium ? (
         // Premium: Show brief content with expandable/scrollable view
-        <div className="mt-3 flex flex-col">
+        <div className="mt-3 flex flex-col flex-1 min-h-0">
           {isExpanded ? (
             <>
               <div 
                 className="text-xs text-zinc-700 whitespace-pre-wrap overflow-y-auto pr-1 scrollbar-thin"
-                style={{ maxHeight: '200px' }}>
+                style={{ height: '200px' }}>
                 {brief.briefContent}
               </div>
               <button
                 onClick={() => setIsExpanded(false)}
-                className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 self-start"
+                className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 self-start flex-shrink-0"
               >
                 Show less
               </button>
