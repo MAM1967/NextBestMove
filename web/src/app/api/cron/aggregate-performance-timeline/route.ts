@@ -236,13 +236,20 @@ async function calculateDailyMetrics(
 
   const streakDay = user?.streak_count || 0;
 
-  // Calculate completion rate (completed / total actions for the day)
+  // Calculate completion rate
+  // Note: actionsCompleted includes all actions completed on this day (may be from previous days)
+  // actionsCreated only includes actions created on this day
+  // We cap at 100% to avoid >100% rates when completing old actions
   const totalActionsForDay = actionsCreated || 0;
   const completionRate =
-    totalActionsForDay > 0 ? (actionsCompleted || 0) / totalActionsForDay : 0;
+    totalActionsForDay > 0
+      ? Math.min(1.0, (actionsCompleted || 0) / totalActionsForDay)
+      : 0;
 
   // Calculate reply rate (replies / outreach actions)
-  // Outreach actions are OUTREACH type actions
+  // Outreach actions are OUTREACH type actions created on this day
+  // repliesReceived includes all replies received on this day (may be from previous days' outreach)
+  // We cap at 100% to avoid >100% rates when receiving replies to old outreach
   const { count: outreachActions } = await adminClient
     .from("actions")
     .select("*", { count: "exact", head: true })
@@ -252,7 +259,9 @@ async function calculateDailyMetrics(
     .lte("created_at", endOfDay.toISOString());
 
   const replyRate =
-    (outreachActions || 0) > 0 ? (repliesReceived || 0) / (outreachActions || 0) : 0;
+    (outreachActions || 0) > 0
+      ? Math.min(1.0, (repliesReceived || 0) / (outreachActions || 0))
+      : 0;
 
   return {
     actions_completed: actionsCompleted || 0,
