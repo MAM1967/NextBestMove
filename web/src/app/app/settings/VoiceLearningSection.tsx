@@ -206,7 +206,7 @@ export function VoiceLearningSection({ isPremium }: VoiceLearningSectionProps) {
             </div>
             <button
               onClick={handleAnalyze}
-              disabled={!canAnalyze || isAnalyzing}
+              disabled={isAnalyzing}
               className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAnalyzing ? "Analyzing..." : profile ? "Regenerate Profile" : "Create Profile"}
