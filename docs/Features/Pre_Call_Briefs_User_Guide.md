@@ -4,6 +4,11 @@
 
 Pre-Call Briefs automatically detect upcoming calls and meetings in your calendar and provide you with a quick summary of your interaction history with the person you're meeting with.
 
+**Automatic Detection:**
+- If your calendar event has a video conferencing link (Google Meet, Zoom, Teams, etc.), it will be automatically detected
+- The system checks for video conferencing fields in your calendar events (most reliable method)
+- If no video conferencing field is found, it falls back to checking the event title for keywords
+
 ## How It Works
 
 Pre-Call Briefs appear on your Daily Plan page when you have calendar events in the next 24 hours that look like calls or meetings.
