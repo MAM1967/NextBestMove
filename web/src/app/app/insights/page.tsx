@@ -141,6 +141,39 @@ export default async function InsightsPage() {
 
       {/* Pattern Detection (Premium Feature) */}
       <PatternDetectionSection />
+
+      {/* Performance Timeline (Premium Feature) */}
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-900">
+              Performance Timeline
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              Visualize your historical performance metrics and track trends over time
+            </p>
+          </div>
+        </div>
+        <a
+          href="/app/insights/timeline"
+          className="inline-flex items-center gap-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+        >
+          View Timeline
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </a>
+      </div>
     </div>
   );
 }

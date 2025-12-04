@@ -24,6 +24,7 @@
     "openid-client": "^6.8.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
+    "recharts": "^3.5.1",
     "resend": "^6.5.2",
     "stripe": "^20.0.0"
   },
