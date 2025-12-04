@@ -11,6 +11,7 @@ interface PreCallBriefCardProps {
 
 export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCallBriefCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const eventTime = new Date(brief.eventStart);
   const timeStr = eventTime.toLocaleTimeString("en-US", {
@@ -24,6 +25,32 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
 
   // For Standard users, show teaser info instead of brief content
   const showTeaser = !isPremium && brief.followUpCount > 0;
+
+  const handleUpgrade = async () => {
+    if (isPremium || !onViewFull) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/billing/customer-portal", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to open billing portal");
+      }
+
+      const { url } = await response.json();
+      if (!url) {
+        throw new Error("No portal URL returned");
+      }
+      window.location.href = url;
+    } catch (error) {
+      console.error("Error opening billing portal:", error);
+      alert("Unable to open billing portal. Please try again later.");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm h-full min-h-[200px] flex flex-col">
@@ -42,14 +69,6 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
             <p className="mt-1 text-xs text-zinc-600">with {brief.personName}</p>
           )}
         </div>
-        {onViewFull && !isPremium && (
-          <button
-            onClick={onViewFull}
-            className="text-xs font-medium text-blue-600 hover:text-blue-700"
-          >
-            Upgrade to View
-          </button>
-        )}
       </div>
 
       {/* Content area - different for Premium vs Standard */}
@@ -82,17 +101,18 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
               <span className="font-medium">{brief.followUpCount}</span> previous interaction{brief.followUpCount !== 1 ? "s" : ""} with this contact
             </div>
           )}
-          <div className="relative rounded-md border border-blue-200 bg-white p-3">
+          <div className="relative rounded-md border border-blue-200 bg-white p-3 flex-grow flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center bg-blue-50/80 backdrop-blur-sm rounded-md">
               <div className="text-center">
                 <p className="text-xs font-medium text-blue-700 mb-1">
                   Interaction history & talking points
                 </p>
                 <button
-                  onClick={onViewFull}
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline"
+                  onClick={handleUpgrade}
+                  disabled={isLoading}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline disabled:opacity-50"
                 >
-                  Upgrade to Premium to view
+                  {isLoading ? "Loading..." : "Upgrade to Premium to view"}
                 </button>
               </div>
             </div>

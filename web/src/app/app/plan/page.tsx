@@ -522,10 +522,8 @@ export default function DailyPlanPage() {
               if (isPremium) {
                 setSelectedBrief(brief);
                 setShowBriefModal(true);
-              } else {
-                // Show upgrade prompt for Standard users
-                window.location.href = "/app/settings?upgrade=premium";
               }
+              // For Standard users, the upgrade is handled in PreCallBriefCard
             }}
           />
         )}
