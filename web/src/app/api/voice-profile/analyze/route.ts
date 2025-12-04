@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscriptionInfo } from "@/lib/billing/subscription";
 import {
   collectUserTextSamples,
+  countUserTextSamples,
   analyzeVoiceStyle,
   type VoiceCharacteristics,
 } from "@/lib/ai/voice-analysis";
@@ -170,8 +171,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check available samples
-    const samples = await collectUserTextSamples(supabase, user.id, 5);
+    // Check available samples (fast count only, no need to fetch full text)
+    const sampleCount = await countUserTextSamples(supabase, user.id);
 
     return NextResponse.json({
       hasProfile: !!profile,
@@ -182,8 +183,8 @@ export async function GET(request: Request) {
             lastUpdated: profile.last_updated,
           }
         : null,
-      availableSamples: samples.length,
-      canAnalyze: samples.length >= 5,
+      availableSamples: sampleCount,
+      canAnalyze: sampleCount >= 5,
     });
   } catch (error) {
     logError("Failed to fetch voice profile", error);
