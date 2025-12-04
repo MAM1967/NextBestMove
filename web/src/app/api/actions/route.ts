@@ -67,6 +67,128 @@ export async function GET(request: Request) {
   }
 }
 
+// POST /api/actions - Create a new action
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const {
+      person_id,
+      action_type,
+      description,
+      due_date,
+      notes,
+    } = body;
+
+    // Validate required fields
+    if (!action_type || !due_date) {
+      return NextResponse.json(
+        { error: "action_type and due_date are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate action_type
+    const validActionTypes = [
+      "OUTREACH",
+      "FOLLOW_UP",
+      "NURTURE",
+      "CALL_PREP",
+      "POST_CALL",
+      "CONTENT",
+      "FAST_WIN",
+    ];
+    if (!validActionTypes.includes(action_type)) {
+      return NextResponse.json(
+        { error: `Invalid action_type. Must be one of: ${validActionTypes.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // If person_id is provided, verify it belongs to the user
+    if (person_id) {
+      const { data: pin, error: pinError } = await supabase
+        .from("person_pins")
+        .select("id, name")
+        .eq("id", person_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (pinError || !pin) {
+        return NextResponse.json(
+          { error: "Person pin not found or doesn't belong to you" },
+          { status: 404 }
+        );
+      }
+
+      // Auto-generate description if not provided
+      if (!description) {
+        const actionDescriptions: Record<string, string> = {
+          OUTREACH: `Reach out to ${pin.name}`,
+          FOLLOW_UP: `Follow up with ${pin.name}`,
+          NURTURE: `Nurture relationship with ${pin.name}`,
+          CALL_PREP: `Prepare for call with ${pin.name}`,
+          POST_CALL: `Follow up after call with ${pin.name}`,
+          CONTENT: `Create content for ${pin.name}`,
+          FAST_WIN: `Quick action for ${pin.name}`,
+        };
+        body.description = actionDescriptions[action_type] || `Action for ${pin.name}`;
+      }
+    }
+
+    // Create the action
+    const { data: action, error: createError } = await supabase
+      .from("actions")
+      .insert({
+        user_id: user.id,
+        person_id: person_id || null,
+        action_type,
+        state: "NEW",
+        description: body.description || description || null,
+        due_date,
+        notes: notes || null,
+        auto_created: false,
+      })
+      .select(
+        `
+        *,
+        person_pins (
+          id,
+          name,
+          url,
+          notes
+        )
+      `
+      )
+      .single();
+
+    if (createError) {
+      console.error("Error creating action:", createError);
+      return NextResponse.json(
+        { error: "Failed to create action", details: createError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ action }, { status: 201 });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+
 
 
 

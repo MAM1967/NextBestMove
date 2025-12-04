@@ -4,6 +4,7 @@ import { stripe } from "@/lib/billing/stripe";
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { logWebhookEvent, logError, logBillingEvent } from "@/lib/utils/logger";
+import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -240,6 +241,14 @@ export async function handleSubscriptionUpdated(
   const priceId = subscription.items.data[0]?.price.id;
   const planMetadata = subscription.metadata || {};
 
+  // Determine plan_type from price_id (more reliable than Stripe metadata)
+  const planInfo = getPlanFromPriceId(priceId);
+  
+  // Use plan info from price_id, but allow Stripe metadata to override if explicitly set
+  const finalPlanType = planMetadata.plan_type || planInfo.plan_type;
+  const finalPlanName = planMetadata.plan_name || planInfo.plan_name;
+  const finalInterval = planMetadata.interval || planInfo.interval;
+
   // Map Stripe status to our status enum
   let status: "trialing" | "active" | "past_due" | "canceled" = "active";
   if (subscription.status === "trialing") status = "trialing";
@@ -274,6 +283,7 @@ export async function handleSubscriptionUpdated(
     subscriptionId: subscription.id,
     status,
     priceId,
+    planType: finalPlanType,
     billingCustomerId,
   });
 
@@ -285,7 +295,7 @@ export async function handleSubscriptionUpdated(
     .maybeSingle();
 
   const oldPlanType = (oldSubscriptionData?.metadata as any)?.plan_type;
-  const newPlanType = planMetadata.plan_type || "standard";
+  const newPlanType = finalPlanType;
 
   // Cancel any other active/trialing subscriptions for this customer
   // This ensures only one active subscription per customer
@@ -318,9 +328,9 @@ export async function handleSubscriptionUpdated(
             : (subscription.latest_invoice as Stripe.Invoice).hosted_invoice_url
           : null,
         metadata: {
-          plan_name: planMetadata.plan_name || "Standard",
-          plan_type: planMetadata.plan_type || "standard",
-          interval: planMetadata.interval || "month",
+          plan_name: finalPlanName,
+          plan_type: finalPlanType,
+          interval: finalInterval,
           amount: subscription.items.data[0]?.price.unit_amount || 0,
         },
       },
