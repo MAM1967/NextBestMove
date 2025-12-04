@@ -25,7 +25,7 @@ export async function countUserTextSamples(
   userId: string
 ): Promise<number> {
   // Run all queries in parallel for better performance
-  const [promptsResult, actionsResult, pinsResult] = await Promise.all([
+  const [promptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
     // Count edited content prompts with length > 50
     supabase
       .from("content_prompts")
@@ -47,6 +47,12 @@ export async function countUserTextSamples(
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .not("notes", "is", null),
+    
+    // Count manual voice samples
+    supabase
+      .from("manual_voice_samples")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
   ]);
 
   // Note: We can't filter by length > 50 at the database level easily with Supabase
@@ -55,9 +61,10 @@ export async function countUserTextSamples(
   const promptCount = promptsResult.count || 0;
   const actionCount = actionsResult.count || 0;
   const pinCount = pinsResult.count || 0;
+  const manualCount = manualSamplesResult.count || 0;
 
   // Return total count (we'll filter by length when actually collecting samples)
-  return promptCount + actionCount + pinCount;
+  return promptCount + actionCount + pinCount + manualCount;
 }
 
 /**
@@ -72,7 +79,7 @@ export async function collectUserTextSamples(
   const samples: string[] = [];
 
   // Run queries in parallel for better performance
-  const [editedPromptsResult, actionsResult, pinsResult] = await Promise.all([
+  const [editedPromptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
     // 1. Get edited content prompts (prefer longer ones)
     supabase
       .from("content_prompts")
@@ -100,6 +107,14 @@ export async function collectUserTextSamples(
       .not("notes", "is", null)
       .order("updated_at", { ascending: false })
       .limit(20),
+    
+    // 4. Get manual voice samples (emails, LinkedIn posts, etc.)
+    supabase
+      .from("manual_voice_samples")
+      .select("content")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
   // Process edited prompts
@@ -125,6 +140,15 @@ export async function collectUserTextSamples(
     for (const pin of pinsResult.data) {
       if (pin.notes && pin.notes.trim().length > 50) {
         samples.push(pin.notes.trim());
+      }
+    }
+  }
+
+  // Process manual voice samples (already validated to be >= 50 chars in DB)
+  if (manualSamplesResult.data) {
+    for (const sample of manualSamplesResult.data) {
+      if (sample.content && sample.content.trim().length > 50) {
+        samples.push(sample.content.trim());
       }
     }
   }
