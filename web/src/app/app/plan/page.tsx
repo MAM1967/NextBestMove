@@ -44,11 +44,21 @@ export default function DailyPlanPage() {
   const [snoozeActionId, setSnoozeActionId] = useState<string | null>(null);
   const [noteActionId, setNoteActionId] = useState<string | null>(null);
   const [noteAction, setNoteAction] = useState<Action | null>(null);
+  const [formattedDate, setFormattedDate] = useState<string>("");
 
   useEffect(() => {
     fetchSubscriptionStatus();
     fetchDailyPlan();
     fetchWeeklyFocus();
+    // Set formatted date on client side only to avoid hydration mismatch
+    setFormattedDate(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    );
   }, []);
 
   const fetchSubscriptionStatus = async () => {
@@ -60,7 +70,14 @@ export default function DailyPlanPage() {
         return;
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse subscription response as JSON:", jsonError);
+        setSubscriptionStatus("none");
+        return;
+      }
       setSubscriptionStatus(data.status || "none");
       setIsReadOnly(data.isReadOnly || false);
       setTrialEndsAt(data.trialEndsAt ? new Date(data.trialEndsAt) : null);
@@ -95,11 +112,22 @@ export default function DailyPlanPage() {
           setLoading(false);
           return;
         }
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          errorData = {};
+        }
         throw new Error(errorData.error || "Failed to fetch daily plan");
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse daily plan response as JSON:", jsonError);
+        throw new Error("Failed to fetch daily plan");
+      }
       setDailyPlan(data.dailyPlan || null);
     } catch (err) {
       console.error("Error fetching daily plan:", err);
@@ -117,7 +145,14 @@ export default function DailyPlanPage() {
       const response = await fetch("/api/weekly-summaries?limit=1");
       
       if (response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error("Failed to parse weekly focus response as JSON:", jsonError);
+          setWeeklyFocus("Build consistent revenue rhythm");
+          return;
+        }
         // The API returns { summary: {...}, summaries: [...] }
         // summary is the most recent one
         if (data?.summary?.next_week_focus) {
@@ -152,7 +187,12 @@ export default function DailyPlanPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to generate plan");
+        }
         throw new Error(data.error || "Failed to generate plan");
       }
 
@@ -177,7 +217,12 @@ export default function DailyPlanPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to complete action");
+        }
         throw new Error(data.error || "Failed to complete action");
       }
 
@@ -208,7 +253,12 @@ export default function DailyPlanPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to snooze action");
+        }
         throw new Error(data.error || "Failed to snooze action");
       }
 
@@ -240,7 +290,12 @@ export default function DailyPlanPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to save note");
+        }
         throw new Error(data.error || "Failed to save note");
       }
 
@@ -263,7 +318,13 @@ export default function DailyPlanPage() {
       });
 
       if (!stateResponse.ok) {
-        const data = await stateResponse.json();
+        let data;
+        try {
+          data = await stateResponse.json();
+        } catch (jsonError) {
+          console.error("Failed to parse state response as JSON:", jsonError);
+          throw new Error("Failed to schedule follow-up");
+        }
         throw new Error(data.error || "Failed to mark action as replied");
       }
 
@@ -351,12 +412,7 @@ export default function DailyPlanPage() {
               Your NextBestMove for Today
             </h1>
             <p className="mt-2 text-sm text-zinc-600">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {formattedDate || "Loading..."}
             </p>
           </div>
           {dailyPlan && (

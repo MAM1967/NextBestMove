@@ -58,7 +58,13 @@ export function UpgradeModal({
         throw new Error("Failed to create checkout session");
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse checkout session response as JSON:", jsonError);
+        throw new Error("Failed to create checkout session");
+      }
       if (data.url) {
         // Track upgrade trigger event
         // TODO: Add analytics tracking

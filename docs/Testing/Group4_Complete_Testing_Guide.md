@@ -1,7 +1,7 @@
 # Group 4 Complete Testing Guide - Premium Features & Upsells
 
 **Date:** January 2025  
-**Status:** 📋 Ready for Testing  
+**Status:** ✅ Testing Complete  
 **Features:**
 
 1. **Group 4.1: Plan Upgrade Triggers** - Pin limit detection, premium feature access checks
@@ -38,12 +38,12 @@ WHERE email = 'mcddsl@icloud.com';
 
 ### Test 1.1: Pin Limit Hit - Standard Plan User
 
-**Goal:** Verify that Standard plan users see upgrade modal when they hit 50 pin limit
+**Goal:** Verify that Standard plan users see upgrade modal when they hit 10 pin limit
 
 **Setup SQL:**
 
 ```sql
--- Set up Standard plan user with exactly 50 pins
+-- Set up Standard plan user with exactly 10 pins
 -- Replace 'mcddsl@icloud.com' with your test email
 WITH user_info AS (
   SELECT id as user_id
@@ -58,19 +58,19 @@ current_pins AS (
   WHERE user_id = (SELECT user_id FROM user_info)
     AND status = 'ACTIVE'
 )
--- If user has < 50 pins, add pins to reach exactly 50
--- If user has > 50 pins, archive excess pins
-SELECT 
-  CASE 
-    WHEN (SELECT pin_count FROM current_pins) < 50 THEN
-      -- Add pins to reach 50
-      (SELECT 50 - (SELECT pin_count FROM current_pins))
+-- If user has < 10 pins, add pins to reach exactly 10
+-- If user has > 10 pins, archive excess pins
+SELECT
+  CASE
+    WHEN (SELECT pin_count FROM current_pins) < 10 THEN
+      -- Add pins to reach 10
+      (SELECT 10 - (SELECT pin_count FROM current_pins))
     ELSE
       -- Archive excess pins
-      (SELECT (SELECT pin_count FROM current_pins) - 50)
+      (SELECT (SELECT pin_count FROM current_pins) - 10)
   END as action_needed;
 
--- Add pins if needed (run this if count < 50)
+-- Add pins if needed (run this if count < 10)
 WITH user_info AS (
   SELECT id as user_id
   FROM users
@@ -84,8 +84,8 @@ current_pins AS (
     AND status = 'ACTIVE'
 ),
 pins_to_add AS (
-  SELECT 50 - (SELECT pin_count FROM current_pins) as count
-  WHERE (SELECT pin_count FROM current_pins) < 50
+  SELECT 10 - (SELECT pin_count FROM current_pins) as count
+  WHERE (SELECT pin_count FROM current_pins) < 10
 )
 INSERT INTO person_pins (user_id, name, url, status)
 SELECT
@@ -95,7 +95,7 @@ SELECT
   'ACTIVE'
 WHERE EXISTS (SELECT 1 FROM pins_to_add WHERE count > 0);
 
--- Archive excess pins if needed (run this if count > 50)
+-- Archive excess pins if needed (run this if count > 10)
 WITH user_info AS (
   SELECT id as user_id
   FROM users
@@ -108,7 +108,7 @@ excess_pins AS (
   WHERE user_id = (SELECT user_id FROM user_info)
     AND status = 'ACTIVE'
   ORDER BY created_at DESC
-  OFFSET 50
+  OFFSET 10
 )
 UPDATE person_pins
 SET status = 'ARCHIVED'
@@ -142,7 +142,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com');
    LIMIT 1;
    ```
 
-2. **Ensure user has exactly 50 active pins** (run setup SQL above)
+2. **Ensure user has exactly 10 active pins** (run setup SQL above)
 
 3. **Navigate to Pins page** (`/app/pins`)
 
@@ -153,19 +153,19 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com');
 - ✅ Upgrade modal appears immediately (before AddPersonModal opens)
 - ✅ Modal shows:
   - Title: "You've reached your pin limit"
-  - Message: "You're currently using 50 of 50 pins on the Standard plan"
-  - Professional plan benefits listed
+  - Message: "You're currently using 10 of 10 pins on the Standard plan"
+  - Premium plan benefits listed
   - Pricing: "$79/month"
-  - "Upgrade to Professional" button
+  - "Upgrade to Premium" button
   - "Maybe Later" button
 - ✅ AddPersonModal does NOT open
-- ✅ Clicking "Upgrade to Professional" redirects to Stripe Checkout
+- ✅ Clicking "Upgrade to Premium" redirects to Stripe Checkout
 - ✅ Clicking "Maybe Later" closes modal
 
 **Verification:**
 
 ```sql
--- Verify pin count is still 50
+-- Verify pin count is still 10
 SELECT COUNT(*) as active_pins
 FROM person_pins
 WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
@@ -180,7 +180,7 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 
 **Setup SQL:**
 
-Same as Test 1.1 - ensure user has exactly 50 active pins
+Same as Test 1.1 - ensure user has exactly 10 active pins
 
 **Test Steps:**
 
@@ -202,11 +202,11 @@ Same as Test 1.1 - ensure user has exactly 50 active pins
   ```json
   {
     "error": "Pin limit reached",
-    "message": "You've reached your limit of 50 pins on the Standard plan. Upgrade to Professional for unlimited pins.",
+    "message": "You've reached your limit of 10 pins on the Standard plan. Upgrade to Premium for unlimited pins.",
     "limitInfo": {
       "canAdd": false,
-      "currentCount": 50,
-      "limit": 50,
+      "currentCount": 10,
+      "limit": 10,
       "plan": "standard"
     }
   }
@@ -221,7 +221,7 @@ SELECT COUNT(*) as active_pins
 FROM person_pins
 WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
   AND status = 'ACTIVE';
--- Should still be 50
+-- Should still be 10
 ```
 
 ---
@@ -274,7 +274,7 @@ SELECT COUNT(*) as total_pins
 FROM person_pins
 WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
   AND status = 'ACTIVE';
--- Should be > 50
+-- Should be > 10
 ```
 
 ---
@@ -297,7 +297,7 @@ curl -X GET "http://localhost:3000/api/billing/check-premium-feature?feature=pat
 # Expected response for Standard plan:
 # { "hasAccess": false }
 
-# Professional plan user
+# Premium plan user
 # Expected response:
 # { "hasAccess": true }
 ```
@@ -315,7 +315,7 @@ done
 **Expected Results:**
 
 - ✅ Standard plan users: `hasAccess: false` for all features
-- ✅ Professional plan users: `hasAccess: true` for all features
+- ✅ Premium plan users: `hasAccess: true` for all features
 - ✅ Invalid feature names return `400 Bad Request`
 - ✅ Unauthenticated requests return `401 Unauthorized`
 
@@ -323,26 +323,26 @@ done
 
 ## Group 4.3: Plan Downgrade Handling
 
-### Test 3.1: Professional → Standard Downgrade with >50 Pins
+### Test 3.1: Premium → Standard Downgrade with >10 Pins
 
-**Goal:** Verify downgrade warning modal appears when user downgrades with >50 pins
+**Goal:** Verify downgrade warning modal appears when user downgrades with >10 pins
 
 **Setup SQL:**
 
 ```sql
--- Set up Professional plan user with >50 pins
+-- Set up Premium plan user with >10 pins
 WITH user_info AS (
   SELECT id as user_id
   FROM users
   WHERE email = 'mcddsl@icloud.com'
   LIMIT 1
 )
--- Ensure user has at least 60 active pins
+-- Ensure user has at least 15 active pins
 INSERT INTO person_pins (user_id, name, url, status)
 SELECT
   (SELECT user_id FROM user_info),
-  'Test Pin ' || generate_series(1, 60),
-  'https://linkedin.com/in/test-' || generate_series(1, 60),
+  'Test Pin ' || generate_series(1, 15),
+  'https://linkedin.com/in/test-' || generate_series(1, 15),
   'ACTIVE'
 ON CONFLICT DO NOTHING;
 
@@ -351,19 +351,19 @@ SELECT COUNT(*) as active_pins
 FROM person_pins
 WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
   AND status = 'ACTIVE';
--- Should be >= 60
+-- Should be >= 15
 ```
 
 **Test Steps:**
 
-1. **Verify user has Professional plan and >50 pins** (run setup SQL)
+1. **Verify user has Premium plan and >10 pins** (run setup SQL)
 
 2. **Downgrade subscription via Stripe Dashboard:**
 
    - Go to Stripe Dashboard > Customers
    - Find test user's customer
    - Open subscription
-   - Change plan from Professional to Standard
+   - Change plan from Premium to Standard
    - Save changes
 
 3. **Wait for webhook to process** (or trigger manually if needed)
@@ -375,9 +375,9 @@ WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
 - ✅ DowngradeWarningModal appears automatically
 - ✅ Modal shows:
   - Title: "Plan Downgrade Notice"
-  - Message: "You've downgraded to the Standard plan, which includes up to 50 pins"
-  - Current pin count displayed (e.g., "You currently have 60 active pins")
-  - Warning: "You'll need to archive or snooze at least 10 pins"
+  - Message: "You've downgraded to the Standard plan, which includes up to 10 pins"
+  - Current pin count displayed (e.g., "You currently have 15 active pins")
+  - Warning: "You'll need to archive or snooze at least 5 pins"
   - "I Understand" button
   - "Manage Pins Now" button
 - ✅ Clicking "I Understand" closes modal and marks warning as shown
@@ -399,26 +399,26 @@ WHERE u.email = 'mcddsl@icloud.com'
   AND bs.status = 'active'
 ORDER BY bs.created_at DESC
 LIMIT 1;
--- Should show plan_type: 'standard', downgrade_detected_at: timestamp, downgrade_pin_count: 60+
+-- Should show plan_type: 'standard', downgrade_detected_at: timestamp, downgrade_pin_count: 15+
 ```
 
 ---
 
-### Test 3.2: Professional → Standard Downgrade with <50 Pins
+### Test 3.2: Premium → Standard Downgrade with <10 Pins
 
-**Goal:** Verify no warning modal appears when user downgrades with <50 pins
+**Goal:** Verify no warning modal appears when user downgrades with <10 pins
 
 **Setup SQL:**
 
 ```sql
--- Set up Professional plan user with <50 pins
+-- Set up Premium plan user with <10 pins
 WITH user_info AS (
   SELECT id as user_id
   FROM users
   WHERE email = 'mcddsl@icloud.com'
   LIMIT 1
 )
--- Archive excess pins to get below 50
+-- Archive excess pins to get below 10
 UPDATE person_pins
 SET status = 'ARCHIVED'
 WHERE user_id = (SELECT user_id FROM user_info)
@@ -429,7 +429,7 @@ WHERE user_id = (SELECT user_id FROM user_info)
     WHERE user_id = (SELECT user_id FROM user_info)
       AND status = 'ACTIVE'
     ORDER BY created_at DESC
-    OFFSET 40
+    OFFSET 8
   );
 
 -- Verify pin count
@@ -437,12 +437,12 @@ SELECT COUNT(*) as active_pins
 FROM person_pins
 WHERE user_id = (SELECT id FROM users WHERE email = 'mcddsl@icloud.com')
   AND status = 'ACTIVE';
--- Should be <= 40
+-- Should be <= 8
 ```
 
 **Test Steps:**
 
-1. **Verify user has Professional plan and <50 pins** (run setup SQL)
+1. **Verify user has Premium plan and <10 pins** (run setup SQL)
 
 2. **Downgrade subscription via Stripe Dashboard** (same as Test 3.1)
 
@@ -583,9 +583,9 @@ LIMIT 1;
 
 ---
 
-### EC-2: User Upgrades from Standard to Professional
+### EC-2: User Upgrades from Standard to Premium
 
-**Test:** Standard user with 50 pins upgrades to Professional
+**Test:** Standard user with 10 pins upgrades to Premium
 
 **Expected:**
 
@@ -608,7 +608,7 @@ LIMIT 1;
 
 ### EC-4: Pin Count Changes After Downgrade
 
-**Test:** User downgrades with 60 pins, then archives 15 pins
+**Test:** User downgrades with 15 pins, then archives 6 pins
 
 **Expected:**
 
@@ -622,17 +622,17 @@ LIMIT 1;
 ```
 Test Case | Status | Notes
 ----------|--------|------
-4.1.1     | ⬜      | Pin limit hit - Standard plan
-4.1.2     | ⬜      | API enforcement
-4.1.3     | ⬜      | Professional plan - no limit
-4.1.4     | ⬜      | Premium feature access API
-4.3.1     | ⬜      | Downgrade with >50 pins
-4.3.2     | ⬜      | Downgrade with <50 pins
-4.3.3     | ⬜      | Standard → Cancel (read-only + reactivation)
-EC-1      | ⬜      | No subscription user
-EC-2      | ⬜      | Upgrade Standard → Professional
-EC-3      | ⬜      | Multiple downgrade attempts
-EC-4      | ⬜      | Pin count changes after downgrade
+4.1.1     | ✅      | Pin limit hit - Standard plan
+4.1.2     | ✅      | API enforcement
+4.1.3     | ✅      | Premium plan - no limit
+4.1.4     | ✅      | Premium feature access API
+4.3.1     | ✅      | Downgrade with >10 pins
+4.3.2     | ✅      | Downgrade with <10 pins
+4.3.3     | ✅      | Standard → Cancel (read-only + reactivation)
+EC-1      | ✅      | No subscription user
+EC-2      | ✅      | Upgrade Standard → Premium
+EC-3      | ✅      | Multiple downgrade attempts
+EC-4      | ✅      | Pin count changes after downgrade
 ```
 
 **Status Legend:**
@@ -651,7 +651,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 **Check:**
 
 1. Verify user has Standard plan (not Premium)
-2. Verify pin count is exactly 50
+2. Verify pin count is exactly 10
 3. Check browser console for errors
 4. Verify API endpoint `/api/billing/check-pin-limit` returns correct data
 
@@ -660,7 +660,7 @@ EC-4      | ⬜      | Pin count changes after downgrade
 **Check:**
 
 1. Verify downgrade was detected in webhook (check `downgrade_detected_at` in metadata)
-2. Verify user has >50 pins
+2. Verify user has >10 pins
 3. Check if warning was already shown (`downgrade_warning_shown: true`)
 4. Verify DowngradeWarningChecker component is in app layout
 
@@ -677,13 +677,13 @@ EC-4      | ⬜      | Pin count changes after downgrade
 
 ## Quick Test Checklist
 
-- [ ] Test 4.1.1: Pin limit hit (Standard plan)
-- [ ] Test 4.1.2: API enforcement
-- [ ] Test 4.1.3: Professional plan (no limit)
-- [ ] Test 4.1.4: Premium feature API
-- [ ] Test 4.3.1: Downgrade with >50 pins
-- [ ] Test 4.3.2: Downgrade with <50 pins
-- [ ] Test 4.3.3: Cancel subscription (read-only + reactivation)
+- [x] Test 4.1.1: Pin limit hit (Standard plan) ✅
+- [x] Test 4.1.2: API enforcement ✅
+- [x] Test 4.1.3: Premium plan (no limit) ✅
+- [x] Test 4.1.4: Premium feature API ✅
+- [x] Test 4.3.1: Downgrade with >10 pins ✅
+- [x] Test 4.3.2: Downgrade with <10 pins ✅
+- [x] Test 4.3.3: Cancel subscription (read-only + reactivation) ✅
 
 ---
 

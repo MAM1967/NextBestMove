@@ -50,7 +50,13 @@ export default function PinsPage() {
       if (!response.ok) {
         throw new Error("Failed to load pins");
       }
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse pins response as JSON:", jsonError);
+        throw new Error("Failed to load pins");
+      }
       setPins(data.pins || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load pins");
@@ -69,7 +75,15 @@ export default function PinsPage() {
         return;
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse pin limit response as JSON:", jsonError);
+        // On error, allow opening modal (graceful degradation)
+        setIsAddModalOpen(true);
+        return;
+      }
       if (!data.canAdd) {
         // Pin limit reached - show upgrade modal
         setPinLimitInfo({
@@ -115,7 +129,12 @@ export default function PinsPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        try {
+          error = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to create pin");
+        }
         throw new Error(error.error || "Failed to create pin");
       }
 

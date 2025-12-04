@@ -13,7 +13,13 @@ export function DowngradeWarningChecker() {
       try {
         const response = await fetch("/api/billing/check-downgrade-warning");
         if (response.ok) {
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.error("Failed to parse downgrade warning response as JSON:", jsonError);
+            return;
+          }
           if (data.shouldShow) {
             setShouldShow(true);
             setCurrentPinCount(data.currentPinCount || 0);

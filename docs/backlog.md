@@ -141,12 +141,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
 - [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
 - [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
-- [ ] **Plan upgrade triggers** (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts)
+- [x] **Plan upgrade triggers** ✅ (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts. Completed and tested - pin limit detection working, upgrade modal appears correctly, API enforcement in place. All Group 4.1 tests passed.)
 - [ ] **Streak break detection & recovery** (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7)
 - [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed and tested - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented. All Group 2 tests passed.)
 - [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
 - [ ] **Professional plan features** (Unlimited pins + premium features in priority order: 1) Pattern detection, 2) Pre-call briefs, 3) Performance timeline, 4) Content engine with voice learning)
-- [ ] **Plan downgrade handling** (Professional → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation)
+- [x] **Plan downgrade handling** ✅ (Premium → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 pins, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
 - [ ] **Display weekly focus on Daily Plan page** (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Currently shows hardcoded placeholder. Part of US-7.6 - high priority for user engagement and context.)
 
 ---
