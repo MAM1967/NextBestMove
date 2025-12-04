@@ -1,4 +1,5 @@
 # NextBestMove Database Schema
+
 ## Supabase PostgreSQL Schema v1.0
 
 ---
@@ -84,6 +85,7 @@ CREATE TRIGGER update_users_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `email`: Unique email address
 - `name`: User's display name
@@ -112,10 +114,10 @@ CREATE TABLE leads (
   snooze_until DATE, -- If SNOOZED, when to unsnooze
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   CONSTRAINT valid_url CHECK (
-    url LIKE 'https://%' OR 
-    url LIKE 'http://%' OR 
+    url LIKE 'https://%' OR
+    url LIKE 'http://%' OR
     url LIKE 'mailto:%'
   )
 );
@@ -134,6 +136,7 @@ CREATE TRIGGER update_leads_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `name`: Person's name
@@ -183,7 +186,7 @@ CREATE TABLE actions (
   auto_created BOOLEAN NOT NULL DEFAULT false, -- System-generated vs user-created
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   CONSTRAINT valid_due_date CHECK (due_date >= DATE(created_at))
 );
 
@@ -208,17 +211,17 @@ BEGIN
   -- Auto-unsnooze leads
   UPDATE leads
   SET status = 'ACTIVE', snooze_until = NULL
-  WHERE status = 'SNOOZED' 
+  WHERE status = 'SNOOZED'
     AND snooze_until IS NOT NULL
     AND snooze_until <= CURRENT_DATE;
-  
+
   -- Auto-unsnooze actions
   UPDATE actions
   SET state = 'NEW', snooze_until = NULL
   WHERE state = 'SNOOZED'
     AND snooze_until IS NOT NULL
     AND snooze_until <= CURRENT_DATE;
-  
+
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
@@ -232,6 +235,7 @@ CREATE TRIGGER check_snooze_dates
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `person_id`: Optional foreign key to leads
@@ -264,7 +268,7 @@ CREATE TABLE daily_plans (
   generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE(user_id, date) -- One plan per user per day
 );
 
@@ -281,6 +285,7 @@ CREATE TRIGGER update_daily_plans_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `date`: Date of the plan (YYYY-MM-DD)
@@ -304,7 +309,7 @@ CREATE TABLE daily_plan_actions (
   position INTEGER NOT NULL, -- Order in the plan (0 = Fast Win, 1+ = regular actions)
   is_fast_win BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE(daily_plan_id, action_id),
   UNIQUE(daily_plan_id, position) -- Ensure one action per position
 );
@@ -316,6 +321,7 @@ CREATE INDEX idx_daily_plan_actions_position ON daily_plan_actions(daily_plan_id
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `daily_plan_id`: Foreign key to daily_plans
 - `action_id`: Foreign key to actions
@@ -344,7 +350,7 @@ CREATE TABLE weekly_summaries (
   generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE(user_id, week_start_date) -- One summary per user per week
 );
 
@@ -361,6 +367,7 @@ CREATE TRIGGER update_weekly_summaries_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `week_start_date`: Monday of the week (YYYY-MM-DD)
@@ -410,6 +417,7 @@ CREATE TRIGGER update_content_prompts_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `weekly_summary_id`: Optional reference to weekly summary
@@ -445,7 +453,7 @@ CREATE TABLE calendar_connections (
   error_message TEXT, -- Last error message if status is 'error'
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  
+
   UNIQUE(user_id, provider) -- One connection per provider per user
 );
 
@@ -466,7 +474,7 @@ BEGIN
       AND status = 'active'
   )
   WHERE id = NEW.user_id;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -484,6 +492,7 @@ CREATE TRIGGER update_calendar_connections_updated_at
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
 - `provider`: Calendar provider (google or outlook)
@@ -525,6 +534,7 @@ CREATE INDEX idx_calendar_sync_logs_status ON calendar_sync_logs(status);
 ```
 
 **Fields:**
+
 - `id`: UUID primary key
 - `calendar_connection_id`: Foreign key to calendar_connections
 - `operation`: Type of operation performed
@@ -559,6 +569,7 @@ CREATE TRIGGER update_billing_customers_updated_at
 ```
 
 **Fields:**
+
 - `user_id`: One-to-one relationship with users table
 - `stripe_customer_id`: Stripe-generated ID (`cus_...`)
 - `default_payment_method`: Optional default payment method ID
@@ -598,6 +609,7 @@ CREATE TRIGGER update_billing_subscriptions_updated_at
 ```
 
 **Fields:**
+
 - `billing_customer_id`: Foreign key to billing_customers
 - `stripe_subscription_id`: Stripe subscription identifier (`sub_...`)
 - `stripe_price_id`: Price/plan reference
@@ -627,6 +639,7 @@ CREATE INDEX idx_billing_events_created_at ON billing_events(created_at DESC);
 ```
 
 **Fields:**
+
 - `stripe_event_id`: Stripe event identifier
 - `type`: Event type (e.g., `checkout.session.completed`)
 - `payload`: Raw JSON body (after signature verification)
@@ -695,7 +708,7 @@ BEGIN
     streak_count := streak_count + 1;
     check_date := check_date - INTERVAL '1 day';
   END LOOP;
-  
+
   RETURN streak_count;
 END;
 $$ LANGUAGE plpgsql;
@@ -724,15 +737,18 @@ $$ LANGUAGE plpgsql;
 ### Performance-Critical Indexes
 
 1. **User data queries:**
+
    - `users.email` - For authentication lookups
    - `leads(user_id, status)` - Filter leads by user and status
    - `actions(user_id, state, due_date)` - Daily plan generation queries
 
 2. **Daily plan queries:**
+
    - `daily_plans(user_id, date)` - Fetch today's plan
    - `daily_plan_actions(daily_plan_id, position)` - Ordered action list
 
 3. **Weekly summary queries:**
+
    - `weekly_summaries(user_id, week_start_date DESC)` - Recent summaries
 
 4. **Calendar queries:**
@@ -868,6 +884,7 @@ ALTER TABLE ... ENABLE ROW LEVEL SECURITY;
 Calendar tokens should be encrypted before storage:
 
 1. **Application-level encryption** (recommended):
+
    - Encrypt tokens in application code before storing
    - Use environment variable for encryption key
    - Use AES-256-GCM encryption
@@ -881,6 +898,7 @@ Calendar tokens should be encrypted before storage:
 User passwords handled by Supabase Auth (not stored in `users` table).
 
 ### Stripe Secrets
+
 - Store Stripe secret key + webhook signing secret outside database (environment variables).
 - Webhook handler should verify signatures and log payloads in `billing_events`.
 - Never expose Stripe customer/subscription IDs directly to the client without auth checks.
@@ -888,6 +906,7 @@ User passwords handled by Supabase Auth (not stored in `users` table).
 ### Data Retention
 
 Per PRD Section 18:
+
 - Actions in DONE state: Archive after 90 days
 - ARCHIVED items: Retained indefinitely
 - Weekly summaries: Retained indefinitely
@@ -905,5 +924,4 @@ Per PRD Section 18:
 
 ---
 
-*Database Schema v1.0 - Ready for implementation*
-
+_Database Schema v1.0 - Ready for implementation_
