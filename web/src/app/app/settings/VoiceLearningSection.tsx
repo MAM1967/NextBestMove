@@ -101,19 +101,54 @@ export function VoiceLearningSection({ isPremium }: VoiceLearningSectionProps) {
     }
   };
 
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const handleUpgrade = async () => {
+    setIsUpgrading(true);
+    try {
+      const response = await fetch("/api/billing/customer-portal", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to open billing portal");
+      }
+
+      const { url } = await response.json();
+      if (!url) {
+        throw new Error("No portal URL returned");
+      }
+      window.location.href = url;
+    } catch (error) {
+      console.error("Error opening billing portal:", error);
+      alert("Unable to open billing portal. Please try again later.");
+      setIsUpgrading(false);
+    }
+  };
+
   if (!isPremium) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1 text-sm">
-            <p className="font-medium text-zinc-900">Voice Learning</p>
-            <p className="text-xs text-zinc-600">
-              AI learns your writing style to generate content that sounds like you.
-            </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1 text-sm">
+              <p className="font-medium text-zinc-900">Voice Learning</p>
+              <p className="text-xs text-zinc-600">
+                AI learns your writing style to generate content that sounds like you.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-zinc-500">
+              Premium feature
+            </span>
           </div>
-          <span className="text-xs font-semibold text-zinc-500">
-            Premium feature
-          </span>
+          <button
+            onClick={handleUpgrade}
+            disabled={isUpgrading}
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUpgrading ? "Loading..." : "Upgrade to Premium"}
+          </button>
         </div>
       </div>
     );
