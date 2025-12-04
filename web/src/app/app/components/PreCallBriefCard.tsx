@@ -73,26 +73,38 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
 
       {/* Content area - different for Premium vs Standard */}
       {isPremium ? (
-        // Premium: Show full brief content
-        <>
+        // Premium: Show brief content with expandable/scrollable view
+        <div className="mt-3 flex-1 flex flex-col min-h-0">
           {isExpanded ? (
-            <div className="mt-3 text-xs text-zinc-700 whitespace-pre-wrap">
-              {brief.briefContent}
-            </div>
+            <>
+              <div 
+                className="text-xs text-zinc-700 whitespace-pre-wrap overflow-y-auto flex-1 pr-1 scrollbar-thin"
+                style={{ maxHeight: '200px' }}>
+                {brief.briefContent}
+              </div>
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 self-start"
+              >
+                Show less
+              </button>
+            </>
           ) : (
-            <div className="mt-3 text-xs text-zinc-600 line-clamp-3">
-              {brief.briefContent.split("\n").slice(0, 3).join("\n")}
-            </div>
+            <>
+              <div className="text-xs text-zinc-600 line-clamp-3">
+                {brief.briefContent.split("\n").slice(0, 3).join("\n")}
+              </div>
+              {brief.briefContent.split("\n").length > 3 && (
+                <button
+                  onClick={() => setIsExpanded(true)}
+                  className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700 self-start"
+                >
+                  Show more
+                </button>
+              )}
+            </>
           )}
-          {brief.briefContent.split("\n").length > 3 && !isExpanded && (
-            <button
-              onClick={() => setIsExpanded(true)}
-              className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700"
-            >
-              Show more
-            </button>
-          )}
-        </>
+        </div>
       ) : (
         // Standard: Show teaser with upgrade CTA
         <div className="mt-3 space-y-2">
