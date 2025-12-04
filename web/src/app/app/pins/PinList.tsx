@@ -1,11 +1,11 @@
 "use client";
 
-import { PersonPin } from "./page";
+import type { Lead } from "@/lib/leads/types";
 import { PinRow } from "./PinRow";
 
 interface PinListProps {
-  pins: PersonPin[];
-  onEdit: (pin: PersonPin) => void;
+  pins: Lead[];
+  onEdit: (pin: Lead) => void;
   onSnooze: (pinId: string) => void;
   onUnsnooze: (pinId: string) => void;
   onArchive: (pinId: string) => void;

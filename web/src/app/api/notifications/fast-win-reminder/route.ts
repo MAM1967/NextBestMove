@@ -88,7 +88,7 @@ export async function GET(request: Request) {
               is_fast_win,
               actions (
                 *,
-                person_pins (
+                leads (
                   id,
                   name,
                   url
@@ -140,8 +140,8 @@ export async function GET(request: Request) {
           userName: user.name,
           fastWin: {
             description: action.description || "Fast Win",
-            personName: action.person_pins?.[0]?.name,
-            url: action.person_pins?.[0]?.url,
+            personName: action.leads?.[0]?.name,
+            url: action.leads?.[0]?.url,
           },
         });
 

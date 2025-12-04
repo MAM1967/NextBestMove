@@ -59,9 +59,9 @@ function getActionTitle(action: Action): string {
   if (action.description) {
     return action.description;
   }
-  if (action.person_pins) {
+  if (action.leads) {
     return `${getActionTypeLabel(action.action_type)} with ${
-      action.person_pins.name
+      action.leads.name
     }`;
   }
   return getActionTypeLabel(action.action_type);
@@ -368,15 +368,15 @@ export function ActionCard({
                   </span>
                 );
               })()}
-              {action.person_pins && action.person_pins.url && (
+              {action.leads && action.leads.url && (
                 <a
-                  href={action.person_pins.url}
+                  href={action.leads.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-zinc-600 hover:text-zinc-900 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {getUrlTypeLabel(action.person_pins.url)}
+                  {getUrlTypeLabel(action.leads.url)}
                 </a>
               )}
             </div>

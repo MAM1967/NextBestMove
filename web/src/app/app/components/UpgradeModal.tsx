@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  trigger: "pin_limit" | "premium_feature";
+  trigger: "pin_limit" | "lead_limit" | "premium_feature";
   featureName?: string; // e.g., "Pattern Detection", "Pre-Call Briefs"
-  currentCount?: number; // For pin limit: current pin count
-  limit?: number; // For pin limit: pin limit (10)
+  currentCount?: number; // For lead limit: current lead count
+  limit?: number; // For lead limit: lead limit (10)
 }
 
 export function UpgradeModal({
@@ -82,10 +82,10 @@ export function UpgradeModal({
 
   // Determine message based on trigger
   const getMessage = () => {
-    if (trigger === "pin_limit") {
+    if (trigger === "pin_limit" || trigger === "lead_limit") {
       return {
-        title: "You've reached your pin limit",
-        description: `You're currently using ${currentCount} of ${limit} pins on the Standard plan. Upgrade to Premium for unlimited pins and premium features.`,
+        title: "You've reached your lead limit",
+        description: `You're currently using ${currentCount} of ${limit} leads on the Standard plan. Upgrade to Premium for unlimited leads and premium features.`,
         cta: "Upgrade to Premium",
       };
     } else if (trigger === "premium_feature") {

@@ -71,7 +71,7 @@ export async function GET(request: Request) {
           .select(
             `
             *,
-            person_pins (
+            leads (
               id,
               name,
               url
@@ -106,9 +106,9 @@ export async function GET(request: Request) {
 
           return {
             description: action.description || "Follow-up",
-            personName: action.person_pins?.[0]?.name || "Contact",
+            personName: action.leads?.[0]?.name || "Contact",
             daysOverdue: Math.max(0, daysOverdue),
-            url: action.person_pins?.[0]?.url,
+            url: action.leads?.[0]?.url,
           };
         });
 

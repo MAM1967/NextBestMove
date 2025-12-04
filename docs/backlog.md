@@ -22,7 +22,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Next.js 14 + TypeScript, Tailwind tokens, ESLint/Prettier, React Query, Zustand scaffold_
 
 - [ ] **Supabase schema & migrations**  
-       _All core tables (users, pins, actions, plans, summaries, calendar, billing) + enums, RLS, helper functions_
+       _All core tables (users, leads, actions, plans, summaries, calendar, billing) + enums, RLS, helper functions_
 
 - [x] **Stripe API routes (checkout & portal)** ✅  
        _`POST /api/billing/create-checkout-session` (support Standard/Premium plans, monthly/annual), `POST /api/billing/customer-portal`, env wiring. Support 14-day trial creation via Stripe API (no credit card required, `trial_period_days: 14`)_
@@ -36,10 +36,10 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Paywall middleware & base overlay** ✅  
        _Read-only mode when subscription inactive, PaywallOverlay renders on gated pages. Support 14-day trial (full access), 7-day read-only grace period, and plan-based feature gating (Standard vs Premium). PaywallOverlay component created, subscription status checking implemented, plan page protected_
 
-### Pins & Actions
+### Leads & Actions
 
-- [x] **Pin management UI + API** ✅  
-       _Pin CRUD endpoints, filters (All/Active/Snoozed/Archived), Add/Edit modals, Snooze/Archive/Restore_
+- [x] **Lead management UI + API** ✅  
+       _Lead CRUD endpoints, filters (All/Active/Snoozed/Archived), Add/Edit modals, Snooze/Archive/Restore_
 
 - [x] **Action engine core** ✅  
        _Action card component, Done/Got reply/Snooze handlers, FollowUpFlowModal + scheduling defaults_
@@ -86,7 +86,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 ### Onboarding
 
 - [x] **Onboarding flow (8 steps)** ✅  
-       _Welcome → pin → optional calendar → working hours → weekend preference → weekly focus → first plan ready → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan. Implemented with localStorage persistence for OAuth redirects, final step changed from "fast win coaching" to "start free trial"._
+       _Welcome → add lead → optional calendar → working hours → weekend preference → weekly focus → first plan ready → start 14-day trial (no credit card). No early pricing screens - let rhythm sell the plan. Implemented with localStorage persistence for OAuth redirects, final step changed from "fast win coaching" to "start free trial"._
 
 ### Settings & Export
 
@@ -97,7 +97,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _BillingSection component showing plan, status badge, renewal date, manage billing CTA_
 
 - [x] **Data export endpoint** ✅  
-       _Download JSON of pins/actions/plans/summaries + button in Settings_
+       _Download JSON of leads/actions/plans/summaries + button in Settings_
 
 - [x] **Email preferences & account deletion controls** ✅  
        _Email preferences UI with toggles for morning plan, fast win reminder, follow-up alerts, weekly summary. Unsubscribe from all emails option. Account deletion with full data removal and auth.users deletion. High P1 – required to meet compliance expectations._
@@ -141,12 +141,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
 - [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
 - [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
-- [x] **Plan upgrade triggers** ✅ (Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts. Completed and tested - pin limit detection working, upgrade modal appears correctly, API enforcement in place. All Group 4.1 tests passed.)
+- [x] **Plan upgrade triggers** ✅ (Lead limit hit, pattern detection access, pre-call brief prompts, content engine prompts. Completed and tested - lead limit detection working, upgrade modal appears correctly, API enforcement in place. All Group 4.1 tests passed.)
 - [x] **Streak break detection & recovery** ✅ (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7. Completed - cron job detects streak breaks, sends Day 3 recovery email, Day 7 billing pause offer for active subscribers, tracks notifications in metadata to prevent duplicates. Day 2 Micro Mode handled by plan generation. Day 1 push notification logged (infrastructure not yet implemented). See `docs/Testing/Group5_Streak_Break_Recovery_Testing_Guide.md` for test plan.)
 - [x] **Payment failure recovery flow** ✅ (Day 0 email via Resend, Day 3 modal + email, Day 7 read-only, Day 14 archive + 30-day reactivation window. Completed and tested - webhook tracks payment_failed_at, cron job handles Day 3/7/14 recovery stages, modal component created, read-only mode implemented. All Group 2 tests passed.)
 - [x] **Win-back campaign automation** ✅ (Day 7, 30, 90, 180 post-cancellation emails via Resend. Completed and tested - cron job created, uses existing email templates, only sends to voluntary cancellations, skips payment failures. Feedback form created and working. All Group 2 tests passed.)
-- [x] **Premium plan features** ✅ (Unlimited pins + premium features: 1) Pattern detection ✅, 2) Pre-call briefs ✅, 3) Performance timeline ✅, 4) Content engine with voice learning ✅. All phases implemented and tested.)
-- [x] **Plan downgrade handling** ✅ (Premium → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 pins, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
+- [x] **Premium plan features** ✅ (Unlimited leads + premium features: 1) Pattern detection ✅, 2) Pre-call briefs ✅, 3) Performance timeline ✅, 4) Content engine with voice learning ✅. All phases implemented and tested.)
+- [x] **Plan downgrade handling** ✅ (Premium → Standard: lead limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 leads, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
 - [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented: fetches from API, displays in focus card with proper priority hierarchy (adaptive recovery > weekly focus > placeholder), graceful fallbacks. See `docs/Planning/Weekly_Focus_Display_Plan.md` for phased rollout plan.)
 
 ---

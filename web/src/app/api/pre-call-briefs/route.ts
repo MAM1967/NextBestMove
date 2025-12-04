@@ -115,7 +115,7 @@ export async function GET(request: Request) {
           calendar_event_id: brief.calendarEventId,
           event_title: brief.eventTitle,
           event_start: brief.eventStart.toISOString(),
-          person_pin_id: brief.personPinId,
+          person_pin_id: brief.leadId || brief.personPinId, // Use leadId if available, fallback to personPinId for backward compatibility
           brief_content: brief.briefContent,
           last_interaction_date: brief.lastInteractionDate?.toISOString().split("T")[0] || null,
           follow_up_count: brief.followUpCount,

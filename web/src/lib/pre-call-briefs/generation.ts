@@ -7,19 +7,19 @@ import type {
 } from "./types";
 
 /**
- * Get action history for a person pin
+ * Get action history for a lead
  */
 export async function getActionHistory(
   supabase: SupabaseClient,
   userId: string,
-  personPinId: string
+  leadId: string
 ): Promise<ActionHistory> {
-  // Get all actions for this person
+  // Get all actions for this lead
   const { data: actions } = await supabase
     .from("actions")
     .select("id, state, completed_at, notes, created_at")
     .eq("user_id", userId)
-    .eq("person_id", personPinId)
+    .eq("person_id", leadId)
     .order("created_at", { ascending: false });
 
   if (!actions || actions.length === 0) {
@@ -90,20 +90,20 @@ function generateNextStepSuggestions(history: ActionHistory): string[] {
 }
 
 /**
- * Generate brief content from action history and person pin
+ * Generate brief content from action history and lead
  */
 function generateBriefContent(
-  personPin: PersonPin | null,
+  lead: PersonPin | null,
   history: ActionHistory,
   suggestions: string[]
 ): string {
   const sections: string[] = [];
 
   // Header
-  if (personPin) {
-    sections.push(`## ${personPin.name}`);
-    if (personPin.notes) {
-      sections.push(`**Notes:** ${personPin.notes}`);
+  if (lead) {
+    sections.push(`## ${lead.name}`);
+    if (lead.notes) {
+      sections.push(`**Notes:** ${lead.notes}`);
     }
   }
 
@@ -202,7 +202,8 @@ export async function generatePreCallBrief(
     calendarEventId: event.id,
     eventTitle: event.title,
     eventStart: new Date(event.start),
-    personPinId: matchedPersonPin?.id || null,
+    leadId: matchedPersonPin?.id || null,
+    personPinId: matchedPersonPin?.id || null, // Legacy field for backward compatibility
     personName: matchedPersonPin?.name || null,
     briefContent,
     lastInteractionDate: history.lastActionDate,

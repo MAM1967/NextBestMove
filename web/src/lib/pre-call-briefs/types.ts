@@ -10,12 +10,10 @@ export interface CalendarEvent {
   hasVideoConference?: boolean; // True if event has any video conferencing
 }
 
-export interface PersonPin {
-  id: string;
-  name: string;
-  url: string;
-  notes?: string | null;
-}
+import type { LeadBasic } from "@/lib/leads/types";
+
+// Re-export for convenience
+export type PersonPin = LeadBasic;
 
 export interface ActionHistory {
   lastActionDate: Date | null;
@@ -30,7 +28,8 @@ export interface PreCallBrief {
   calendarEventId: string;
   eventTitle: string;
   eventStart: Date;
-  personPinId: string | null;
+  leadId: string | null; // Maps to person_pin_id in database (legacy column name)
+  personPinId: string | null; // Legacy field for backward compatibility
   personName: string | null;
   briefContent: string;
   lastInteractionDate: Date | null;

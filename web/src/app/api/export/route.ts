@@ -37,7 +37,7 @@ export async function GET() {
         .eq("id", user.id)
         .single(),
       supabase
-        .from("person_pins")
+        .from("leads")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false }),

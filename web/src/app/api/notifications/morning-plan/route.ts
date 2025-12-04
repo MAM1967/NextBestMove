@@ -98,7 +98,7 @@ export async function GET(request: Request) {
               position,
               actions (
                 *,
-                person_pins (
+                leads (
                   id,
                   name,
                   url
@@ -146,8 +146,8 @@ export async function GET(request: Request) {
             const actionData = {
               description: action.description || "Action",
               action_type: action.action_type,
-              personName: action.person_pins?.[0]?.name,
-              url: action.person_pins?.[0]?.url,
+              personName: action.leads?.[0]?.name,
+              url: action.leads?.[0]?.url,
             };
 
             if (planAction.is_fast_win) {

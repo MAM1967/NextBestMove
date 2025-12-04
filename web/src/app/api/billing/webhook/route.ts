@@ -373,13 +373,13 @@ export async function handleSubscriptionUpdated(
       if (customer) {
         // Check pin count
         const { count } = await supabase
-          .from("person_pins")
+          .from("leads")
           .select("*", { count: "exact", head: true })
           .eq("user_id", customer.user_id)
           .eq("status", "ACTIVE");
 
-        const pinCount = count || 0;
-        if (pinCount > 10) {
+        const leadCount = count || 0;
+        if (leadCount > 10) {
           // Store downgrade warning flag in metadata
           // Merge with existing metadata to preserve other fields
           const existingMetadata = upsertedData[0].metadata as any || {};
@@ -390,16 +390,18 @@ export async function handleSubscriptionUpdated(
                 ...existingMetadata,
                 ...planMetadata,
                 downgrade_warning_shown: false, // Frontend will check and show modal
-                downgrade_pin_count: pinCount,
+                downgrade_pin_count: leadCount, // Legacy field name
+                downgrade_lead_count: leadCount,
                 downgrade_detected_at: new Date().toISOString(),
               },
             })
             .eq("id", upsertedData[0].id);
 
-          logBillingEvent("Plan downgrade detected with pin limit exceeded", {
+          logBillingEvent("Plan downgrade detected with lead limit exceeded", {
             subscriptionId: subscription.id,
             userId: customer.user_id,
-            pinCount,
+            leadCount,
+            pinCount: leadCount, // Legacy field for backward compatibility
             oldPlan: oldPlanType,
             newPlan: newPlanType,
           });

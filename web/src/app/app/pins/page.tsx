@@ -8,29 +8,15 @@ import { EditPersonModal } from "./EditPersonModal";
 import { SnoozeModal } from "./SnoozeModal";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { UpgradeModal } from "../components/UpgradeModal";
-
-export type PinStatus = "ACTIVE" | "SNOOZED" | "ARCHIVED";
-export type PinFilter = "ALL" | PinStatus;
-
-export interface PersonPin {
-  id: string;
-  user_id: string;
-  name: string;
-  url: string;
-  notes?: string | null;
-  status: PinStatus;
-  snooze_until?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { Lead, LeadFilter } from "@/lib/leads/types";
 
 export default function PinsPage() {
-  const [pins, setPins] = useState<PersonPin[]>([]);
-  const [filteredPins, setFilteredPins] = useState<PersonPin[]>([]);
-  const [filter, setFilter] = useState<PinFilter>("ALL");
+  const [pins, setPins] = useState<Lead[]>([]);
+  const [filteredPins, setFilteredPins] = useState<Lead[]>([]);
+  const [filter, setFilter] = useState<LeadFilter>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPin, setSelectedPin] = useState<PersonPin | null>(null);
+  const [selectedPin, setSelectedPin] = useState<Lead | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSnoozeModalOpen, setIsSnoozeModalOpen] = useState(false);
@@ -46,7 +32,7 @@ export default function PinsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/pins");
+      const response = await fetch("/api/leads");
       if (!response.ok) {
         throw new Error("Failed to load pins");
       }
@@ -57,7 +43,7 @@ export default function PinsPage() {
         console.error("Failed to parse pins response as JSON:", jsonError);
         throw new Error("Failed to load pins");
       }
-      setPins(data.pins || []);
+      setPins(data.leads || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load pins");
     } finally {
@@ -68,7 +54,7 @@ export default function PinsPage() {
   // Check pin limit before opening add modal
   const handleAddPinClick = async () => {
     try {
-      const response = await fetch("/api/billing/check-pin-limit");
+      const response = await fetch("/api/billing/check-lead-limit");
       if (!response.ok) {
         // If check fails, still allow opening modal (graceful degradation)
         setIsAddModalOpen(true);
@@ -122,7 +108,7 @@ export default function PinsPage() {
     notes?: string;
   }) => {
     try {
-      const response = await fetch("/api/pins", {
+      const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pinData),
@@ -151,7 +137,7 @@ export default function PinsPage() {
     pinData: { name: string; url: string; notes?: string }
   ) => {
     try {
-      const response = await fetch(`/api/pins/${pinId}`, {
+      const response = await fetch(`/api/leads/${pinId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pinData),
@@ -173,7 +159,7 @@ export default function PinsPage() {
   // Handle pin status changes
   const handlePinSnooze = async (pinId: string, snoozeUntil: string) => {
     try {
-      const response = await fetch(`/api/pins/${pinId}/status`, {
+      const response = await fetch(`/api/leads/${pinId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -197,7 +183,7 @@ export default function PinsPage() {
 
   const handlePinUnsnooze = async (pinId: string) => {
     try {
-      const response = await fetch(`/api/pins/${pinId}/status`, {
+      const response = await fetch(`/api/leads/${pinId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,7 +203,7 @@ export default function PinsPage() {
 
   const handlePinArchive = async (pinId: string) => {
     try {
-      const response = await fetch(`/api/pins/${pinId}/status`, {
+      const response = await fetch(`/api/leads/${pinId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -237,7 +223,7 @@ export default function PinsPage() {
 
   const handlePinRestore = async (pinId: string) => {
     try {
-      const response = await fetch(`/api/pins/${pinId}/status`, {
+      const response = await fetch(`/api/leads/${pinId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -255,7 +241,7 @@ export default function PinsPage() {
     }
   };
 
-  const handleEdit = (pin: PersonPin) => {
+  const handleEdit = (pin: Lead) => {
     setSelectedPin(pin);
     setIsEditModalOpen(true);
   };

@@ -3,15 +3,15 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-interface PinFirstPersonStepProps {
+interface AddFirstLeadStepProps {
   onNext: () => void;
   onBack: () => void;
 }
 
-export function PinFirstPersonStep({
+export function AddFirstLeadStep({
   onNext,
   onBack,
-}: PinFirstPersonStepProps) {
+}: AddFirstLeadStepProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
@@ -67,7 +67,7 @@ export function PinFirstPersonStep({
     setLoading(true);
     try {
       const normalizedUrl = normalizeUrl(formData.url);
-      const response = await fetch("/api/pins", {
+      const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +79,7 @@ export function PinFirstPersonStep({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to save pin");
+        throw new Error(error.error || "Failed to save lead");
       }
 
       router.refresh();
@@ -89,7 +89,7 @@ export function PinFirstPersonStep({
         submit:
           error instanceof Error
             ? error.message
-            : "Failed to save pin. Please try again.",
+            : "Failed to save lead. Please try again.",
       });
     } finally {
       setLoading(false);

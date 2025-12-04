@@ -1,17 +1,17 @@
 "use client";
 
-import { PinFilter } from "./page";
+import type { LeadFilter } from "@/lib/leads/types";
 
 interface PinFilterToggleProps {
-  currentFilter: PinFilter;
-  onFilterChange: (filter: PinFilter) => void;
+  currentFilter: LeadFilter;
+  onFilterChange: (filter: LeadFilter) => void;
 }
 
 export function PinFilterToggle({
   currentFilter,
   onFilterChange,
 }: PinFilterToggleProps) {
-  const filters: { value: PinFilter; label: string }[] = [
+  const filters: { value: LeadFilter; label: string }[] = [
     { value: "ALL", label: "All" },
     { value: "ACTIVE", label: "Active" },
     { value: "SNOOZED", label: "Snoozed" },

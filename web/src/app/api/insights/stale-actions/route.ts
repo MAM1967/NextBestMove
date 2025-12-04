@@ -30,7 +30,7 @@ export async function GET() {
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,

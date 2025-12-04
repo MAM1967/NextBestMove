@@ -5,14 +5,14 @@ import { useState } from "react";
 interface DowngradeWarningModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPinCount: number;
+  currentLeadCount: number; // Renamed from currentPinCount
   onAcknowledge: () => void;
 }
 
 export function DowngradeWarningModal({
   isOpen,
   onClose,
-  currentPinCount,
+  currentLeadCount,
   onAcknowledge,
 }: DowngradeWarningModalProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +34,7 @@ export function DowngradeWarningModal({
     }
   };
 
-  const pinsToArchive = currentPinCount - 10;
+  const leadsToArchive = currentLeadCount - 10;
 
   return (
     <div
@@ -90,7 +90,7 @@ export function DowngradeWarningModal({
           </h3>
           <p className="mt-2 text-sm text-zinc-600">
             You&apos;ve downgraded to the Standard plan, which includes up to 10
-            pins. You currently have <strong>{currentPinCount} active pins</strong>.
+            leads. You currently have <strong>{currentLeadCount} active leads</strong>.
           </p>
         </div>
 
@@ -101,8 +101,8 @@ export function DowngradeWarningModal({
           </p>
           <p className="mt-1 text-sm text-yellow-700">
             To continue using the Standard plan, you&apos;ll need to archive or
-            snooze at least <strong>{pinsToArchive} pin{pinsToArchive !== 1 ? "s" : ""}</strong> to
-            get below the 10 pin limit.
+            snooze at least <strong>{leadsToArchive} lead{leadsToArchive !== 1 ? "s" : ""}</strong> to
+            get below the 10 lead limit.
           </p>
         </div>
 
@@ -120,13 +120,13 @@ export function DowngradeWarningModal({
             disabled={isLoading}
             className="w-full rounded-full border border-zinc-300 bg-white px-6 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
           >
-            Manage Pins Now
+            Manage Leads Now
           </button>
         </div>
 
         <p className="mt-4 text-center text-xs text-zinc-500">
           You can upgrade back to Premium anytime to restore unlimited
-          pins.
+          leads.
         </p>
       </div>
     </div>

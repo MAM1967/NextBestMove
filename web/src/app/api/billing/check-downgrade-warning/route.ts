@@ -6,7 +6,7 @@ import { checkPinLimit } from "@/lib/billing/subscription";
  * GET /api/billing/check-downgrade-warning
  * 
  * Check if user should see downgrade warning modal
- * Returns: { shouldShow: boolean, currentPinCount?: number, limit?: number }
+ * Returns: { shouldShow: boolean, currentLeadCount?: number, currentPinCount?: number (legacy), limit?: number }
  */
 export async function GET() {
   try {
@@ -131,7 +131,8 @@ export async function GET() {
     console.log("✅ All conditions met, showing warning");
     return NextResponse.json({
       shouldShow: true,
-      currentPinCount: limitInfo.currentCount,
+      currentLeadCount: limitInfo.currentCount,
+      currentPinCount: limitInfo.currentCount, // Legacy field for backward compatibility
       limit: limitInfo.limit,
     });
   } catch (error) {

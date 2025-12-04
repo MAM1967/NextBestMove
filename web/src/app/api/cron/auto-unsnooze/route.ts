@@ -37,17 +37,17 @@ export async function GET(request: Request) {
     const adminClient = createAdminClient();
     const today = new Date().toISOString().split("T")[0];
 
-    // Auto-unsnooze person_pins
-    const { data: unsnoozedPins, error: pinsError } = await adminClient
-      .from("person_pins")
+    // Auto-unsnooze leads
+    const { data: unsnoozedLeads, error: leadsError } = await adminClient
+      .from("leads")
       .update({ status: "ACTIVE", snooze_until: null })
       .eq("status", "SNOOZED")
       .not("snooze_until", "is", null)
       .lte("snooze_until", today)
       .select("id");
 
-    if (pinsError) {
-      console.error("Error unsnoozing pins:", pinsError);
+    if (leadsError) {
+      console.error("Error unsnoozing leads:", leadsError);
     }
 
     // Auto-unsnooze actions
@@ -66,10 +66,12 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       date: today,
-      unsnoozedPins: unsnoozedPins?.length || 0,
+      unsnoozedLeads: unsnoozedLeads?.length || 0,
+      unsnoozedPins: unsnoozedLeads?.length || 0, // Legacy field for backward compatibility
       unsnoozedActions: unsnoozedActions?.length || 0,
       errors: {
-        pins: pinsError?.message,
+        leads: leadsError?.message,
+        pins: leadsError?.message, // Legacy field for backward compatibility
         actions: actionsError?.message,
       },
     });

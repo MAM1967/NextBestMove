@@ -210,17 +210,17 @@ async function calculateDailyMetrics(
     .gte("completed_at", startOfDay.toISOString())
     .lte("completed_at", endOfDay.toISOString());
 
-  // Pins created
-  const { count: pinsCreated } = await adminClient
-    .from("person_pins")
+  // Leads created
+  const { count: leadsCreated } = await adminClient
+    .from("leads")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .gte("created_at", startOfDay.toISOString())
     .lte("created_at", endOfDay.toISOString());
 
-  // Pins archived
-  const { count: pinsArchived } = await adminClient
-    .from("person_pins")
+  // Leads archived
+  const { count: leadsArchived } = await adminClient
+    .from("leads")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("status", "ARCHIVED")
@@ -267,8 +267,10 @@ async function calculateDailyMetrics(
     actions_completed: actionsCompleted || 0,
     actions_created: actionsCreated || 0,
     replies_received: repliesReceived || 0,
-    pins_created: pinsCreated || 0,
-    pins_archived: pinsArchived || 0,
+    leads_created: leadsCreated || 0,
+    leads_archived: leadsArchived || 0,
+    pins_created: leadsCreated || 0, // Legacy field for backward compatibility
+    pins_archived: leadsArchived || 0, // Legacy field for backward compatibility
     streak_day: streakDay,
     completion_rate: Math.round(completionRate * 100) / 100, // Round to 2 decimal places
     reply_rate: Math.round(replyRate * 100) / 100, // Round to 2 decimal places

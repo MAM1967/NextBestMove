@@ -66,50 +66,50 @@ export function isLikelyCall(event: CalendarEvent): boolean {
 }
 
 /**
- * Match a calendar event to a person_pin by name
- * Attempts fuzzy matching on event title vs pin name
+ * Match a calendar event to a lead by name
+ * Attempts fuzzy matching on event title vs lead name
  */
-export async function matchEventToPersonPin(
+export async function matchEventToLead(
   supabase: SupabaseClient,
   userId: string,
   event: CalendarEvent
 ): Promise<PersonPin | null> {
-  // Get all active person pins for the user
-  const { data: pins } = await supabase
-    .from("person_pins")
+  // Get all active leads for the user
+  const { data: leads } = await supabase
+    .from("leads")
     .select("id, name, url, notes")
     .eq("user_id", userId)
     .eq("status", "ACTIVE");
 
-  if (!pins || pins.length === 0) {
+  if (!leads || leads.length === 0) {
     return null;
   }
 
   const eventTitleLower = event.title.toLowerCase();
 
   // Try exact match first
-  for (const pin of pins) {
-    if (eventTitleLower.includes(pin.name.toLowerCase())) {
-      return pin;
+  for (const lead of leads) {
+    if (eventTitleLower.includes(lead.name.toLowerCase())) {
+      return lead;
     }
-    // Also check if pin name appears in event title
-    if (eventTitleLower.includes(pin.name.toLowerCase())) {
-      return pin;
+    // Also check if lead name appears in event title
+    if (eventTitleLower.includes(lead.name.toLowerCase())) {
+      return lead;
     }
   }
 
-  // Try fuzzy matching - check if any words from pin name appear in event title
-  for (const pin of pins) {
-    const pinWords = pin.name.toLowerCase().split(/\s+/);
-    const matchingWords = pinWords.filter((word: string) =>
+  // Try fuzzy matching - check if any words from lead name appear in event title
+  for (const lead of leads) {
+    const leadWords = lead.name.toLowerCase().split(/\s+/);
+    const matchingWords = leadWords.filter((word: string) =>
       eventTitleLower.includes(word)
     );
     // If at least 2 words match or it's a single word that matches, consider it a match
     if (
       matchingWords.length >= 2 ||
-      (pinWords.length === 1 && matchingWords.length === 1)
+      (leadWords.length === 1 && matchingWords.length === 1)
     ) {
-      return pin;
+      return lead;
     }
   }
 
@@ -118,7 +118,7 @@ export async function matchEventToPersonPin(
 
 /**
  * Detect calls from calendar events for the next 24 hours
- * Returns events that are likely calls, with matched person pins
+ * Returns events that are likely calls, with matched leads
  */
 export async function detectUpcomingCalls(
   supabase: SupabaseClient,
@@ -143,22 +143,22 @@ export async function detectUpcomingCalls(
       continue;
     }
 
-    // Try to match to a person pin
-    const matchedPin = await matchEventToPersonPin(supabase, userId, event);
+    // Try to match to a lead
+    const matchedLead = await matchEventToLead(supabase, userId, event);
 
     // Determine confidence
     let confidence: "high" | "medium" | "low" = "low";
-    if (matchedPin) {
-      // High confidence if we matched a pin
+    if (matchedLead) {
+      // High confidence if we matched a lead
       confidence = "high";
     } else if (isLikelyCall(event)) {
-      // Medium confidence if it looks like a call but no pin match
+      // Medium confidence if it looks like a call but no lead match
       confidence = "medium";
     }
 
     upcomingCalls.push({
       event,
-      matchedPersonPin: matchedPin,
+      matchedPersonPin: matchedLead, // Keep property name for backward compatibility
       confidence,
     });
   }

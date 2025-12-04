@@ -56,10 +56,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Dashboard
           </Link>
           <Link
-            href="/app/pins"
+            href="/app/leads"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
-            Pins
+            Leads
           </Link>
           <Link
             href="/app/plan"

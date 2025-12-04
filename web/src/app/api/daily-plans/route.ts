@@ -49,7 +49,7 @@ export async function GET(request: Request) {
         position,
         actions (
           *,
-          person_pins (
+          leads (
             id,
             name,
             url,
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         if (actionData) {
           const action = {
             ...actionData,
-            person_pins: actionData.person_pins || [],
+            person_pins: actionData.leads || [], // Keep property name for backward compatibility
           };
           
           if (planAction.is_fast_win) {

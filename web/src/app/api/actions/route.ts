@@ -115,16 +115,16 @@ export async function POST(request: Request) {
 
     // If person_id is provided, verify it belongs to the user
     if (person_id) {
-      const { data: pin, error: pinError } = await supabase
-        .from("person_pins")
+      const { data: lead, error: leadError } = await supabase
+        .from("leads")
         .select("id, name")
         .eq("id", person_id)
         .eq("user_id", user.id)
         .single();
 
-      if (pinError || !pin) {
+      if (leadError || !lead) {
         return NextResponse.json(
-          { error: "Person pin not found or doesn't belong to you" },
+          { error: "Lead not found or doesn't belong to you" },
           { status: 404 }
         );
       }
@@ -132,15 +132,15 @@ export async function POST(request: Request) {
       // Auto-generate description if not provided
       if (!description) {
         const actionDescriptions: Record<string, string> = {
-          OUTREACH: `Reach out to ${pin.name}`,
-          FOLLOW_UP: `Follow up with ${pin.name}`,
-          NURTURE: `Nurture relationship with ${pin.name}`,
-          CALL_PREP: `Prepare for call with ${pin.name}`,
-          POST_CALL: `Follow up after call with ${pin.name}`,
-          CONTENT: `Create content for ${pin.name}`,
-          FAST_WIN: `Quick action for ${pin.name}`,
+          OUTREACH: `Reach out to ${lead.name}`,
+          FOLLOW_UP: `Follow up with ${lead.name}`,
+          NURTURE: `Nurture relationship with ${lead.name}`,
+          CALL_PREP: `Prepare for call with ${lead.name}`,
+          POST_CALL: `Follow up after call with ${lead.name}`,
+          CONTENT: `Create content for ${lead.name}`,
+          FAST_WIN: `Quick action for ${lead.name}`,
         };
-        body.description = actionDescriptions[action_type] || `Action for ${pin.name}`;
+        body.description = actionDescriptions[action_type] || `Action for ${lead.name}`;
       }
     }
 

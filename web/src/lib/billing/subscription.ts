@@ -204,7 +204,17 @@ export async function hasProfessionalFeature(
 /**
  * Check if user has reached pin limit (Standard plan = 10 pins max)
  */
+// Legacy function name - kept for backward compatibility
 export async function checkPinLimit(userId: string): Promise<{
+  canAdd: boolean;
+  currentCount: number;
+  limit: number;
+  plan: PlanType;
+}> {
+  return checkLeadLimit(userId);
+}
+
+export async function checkLeadLimit(userId: string): Promise<{
   canAdd: boolean;
   currentCount: number;
   limit: number;
@@ -213,9 +223,9 @@ export async function checkPinLimit(userId: string): Promise<{
   const subscription = await getSubscriptionInfo(userId);
   const supabase = await createClient();
 
-  // Count active pins
+  // Count active leads
   const { count } = await supabase
-    .from("person_pins")
+    .from("leads")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("status", "ACTIVE");

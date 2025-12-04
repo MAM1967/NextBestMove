@@ -13,7 +13,7 @@ Instead of being a CRM, NextBestMove does one practical thing:
 Every day, it gives you a small set of your next best moves to drive revenue — sized to your real schedule.
 
 Core loop in v0.1:
-	1.	Pin people you don’t want to lose track of.
+	1.	Add leads you don't want to lose track of.
 	2.	Get a short, calendar-aware daily plan (3–8 actions).
 	3.	Mark actions as done / got reply / snooze.
 	4.	Receive a weekly summary with a simple insight and 1–2 content prompts.
@@ -77,9 +77,9 @@ Non-Goals (v0.1)
 48-Hour Activation
 
 Within 48 hours of signup, user has:
-	•	Pinned at least 1 person
+	•	Added at least 1 lead
 	•	Completed a Fast Win + ≥ 2 additional actions
-	•	Marked at least 1 action as “Got a reply” OR “Meaningful follow-up sent”
+	•	Marked at least 1 action as "Got a reply" OR "Meaningful follow-up sent"
 
 Target: ≥ 60% of new users.
 
@@ -109,11 +109,11 @@ Actions carry:
 	•	type
 	•	state
 	•	due date
-	•	link to a pinned person
+	•	link to a lead
 
-6.2 Pins (PersonPin)
+6.2 Leads
 
-A Pin is a lightweight reference:
+A Lead is a lightweight reference:
 	•	name
 	•	single primary URL (LinkedIn, CRM, mailto)
 	•	optional notes
@@ -160,7 +160,7 @@ See Section 21 for detailed pricing, subscription tiers, trial model, and churn 
 7. Data Inputs (v0.1)
 
 7.1 User-Provided Inputs
-	•	Pins: name + url (+ optional notes)
+	•	Leads: name + url (+ optional notes)
 	•	Action completion, per task:
 	•	Done – got a reply
 	•	Done – no reply yet
@@ -228,7 +228,7 @@ Input:
 	•	Completion rate last week (days active, actions done)
 	•	Calls booked vs simple target (e.g., at least 1)
 	•	Replies on outreach vs follow-ups
-	•	Number of Active Pins with recent activity
+	•	Number of Active Leads with recent activity
 
 Patterns → Example Focus:
 	•	Low completion / missing days:
@@ -244,7 +244,7 @@ User can always hit “Edit” and pick from basic levers (Book calls / Revive t
 
 ⸻
 
-9. Pin Lifecycle (v0.1)
+9. Lead Lifecycle (v0.1)
 
 9.1 States
 	•	ACTIVE — in play; used for action generation
@@ -256,10 +256,10 @@ User can always hit “Edit” and pick from basic levers (Book calls / Revive t
 	•	ACTIVE → ARCHIVED (user explicitly archives)
 	•	SNOOZED → ACTIVE (on snooze date)
 
-No auto-archive in v0.1. Future: explicit “Cleanup mode” to review stale pins.
+No auto-archive in v0.1. Future: explicit "Cleanup mode" to review stale leads.
 
 9.3 URL Handling
-	•	Exactly one primary URL per pin:
+	•	Exactly one primary URL per lead:
 	•	LinkedIn profile
 	•	CRM record
 	•	mailto: link
@@ -389,7 +389,7 @@ If pending actions > daily capacity:
 	1.	Next-step actions after REPLIED
 	2.	FOLLOW_UP with due date today
 	3.	FOLLOW_UP with due date in past 3 days
-	4.	OUTREACH on recent Active Pins
+	4.	OUTREACH on recent Active Leads
 	5.	NURTURE tasks
 	6.	CONTENT tasks
 
@@ -436,7 +436,7 @@ Weekly summary (AI-assisted) delivered Sunday night / Monday morning:
 13.1 Onboarding Steps (v0.1)
 	1.	Welcome
 	•	Explain core promise: "I'll give you a small, realistic list of revenue actions each day."
-	2.	Pin your first person
+	2.	Add your first lead
 	•	Ask: "Who's one person you don't want to lose track of?"
 	•	Fields: Name + URL (+ optional notes)
 	3.	Connect your calendar (optional, recommended)
@@ -465,7 +465,7 @@ Weekly summary (AI-assisted) delivered Sunday night / Monday morning:
 13.2 Onboarding Success Criteria
 
 Minimum:
-	•	✅ 1 Pin created
+	•	✅ 1 Lead created
 	•	✅ Weekly Focus set (accepted/edited)
 	•	✅ Fast Win completed
 
@@ -535,7 +535,7 @@ User
 	•	streak_count
 	•	created_at, updated_at
 
-PersonPin
+Lead
 	•	id, user_id
 	•	name
 	•	url
@@ -622,7 +622,7 @@ Billing Constraints:
 18. Data Retention & Export
 	•	Actions in DONE state:
 	•	Kept “live” for 90 days, then marked ARCHIVED.
-	•	ARCHIVED items (pins, actions, summaries):
+	•	ARCHIVED items (leads, actions, summaries):
 	•	Retained indefinitely for analytics and history.
 	•	Weekly summaries:
 	•	Retained indefinitely.
@@ -640,8 +640,8 @@ Not in v0.1. Keep UX simple. Add tooltips in v0.2 if requested.
 v0.1: Single Fast Win per day. If they complete it quickly, task #2 naturally follows.
 	•	Daily email summaries?
 v0.1: No. In-app only. Consider opt-in email in v0.2.
-	•	Auto-archiving pins?
-v0.1: No auto-archive. Only explicit user archive. Add “Cleanup mode” later.
+	•	Auto-archiving leads?
+v0.1: No auto-archive. Only explicit user archive. Add "Cleanup mode" later.
 	•	Pricing / plans?
 	See Section 21 for complete pricing model: 14-day free trial (no credit card), Standard ($29/mo or $249/year), Premium ($79/mo or $649/year), with detailed churn prevention and upgrade triggers.
 
@@ -650,15 +650,15 @@ v0.1: No auto-archive. Only explicit user archive. Add “Cleanup mode” later.
 20. MVP Scope (v0.1)
 
 Must-have:
-	•	Pin creation + basic management (Active/Snoozed/Archived)
-	•	Action engine: daily plan generation from pins + states
+	•	Lead creation + basic management (Active/Snoozed/Archived)
+	•	Action engine: daily plan generation from leads + states
 	•	Calendar-aware capacity (read-only free/busy)
 	•	Daily plan UI with Fast Win and action list
-	•	Focus Mode with “Got reply / No reply / Snooze”
+	•	Focus Mode with "Got reply / No reply / Snooze"
 	•	Weekly summary (AI-assisted)
 	•	Weekly Focus suggestion
 	•	1–2 content prompts per week (template + optional AI phrasing)
-	•	Onboarding: first pin, optional calendar connect, first Fast Win
+	•	Onboarding: first lead, optional calendar connect, first Fast Win
 	•	Stripe-powered checkout + webhook to activate subscriptions and gate access
 
 Deferred (v0.2+):
@@ -709,7 +709,7 @@ Read-Only Grace Period — 7 Days
 Not a hard lock. Not a forced downgrade.
 
 User can:
-	•	View Pins
+	•	View Leads
 	•	View past actions
 	•	View Weekly Summaries
 	•	Export data
@@ -717,7 +717,7 @@ User can:
 
 User cannot:
 	•	Generate a new daily plan
-	•	Add new pins
+	•	Add new leads
 	•	Schedule follow-ups
 	•	Access insights
 	•	Use content prompts
@@ -744,7 +744,7 @@ Includes:
 	•	Daily plan (Fast Win + 3–8 actions/day)
 	•	Calendar-aware action sizing
 	•	Smart follow-up engine
-	•	Up to 10 active Pins
+	•	Up to 10 active Leads
 	•	Weekly Summary + single actionable insight
 	•	2 content prompts per week
 	•	Consistency score
@@ -764,7 +764,7 @@ Fractional CMOs, CFOs, CTOs, and multiproject operators who manage dozens of war
 
 Includes everything in Standard plus:
 
-1. Unlimited Pins
+1. Unlimited Leads
 Never prune relationships again.
 
 2. Pattern Detection
@@ -798,8 +798,8 @@ This is "fractional revops" for one person.
 
 Upsells must appear ONLY when the user is succeeding.
 
-1. Pin Limit (Standard hits 10)
-Modal: "You've built a strong network of 10 relationships. Add unlimited Pins with Premium."
+1. Lead Limit (Standard hits 10)
+Modal: "You've built a strong network of 10 relationships. Add unlimited Leads with Premium."
 
 2. Weekly Summary Insight (Standard)
 "Want deeper insights next week? Try the Intelligence Layer."
@@ -853,7 +853,7 @@ This can recover 20–40% of lost subscribers.
 21.4.3 Downgrade Policy (Clarity to Reduce Anxiety)
 
 Premium → Standard:
-Effective next billing cycle. Warning: "You have 87 active Pins. Standard supports 10. Archive 77 or stay on Premium."
+Effective next billing cycle. Warning: "You have 87 active Leads. Standard supports 10. Archive 77 or stay on Premium."
 
 Standard → Cancel:
 	•	7-day read-only
@@ -899,7 +899,7 @@ Pricing page includes:
 
 Step 1: Email + Password
 Step 2: Calendar Connect
-Step 3: Pin 3 people
+Step 3: Add 3 leads
 Step 4: First daily plan
 Step 5: Start 14-day trial
 Step 6: "You'll know in 48 hours if this works."
@@ -924,7 +924,7 @@ Highlights:
 	•	Premium = Intelligence Layer
 
 Behavioral Upsells:
-	•	Pin limit
+	•	Lead limit
 	•	Weekly summaries
 	•	Premium insights
 	•	Pre-call briefs

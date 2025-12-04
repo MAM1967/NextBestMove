@@ -5,7 +5,7 @@ import { DowngradeWarningModal } from "./DowngradeWarningModal";
 
 export function DowngradeWarningChecker() {
   const [shouldShow, setShouldShow] = useState(false);
-  const [currentPinCount, setCurrentPinCount] = useState(0);
+  const [currentLeadCount, setCurrentLeadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function DowngradeWarningChecker() {
           }
           if (data.shouldShow) {
             setShouldShow(true);
-            setCurrentPinCount(data.currentPinCount || 0);
+            setCurrentLeadCount(data.currentLeadCount || data.currentPinCount || 0); // Support both for backward compatibility
           }
         }
       } catch (error) {
@@ -47,7 +47,7 @@ export function DowngradeWarningChecker() {
     <DowngradeWarningModal
       isOpen={shouldShow}
       onClose={handleAcknowledge}
-      currentPinCount={currentPinCount}
+      currentLeadCount={currentLeadCount}
       onAcknowledge={handleAcknowledge}
     />
   );

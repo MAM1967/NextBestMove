@@ -51,9 +51,9 @@ export async function GET() {
     const metadata = subscription ? ((subscription.metadata as any) || {}) : {};
     const planType = metadata.plan_type || "standard";
 
-    // Count pins
-    const { count: pinCount } = await supabase
-      .from("person_pins")
+    // Count leads
+    const { count: leadCount } = await supabase
+      .from("leads")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("status", "ACTIVE");
@@ -76,16 +76,18 @@ export async function GET() {
           plan_type: planType,
           downgrade_detected_at: metadata.downgrade_detected_at,
           downgrade_warning_shown: metadata.downgrade_warning_shown,
-          downgrade_pin_count: metadata.downgrade_pin_count,
+          downgrade_pin_count: metadata.downgrade_pin_count, // Legacy field name
         },
-        pinCount: pinCount || 0,
+        leadCount: leadCount || 0,
+        pinCount: leadCount || 0, // Legacy field for backward compatibility
         checks: {
           hasSubscription: !!subscription,
           isActiveOrTrialing: subscription?.status === "active" || subscription?.status === "trialing",
           isStandardPlan: planType === "standard",
           downgradeDetected: !!metadata.downgrade_detected_at,
           warningNotShown: !metadata.downgrade_warning_shown,
-          pinsExceedLimit: (pinCount || 0) > 10,
+          leadsExceedLimit: (leadCount || 0) > 10,
+          pinsExceedLimit: (leadCount || 0) > 10, // Legacy field for backward compatibility
         },
       },
     });

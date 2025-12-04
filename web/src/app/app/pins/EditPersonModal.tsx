@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { PersonPin } from "./page";
+import type { Lead } from "@/lib/leads/types";
 
 interface EditPersonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  pin: PersonPin | null;
+  pin: Lead | null;
   onSave: (
     pinId: string,
     pinData: { name: string; url: string; notes?: string }

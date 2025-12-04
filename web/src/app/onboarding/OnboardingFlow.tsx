@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { WelcomeStep } from "./steps/WelcomeStep";
-import { PinFirstPersonStep } from "./steps/PinFirstPersonStep";
+import { AddFirstLeadStep } from "./steps/AddFirstLeadStep";
 import { CalendarConnectStep } from "./steps/CalendarConnectStep";
 import { WorkingHoursStep } from "./steps/WorkingHoursStep";
 import { WeekendPreferenceStep } from "./steps/WeekendPreferenceStep";
@@ -13,7 +13,7 @@ import { StartFreeTrialStep } from "./steps/StartFreeTrialStep";
 
 export type OnboardingStep =
   | "welcome"
-  | "pin_first_person"
+  | "add_first_lead"
   | "calendar_connect"
   | "working_hours"
   | "weekend_preference"
@@ -23,7 +23,7 @@ export type OnboardingStep =
 
 const STEPS: OnboardingStep[] = [
   "welcome",
-  "pin_first_person",
+  "add_first_lead",
   "calendar_connect",
   "working_hours",
   "weekend_preference",
@@ -37,7 +37,14 @@ const ONBOARDING_STEP_KEY = "nbm_onboarding_step";
 function getSavedStep(): OnboardingStep | null {
   if (typeof window === "undefined") return null;
   const saved = localStorage.getItem(ONBOARDING_STEP_KEY);
-  if (saved && STEPS.includes(saved as OnboardingStep)) {
+  if (!saved) return null;
+  
+  // Migrate old step name to new step name
+  if (saved === "pin_first_person") {
+    return "add_first_lead";
+  }
+  
+  if (STEPS.includes(saved as OnboardingStep)) {
     return saved as OnboardingStep;
   }
   return null;
@@ -77,19 +84,19 @@ export function OnboardingFlow() {
           
           // If user hasn't completed onboarding, validate their progress
           if (!data.onboarding_completed) {
-            // Check if they have a pin (required step 2)
-            const hasPin = data.has_pin || false;
+            // Check if they have a lead (required step 2)
+            const hasLead = data.has_lead || data.has_pin || false; // Support both new and legacy field names
             
-            // If no pin exists, they can't be past step 2
+            // If no lead exists, they can't be past step 2
             // Clear localStorage and start from beginning if saved step is too advanced
             const savedStep = getSavedStep();
             if (savedStep) {
               const savedStepIndex = STEPS.indexOf(savedStep);
-              const pinStepIndex = STEPS.indexOf("pin_first_person");
+              const leadStepIndex = STEPS.indexOf("add_first_lead");
               
-              // If saved step is after pin step but user has no pin, reset to welcome
-              if (savedStepIndex > pinStepIndex && !hasPin) {
-                console.log("[Onboarding] Resetting to welcome - no pin found but step was advanced");
+              // If saved step is after lead step but user has no lead, reset to welcome
+              if (savedStepIndex > leadStepIndex && !hasLead) {
+                console.log("[Onboarding] Resetting to welcome - no lead found but step was advanced");
                 clearSavedStep();
                 setCurrentStep("welcome");
                 setIsCheckingOnboarding(false);
@@ -200,8 +207,8 @@ export function OnboardingFlow() {
     switch (currentStep) {
       case "welcome":
         return <WelcomeStep onNext={handleNext} />;
-      case "pin_first_person":
-        return <PinFirstPersonStep onNext={handleNext} onBack={handleBack} />;
+      case "add_first_lead":
+        return <AddFirstLeadStep onNext={handleNext} onBack={handleBack} />;
       case "calendar_connect":
         return (
           <CalendarConnectStep

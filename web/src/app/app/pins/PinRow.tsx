@@ -1,17 +1,17 @@
 "use client";
 
-import { PersonPin } from "./page";
+import type { Lead } from "@/lib/leads/types";
 
 interface PinRowProps {
-  pin: PersonPin;
-  onEdit: (pin: PersonPin) => void;
+  pin: Lead;
+  onEdit: (pin: Lead) => void;
   onSnooze: (pinId: string) => void;
   onUnsnooze: (pinId: string) => void;
   onArchive: (pinId: string) => void;
   onRestore: (pinId: string) => void;
 }
 
-function getStatusBadgeVariant(status: PersonPin["status"]) {
+function getStatusBadgeVariant(status: Lead["status"]) {
   switch (status) {
     case "ACTIVE":
       return "bg-green-100 text-green-800";

@@ -85,8 +85,8 @@ function calculatePriorityScore(action: any): number {
       break;
   }
 
-  // Boost for actions with person_pins (more context)
-  if (action.person_pins) {
+  // Boost for actions with leads (more context)
+  if (action.leads) {
     score += 50;
   }
 
@@ -128,8 +128,8 @@ function isFastWinCandidate(action: any): boolean {
     return true;
   }
 
-  // Light OUTREACH to recently pinned person
-  if (action.action_type === "OUTREACH" && action.person_pins) {
+  // Light OUTREACH to recently added lead
+  if (action.action_type === "OUTREACH" && action.leads) {
     return true;
   }
 
@@ -245,7 +245,7 @@ export async function generateDailyPlanForUser(
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,
@@ -305,52 +305,52 @@ export async function generateDailyPlanForUser(
         .eq("user_id", userId)
         .limit(10);
       
-      const { data: activePins } = await supabase
-        .from("person_pins")
+      const { data: activeLeads } = await supabase
+        .from("leads")
         .select("id, name, status, created_at")
         .eq("user_id", userId)
         .eq("status", "ACTIVE");
       
-      // Try to auto-create actions from active pins if no candidate actions exist
-      if (activePins && activePins.length > 0) {
-        console.log(`No candidate actions found, attempting to create actions from ${activePins.length} active pins`);
+      // Try to auto-create actions from active leads if no candidate actions exist
+      if (activeLeads && activeLeads.length > 0) {
+        console.log(`No candidate actions found, attempting to create actions from ${activeLeads.length} active leads`);
         
-        // Create OUTREACH actions for active pins that don't have recent actions
+        // Create OUTREACH actions for active leads that don't have recent actions
         const newActions = [];
-        for (const pin of activePins) {
-          // Check if pin already has a recent NEW action
+        for (const lead of activeLeads) {
+          // Check if lead already has a recent NEW action
           const { data: existingAction } = await supabase
             .from("actions")
             .select("id")
             .eq("user_id", userId)
-            .eq("person_id", pin.id)
+            .eq("person_id", lead.id)
             .eq("state", "NEW")
             .eq("action_type", "OUTREACH")
             .maybeSingle();
           
           if (!existingAction) {
-            // Create a new OUTREACH action for this pin, due today
+            // Create a new OUTREACH action for this lead, due today
             const { data: newAction, error: createError } = await supabase
               .from("actions")
               .insert({
                 user_id: userId,
-                person_id: pin.id,
+                person_id: lead.id,
                 action_type: "OUTREACH",
                 state: "NEW",
                 due_date: date,
-                description: `Reach out to ${pin.name}`,
+                description: `Reach out to ${lead.name}`,
                 auto_created: true,
               })
               .select()
               .single();
             
             if (!createError && newAction) {
-              // Fetch the full action with person_pins relation
+              // Fetch the full action with leads relation
               const { data: fullAction } = await supabase
                 .from("actions")
                 .select(`
                   *,
-                  person_pins (
+                  leads (
                     id,
                     name,
                     url,
@@ -370,12 +370,12 @@ export async function generateDailyPlanForUser(
         
         // If we created new actions, use them as candidates
         if (newActions.length > 0) {
-          console.log(`Created ${newActions.length} new actions from active pins`);
+          console.log(`Created ${newActions.length} new actions from active leads`);
           candidateActions.push(...newActions);
         }
       }
       
-      // If still no candidate actions after trying to create from pins
+      // If still no candidate actions after trying to create from leads
       if (!candidateActions || candidateActions.length === 0) {
         console.error("No candidate actions for plan generation:", {
           userId,
@@ -383,7 +383,7 @@ export async function generateDailyPlanForUser(
           totalActions: allActions?.length || 0,
           actionStates: allActions?.map(a => a.state) || [],
           actionDueDates: allActions?.map(a => a.due_date) || [],
-          activePins: activePins?.length || 0,
+          activeLeads: activeLeads?.length || 0,
         });
         
         return { 

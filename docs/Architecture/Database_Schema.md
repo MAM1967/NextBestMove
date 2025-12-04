@@ -29,7 +29,7 @@ This document defines the complete database schema for NextBestMove v0.1, includ
 ### Tables
 
 1. **users** - User accounts
-2. **person_pins** - Pinned people
+2. **leads** - Leads/contacts
 3. **actions** - Action items
 4. **daily_plans** - Generated daily plans
 5. **daily_plan_actions** - Junction table for daily plan actions
@@ -43,7 +43,7 @@ This document defines the complete database schema for NextBestMove v0.1, includ
 
 ### Enums
 
-- `pin_status` - ACTIVE, SNOOZED, ARCHIVED
+- `lead_status` - ACTIVE, SNOOZED, ARCHIVED
 - `action_type` - OUTREACH, FOLLOW_UP, NURTURE, CALL_PREP, POST_CALL, CONTENT, FAST_WIN
 - `action_state` - NEW, SENT, REPLIED, SNOOZED, DONE, ARCHIVED
 - `calendar_provider` - google, outlook
@@ -95,20 +95,20 @@ CREATE TRIGGER update_users_updated_at
 
 ---
 
-### 2. person_pins
+### 2. leads
 
-Stores pinned people/contacts.
+Stores leads/contacts.
 
 ```sql
-CREATE TYPE pin_status AS ENUM ('ACTIVE', 'SNOOZED', 'ARCHIVED');
+CREATE TYPE lead_status AS ENUM ('ACTIVE', 'SNOOZED', 'ARCHIVED');
 
-CREATE TABLE person_pins (
+CREATE TABLE leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   url TEXT NOT NULL, -- LinkedIn, CRM, or mailto link
   notes TEXT, -- Optional notes
-  status pin_status NOT NULL DEFAULT 'ACTIVE',
+  status lead_status NOT NULL DEFAULT 'ACTIVE',
   snooze_until DATE, -- If SNOOZED, when to unsnooze
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -121,14 +121,14 @@ CREATE TABLE person_pins (
 );
 
 -- Indexes
-CREATE INDEX idx_person_pins_user_id ON person_pins(user_id);
-CREATE INDEX idx_person_pins_status ON person_pins(status);
-CREATE INDEX idx_person_pins_user_status ON person_pins(user_id, status);
-CREATE INDEX idx_person_pins_snooze_until ON person_pins(snooze_until) WHERE status = 'SNOOZED';
+CREATE INDEX idx_leads_user_id ON leads(user_id);
+CREATE INDEX idx_leads_status ON leads(status);
+CREATE INDEX idx_leads_user_status ON leads(user_id, status);
+CREATE INDEX idx_leads_snooze_until ON leads(snooze_until) WHERE status = 'SNOOZED';
 
 -- Trigger to update updated_at
-CREATE TRIGGER update_person_pins_updated_at
-  BEFORE UPDATE ON person_pins
+CREATE TRIGGER update_leads_updated_at
+  BEFORE UPDATE ON leads
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 ```
@@ -139,7 +139,7 @@ CREATE TRIGGER update_person_pins_updated_at
 - `name`: Person's name
 - `url`: Primary URL (LinkedIn, CRM, or mailto link)
 - `notes`: Optional notes/context
-- `status`: Pin status (ACTIVE, SNOOZED, ARCHIVED)
+- `status`: Lead status (ACTIVE, SNOOZED, ARCHIVED)
 - `snooze_until`: Date to automatically unsnooze (if SNOOZED)
 - `created_at`, `updated_at`: Timestamps
 
@@ -172,7 +172,7 @@ CREATE TYPE action_state AS ENUM (
 CREATE TABLE actions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  person_id UUID REFERENCES person_pins(id) ON DELETE SET NULL, -- Optional, not all actions tied to pins
+  person_id UUID REFERENCES leads(id) ON DELETE SET NULL, -- Optional, not all actions tied to leads
   action_type action_type NOT NULL,
   state action_state NOT NULL DEFAULT 'NEW',
   description TEXT, -- Auto-generated or user-provided description
@@ -205,8 +205,8 @@ CREATE TRIGGER update_actions_updated_at
 CREATE OR REPLACE FUNCTION auto_unsnooze_items()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Auto-unsnooze person_pins
-  UPDATE person_pins
+  -- Auto-unsnooze leads
+  UPDATE leads
   SET status = 'ACTIVE', snooze_until = NULL
   WHERE status = 'SNOOZED' 
     AND snooze_until IS NOT NULL
@@ -234,7 +234,7 @@ CREATE TRIGGER check_snooze_dates
 **Fields:**
 - `id`: UUID primary key
 - `user_id`: Foreign key to users
-- `person_id`: Optional foreign key to person_pins
+- `person_id`: Optional foreign key to leads
 - `action_type`: Type of action
 - `state`: Current state of action
 - `description`: Action description
@@ -725,7 +725,7 @@ $$ LANGUAGE plpgsql;
 
 1. **User data queries:**
    - `users.email` - For authentication lookups
-   - `person_pins(user_id, status)` - Filter pins by user and status
+   - `leads(user_id, status)` - Filter leads by user and status
    - `actions(user_id, state, due_date)` - Daily plan generation queries
 
 2. **Daily plan queries:**
@@ -747,7 +747,7 @@ Enable RLS on all tables to ensure users can only access their own data:
 ```sql
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE person_pins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE actions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_plan_actions ENABLE ROW LEVEL SECURITY;
@@ -767,10 +767,10 @@ $$ LANGUAGE sql STABLE;
 CREATE POLICY "Users can view own data" ON users
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Users can view own pins" ON person_pins
+CREATE POLICY "Users can view own leads" ON leads
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can manage own pins" ON person_pins
+CREATE POLICY "Users can manage own leads" ON leads
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own actions" ON actions

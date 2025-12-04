@@ -26,7 +26,7 @@ export async function countUserTextSamples(
 ): Promise<number> {
   // We need to fetch the actual text to filter by length >= 50
   // This ensures the count matches what collectUserTextSamples will actually use
-  const [editedPromptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
+  const [editedPromptsResult, actionsResult, leadsResult, manualSamplesResult] = await Promise.all([
     // Get edited content prompts
     supabase
       .from("content_prompts")
@@ -46,9 +46,9 @@ export async function countUserTextSamples(
       .order("updated_at", { ascending: false })
       .limit(20),
     
-    // Get pin notes
+    // Get lead notes
     supabase
-      .from("person_pins")
+      .from("leads")
       .select("notes")
       .eq("user_id", userId)
       .not("notes", "is", null)
@@ -80,10 +80,10 @@ export async function countUserTextSamples(
     ).length;
   }
 
-  // Count pin notes >= 50 chars
-  if (pinsResult.data) {
-    count += pinsResult.data.filter(
-      (p) => p.notes && p.notes.trim().length >= 50
+  // Count lead notes >= 50 chars
+  if (leadsResult.data) {
+    count += leadsResult.data.filter(
+      (l) => l.notes && l.notes.trim().length >= 50
     ).length;
   }
 
@@ -99,7 +99,7 @@ export async function countUserTextSamples(
 
 /**
  * Collect user-written text samples for voice analysis
- * Sources: edited content prompts, action notes, pin notes
+ * Sources: edited content prompts, action notes, lead notes
  */
 export async function collectUserTextSamples(
   supabase: SupabaseClient,
@@ -109,7 +109,7 @@ export async function collectUserTextSamples(
   const samples: string[] = [];
 
   // Run queries in parallel for better performance
-  const [editedPromptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
+  const [editedPromptsResult, actionsResult, leadsResult, manualSamplesResult] = await Promise.all([
     // 1. Get edited content prompts (prefer longer ones)
     supabase
       .from("content_prompts")
@@ -129,9 +129,9 @@ export async function collectUserTextSamples(
       .order("updated_at", { ascending: false })
       .limit(20),
     
-    // 3. Get pin notes (prefer longer ones)
+    // 3. Get lead notes (prefer longer ones)
     supabase
-      .from("person_pins")
+      .from("leads")
       .select("notes")
       .eq("user_id", userId)
       .not("notes", "is", null)
@@ -165,11 +165,11 @@ export async function collectUserTextSamples(
     }
   }
 
-  // Process pin notes
-  if (pinsResult.data) {
-    for (const pin of pinsResult.data) {
-      if (pin.notes && pin.notes.trim().length > 50) {
-        samples.push(pin.notes.trim());
+  // Process lead notes
+  if (leadsResult.data) {
+    for (const lead of leadsResult.data) {
+      if (lead.notes && lead.notes.trim().length > 50) {
+        samples.push(lead.notes.trim());
       }
     }
   }

@@ -43,7 +43,7 @@ async function getStaleActions() {
       auto_created,
       created_at,
       updated_at,
-      person_pins (
+      leads (
         id,
         name,
         url,
@@ -62,7 +62,7 @@ async function getStaleActions() {
     return null;
   }
 
-  // Calculate how many days old each action is and transform person_pins
+  // Calculate how many days old each action is and transform leads
   const actionsWithAge = (staleActions || []).map((action: any) => {
     const createdDate = new Date(action.created_at);
     const today = new Date();
@@ -71,14 +71,14 @@ async function getStaleActions() {
       (today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
     );
     
-    // Transform person_pins from array to single object or null
-    const personPin = Array.isArray(action.person_pins) && action.person_pins.length > 0
-      ? action.person_pins[0]
-      : action.person_pins || null;
+    // Transform leads from array to single object or null
+    const personPin = Array.isArray(action.leads) && action.leads.length > 0
+      ? action.leads[0]
+      : action.leads || null;
     
     return {
       ...action,
-      person_pins: personPin,
+      person_pins: personPin, // Keep property name for backward compatibility
       days_old: daysOld,
     } as StaleAction;
   });

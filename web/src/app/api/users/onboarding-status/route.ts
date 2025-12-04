@@ -32,22 +32,23 @@ export async function GET() {
       );
     }
 
-    // Check if user has at least one pin (required for step 2)
-    const { data: pins, error: pinsError } = await supabase
-      .from("person_pins")
+    // Check if user has at least one lead (required for step 2)
+    const { data: leads, error: leadsError } = await supabase
+      .from("leads")
       .select("id")
       .eq("user_id", user.id)
       .eq("status", "ACTIVE")
       .limit(1);
 
-    if (pinsError) {
-      console.error("Error checking pins:", pinsError);
-      // Don't fail - just assume no pins
+    if (leadsError) {
+      console.error("Error checking leads:", leadsError);
+      // Don't fail - just assume no leads
     }
 
     return NextResponse.json({
       onboarding_completed: userProfile?.onboarding_completed || false,
-      has_pin: (pins && pins.length > 0) || false,
+      has_lead: (leads && leads.length > 0) || false,
+      has_pin: (leads && leads.length > 0) || false, // Legacy field for backward compatibility
     });
   } catch (error) {
     console.error("Unexpected error checking onboarding status:", error);

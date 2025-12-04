@@ -92,14 +92,14 @@ export async function DELETE(request: Request) {
       throw actionsError;
     }
 
-    // 6. Person pins
-    const { error: pinsError } = await supabase
-      .from("person_pins")
+    // 6. Leads
+    const { error: leadsError } = await supabase
+      .from("leads")
       .delete()
       .eq("user_id", userId);
-    if (pinsError) {
-      console.error("Error deleting person pins:", pinsError);
-      throw pinsError;
+    if (leadsError) {
+      console.error("Error deleting leads:", leadsError);
+      throw leadsError;
     }
 
     // 7. Calendar connections

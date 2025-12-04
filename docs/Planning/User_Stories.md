@@ -11,7 +11,7 @@
 1. [Epic Overview](#epic-overview)
 2. [Epic 1: Foundation & Setup](#epic-1-foundation--setup)
 3. [Epic 2: Authentication & User Management](#epic-2-authentication--user-management)
-4. [Epic 3: Pin Management](#epic-3-pin-management)
+4. [Epic 3: Lead Management](#epic-3-lead-management)
 5. [Epic 4: Action Management](#epic-4-action-management)
 6. [Epic 5: Daily Plan Generation](#epic-5-daily-plan-generation)
 7. [Epic 6: Calendar Integration](#epic-6-calendar-integration)
@@ -204,28 +204,28 @@
 
 ---
 
-## Epic 3: Pin Management
+## Epic 3: Lead Management
 
-### US-3.1: Pin a Person
-**Epic:** Pin Management  
+### US-3.1: Add a Lead
+**Epic:** Lead Management  
 **Priority:** 🔴 P0  
 **Size:** M  
 **Story Points:** 5
 
 **As a** user  
-**I want** to pin a person with name, URL, and optional notes  
+**I want** to add a lead with name, URL, and optional notes  
 **So that** I don't lose track of important contacts
 
 **Acceptance Criteria:**
-- [ ] "Pin a Person" modal/form accessible from Pin Management page
+- [ ] "Add Lead" modal/form accessible from Lead Management page
 - [ ] Fields: Name (required), URL (required), Notes (optional)
 - [ ] URL validation (LinkedIn, CRM, or mailto:)
 - [ ] Help text explains URL formats
 - [ ] Form validation with clear error messages
-- [ ] Pin saved to database with ACTIVE status
+- [ ] Lead saved to database with ACTIVE status
 - [ ] Success message shown after saving
 - [ ] Modal closes and list refreshes
-- [ ] User redirected to Pin Management page if from onboarding
+- [ ] User redirected to Lead Management page if from onboarding
 
 **Technical Notes:**
 - Reference AddPersonModal from Component_Specifications.md
@@ -234,22 +234,22 @@
 
 ---
 
-### US-3.2: View Pinned People List
-**Epic:** Pin Management  
+### US-3.2: View Leads List
+**Epic:** Lead Management  
 **Priority:** 🔴 P0  
 **Size:** S  
 **Story Points:** 3
 
 **As a** user  
-**I want** to view all my pinned people  
+**I want** to view all my leads  
 **So that** I can see who I'm tracking
 
 **Acceptance Criteria:**
-- [ ] Pin Management page displays all pins
-- [ ] Pins shown with name, URL type, date added
+- [ ] Lead Management page displays all leads
+- [ ] Leads shown with name, URL type, date added
 - [ ] Status badges visible (Active, Snoozed, Archived)
 - [ ] Notes displayed if present
-- [ ] Empty state shown when no pins
+- [ ] Empty state shown when no leads
 - [ ] List loads quickly (< 500ms)
 - [ ] Responsive layout (mobile, tablet, desktop)
 
@@ -260,18 +260,18 @@
 
 ---
 
-### US-3.3: Filter Pins by Status
-**Epic:** Pin Management  
+### US-3.3: Filter Leads by Status
+**Epic:** Lead Management  
 **Priority:** 🟠 P1  
 **Size:** XS  
 **Story Points:** 2
 
 **As a** user  
-**I want** to filter pins by status (All, Active, Snoozed, Archived)  
-**So that** I can focus on relevant pins
+**I want** to filter leads by status (All, Active, Snoozed, Archived)  
+**So that** I can focus on relevant leads
 
 **Acceptance Criteria:**
-- [ ] Filter toggle/buttons at top of Pin Management page
+- [ ] Filter toggle/buttons at top of Lead Management page
 - [ ] Options: All | Active | Snoozed | Archived
 - [ ] Active filter highlighted
 - [ ] List updates immediately on filter change
@@ -284,18 +284,18 @@
 
 ---
 
-### US-3.4: Edit Pin
-**Epic:** Pin Management  
+### US-3.4: Edit Lead
+**Epic:** Lead Management  
 **Priority:** 🟠 P1  
 **Size:** S  
 **Story Points:** 3
 
 **As a** user  
-**I want** to edit a pin's name, URL, notes, and status  
+**I want** to edit a lead's name, URL, notes, and status  
 **So that** I can update contact information
 
 **Acceptance Criteria:**
-- [ ] "View/Edit" button on each pin row
+- [ ] "View/Edit" button on each lead row
 - [ ] Edit modal opens with pre-filled data
 - [ ] All fields editable (name, URL, notes, status)
 - [ ] Status dropdown shows all options (Active, Snoozed, Archived)
@@ -310,8 +310,8 @@
 
 ---
 
-### US-3.5: Snooze Pin
-**Epic:** Pin Management  
+### US-3.5: Snooze Lead
+**Epic:** Lead Management  
 **Priority:** 🟠 P1  
 **Size:** XS  
 **Story Points:** 2
@@ -335,8 +335,8 @@
 
 ---
 
-### US-3.6: Archive Pin
-**Epic:** Pin Management  
+### US-3.6: Archive Lead
+**Epic:** Lead Management  
 **Priority:** 🟠 P1  
 **Size:** XS  
 **Story Points:** 1
