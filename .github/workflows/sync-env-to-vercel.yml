@@ -17,6 +17,7 @@ on:
   push:
     branches:
       - main
+      - staging
     paths-ignore:
       - "**.md"
       - ".github/workflows/**"
@@ -39,6 +40,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "env=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "env=preview" >> $GITHUB_OUTPUT
           else
             echo "env=production" >> $GITHUB_OUTPUT
           fi
