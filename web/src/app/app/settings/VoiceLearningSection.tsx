@@ -106,13 +106,22 @@ export function VoiceLearningSection({ isPremium }: VoiceLearningSectionProps) {
         method: "POST",
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const text = await response.text();
+        throw new Error(`Server error: ${text || response.statusText}`);
+      }
 
       if (!response.ok) {
         if (response.status === 400) {
-          throw new Error(data.message || "Insufficient samples");
+          throw new Error(data.message || data.error || "Insufficient samples");
         }
-        throw new Error(data.error || "Failed to analyze voice");
+        if (response.status === 402) {
+          throw new Error("Upgrade to Premium required");
+        }
+        throw new Error(data.error || data.details || `Failed to analyze voice (${response.status})`);
       }
 
       setProfile({
@@ -127,6 +136,7 @@ export function VoiceLearningSection({ isPremium }: VoiceLearningSectionProps) {
       // Refresh sample count
       await fetchVoiceProfile();
     } catch (err) {
+      console.error("Voice analysis error:", err);
       setError(err instanceof Error ? err.message : "Failed to analyze voice");
     } finally {
       setIsAnalyzing(false);
