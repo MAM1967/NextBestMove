@@ -8,7 +8,10 @@ import { SnoozeActionModal } from "../actions/SnoozeActionModal";
 import { ActionNoteModal } from "../actions/ActionNoteModal";
 import { PaywallOverlay } from "../components/PaywallOverlay";
 import { CelebrationBanner } from "../components/CelebrationBanner";
+import { PreCallBriefCard } from "../components/PreCallBriefCard";
+import { PreCallBriefModal } from "../components/PreCallBriefModal";
 import { Action } from "../actions/types";
+import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
 
 interface DailyPlan {
   id: string;
@@ -45,11 +48,15 @@ export default function DailyPlanPage() {
   const [noteActionId, setNoteActionId] = useState<string | null>(null);
   const [noteAction, setNoteAction] = useState<Action | null>(null);
   const [formattedDate, setFormattedDate] = useState<string>("");
+  const [preCallBriefs, setPreCallBriefs] = useState<PreCallBrief[]>([]);
+  const [selectedBrief, setSelectedBrief] = useState<PreCallBrief | null>(null);
+  const [showBriefModal, setShowBriefModal] = useState(false);
 
   useEffect(() => {
     fetchSubscriptionStatus();
     fetchDailyPlan();
     fetchWeeklyFocus();
+    fetchPreCallBriefs();
     // Set formatted date on client side only to avoid hydration mismatch
     setFormattedDate(
       new Date().toLocaleDateString("en-US", {
@@ -172,6 +179,49 @@ export default function DailyPlanPage() {
       console.error("Failed to fetch weekly focus:", err);
       // Fallback on error
       setWeeklyFocus("Build consistent revenue rhythm");
+    }
+  };
+
+  const fetchPreCallBriefs = async () => {
+    try {
+      const response = await fetch("/api/pre-call-briefs");
+      if (!response.ok) {
+        // If upgrade required or other error, just don't show briefs
+        if (response.status === 402) {
+          // Premium feature - silently skip
+          return;
+        }
+        return;
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse pre-call briefs response as JSON:", jsonError);
+        return;
+      }
+
+      if (data.success && data.briefs) {
+        // Transform briefs to match our type
+        const briefs: PreCallBrief[] = data.briefs.map((b: any) => ({
+          id: b.id,
+          calendarEventId: b.calendarEventId,
+          eventTitle: b.eventTitle,
+          eventStart: new Date(b.eventStart),
+          personPinId: b.personPinId,
+          personName: b.personName,
+          briefContent: b.briefContent,
+          lastInteractionDate: b.lastInteractionDate ? new Date(b.lastInteractionDate) : null,
+          followUpCount: b.followUpCount || 0,
+          nextStepSuggestions: b.nextStepSuggestions || [],
+          userNotes: b.userNotes,
+        }));
+        setPreCallBriefs(briefs);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pre-call briefs:", err);
+      // Silently fail - briefs are optional
     }
   };
 
@@ -460,6 +510,22 @@ export default function DailyPlanPage() {
           </div>
         )}
 
+        {/* Pre-Call Briefs */}
+        {preCallBriefs.length > 0 && (
+          <div className="space-y-3">
+            {preCallBriefs.map((brief) => (
+              <PreCallBriefCard
+                key={brief.calendarEventId}
+                brief={brief}
+                onViewFull={() => {
+                  setSelectedBrief(brief);
+                  setShowBriefModal(true);
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Progress Indicator */}
         {dailyPlan && totalCount > 0 && (
           <div className="rounded-xl border border-zinc-200 bg-white p-4">
@@ -667,6 +733,15 @@ export default function DailyPlanPage() {
           actionId={noteActionId}
           existingNote={noteAction?.notes || null}
           onSave={handleSaveNote}
+        />
+
+        <PreCallBriefModal
+          isOpen={showBriefModal}
+          onClose={() => {
+            setShowBriefModal(false);
+            setSelectedBrief(null);
+          }}
+          brief={selectedBrief}
         />
       </div>
     </>

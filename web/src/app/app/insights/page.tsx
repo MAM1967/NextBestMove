@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { StaleActionsSection } from "./StaleActionsSection";
+import { PatternDetectionSection } from "./PatternDetectionSection";
 import type { Action } from "../actions/types";
 
 type StaleAction = Action & {
@@ -138,16 +139,8 @@ export default async function InsightsPage() {
         )}
       </div>
 
-      {/* Placeholder for future insights */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-900">
-          More Insights Coming Soon
-        </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          We&apos;re working on additional insights to help you understand your
-          workflow patterns and optimize your productivity.
-        </p>
-      </div>
+      {/* Pattern Detection (Premium Feature) */}
+      <PatternDetectionSection />
     </div>
   );
 }
