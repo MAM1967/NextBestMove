@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase
+    const { data: pin, error: pinError } = await supabase
       .from("person_pins")
       .insert({
         user_id: user.id,
@@ -122,15 +122,37 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error) {
-      console.error("Error creating pin:", error);
+    if (pinError) {
+      console.error("Error creating pin:", pinError);
       return NextResponse.json(
         { error: "Failed to create pin" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ pin: data }, { status: 201 });
+    // Automatically create an OUTREACH action for the new pin
+    // This is core to the app's purpose: turn leads (pins) into revenue (actions)
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+    
+    const { error: actionError } = await supabase
+      .from("actions")
+      .insert({
+        user_id: user.id,
+        person_id: pin.id,
+        action_type: "OUTREACH",
+        state: "NEW",
+        description: `Reach out to ${pin.name}`,
+        due_date: today,
+        auto_created: true,
+      });
+
+    if (actionError) {
+      // Log error but don't fail the pin creation - action can be created later
+      console.error("Error creating auto-action for new pin:", actionError);
+      // Continue - pin was created successfully, action creation is secondary
+    }
+
+    return NextResponse.json({ pin }, { status: 201 });
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
