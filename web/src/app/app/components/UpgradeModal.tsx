@@ -9,7 +9,7 @@ interface UpgradeModalProps {
   trigger: "pin_limit" | "premium_feature";
   featureName?: string; // e.g., "Pattern Detection", "Pre-Call Briefs"
   currentCount?: number; // For pin limit: current pin count
-  limit?: number; // For pin limit: pin limit (50)
+  limit?: number; // For pin limit: pin limit (10)
 }
 
 export function UpgradeModal({
