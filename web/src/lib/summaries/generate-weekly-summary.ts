@@ -124,7 +124,7 @@ async function generateContentPrompts(
     metrics.replies > 0 ||
     metrics.actionsCompleted >= 10
   ) {
-    const winContent = await generateWinPost(metrics);
+    const winContent = await generateWinPost(metrics, supabase, userId);
     if (winContent) {
       prompts.push({
         type: "WIN_POST",
@@ -136,7 +136,7 @@ async function generateContentPrompts(
   // Generate INSIGHT_POST if there's an insight to share
   // (replies received or insight text available)
   if (metrics.replies > 0 || metrics.insightText) {
-    const insightContent = await generateInsightPost(metrics);
+    const insightContent = await generateInsightPost(metrics, supabase, userId);
     if (insightContent) {
       prompts.push({
         type: "INSIGHT_POST",

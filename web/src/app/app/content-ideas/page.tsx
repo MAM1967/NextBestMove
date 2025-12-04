@@ -22,6 +22,9 @@ export default function ContentIdeasPage() {
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState<ContentPrompt | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchPrompts();
@@ -104,6 +107,47 @@ export default function ContentIdeasPage() {
       console.error("Error deleting prompt:", err);
       alert(err instanceof Error ? err.message : "Failed to delete prompt");
     }
+  };
+
+  const handleEdit = (prompt: ContentPrompt) => {
+    setEditingPrompt(prompt);
+    setEditContent(prompt.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPrompt || !editContent.trim()) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/content-prompts/${editingPrompt.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: editContent.trim(),
+          user_edited: true, // Mark as edited for voice learning
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save edits");
+      }
+
+      setEditingPrompt(null);
+      setEditContent("");
+      await fetchPrompts();
+    } catch (err) {
+      console.error("Error saving edit:", err);
+      alert(err instanceof Error ? err.message : "Failed to save edits");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPrompt(null);
+    setEditContent("");
   };
 
   const getTypeBadgeColor = (type: string) => {
@@ -249,6 +293,13 @@ export default function ContentIdeasPage() {
                   {copiedId === prompt.id ? "✓ Copied" : "Copy"}
                 </button>
 
+                <button
+                  onClick={() => handleEdit(prompt)}
+                  className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                >
+                  Edit
+                </button>
+
                 {prompt.status === "DRAFT" && (
                   <button
                     onClick={() => handleUpdateStatus(prompt.id, "POSTED")}
@@ -285,6 +336,43 @@ export default function ContentIdeasPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white p-6 shadow-lg">
+            <h2 className="mb-4 text-lg font-semibold text-zinc-900">
+              Edit Content Prompt
+            </h2>
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full rounded-md border border-zinc-300 bg-white p-3 text-sm text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              rows={8}
+              placeholder="Edit your content prompt..."
+            />
+            <p className="mt-2 text-xs text-zinc-500">
+              Your edits will be used to improve future content generation.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSaving || !editContent.trim()}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

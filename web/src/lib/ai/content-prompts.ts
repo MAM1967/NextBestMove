@@ -1,4 +1,6 @@
 import { generateWithAI } from "./openai";
+import { buildVoiceProfilePrompt, type VoiceCharacteristics } from "./voice-analysis";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Metrics = {
   daysActive: number;
@@ -12,10 +14,35 @@ type Metrics = {
 };
 
 /**
+ * Get user's voice profile if available
+ */
+async function getUserVoiceProfile(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<VoiceCharacteristics | null> {
+  const { data, error } = await supabase
+    .from("user_voice_profile")
+    .select("voice_characteristics")
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data.voice_characteristics as VoiceCharacteristics;
+}
+
+/**
  * Generate WIN_POST content prompt
  * Template-based with AI enhancement for phrasing
+ * Optionally uses voice profile if available
  */
-export async function generateWinPost(metrics: Metrics): Promise<string> {
+export async function generateWinPost(
+  metrics: Metrics,
+  supabase?: SupabaseClient,
+  userId?: string
+): Promise<string> {
   const winParts: string[] = [];
   
   if (metrics.callsBooked > 0) {
@@ -41,13 +68,22 @@ export async function generateWinPost(metrics: Metrics): Promise<string> {
   // Template for win post
   const template = `A small win from last week: ${winDescription}. Here's what changed when I focused on consistent follow-ups...`;
   
+  // Get voice profile if available
+  let voiceProfileContext = "";
+  if (supabase && userId) {
+    const voiceProfile = await getUserVoiceProfile(supabase, userId);
+    if (voiceProfile) {
+      voiceProfileContext = `\n\nUser's writing style:\n${buildVoiceProfilePrompt(voiceProfile)}\n\nMatch this writing style in the generated content.`;
+    }
+  }
+  
   // AI-enhanced version with context
   const aiPrompt = `Create a LinkedIn-style post about a weekly win. The user ${winDescription} this week. 
 Write 3-6 sentences that:
 - Start with acknowledging the win
 - Briefly explain what changed or what they focused on
 - Keep it authentic and conversational
-- End with a subtle insight or reflection
+- End with a subtle insight or reflection${voiceProfileContext}
 
 Use this as inspiration: "${template}"`;
 
@@ -66,8 +102,13 @@ Use this as inspiration: "${template}"`;
 /**
  * Generate INSIGHT_POST content prompt
  * Based on weekly insight or reply rate patterns
+ * Optionally uses voice profile if available
  */
-export async function generateInsightPost(metrics: Metrics): Promise<string> {
+export async function generateInsightPost(
+  metrics: Metrics,
+  supabase?: SupabaseClient,
+  userId?: string
+): Promise<string> {
   // Use provided insight text if available, otherwise calculate from metrics
   let insight = metrics.insightText;
   
@@ -87,13 +128,22 @@ export async function generateInsightPost(metrics: Metrics): Promise<string> {
   // Template for insight post
   const template = `One insight from recent conversations: ${insight}. Here's how I'm approaching it...`;
   
+  // Get voice profile if available
+  let voiceProfileContext = "";
+  if (supabase && userId) {
+    const voiceProfile = await getUserVoiceProfile(supabase, userId);
+    if (voiceProfile) {
+      voiceProfileContext = `\n\nUser's writing style:\n${buildVoiceProfilePrompt(voiceProfile)}\n\nMatch this writing style in the generated content.`;
+    }
+  }
+  
   // AI-enhanced version
   const aiPrompt = `Create a LinkedIn-style post sharing a business insight. The insight is: "${insight}".
 Write 3-6 sentences that:
 - Start with the insight or observation
 - Briefly explain the approach or what you learned
 - Keep it practical and actionable
-- End with a question or reflection
+- End with a question or reflection${voiceProfileContext}
 
 Use this as inspiration: "${template}"`;
 

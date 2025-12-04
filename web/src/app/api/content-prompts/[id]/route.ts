@@ -1,48 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-// GET /api/content-prompts/[id] - Fetch a single content prompt
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: contentPrompt, error } = await supabase
-      .from("content_prompts")
-      .select("*")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching content prompt:", error);
-      return NextResponse.json(
-        { error: "Content prompt not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ contentPrompt });
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH /api/content-prompts/[id] - Update prompt status (archive, mark as posted, etc.)
+/**
+ * PATCH /api/content-prompts/[id]
+ * Update a content prompt (e.g., save edited version)
+ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -58,48 +20,53 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { status } = await request.json();
-
-    if (!status || !["DRAFT", "POSTED", "ARCHIVED"].includes(status)) {
-      return NextResponse.json(
-        { error: "Invalid status. Must be DRAFT, POSTED, or ARCHIVED" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const { content, user_edited } = body;
 
     // Verify the prompt belongs to the user
-    const { data: prompt, error: fetchError } = await supabase
+    const { data: existingPrompt, error: fetchError } = await supabase
       .from("content_prompts")
       .select("id, user_id")
       .eq("id", id)
       .eq("user_id", user.id)
       .single();
 
-    if (fetchError || !prompt) {
+    if (fetchError || !existingPrompt) {
       return NextResponse.json(
         { error: "Content prompt not found" },
         { status: 404 }
       );
     }
 
-    // Update the status
-    const { data: updated, error: updateError } = await supabase
+    // Update the prompt
+    const updateData: any = {};
+    if (content !== undefined) {
+      updateData.content = content;
+    }
+    if (user_edited !== undefined) {
+      updateData.user_edited = user_edited;
+      if (user_edited && content) {
+        updateData.edited_text = content; // Store edited version for voice learning
+      }
+    }
+
+    const { data, error } = await supabase
       .from("content_prompts")
-      .update({ status })
+      .update(updateData)
       .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single();
 
-    if (updateError) {
-      console.error("Error updating content prompt:", updateError);
+    if (error) {
+      console.error("Error updating content prompt:", error);
       return NextResponse.json(
         { error: "Failed to update content prompt" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ prompt: updated });
+    return NextResponse.json({ success: true, prompt: data });
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
@@ -108,45 +75,3 @@ export async function PATCH(
     );
   }
 }
-
-// DELETE /api/content-prompts/[id] - Delete a content prompt
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify the prompt belongs to the user and delete
-    const { error: deleteError } = await supabase
-      .from("content_prompts")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
-
-    if (deleteError) {
-      console.error("Error deleting content prompt:", deleteError);
-      return NextResponse.json(
-        { error: "Failed to delete content prompt" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-

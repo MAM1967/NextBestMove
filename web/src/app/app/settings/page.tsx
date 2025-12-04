@@ -10,6 +10,7 @@ import { BYOKSection } from "./BYOKSection";
 import { EmailPreferencesSection } from "./EmailPreferencesSection";
 import { AccountDeletionSection } from "./AccountDeletionSection";
 import { AccountOverviewSection } from "./AccountOverviewSection";
+import { VoiceLearningSection } from "./VoiceLearningSection";
 
 type SearchParams = Promise<{ calendar?: string }>;
 
@@ -286,6 +287,13 @@ export default async function SettingsPage({
           currentModel={profile?.ai_model}
           hasApiKey={!!profile?.ai_api_key_encrypted}
         />
+      </SectionCard>
+
+      <SectionCard
+        title="Content & voice learning"
+        description="AI learns your writing style to generate content that sounds like you. Premium feature."
+      >
+        <VoiceLearningSection isPremium={isPremium} />
       </SectionCard>
 
       <SectionCard
