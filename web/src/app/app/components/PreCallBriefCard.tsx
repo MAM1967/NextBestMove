@@ -18,13 +18,12 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
     minute: "2-digit",
   });
 
-  // Extract first few lines for preview
-  const previewLines = brief.briefContent.split("\n").slice(0, 3).join("\n");
-  const hasMore = brief.briefContent.split("\n").length > 3;
-
   const isVideoConference = brief.hasVideoConference === true;
   const icon = isVideoConference ? "📹" : "📞";
   const label = isVideoConference ? "Upcoming Video Conference" : "Upcoming Call";
+
+  // For Standard users, show teaser info instead of brief content
+  const showTeaser = !isPremium && brief.followUpCount > 0;
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
@@ -43,47 +42,66 @@ export function PreCallBriefCard({ brief, isPremium = false, onViewFull }: PreCa
             <p className="mt-1 text-xs text-zinc-600">with {brief.personName}</p>
           )}
         </div>
-        {onViewFull && (
+        {onViewFull && !isPremium && (
           <button
             onClick={onViewFull}
-            className={`text-xs font-medium ${
-              isPremium
-                ? "text-blue-600 hover:text-blue-700"
-                : "text-blue-500 hover:text-blue-600"
-            }`}
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
           >
-            {isPremium ? "View Brief" : "Upgrade to View"}
+            Upgrade to View
           </button>
         )}
       </div>
 
-      {isExpanded ? (
-        <div className="mt-3 text-xs text-zinc-700 whitespace-pre-wrap">
-          {brief.briefContent}
-        </div>
+      {/* Content area - different for Premium vs Standard */}
+      {isPremium ? (
+        // Premium: Show full brief content
+        <>
+          {isExpanded ? (
+            <div className="mt-3 text-xs text-zinc-700 whitespace-pre-wrap">
+              {brief.briefContent}
+            </div>
+          ) : (
+            <div className="mt-3 text-xs text-zinc-600 line-clamp-3">
+              {brief.briefContent.split("\n").slice(0, 3).join("\n")}
+            </div>
+          )}
+          {brief.briefContent.split("\n").length > 3 && !isExpanded && (
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              Show more
+            </button>
+          )}
+        </>
       ) : (
-        <div className="mt-3 text-xs text-zinc-600 line-clamp-3">
-          {previewLines}
+        // Standard: Show teaser with upgrade CTA
+        <div className="mt-3 space-y-2">
+          {showTeaser && (
+            <div className="text-xs text-zinc-600">
+              <span className="font-medium">{brief.followUpCount}</span> previous interaction{brief.followUpCount !== 1 ? "s" : ""} with this contact
+            </div>
+          )}
+          <div className="relative rounded-md border border-blue-200 bg-white p-3">
+            <div className="absolute inset-0 flex items-center justify-center bg-blue-50/80 backdrop-blur-sm rounded-md">
+              <div className="text-center">
+                <p className="text-xs font-medium text-blue-700 mb-1">
+                  Interaction history & talking points
+                </p>
+                <button
+                  onClick={onViewFull}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline"
+                >
+                  Upgrade to Premium to view
+                </button>
+              </div>
+            </div>
+            {/* Blurred content behind overlay */}
+            <div className="text-xs text-zinc-400 blur-sm select-none">
+              {brief.briefContent.split("\n").slice(0, 4).join("\n")}
+            </div>
+          </div>
         </div>
-      )}
-
-      {hasMore && !isExpanded && (
-        <button
-          onClick={() => {
-            if (isPremium) {
-              setIsExpanded(true);
-            } else {
-              onViewFull?.();
-            }
-          }}
-          className={`mt-2 text-xs font-medium ${
-            isPremium
-              ? "text-blue-600 hover:text-blue-700"
-              : "text-blue-500 hover:text-blue-600"
-          }`}
-        >
-          {isPremium ? "Show more" : "Upgrade to View Full Brief"}
-        </button>
       )}
     </div>
   );
