@@ -201,14 +201,14 @@ async function calculateDailyMetrics(
     .gte("created_at", startOfDay.toISOString())
     .lte("created_at", endOfDay.toISOString());
 
-  // Replies received (actions with replied_at)
+  // Replies received (actions with state = 'REPLIED')
   const { count: repliesReceived } = await adminClient
     .from("actions")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
-    .not("replied_at", "is", null)
-    .gte("replied_at", startOfDay.toISOString())
-    .lte("replied_at", endOfDay.toISOString());
+    .eq("state", "REPLIED")
+    .gte("completed_at", startOfDay.toISOString())
+    .lte("completed_at", endOfDay.toISOString());
 
   // Pins created
   const { count: pinsCreated } = await adminClient
@@ -230,11 +230,11 @@ async function calculateDailyMetrics(
   // Get current streak day from user profile
   const { data: user } = await adminClient
     .from("users")
-    .select("current_streak")
+    .select("streak_count")
     .eq("id", userId)
     .single();
 
-  const streakDay = user?.current_streak || 0;
+  const streakDay = user?.streak_count || 0;
 
   // Calculate completion rate (completed / total actions for the day)
   const totalActionsForDay = actionsCreated || 0;
