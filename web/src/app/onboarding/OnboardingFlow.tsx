@@ -64,9 +64,64 @@ export function OnboardingFlow() {
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(
     new Set()
   );
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+
+  // Check onboarding status and validate step progression
+  useEffect(() => {
+    async function checkOnboardingStatus() {
+      try {
+        // Check if user has completed onboarding
+        const response = await fetch("/api/users/onboarding-status");
+        if (response.ok) {
+          const data = await response.json();
+          
+          // If user hasn't completed onboarding, validate their progress
+          if (!data.onboarding_completed) {
+            // Check if they have a pin (required step 2)
+            const hasPin = data.has_pin || false;
+            
+            // If no pin exists, they can't be past step 2
+            // Clear localStorage and start from beginning if saved step is too advanced
+            const savedStep = getSavedStep();
+            if (savedStep) {
+              const savedStepIndex = STEPS.indexOf(savedStep);
+              const pinStepIndex = STEPS.indexOf("pin_first_person");
+              
+              // If saved step is after pin step but user has no pin, reset to welcome
+              if (savedStepIndex > pinStepIndex && !hasPin) {
+                console.log("[Onboarding] Resetting to welcome - no pin found but step was advanced");
+                clearSavedStep();
+                setCurrentStep("welcome");
+                setIsCheckingOnboarding(false);
+                return;
+              }
+            }
+          } else {
+            // User has completed onboarding - shouldn't be here, but clear localStorage anyway
+            clearSavedStep();
+          }
+        } else {
+          // If API call fails, clear localStorage to be safe
+          console.warn("[Onboarding] Failed to check onboarding status, clearing localStorage");
+          clearSavedStep();
+          setCurrentStep("welcome");
+        }
+      } catch (error) {
+        console.error("Error checking onboarding status:", error);
+        // On error, clear localStorage to be safe
+        clearSavedStep();
+        setCurrentStep("welcome");
+      }
+      setIsCheckingOnboarding(false);
+    }
+    
+    checkOnboardingStatus();
+  }, []);
 
   // Restore step when component mounts (e.g., after OAuth redirect)
   useEffect(() => {
+    if (isCheckingOnboarding) return; // Wait for onboarding check to complete
+    
     // If returning from calendar OAuth, ensure we're on calendar_connect step
     const calendarParam = searchParams.get("calendar");
     if (calendarParam === "success" || calendarParam === "error") {
@@ -76,13 +131,13 @@ export function OnboardingFlow() {
       // Clean up URL params
       router.replace("/onboarding", { scroll: false });
     } else {
-      // Otherwise, restore saved step if available
+      // Otherwise, restore saved step if available (but only if onboarding check passed)
       const savedStep = getSavedStep();
       if (savedStep && savedStep !== currentStep) {
         setCurrentStep(savedStep);
       }
     }
-  }, [searchParams, router]); // Removed currentStep from deps to avoid loop
+  }, [searchParams, router, isCheckingOnboarding, currentStep]);
 
   const currentStepIndex = STEPS.indexOf(currentStep);
   const totalSteps = STEPS.length;
@@ -220,7 +275,13 @@ export function OnboardingFlow() {
 
       {/* Step Content */}
       <div className="rounded-lg border border-zinc-200 bg-white p-8 shadow-sm">
-        {renderStep()}
+        {isCheckingOnboarding ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-zinc-600">Loading...</div>
+          </div>
+        ) : (
+          renderStep()
+        )}
       </div>
     </div>
   );
