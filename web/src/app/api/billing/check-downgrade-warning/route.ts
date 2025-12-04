@@ -41,31 +41,55 @@ export async function GET() {
       .maybeSingle();
 
     if (!subscription) {
-      return NextResponse.json({ shouldShow: false });
+      console.log("❌ No subscription found for customer:", customer.id);
+      return NextResponse.json({ shouldShow: false, reason: "no_subscription" });
     }
+
+    console.log("📊 Subscription found:", {
+      id: subscription.id,
+      status: subscription.status,
+      metadata: subscription.metadata,
+    });
 
     const metadata = (subscription.metadata as any) || {};
     const planType = metadata.plan_type || "standard";
 
+    console.log("🔍 Checking conditions:", {
+      planType,
+      downgrade_detected_at: metadata.downgrade_detected_at,
+      downgrade_warning_shown: metadata.downgrade_warning_shown,
+      downgrade_pin_count: metadata.downgrade_pin_count,
+    });
+
     // Only show warning for Standard plan users
     if (planType !== "standard") {
-      return NextResponse.json({ shouldShow: false });
+      console.log("❌ Plan type is not standard:", planType);
+      return NextResponse.json({ shouldShow: false, reason: "not_standard_plan", planType });
     }
 
     // Check if warning was already shown
-    if (metadata.downgrade_warning_shown) {
-      return NextResponse.json({ shouldShow: false });
+    if (metadata.downgrade_warning_shown === true || metadata.downgrade_warning_shown === "true") {
+      console.log("❌ Warning already shown");
+      return NextResponse.json({ shouldShow: false, reason: "warning_already_shown" });
     }
 
     // Check if downgrade was detected
     if (!metadata.downgrade_detected_at) {
-      return NextResponse.json({ shouldShow: false });
+      console.log("❌ No downgrade detected");
+      return NextResponse.json({ shouldShow: false, reason: "no_downgrade_detected" });
     }
 
     // Check pin limit
     const limitInfo = await checkPinLimit(user.id);
+    console.log("📌 Pin limit check:", {
+      currentCount: limitInfo.currentCount,
+      limit: limitInfo.limit,
+      exceedsLimit: limitInfo.currentCount > limitInfo.limit,
+    });
+
     if (limitInfo.currentCount <= limitInfo.limit) {
       // User is within limit, mark warning as shown
+      console.log("✅ User within limit, marking warning as shown");
       await supabase
         .from("billing_subscriptions")
         .update({
@@ -75,9 +99,15 @@ export async function GET() {
           },
         })
         .eq("id", subscription.id);
-      return NextResponse.json({ shouldShow: false });
+      return NextResponse.json({ 
+        shouldShow: false, 
+        reason: "within_limit",
+        currentCount: limitInfo.currentCount,
+        limit: limitInfo.limit,
+      });
     }
 
+    console.log("✅ All conditions met, showing warning");
     return NextResponse.json({
       shouldShow: true,
       currentPinCount: limitInfo.currentCount,
