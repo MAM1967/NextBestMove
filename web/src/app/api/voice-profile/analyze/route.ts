@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Insufficient samples",
-          message: `Need at least 5 text samples. Found ${samples.length}. Edit more content prompts or add notes to actions/pins.`,
+          message: `Need at least 5 text samples. Found ${samples.length}. Edit more content prompts, add notes to actions/pins, or add sample emails/LinkedIn posts below.`,
           sampleCount: samples.length,
         },
         { status: 400 }
