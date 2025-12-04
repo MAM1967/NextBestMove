@@ -517,4 +517,54 @@ export async function sendStreakRecoveryEmail(
   return sendEmail({ to, subject, html });
 }
 
+/**
+ * Email template for Day 7 billing pause offer (after 7 days of inactivity)
+ */
+export async function sendBillingPauseOfferEmail({
+  to,
+  userName,
+}: {
+  to: string;
+  userName: string;
+}) {
+  const subject = "Pause your subscription while you're away";
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Hi ${userName || "there"},</h1>
+        
+        <p style="margin-bottom: 16px;">
+          We noticed you haven't been active for a week. Life gets busy — we get it.
+        </p>
+        
+        <p style="margin-bottom: 16px;">
+          If you're taking a break, we can pause your subscription for up to 30 days. You won't be charged during the pause, and you can reactivate anytime.
+        </p>
+        
+        <p style="margin-bottom: 16px;">
+          Your data stays safe and nothing is lost. When you're ready to come back, just reactivate and pick up where you left off.
+        </p>
+        
+        <div style="margin: 32px 0;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
+             style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+            Pause Subscription
+          </a>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+          Or just ignore this email if you plan to be back soon. We'll keep your account active.
+        </p>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
+}
+
 
