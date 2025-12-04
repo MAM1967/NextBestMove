@@ -100,11 +100,10 @@ export function PinFirstPersonStep({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-zinc-900">
-          Pin someone you don&apos;t want to lose track of
+          Add your first lead or warm contact
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          Start by adding one person you want to follow up with. You can add
-          more later.
+          Start by adding someone you want to network with and see how you can help them. This could be a potential client, a warm referral, or someone you met recently. You can add more later.
         </p>
       </div>
 
