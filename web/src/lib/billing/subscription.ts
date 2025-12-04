@@ -86,15 +86,22 @@ export async function getSubscriptionInfo(
     : null;
 
   // Determine plan from metadata
-  // Internal type is "premium" (display name is also "Premium")
+  // Prioritize plan_type over plan_name (plan_type is the source of truth)
   let plan: PlanType = "none";
   if (subscription.metadata) {
     const planType = (subscription.metadata as any)?.plan_type?.toLowerCase();
     const planName = (subscription.metadata as any)?.plan_name?.toLowerCase();
-    if (planType === "standard" || planName === "standard") plan = "standard";
-    // Support both "premium" and legacy "professional" for backward compatibility
-    if (planType === "premium" || planType === "professional" || planName === "premium" || planName === "professional") {
+    
+    // plan_type is the source of truth - check it first
+    if (planType === "standard") {
+      plan = "standard";
+    } else if (planType === "premium" || planType === "professional") {
+      // Support both "premium" and legacy "professional" for backward compatibility
       plan = "premium";
+    } else {
+      // Fallback to plan_name only if plan_type is missing
+      if (planName === "standard") plan = "standard";
+      if (planName === "premium" || planName === "professional") plan = "premium";
     }
   }
 
