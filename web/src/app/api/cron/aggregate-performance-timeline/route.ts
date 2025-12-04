@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logError, logInfo } from "@/lib/utils/logger";
 
 /**
- * POST /api/cron/aggregate-performance-timeline
+ * GET /api/cron/aggregate-performance-timeline
  * 
  * Cron job to aggregate daily performance metrics for Premium users.
  * Runs daily at 11:59 PM UTC.
@@ -11,7 +11,7 @@ import { logError, logInfo } from "@/lib/utils/logger";
  * 
  * This endpoint is called by cron-job.org or Vercel Cron and requires authentication.
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
     // Verify cron secret - support both Authorization header (Vercel Cron) and query param (cron-job.org)
     const authHeader = request.headers.get("authorization");
