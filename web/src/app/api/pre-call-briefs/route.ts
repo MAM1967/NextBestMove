@@ -181,6 +181,12 @@ async function fetchGoogleEvents(
 
     const isAllDay = !item.start.dateTime;
 
+    // Check for video conferencing (Google Meet, Zoom, etc.)
+    const hangoutLink = item.hangoutLink || null;
+    const conferenceData = item.conferenceData;
+    const videoConferenceLink = hangoutLink || conferenceData?.entryPoints?.[0]?.uri || null;
+    const hasVideoConference = !!(hangoutLink || (conferenceData && conferenceData.entryPoints && conferenceData.entryPoints.length > 0));
+
     if (isAllDay) {
       const startDate = item.start.date;
       const endDate = item.end.date;
@@ -193,6 +199,8 @@ async function fetchGoogleEvents(
         end: endDate,
         duration: 0,
         isAllDay: true,
+        videoConferenceLink,
+        hasVideoConference,
       });
     } else {
       const start = item.start.dateTime;
@@ -210,6 +218,8 @@ async function fetchGoogleEvents(
         end,
         duration: Math.round(duration),
         isAllDay: false,
+        videoConferenceLink,
+        hasVideoConference,
       });
     }
   }
@@ -251,6 +261,12 @@ async function fetchOutlookEvents(
 
     const isAllDay = item.isAllDay || false;
 
+    // Check for video conferencing (Microsoft Teams, etc.)
+    const isOnlineMeeting = item.isOnlineMeeting || false;
+    const onlineMeeting = item.onlineMeeting;
+    const videoConferenceLink = onlineMeeting?.joinUrl || null;
+    const hasVideoConference = isOnlineMeeting || !!videoConferenceLink;
+
     if (isAllDay) {
       events.push({
         id: item.id || "",
@@ -259,6 +275,8 @@ async function fetchOutlookEvents(
         end,
         duration: 0,
         isAllDay: true,
+        videoConferenceLink,
+        hasVideoConference,
       });
     } else {
       const startDate = new Date(start);
@@ -272,6 +290,8 @@ async function fetchOutlookEvents(
         end,
         duration: Math.round(duration),
         isAllDay: false,
+        videoConferenceLink,
+        hasVideoConference,
       });
     }
   }
