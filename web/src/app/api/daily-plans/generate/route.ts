@@ -20,40 +20,51 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check subscription status and grace period
-    const { data: billingCustomer } = await supabase
-      .from("billing_customers")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Check if user is still in onboarding - allow plan generation during onboarding
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
 
-    let subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null = null;
-    let trialEndsAt: string | null = null;
+    const isInOnboarding = !userProfile?.onboarding_completed;
 
-    if (billingCustomer) {
-      const { data: subscription } = await supabase
-        .from("billing_subscriptions")
-        .select("status, trial_ends_at")
-        .eq("billing_customer_id", billingCustomer.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
+    // If not in onboarding, check subscription status and grace period
+    if (!isInOnboarding) {
+      const { data: billingCustomer } = await supabase
+        .from("billing_customers")
+        .select("id")
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (subscription) {
-        subscriptionStatus = subscription.status;
-        trialEndsAt = subscription.trial_ends_at;
-      }
-    }
+      let subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null = null;
+      let trialEndsAt: string | null = null;
 
-    // Block plan generation during grace period
-    if (!canGeneratePlans(subscriptionStatus, trialEndsAt)) {
-      return NextResponse.json(
-        { 
-          error: "Your trial has ended. Subscribe to continue generating daily plans.",
-          gracePeriod: true 
-        },
-        { status: 403 }
-      );
+      if (billingCustomer) {
+        const { data: subscription } = await supabase
+          .from("billing_subscriptions")
+          .select("status, trial_ends_at")
+          .eq("billing_customer_id", billingCustomer.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (subscription) {
+          subscriptionStatus = subscription.status;
+          trialEndsAt = subscription.trial_ends_at;
+        }
+      }
+
+      // Block plan generation during grace period (only for users who completed onboarding)
+      if (!canGeneratePlans(subscriptionStatus, trialEndsAt)) {
+        return NextResponse.json(
+          { 
+            error: "Your trial has ended. Subscribe to continue generating daily plans.",
+            gracePeriod: true 
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();
