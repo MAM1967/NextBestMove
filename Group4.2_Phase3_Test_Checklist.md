@@ -15,11 +15,13 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 ## Prerequisites
 
 1. **Test Users:**
+
    - Premium user account (for feature access)
    - Standard user account (for upgrade prompt testing)
    - Premium user should have at least 7-30 days of activity history
 
 2. **Test Data Requirements:**
+
    - At least 7 days of completed actions (for timeline data)
    - Actions in various states (DONE, REPLIED, SENT)
    - Some pins created/archived
@@ -37,12 +39,15 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify Premium users can access the Performance Timeline page
 
 ### Setup
+
 1. Log in as Premium user
 2. Ensure user has at least 7 days of activity history
 3. Navigate to `/app/insights/timeline`
 
 ### Test Steps
+
 1. **View Timeline Page:**
+
    - Should load without errors
    - Should see "Performance Timeline" heading
    - Should see date range selector (7d, 30d, 90d, 365d)
@@ -50,6 +55,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Should see summary cards at top
 
 2. **Check Summary Cards:**
+
    - Total Days Tracked
    - Total Actions Completed
    - Total Replies Received
@@ -64,6 +70,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Tooltips should work on hover
 
 ### Expected Results
+
 - ✅ Premium user can access timeline page
 - ✅ Summary cards display correct data
 - ✅ Charts render correctly
@@ -76,11 +83,14 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify Standard users see upgrade prompt
 
 ### Setup
+
 1. Log in as Standard user
 2. Navigate to `/app/insights/timeline`
 
 ### Test Steps
+
 1. **Check Paywall:**
+
    - Should see `PaywallOverlay` component
    - Should mention "Performance Timeline" as Premium feature
    - Should have upgrade button/link
@@ -90,6 +100,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Error code should be "UPGRADE_REQUIRED"
 
 ### Expected Results
+
 - ✅ Standard user sees paywall overlay
 - ✅ Clear messaging about Premium feature
 - ✅ Upgrade path is available
@@ -101,12 +112,15 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify date range presets and custom date selection work
 
 ### Setup
+
 1. Log in as Premium user
 2. Navigate to `/app/insights/timeline`
 3. Ensure user has data spanning at least 30 days
 
 ### Test Steps
+
 1. **Test Presets:**
+
    - Click "Last 7 Days" - data should update
    - Click "Last 30 Days" - data should update
    - Click "Last 90 Days" - data should update
@@ -114,6 +128,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - URL should update with query params
 
 2. **Test Custom Dates:**
+
    - Click custom date inputs
    - Select start date (e.g., 14 days ago)
    - Select end date (e.g., today)
@@ -126,6 +141,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Future end date - should cap at today
 
 ### Expected Results
+
 - ✅ All presets work correctly
 - ✅ Custom date selection works
 - ✅ URL params update correctly
@@ -138,24 +154,29 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify day/week/month aggregation works correctly
 
 ### Setup
+
 1. Log in as Premium user
 2. Navigate to `/app/insights/timeline`
 3. Select date range with at least 30 days of data
 
 ### Test Steps
+
 1. **Test Day Granularity:**
+
    - Select "Day" granularity
    - Chart should show individual days
    - X-axis labels should show dates (e.g., "Dec 01")
    - Each data point represents one day
 
 2. **Test Week Granularity:**
+
    - Select "Week" granularity
    - Chart should show weekly aggregates
    - X-axis labels should show "Week of MMM dd, yyyy"
    - Data should be summed/averaged per week
 
 3. **Test Month Granularity:**
+
    - Select "Month" granularity
    - Chart should show monthly aggregates
    - X-axis labels should show "MMM yyyy"
@@ -167,6 +188,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Summary cards should reflect selected granularity
 
 ### Expected Results
+
 - ✅ All granularities work correctly
 - ✅ Aggregation logic is accurate
 - ✅ Charts update appropriately
@@ -179,11 +201,14 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify graceful handling when no data exists
 
 ### Setup
+
 1. Log in as Premium user with no activity history
 2. Navigate to `/app/insights/timeline`
 
 ### Test Steps
+
 1. **Check Empty State:**
+
    - Should see message: "No performance data available for the selected period"
    - Should see helpful text: "Start completing actions to see your progress here!"
    - Charts should not render (or show empty state)
@@ -193,6 +218,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Should not crash or show errors
 
 ### Expected Results
+
 - ✅ Empty state displays correctly
 - ✅ No errors or crashes
 - ✅ Helpful messaging for users
@@ -204,11 +230,14 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify daily cron job correctly aggregates data
 
 ### Setup
+
 1. Premium user with activity from yesterday
 2. Wait for cron job to run (or manually trigger)
 
 ### Test Steps
+
 1. **Check Database:**
+
    - Query `performance_timeline_data` table
    - Should have entry for yesterday's date
    - Metrics should be accurate:
@@ -222,6 +251,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
      - `reply_rate` = replies_received / outreach_actions
 
 2. **Verify Cron Job:**
+
    - Check cron job logs (cron-job.org or Vercel logs)
    - Should run daily at 11:59 PM UTC
    - Should process all Premium users
@@ -233,6 +263,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Should update database correctly
 
 ### Expected Results
+
 - ✅ Cron job runs successfully
 - ✅ Data aggregation is accurate
 - ✅ Only Premium users are processed
@@ -245,18 +276,22 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify chart tooltips and interactions work
 
 ### Setup
+
 1. Log in as Premium user
 2. Navigate to `/app/insights/timeline`
 3. Ensure data is loaded
 
 ### Test Steps
+
 1. **Test Tooltips:**
+
    - Hover over data points in "Activity Over Time" chart
    - Tooltip should show date and values
    - Hover over data points in "Performance Rates" chart
    - Tooltip should show date and percentages
 
 2. **Test Responsiveness:**
+
    - Resize browser window
    - Charts should adapt to container size
    - Should remain readable on mobile/tablet
@@ -266,6 +301,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - Chart should update accordingly
 
 ### Expected Results
+
 - ✅ Tooltips display correctly
 - ✅ Charts are responsive
 - ✅ Legends are interactive
@@ -277,18 +313,22 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 **Goal:** Verify displayed metrics match actual user activity
 
 ### Setup
+
 1. Log in as Premium user
 2. Note actual activity counts (actions, replies, pins)
 3. Navigate to `/app/insights/timeline`
 
 ### Test Steps
+
 1. **Compare Summary Cards:**
+
    - Total Actions Completed should match actual completed actions
    - Total Replies Received should match actual replies
    - Completion Rate should be accurate (completed / created)
    - Reply Rate should be accurate (replies / outreach)
 
 2. **Compare Chart Data:**
+
    - Hover over recent data points
    - Values should match database entries
    - Dates should be correct
@@ -299,6 +339,7 @@ This checklist tests the Performance Timeline feature, which provides Premium us
    - User with no replies - should show 0.0 reply rate
 
 ### Expected Results
+
 - ✅ All metrics are accurate
 - ✅ Charts reflect actual data
 - ✅ Edge cases handled correctly
@@ -308,12 +349,14 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 ## Quick Test Checklist
 
 ### Basic Functionality
+
 - [ ] Premium user can access timeline page
 - [ ] Standard user sees upgrade prompt
 - [ ] Summary cards display correctly
 - [ ] Charts render without errors
 
 ### Date Range & Granularity
+
 - [ ] All date range presets work (7d, 30d, 90d, 365d)
 - [ ] Custom date selection works
 - [ ] Day granularity shows daily data
@@ -321,12 +364,14 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 - [ ] Month granularity aggregates correctly
 
 ### Data & Accuracy
+
 - [ ] Cron job aggregates data correctly
 - [ ] Metrics match actual user activity
 - [ ] Empty state displays correctly
 - [ ] Edge cases handled gracefully
 
 ### UI/UX
+
 - [ ] Charts are responsive
 - [ ] Tooltips work correctly
 - [ ] Legends are interactive
@@ -337,16 +382,20 @@ This checklist tests the Performance Timeline feature, which provides Premium us
 ## API Endpoints to Test
 
 ### Performance Timeline
+
 ```
 GET /api/performance-timeline?startDate=2025-01-01&endDate=2025-01-31&granularity=day
 ```
+
 **Premium user:** Returns timeline data  
 **Standard user:** Returns 402 with `UPGRADE_REQUIRED`
 
 ### Cron Job
+
 ```
 GET /api/cron/aggregate-performance-timeline
 ```
+
 **With cron secret:** Processes all Premium users, returns success  
 **Without secret:** Returns 401 Unauthorized
 
@@ -355,24 +404,28 @@ GET /api/cron/aggregate-performance-timeline
 ## Troubleshooting
 
 ### No data showing
+
 - **Check:** Cron job has run at least once
 - **Check:** User has Premium subscription
 - **Check:** Date range includes days with activity
 - **Check:** Database has entries in `performance_timeline_data`
 
 ### Charts not rendering
+
 - **Check:** Browser console for errors
 - **Check:** `recharts` library is installed
 - **Check:** Data array is not empty
 - **Check:** Date formatting is correct
 
 ### Inaccurate metrics
+
 - **Check:** Cron job aggregation logic
 - **Check:** Database queries in cron job
 - **Check:** Date calculations (UTC vs local time)
 - **Check:** Rate calculations (division by zero)
 
 ### Cron job not running
+
 - **Check:** Cron job is configured in cron-job.org
 - **Check:** `CRON_SECRET` env var is set
 - **Check:** Endpoint is accessible
@@ -399,4 +452,3 @@ ON CONFLICT (user_id, date) DO UPDATE SET metrics = EXCLUDED.metrics;
 ---
 
 _Last updated: December 2024_
-

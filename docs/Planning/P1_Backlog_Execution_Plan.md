@@ -401,16 +401,9 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [x] Upgrade flow to Stripe portal ✅
 - [x] All tests passed ✅
 
-**Phase 2.5: Company Research & Enrichment (7-10 days)** ⏱ **ENHANCEMENT**
+**Phase 2.5: Company Research & Enrichment (7-10 days)** ⏱ **MOVED TO P2**
 
-- [ ] Extract company domain from email/LinkedIn URL
-- [ ] Enrich company information (name, industry, size, website)
-- [ ] Fetch recent news/press releases (last 3 months)
-- [ ] Fetch SEC 10Q filings for public companies
-- [ ] Display company research in pre-call briefs
-- [ ] Cache enrichment data to minimize API costs
-- [ ] Gate behind Premium plan
-- **Reference:** `docs/Features/Company_Research_Enrichment.md`
+_This enhancement has been moved to P2 (Nice-to-Have) backlog. See `docs/backlog.md` P2 section._
 
 **Phase 3: Performance Timeline (5 days)** ✅ **COMPLETE**
 
