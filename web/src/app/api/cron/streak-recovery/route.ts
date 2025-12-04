@@ -39,18 +39,20 @@ export async function GET(request: NextRequest) {
     logInfo("Streak recovery cron job started", { date: today });
 
     // Find users with broken streaks
-    // Streak break = streak_count = 0 AND last_action_date > 1 day ago
-    // OR users who have never completed an action (no last_action_date but account created > 1 day ago)
+    // Streak break = streak_count = 0 AND last_action_date >= 1 day ago
+    // OR users who have never completed an action (no last_action_date but account created >= 1 day ago)
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    oneDayAgo.setHours(0, 0, 0, 0); // Set to midnight for consistent comparison
     const oneDayAgoStr = oneDayAgo.toISOString().split("T")[0];
 
-    // Get all users with broken streaks (streak_count = 0 and inactive > 1 day)
+    // Get all users with broken streaks (streak_count = 0 and inactive >= 1 day)
+    // Use <= to include users exactly 1 day ago
     const { data: usersWithBrokenStreaks, error: fetchError } = await supabase
       .from("users")
       .select("id, email, name, streak_count, last_action_date, created_at, metadata")
       .eq("streak_count", 0)
-      .or(`last_action_date.lt.${oneDayAgoStr},last_action_date.is.null`)
+      .or(`last_action_date.lte.${oneDayAgoStr},last_action_date.is.null`)
       .not("created_at", "is", null);
 
     if (fetchError) {

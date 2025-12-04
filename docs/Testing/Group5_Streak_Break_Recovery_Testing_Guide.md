@@ -59,7 +59,7 @@ WITH user_info AS (
 )
 -- Set streak_count to 0 and last_action_date to 1 day ago
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '1 day',
   metadata = jsonb_build_object(
@@ -68,10 +68,10 @@ SET
 WHERE id = (SELECT user_id FROM user_info);
 
 -- Verify setup
-SELECT 
-  id, 
-  email, 
-  streak_count, 
+SELECT
+  id,
+  email,
+  streak_count,
   last_action_date,
   CURRENT_DATE - last_action_date as days_inactive,
   metadata->'streak_notifications' as notifications
@@ -91,6 +91,7 @@ WHERE email = 'mcddsl@icloud.com';
    ```
 
    Or in production:
+
    ```bash
    curl -X GET "https://nextbestmove.app/api/cron/streak-recovery?secret=YOUR_CRON_SECRET"
    ```
@@ -141,7 +142,7 @@ WITH user_info AS (
   LIMIT 1
 )
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '2 days',
   metadata = jsonb_build_object(
@@ -150,10 +151,10 @@ SET
 WHERE id = (SELECT user_id FROM user_info);
 
 -- Verify setup
-SELECT 
-  id, 
-  email, 
-  streak_count, 
+SELECT
+  id,
+  email,
+  streak_count,
   last_action_date,
   CURRENT_DATE - last_action_date as days_inactive
 FROM users
@@ -194,7 +195,7 @@ WHERE email = 'mcddsl@icloud.com';
 5. **Verify plan is Micro Mode:**
 
    ```sql
-   SELECT 
+   SELECT
      dp.id,
      dp.date,
      dp.capacity_level,
@@ -231,7 +232,7 @@ WITH user_info AS (
   LIMIT 1
 )
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '3 days',
   metadata = jsonb_build_object(
@@ -240,10 +241,10 @@ SET
 WHERE id = (SELECT user_id FROM user_info);
 
 -- Verify setup
-SELECT 
-  id, 
-  email, 
-  streak_count, 
+SELECT
+  id,
+  email,
+  streak_count,
   last_action_date,
   CURRENT_DATE - last_action_date as days_inactive
 FROM users
@@ -274,6 +275,7 @@ WHERE email = 'mcddsl@icloud.com';
    ```
 
 4. **Check email inbox** - Should receive email with:
+
    - Subject: "Let's get your streak back on track"
    - Personal greeting
    - Link to comeback plan
@@ -327,7 +329,7 @@ billing_info AS (
 )
 -- Update user to 7 days inactive
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '7 days',
   metadata = jsonb_build_object(
@@ -337,10 +339,10 @@ WHERE id = (SELECT user_id FROM user_info);
 
 -- Ensure user has active subscription (if not, create one in Stripe Dashboard)
 -- Verify setup
-SELECT 
-  u.id, 
-  u.email, 
-  u.streak_count, 
+SELECT
+  u.id,
+  u.email,
+  u.streak_count,
   u.last_action_date,
   CURRENT_DATE - u.last_action_date as days_inactive,
   bs.status as subscription_status
@@ -378,6 +380,7 @@ LIMIT 1;
    ```
 
 5. **Check email inbox** - Should receive email with:
+
    - Subject: "Pause your subscription while you're away"
    - Option to pause subscription
    - Link to settings page
@@ -415,7 +418,7 @@ WITH user_info AS (
   LIMIT 1
 )
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '7 days',
   metadata = jsonb_build_object(
@@ -424,8 +427,8 @@ SET
 WHERE id = (SELECT user_id FROM user_info);
 
 -- Verify no active subscription
-SELECT 
-  u.id, 
+SELECT
+  u.id,
   u.email,
   bs.status as subscription_status
 FROM users u
@@ -482,7 +485,7 @@ WITH user_info AS (
   LIMIT 1
 )
 UPDATE users
-SET 
+SET
   streak_count = 0,
   last_action_date = CURRENT_DATE - INTERVAL '3 days',
   metadata = jsonb_build_object(
@@ -512,7 +515,7 @@ WHERE id = (SELECT user_id FROM user_info);
    ```json
    {
      "success": true,
-     "day3EmailsSent": 0  // Should be 0 every time
+     "day3EmailsSent": 0 // Should be 0 every time
    }
    ```
 
@@ -542,13 +545,13 @@ WITH user_info AS (
 )
 -- Complete an action today (this should reset streak)
 INSERT INTO actions (user_id, type, state, completed_at)
-SELECT 
+SELECT
   (SELECT user_id FROM user_info),
   'FAST_WIN',
   'DONE',
   NOW()
 WHERE NOT EXISTS (
-  SELECT 1 FROM actions 
+  SELECT 1 FROM actions
   WHERE user_id = (SELECT user_id FROM user_info)
     AND completed_at::DATE = CURRENT_DATE
     AND state IN ('DONE', 'REPLIED')
@@ -558,10 +561,10 @@ WHERE NOT EXISTS (
 SELECT update_user_streak((SELECT user_id FROM user_info));
 
 -- Verify streak reset
-SELECT 
-  id, 
-  email, 
-  streak_count, 
+SELECT
+  id,
+  email,
+  streak_count,
   last_action_date
 FROM users
 WHERE email = 'mcddsl@icloud.com';
@@ -585,7 +588,7 @@ WHERE email = 'mcddsl@icloud.com';
    ```json
    {
      "success": true,
-     "processed": 0  // User no longer has broken streak
+     "processed": 0 // User no longer has broken streak
    }
    ```
 
@@ -637,6 +640,7 @@ Test Case | Status | Notes
 ```
 
 **Status Legend:**
+
 - ⬜ Not tested
 - ✅ Passed
 - ❌ Failed
@@ -649,6 +653,7 @@ Test Case | Status | Notes
 ### No users found with broken streaks
 
 **Check:**
+
 1. Verify `streak_count = 0` in database
 2. Verify `last_action_date` is > 1 day ago
 3. Check cron job query logic
@@ -656,6 +661,7 @@ Test Case | Status | Notes
 ### Email not received
 
 **Check:**
+
 1. Verify `RESEND_API_KEY` is set in environment
 2. Check Resend dashboard for delivery status
 3. Verify user email preferences (should not be unsubscribed)
@@ -664,6 +670,7 @@ Test Case | Status | Notes
 ### Duplicate notifications
 
 **Check:**
+
 1. Verify metadata tracking is working
 2. Check `last_notification_date` in metadata
 3. Ensure cron job only runs once per day
@@ -671,6 +678,7 @@ Test Case | Status | Notes
 ### Micro Mode not activating
 
 **Check:**
+
 1. Verify `isInactive2To6Days` function returns true
 2. Check plan generation logic for `adaptive_reason: "streak_break"`
 3. Verify `capacity_level = "micro"` in generated plan
@@ -697,6 +705,7 @@ Test Case | Status | Notes
 **Endpoint:** `GET /api/cron/streak-recovery?secret=YOUR_CRON_SECRET`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -715,6 +724,7 @@ Test Case | Status | Notes
 **Endpoint:** `GET /api/test-streak-email?email=test@example.com`
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -728,4 +738,3 @@ Test Case | Status | Notes
 ---
 
 _Last updated: January 2025_
-
