@@ -12,6 +12,9 @@ type CalendarEvent = {
   end: string; // ISO 8601 for timed, YYYY-MM-DD for all-day (exclusive for all-day)
   duration: number; // minutes
   isAllDay: boolean; // true if all-day event
+  // Video conferencing fields (if available)
+  videoConferenceLink?: string | null; // Google Meet link, Zoom link, Teams link, etc.
+  hasVideoConference?: boolean; // True if event has any video conferencing
 };
 
 type DayAvailability = {
@@ -370,10 +373,12 @@ async function fetchGoogleEvents(
     singleEvents: true,
     orderBy: "startTime",
     maxResults: 2500, // Google's max
+    // Note: hangoutLink and conferenceData are included by default in Google Calendar API
   });
 
   const events: CalendarEvent[] = [];
-  for (const item of response.data.items || []) {
+  const responseData = await response;
+  for (const item of responseData.data.items || []) {
     if (!item.start || !item.end) continue;
 
     const isAllDay = !item.start.dateTime; // If dateTime is missing, it's all-day
@@ -389,6 +394,12 @@ async function fetchGoogleEvents(
       const end = new Date(endDate + "T00:00:00");
       const durationDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
 
+      // Check for video conferencing (Google Meet, Zoom, etc.)
+      const hangoutLink = item.hangoutLink || null;
+      const conferenceData = item.conferenceData;
+      const videoConferenceLink = hangoutLink || conferenceData?.entryPoints?.[0]?.uri || null;
+      const hasVideoConference = !!(hangoutLink || (conferenceData && conferenceData.entryPoints && conferenceData.entryPoints.length > 0));
+
       events.push({
         id: item.id || "",
         title: item.summary || "No title",
@@ -396,6 +407,8 @@ async function fetchGoogleEvents(
         end: endDate, // Keep end.date for multi-day handling
         duration: durationDays * 24 * 60, // Convert days to minutes
         isAllDay: true,
+        videoConferenceLink,
+        hasVideoConference,
       });
     } else {
       // Timed event - use dateTime fields
@@ -407,6 +420,12 @@ async function fetchGoogleEvents(
       const endDate = new Date(end);
       const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
 
+      // Check for video conferencing (Google Meet, Zoom, etc.)
+      const hangoutLink = item.hangoutLink || null;
+      const conferenceData = item.conferenceData;
+      const videoConferenceLink = hangoutLink || conferenceData?.entryPoints?.[0]?.uri || null;
+      const hasVideoConference = !!(hangoutLink || (conferenceData && conferenceData.entryPoints && conferenceData.entryPoints.length > 0));
+
       events.push({
         id: item.id || "",
         title: item.summary || "No title",
@@ -414,6 +433,8 @@ async function fetchGoogleEvents(
         end,
         duration: Math.round(duration),
         isAllDay: false,
+        videoConferenceLink,
+        hasVideoConference,
       });
     }
   }
@@ -465,6 +486,12 @@ async function fetchOutlookEvents(
       // Calculate duration in days
       const durationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
 
+      // Check for video conferencing (Microsoft Teams, etc.)
+      const isOnlineMeeting = item.isOnlineMeeting || false;
+      const onlineMeeting = item.onlineMeeting;
+      const videoConferenceLink = onlineMeeting?.joinUrl || null;
+      const hasVideoConference = isOnlineMeeting || !!videoConferenceLink;
+
       events.push({
         id: item.id || "",
         title: item.subject || "No title",
@@ -472,12 +499,20 @@ async function fetchOutlookEvents(
         end: endDateStr,
         duration: durationDays * 24 * 60, // Convert days to minutes
         isAllDay: true,
+        videoConferenceLink,
+        hasVideoConference,
       });
     } else {
       // Timed event
       const startDate = new Date(start);
       const endDate = new Date(end);
       const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+
+      // Check for video conferencing (Microsoft Teams, etc.)
+      const isOnlineMeeting = item.isOnlineMeeting || false;
+      const onlineMeeting = item.onlineMeeting;
+      const videoConferenceLink = onlineMeeting?.joinUrl || null;
+      const hasVideoConference = isOnlineMeeting || !!videoConferenceLink;
 
       events.push({
         id: item.id || "",
@@ -486,6 +521,8 @@ async function fetchOutlookEvents(
         end,
         duration: Math.round(duration),
         isAllDay: false,
+        videoConferenceLink,
+        hasVideoConference,
       });
     }
   }

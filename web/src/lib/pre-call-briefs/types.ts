@@ -5,6 +5,9 @@ export interface CalendarEvent {
   end: string; // ISO 8601
   duration: number; // minutes
   isAllDay: boolean;
+  // Video conferencing fields (if available)
+  videoConferenceLink?: string | null; // Google Meet link, Zoom link, Teams link, etc.
+  hasVideoConference?: boolean; // True if event has any video conferencing
 }
 
 export interface PersonPin {

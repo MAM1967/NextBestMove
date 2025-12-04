@@ -35,12 +35,23 @@ const CALL_KEYWORDS = [
 ];
 
 /**
- * Detect if a calendar event is likely a call based on title
+ * Detect if a calendar event is likely a call based on video conferencing fields or title
  * 
- * Checks for both single keywords and multi-word phrases.
- * Users should name events with keywords like "call", "zoom", "Google Meet", "Teams" for this to work.
+ * Priority:
+ * 1. Check if event has video conferencing link/field (most reliable)
+ * 2. Check title for keywords/phrases (fallback)
+ * 
+ * Users should name events with keywords like "call", "zoom", "Google Meet", "Teams" for this to work
+ * if the calendar provider doesn't expose video conferencing fields.
  */
 export function isLikelyCall(event: CalendarEvent): boolean {
+  // First check: Does the event have a video conferencing link/field?
+  // This is the most reliable indicator - calendars automatically add these when video is enabled
+  if (event.hasVideoConference === true || event.videoConferenceLink) {
+    return true;
+  }
+  
+  // Fallback: Check title for keywords
   const titleLower = event.title.toLowerCase();
   
   // Check multi-word phrases first (more specific)
