@@ -388,12 +388,23 @@ This plan organizes P1 backlog items into strategic groups based on:
 - [ ] Display patterns in Insights page
 - [ ] Gate behind Premium plan
 
-**Phase 2: Pre-Call Briefs (5-7 days)**
+**Phase 2: Pre-Call Briefs (5-7 days)** ✅ **COMPLETE**
 
-- [ ] Detect calendar events with "call" keywords
-- [ ] Generate pre-call brief from pin history
-- [ ] Show brief before call time
+- [x] Detect calendar events with "call" keywords ✅
+- [x] Generate pre-call brief from pin history ✅
+- [x] Show brief before call time ✅
+- [x] Gate behind Premium plan ✅
+
+**Phase 2.5: Company Research & Enrichment (7-10 days)** ⏱ **ENHANCEMENT**
+
+- [ ] Extract company domain from email/LinkedIn URL
+- [ ] Enrich company information (name, industry, size, website)
+- [ ] Fetch recent news/press releases (last 3 months)
+- [ ] Fetch SEC 10Q filings for public companies
+- [ ] Display company research in pre-call briefs
+- [ ] Cache enrichment data to minimize API costs
 - [ ] Gate behind Premium plan
+- **Reference:** `docs/Features/Company_Research_Enrichment.md`
 
 **Phase 3: Performance Timeline (3-5 days)**
 
