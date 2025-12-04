@@ -18,53 +18,83 @@ export interface VoiceCharacteristics {
 
 /**
  * Count user-written text samples available for voice analysis
- * Fast version that only counts, doesn't fetch full text
+ * Only counts samples that are >= 50 characters (matches collectUserTextSamples logic)
  */
 export async function countUserTextSamples(
   supabase: SupabaseClient,
   userId: string
 ): Promise<number> {
-  // Run all queries in parallel for better performance
-  const [promptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
-    // Count edited content prompts with length > 50
+  // We need to fetch the actual text to filter by length >= 50
+  // This ensures the count matches what collectUserTextSamples will actually use
+  const [editedPromptsResult, actionsResult, pinsResult, manualSamplesResult] = await Promise.all([
+    // Get edited content prompts
     supabase
       .from("content_prompts")
-      .select("id", { count: "exact", head: true })
+      .select("edited_text")
       .eq("user_id", userId)
       .eq("user_edited", true)
-      .not("edited_text", "is", null),
+      .not("edited_text", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(20),
     
-    // Count action notes with length > 50
+    // Get action notes
     supabase
       .from("actions")
-      .select("id", { count: "exact", head: true })
+      .select("notes")
       .eq("user_id", userId)
-      .not("notes", "is", null),
+      .not("notes", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(20),
     
-    // Count pin notes with length > 50
+    // Get pin notes
     supabase
       .from("person_pins")
-      .select("id", { count: "exact", head: true })
+      .select("notes")
       .eq("user_id", userId)
-      .not("notes", "is", null),
+      .not("notes", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(20),
     
-    // Count manual voice samples
+    // Get manual voice samples (already validated to be >= 50 chars in DB)
     supabase
       .from("manual_voice_samples")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId),
+      .select("content")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
-  // Note: We can't filter by length > 50 at the database level easily with Supabase
-  // So we'll fetch a reasonable limit and filter in memory, but only for counting
-  // For actual sample collection, we still need the full text
-  const promptCount = promptsResult.count || 0;
-  const actionCount = actionsResult.count || 0;
-  const pinCount = pinsResult.count || 0;
-  const manualCount = manualSamplesResult.count || 0;
+  let count = 0;
 
-  // Return total count (we'll filter by length when actually collecting samples)
-  return promptCount + actionCount + pinCount + manualCount;
+  // Count edited prompts >= 50 chars
+  if (editedPromptsResult.data) {
+    count += editedPromptsResult.data.filter(
+      (p) => p.edited_text && p.edited_text.trim().length >= 50
+    ).length;
+  }
+
+  // Count action notes >= 50 chars
+  if (actionsResult.data) {
+    count += actionsResult.data.filter(
+      (a) => a.notes && a.notes.trim().length >= 50
+    ).length;
+  }
+
+  // Count pin notes >= 50 chars
+  if (pinsResult.data) {
+    count += pinsResult.data.filter(
+      (p) => p.notes && p.notes.trim().length >= 50
+    ).length;
+  }
+
+  // Count manual samples >= 50 chars (should be all of them, but check anyway)
+  if (manualSamplesResult.data) {
+    count += manualSamplesResult.data.filter(
+      (s) => s.content && s.content.trim().length >= 50
+    ).length;
+  }
+
+  return count;
 }
 
 /**

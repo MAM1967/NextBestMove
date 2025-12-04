@@ -299,7 +299,7 @@ export function VoiceLearningSection({ isPremium }: VoiceLearningSectionProps) {
 
           <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
             <div className="text-xs text-zinc-600">
-              <span className="font-medium">{availableSamples}</span> text sample{availableSamples !== 1 ? "s" : ""} available
+              <span className="font-medium">{availableSamples}</span> usable text sample{availableSamples !== 1 ? "s" : ""} available (≥50 characters each)
             </div>
             <button
               onClick={handleAnalyze}

@@ -97,7 +97,7 @@ export function VoiceProfileCard({ profile }: VoiceProfileCardProps) {
 
       <div className="border-t border-zinc-200 pt-2">
         <p className="text-xs text-zinc-500">
-          Based on <span className="font-medium">{sampleCount}</span> text sample{sampleCount !== 1 ? "s" : ""}
+          Analyzed from <span className="font-medium">{sampleCount}</span> text sample{sampleCount !== 1 ? "s" : ""} (≥50 characters each)
         </p>
       </div>
     </div>
