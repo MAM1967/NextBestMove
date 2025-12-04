@@ -5,6 +5,7 @@
 **Goal:** Verify Standard users see upgrade prompt and cannot access pre-call briefs
 
 ### Prerequisites
+
 - [ ] Standard user account (not Premium)
 - [ ] Calendar is connected
 - [ ] Calendar event with "call" keyword exists (or video conferencing)
@@ -12,17 +13,21 @@
 ### Test Steps
 
 1. **Log in as Standard user**
+
    - [ ] Use a Standard plan account (not Premium)
 
 2. **Navigate to `/app/plan`**
+
    - [ ] Should load the daily plan page
 
 3. **Check for Pre-Call Brief Cards:**
+
    - [ ] Should NOT see pre-call brief cards
    - [ ] Even if calendar events with "call" keyword exist
    - [ ] Even if video conferencing is detected
 
 4. **Check API Response:**
+
    - [ ] Open browser DevTools → Network tab
    - [ ] Look for `/api/pre-call-briefs` request
    - [ ] Should return **402 status code**
@@ -40,6 +45,7 @@
    - [ ] Modal should mention "Pre-Call Briefs" as Premium feature
 
 ### Expected Results
+
 - ✅ Standard users don't see briefs
 - ✅ API returns 402 (Upgrade Required)
 - ✅ No errors in console
@@ -60,7 +66,7 @@ curl -X GET "http://localhost:3000/api/pre-call-briefs" \
 
 ```sql
 -- Verify user is on Standard plan
-SELECT 
+SELECT
   u.email,
   bs.status,
   bs.metadata->>'plan_type' as plan_type,
@@ -81,10 +87,10 @@ LIMIT 1;
 ## Quick Test Summary
 
 **What to verify:**
+
 1. Standard user cannot see pre-call briefs
 2. API returns 402 status
 3. No errors or broken UI
 4. Upgrade prompt works (if implemented)
 
 **Time estimate:** 5-10 minutes
-

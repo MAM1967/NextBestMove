@@ -8,7 +8,7 @@ import { SnoozeActionModal } from "../actions/SnoozeActionModal";
 import { ActionNoteModal } from "../actions/ActionNoteModal";
 import { PaywallOverlay } from "../components/PaywallOverlay";
 import { CelebrationBanner } from "../components/CelebrationBanner";
-import { PreCallBriefCard } from "../components/PreCallBriefCard";
+import { PreCallBriefCarousel } from "../components/PreCallBriefCarousel";
 import { PreCallBriefModal } from "../components/PreCallBriefModal";
 import { Action } from "../actions/types";
 import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
@@ -513,26 +513,21 @@ export default function DailyPlanPage() {
           </div>
         )}
 
-        {/* Pre-Call Briefs */}
+        {/* Pre-Call Briefs Carousel */}
         {preCallBriefs.length > 0 && (
-          <div className="space-y-3">
-            {preCallBriefs.map((brief) => (
-              <PreCallBriefCard
-                key={brief.calendarEventId}
-                brief={brief}
-                isPremium={isPremium}
-                onViewFull={() => {
-                  if (isPremium) {
-                    setSelectedBrief(brief);
-                    setShowBriefModal(true);
-                  } else {
-                    // Show upgrade prompt for Standard users
-                    window.location.href = "/app/settings?upgrade=premium";
-                  }
-                }}
-              />
-            ))}
-          </div>
+          <PreCallBriefCarousel
+            briefs={preCallBriefs}
+            isPremium={isPremium}
+            onViewFull={(brief) => {
+              if (isPremium) {
+                setSelectedBrief(brief);
+                setShowBriefModal(true);
+              } else {
+                // Show upgrade prompt for Standard users
+                window.location.href = "/app/settings?upgrade=premium";
+              }
+            }}
+          />
         )}
 
         {/* Progress Indicator */}
