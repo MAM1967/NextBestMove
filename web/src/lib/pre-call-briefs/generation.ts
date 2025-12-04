@@ -209,6 +209,7 @@ export async function generatePreCallBrief(
     followUpCount: history.totalActions,
     nextStepSuggestions: suggestions,
     userNotes,
+    hasVideoConference: event.hasVideoConference || false,
   };
 }
 

@@ -21,13 +21,17 @@ export function PreCallBriefCard({ brief, onViewFull }: PreCallBriefCardProps) {
   const previewLines = brief.briefContent.split("\n").slice(0, 3).join("\n");
   const hasMore = brief.briefContent.split("\n").length > 3;
 
+  const isVideoConference = brief.hasVideoConference === true;
+  const icon = isVideoConference ? "📹" : "📞";
+  const label = isVideoConference ? "Upcoming Video Conference" : "Upcoming Call";
+
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-blue-700">
-              📞 Upcoming Call
+              {icon} {label}
             </span>
             <span className="text-xs text-zinc-600">{timeStr}</span>
           </div>

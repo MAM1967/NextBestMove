@@ -37,6 +37,7 @@ export interface PreCallBrief {
   followUpCount: number;
   nextStepSuggestions: string[];
   userNotes: string | null;
+  hasVideoConference?: boolean; // True if event has video conferencing
 }
 
 export interface DetectedCall {

@@ -216,6 +216,7 @@ export default function DailyPlanPage() {
           followUpCount: b.followUpCount || 0,
           nextStepSuggestions: b.nextStepSuggestions || [],
           userNotes: b.userNotes,
+          hasVideoConference: b.hasVideoConference || false,
         }));
         setPreCallBriefs(briefs);
       }
