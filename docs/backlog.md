@@ -153,6 +153,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
 
+**Priority Order:**
+1. Company research & enrichment (first P2 item to tackle)
+2. Other P2 items (order TBD)
+
+- [ ] **Company research & enrichment for pre-call briefs** 🔄 **NEXT P2 ITEM**  
+       _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 - [ ] Manual "Busy / Light day" capacity override
 - [ ] Action detail modal / history view
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
@@ -164,8 +170,6 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
 - [ ] **Enhanced pre-call brief detection for video conferencing**  
        _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
-- [ ] **Company research & enrichment for pre-call briefs**  
-       _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 
 ---
 
