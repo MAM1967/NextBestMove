@@ -34,9 +34,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
+    // Use UTC date for consistency (cron jobs typically run in UTC)
+    // This ensures the date is consistent regardless of server timezone
+    const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD in UTC
 
-    logInfo("Streak recovery cron job started", { date: today });
+    logInfo("Streak recovery cron job started", { date: today, timezone: "UTC" });
 
     // Find users with broken streaks
     // Streak break = streak_count = 0 AND last_action_date >= 1 day ago

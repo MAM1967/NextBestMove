@@ -627,12 +627,12 @@ WHERE email = 'mcddsl@icloud.com';
 ```
 Test Case | Status | Notes
 ----------|--------|------
-5.1       | ⬜      | Day 1 detection and logging
-5.2       | ⬜      | Day 2 Micro Mode activation
-5.3       | ⬜      | Day 3 recovery email
-5.4       | ⬜      | Day 7 billing pause offer (with subscription)
-5.5       | ⬜      | Day 7 skip (no subscription)
-5.6       | ⬜      | Notification deduplication
+5.1       | ✅      | Day 1 detection and logging
+5.2       | ✅      | Day 2 Micro Mode activation
+5.3       | ✅      | Day 3 recovery email
+5.4       | ✅      | Day 7 billing pause offer (with subscription)
+5.5       | ✅      | Day 7 skip (no subscription)
+5.6       | ✅      | Notification deduplication
 5.7       | ⬜      | User recovers (streak resets)
 5.8.1     | ⬜      | Edge case: Never completed action
 5.8.2     | ⬜      | Edge case: Day 5 (no notification)
@@ -687,12 +687,12 @@ Test Case | Status | Notes
 
 ## Quick Test Checklist
 
-- [ ] Test 5.1: Day 1 detection
-- [ ] Test 5.2: Day 2 Micro Mode
-- [ ] Test 5.3: Day 3 email
-- [ ] Test 5.4: Day 7 billing pause (with subscription)
-- [ ] Test 5.5: Day 7 skip (no subscription)
-- [ ] Test 5.6: Deduplication
+- [x] Test 5.1: Day 1 detection
+- [x] Test 5.2: Day 2 Micro Mode
+- [x] Test 5.3: Day 3 email
+- [x] Test 5.4: Day 7 billing pause (with subscription)
+- [x] Test 5.5: Day 7 skip (no subscription)
+- [x] Test 5.6: Deduplication
 - [ ] Test 5.7: User recovery
 - [ ] Test 5.8: Edge cases
 
