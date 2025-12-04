@@ -132,24 +132,36 @@ export async function POST(request: Request) {
 
     // Automatically create an OUTREACH action for the new pin
     // This is core to the app's purpose: turn leads (pins) into revenue (actions)
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-    
-    const { error: actionError } = await supabase
+    // Check if there's already an OUTREACH action for this pin (shouldn't happen for new pins, but safety check)
+    const { data: existingAction } = await supabase
       .from("actions")
-      .insert({
-        user_id: user.id,
-        person_id: pin.id,
-        action_type: "OUTREACH",
-        state: "NEW",
-        description: `Reach out to ${pin.name}`,
-        due_date: today,
-        auto_created: true,
-      });
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("person_id", pin.id)
+      .eq("action_type", "OUTREACH")
+      .eq("state", "NEW")
+      .maybeSingle();
 
-    if (actionError) {
-      // Log error but don't fail the pin creation - action can be created later
-      console.error("Error creating auto-action for new pin:", actionError);
-      // Continue - pin was created successfully, action creation is secondary
+    if (!existingAction) {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+      
+      const { error: actionError } = await supabase
+        .from("actions")
+        .insert({
+          user_id: user.id,
+          person_id: pin.id,
+          action_type: "OUTREACH",
+          state: "NEW",
+          description: `Reach out to ${pin.name}`,
+          due_date: today,
+          auto_created: true,
+        });
+
+      if (actionError) {
+        // Log error but don't fail the pin creation - action can be created later
+        console.error("Error creating auto-action for new pin:", actionError);
+        // Continue - pin was created successfully, action creation is secondary
+      }
     }
 
     return NextResponse.json({ pin }, { status: 201 });
