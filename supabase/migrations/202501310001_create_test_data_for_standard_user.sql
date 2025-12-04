@@ -37,17 +37,16 @@ BEGIN
     (v_user_id, 'Mike Chen', 'https://linkedin.com/in/mike-chen', 'Product Manager. Interested in our solution.', 'ACTIVE'),
     (v_user_id, 'Emily Rodriguez', 'mailto:emily@example.com', 'Marketing Director. Follow up on proposal.', 'ACTIVE'),
     (v_user_id, 'David Kim', 'https://linkedin.com/in/david-kim', 'CEO of StartupXYZ. Potential partnership opportunity.', 'ACTIVE'),
-    (v_user_id, 'Lisa Anderson', 'https://linkedin.com/in/lisa-anderson', 'HR Manager. Discussing team expansion.', 'ACTIVE')
-  RETURNING id INTO v_pin_1_id;
+    (v_user_id, 'Lisa Anderson', 'https://linkedin.com/in/lisa-anderson', 'HR Manager. Discussing team expansion.', 'ACTIVE');
 
   GET DIAGNOSTICS v_inserted_pins = ROW_COUNT;
 
-  -- Get the pin IDs we just created
-  SELECT id INTO v_pin_1_id FROM person_pins WHERE user_id = v_user_id AND name = 'Sarah Johnson' LIMIT 1;
-  SELECT id INTO v_pin_2_id FROM person_pins WHERE user_id = v_user_id AND name = 'Mike Chen' LIMIT 1;
-  SELECT id INTO v_pin_3_id FROM person_pins WHERE user_id = v_user_id AND name = 'Emily Rodriguez' LIMIT 1;
-  SELECT id INTO v_pin_4_id FROM person_pins WHERE user_id = v_user_id AND name = 'David Kim' LIMIT 1;
-  SELECT id INTO v_pin_5_id FROM person_pins WHERE user_id = v_user_id AND name = 'Lisa Anderson' LIMIT 1;
+  -- Get the pin IDs we just created (using ORDER BY created_at DESC to get the most recent ones)
+  SELECT id INTO STRICT v_pin_1_id FROM person_pins WHERE user_id = v_user_id AND name = 'Sarah Johnson' ORDER BY created_at DESC LIMIT 1;
+  SELECT id INTO STRICT v_pin_2_id FROM person_pins WHERE user_id = v_user_id AND name = 'Mike Chen' ORDER BY created_at DESC LIMIT 1;
+  SELECT id INTO STRICT v_pin_3_id FROM person_pins WHERE user_id = v_user_id AND name = 'Emily Rodriguez' ORDER BY created_at DESC LIMIT 1;
+  SELECT id INTO STRICT v_pin_4_id FROM person_pins WHERE user_id = v_user_id AND name = 'David Kim' ORDER BY created_at DESC LIMIT 1;
+  SELECT id INTO STRICT v_pin_5_id FROM person_pins WHERE user_id = v_user_id AND name = 'Lisa Anderson' ORDER BY created_at DESC LIMIT 1;
 
   RAISE NOTICE 'Created % pins', v_inserted_pins;
 
