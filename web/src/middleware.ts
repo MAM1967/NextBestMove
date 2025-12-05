@@ -51,14 +51,27 @@ export async function middleware(request: NextRequest) {
 
       // Decode Basic Auth credentials (using atob for Edge runtime compatibility)
       const base64Credentials = authHeader.split(" ")[1];
-      const credentials = atob(base64Credentials);
+      let credentials: string;
+      try {
+        credentials = atob(base64Credentials);
+      } catch (e) {
+        console.error("[Middleware] Failed to decode Base64:", e);
+        return new NextResponse("Invalid authentication format", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": 'Basic realm="Staging Environment", charset="UTF-8"',
+            "Content-Type": "text/plain",
+          },
+        });
+      }
+
       const [username, password] = credentials.split(":");
 
       // Trim credentials from user input (in case of whitespace)
       const trimmedUsername = username.trim();
       const trimmedPassword = password.trim();
 
-      // Debug logging for credential mismatch (only log lengths, not actual values)
+      // Debug logging for credential mismatch (only log lengths and first chars, not actual values)
       if (trimmedUsername !== stagingUser || trimmedPassword !== stagingPass) {
         console.log("[Middleware] Basic Auth failed:", {
           usernameMatch: trimmedUsername === stagingUser,
@@ -67,6 +80,13 @@ export async function middleware(request: NextRequest) {
           providedUserLength: trimmedUsername.length,
           expectedPassLength: stagingPass.length,
           providedPassLength: trimmedPassword.length,
+          expectedUserFirstChar: stagingUser[0],
+          providedUserFirstChar: trimmedUsername[0],
+          expectedPassFirstChar: stagingPass[0],
+          providedPassFirstChar: trimmedPassword[0],
+          // Check for encoding issues
+          expectedPassCharCodes: Array.from(stagingPass).slice(0, 3).map(c => c.charCodeAt(0)),
+          providedPassCharCodes: Array.from(trimmedPassword).slice(0, 3).map(c => c.charCodeAt(0)),
         });
       }
 
