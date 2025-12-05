@@ -7,13 +7,23 @@ Cron jobs are failing with:
 Failed (HTTP error) 308 Permanent Redirect
 ```
 
-## Root Cause
+## Root Causes
 
-The cron job URL in cron-job.org is using **HTTP** instead of **HTTPS**. Vercel automatically redirects HTTP to HTTPS with a 308 status code, but cron-job.org doesn't follow redirects, causing the job to fail.
+The 308 redirect error can be caused by:
+
+1. **Double slash in URL** (most common):
+   - URL has `//api` instead of `/api` (e.g., `https://nextbestmove.app//api/cron/...`)
+   - Vercel redirects this to the correct path, but cron-job.org doesn't follow redirects
+
+2. **Using HTTP instead of HTTPS:**
+   - URL uses `http://` instead of `https://`
+   - Vercel automatically redirects HTTP to HTTPS with a 308 status code, but cron-job.org doesn't follow redirects
 
 ## Solution
 
-Update all cron job URLs in cron-job.org to use **HTTPS**.
+Update all cron job URLs in cron-job.org to:
+- Use **HTTPS** (not HTTP)
+- Have only **one slash** after the domain (not double slash)
 
 ### Correct URL Format
 
@@ -34,7 +44,8 @@ With header: `Authorization: Bearer YOUR_CRON_SECRET` or `Authorization: Bearer 
 2. **Find the "Streak Recovery" cron job**
 3. **Edit the job**
 4. **Update the URL:**
-   - ❌ **Wrong:** `http://nextbestmove.app/api/cron/streak-recovery?secret=...`
+   - ❌ **Wrong (HTTP):** `http://nextbestmove.app/api/cron/streak-recovery?secret=...`
+   - ❌ **Wrong (double slash):** `https://nextbestmove.app//api/cron/streak-recovery?secret=...`
    - ✅ **Correct:** `https://nextbestmove.app/api/cron/streak-recovery?secret=...`
 5. **Save the changes**
 6. **Test the job manually** (use "Run now" button)

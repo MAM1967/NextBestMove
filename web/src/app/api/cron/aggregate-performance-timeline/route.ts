@@ -50,15 +50,18 @@ export async function GET(request: Request) {
     });
 
     // Get all Premium users with active subscriptions or trials
-    const { data: premiumUsers, error: usersError } = await adminClient
-      .from("billing_subscriptions")
+    // Query from billing_customers and join to billing_subscriptions to get user_id directly
+    const { data: premiumCustomers, error: usersError } = await adminClient
+      .from("billing_customers")
       .select(`
         user_id,
-        status,
-        metadata
+        billing_subscriptions!inner(
+          status,
+          metadata
+        )
       `)
-      .in("status", ["active", "trialing"])
-      .eq("metadata->>plan_type", "premium");
+      .in("billing_subscriptions.status", ["active", "trialing"])
+      .eq("billing_subscriptions.metadata->>plan_type", "premium");
 
     if (usersError) {
       logError("Error fetching Premium users", usersError, {
@@ -70,7 +73,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!premiumUsers || premiumUsers.length === 0) {
+    if (!premiumCustomers || premiumCustomers.length === 0) {
       return NextResponse.json({
         success: true,
         message: "No Premium users found",
@@ -80,7 +83,7 @@ export async function GET(request: Request) {
     }
 
     // Get unique user IDs
-    const userIds = [...new Set(premiumUsers.map((sub) => sub.user_id))];
+    const userIds = [...new Set(premiumCustomers.map((customer) => customer.user_id))];
 
     let successCount = 0;
     let errorCount = 0;
