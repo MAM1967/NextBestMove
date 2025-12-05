@@ -65,7 +65,11 @@ export async function middleware(request: NextRequest) {
         });
       }
 
-      const [username, password] = credentials.split(":");
+      // Split by ':' but limit to 2 parts (username:password)
+      // This handles passwords that contain ':' characters
+      const parts = credentials.split(":");
+      const username = parts[0];
+      const password = parts.slice(1).join(":"); // Join all parts after first colon as password
 
       // Trim credentials from user input (in case of whitespace)
       const trimmedUsername = username.trim();
