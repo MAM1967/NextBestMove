@@ -1,6 +1,7 @@
 import { test as base } from "@playwright/test";
 import { signUpUser, signInUser } from "../helpers/auth";
-import { cleanupTestUser, generateTestUser } from "../helpers/staging-config";
+import { cleanupTestUser } from "../helpers/test-data";
+import { generateTestUser } from "../helpers/staging-config";
 
 type StagingUserFixtures = {
   authenticatedUser: {

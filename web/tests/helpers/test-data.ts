@@ -17,15 +17,19 @@ export async function cleanupTestUser(email: string) {
       STAGING_CONFIG.supabaseServiceRoleKey
     );
 
-    // Get user ID from auth.users
-    const { data: authUser } = await supabase.auth.admin.getUserByEmail(email);
+    // Get user ID from public.users table (easier than querying auth.users)
+    const { data: userRecord } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .single();
     
-    if (!authUser?.user?.id) {
-      console.log(`User ${email} not found - already cleaned up?`);
+    if (!userRecord?.id) {
+      console.log(`User ${email} not found in users table - already cleaned up?`);
       return;
     }
 
-    const userId = authUser.user.id;
+    const userId = userRecord.id;
 
     // Delete from public.users (cascade should handle related data)
     const { error: deleteError } = await supabase
