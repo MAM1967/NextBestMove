@@ -1,7 +1,7 @@
 # P1 Backlog Execution Plan
 
 **Date:** November 30, 2025  
-**Status:** 📋 Planning Phase  
+**Status:** ✅ **ALL P1 ITEMS COMPLETE** - Ready for Launch Hardening  
 **Goal:** Execute high-value P1 enhancements to improve conversion, retention, and user experience
 
 ---
@@ -15,7 +15,10 @@ This plan organizes P1 backlog items into strategic groups based on:
 - **Technical dependencies** (what needs to be built first)
 - **Launch readiness** (critical for launch vs. post-launch)
 
-**Status Update:** Group 1 (Trial & Conversion Optimization) is ✅ **COMPLETE** - All items tested and verified (January 2025)
+**Status Update:** ✅ **ALL P1 ITEMS COMPLETE** (January 2025)
+- ✅ Groups 1-5 completed and tested
+- ✅ Additional standalone P1 items completed earlier this week
+- ✅ Ready for staging/dev setup and launch hardening
 
 ---
 
@@ -320,42 +323,45 @@ This plan organizes P1 backlog items into strategic groups based on:
 
 ---
 
-### 💎 Group 4: Premium Features & Upsells
+### 💎 Group 4: Premium Features & Upsells ✅ **COMPLETE**
 
-**Goal:** Drive upgrades to Premium plan
+**Goal:** Drive upgrades to Premium plan  
+**Status:** ✅ All groups completed (January 2025)
 
-#### 4.1 Plan Upgrade Triggers ⏱
+#### 4.1 Plan Upgrade Triggers ✅ **COMPLETE**
 
 **Priority:** P1 - Medium  
 **Estimated Effort:** 2-3 days  
+**Status:** ✅ Complete  
 **Dependencies:** Plan limits (already exist)
 
-**What:** Pin limit hit, pattern detection access, pre-call brief prompts, content engine prompts
+**What:** Lead limit hit, pattern detection access, pre-call brief prompts, content engine prompts
 
 **Implementation:**
 
-- [ ] Detect pin limit hit (Standard plan: 10 pins)
-- [ ] Show upgrade modal when limit reached
-- [ ] Detect attempts to access premium features:
-  - Pattern detection (if implemented)
-  - Pre-call briefs (if implemented)
-  - Content engine prompts (if implemented)
-- [ ] Create upgrade modal component
-- [ ] Track upgrade trigger events
+- [x] Detect lead limit hit (Standard plan: 10 leads) ✅
+- [x] Show upgrade modal when limit reached ✅
+- [x] Detect attempts to access premium features:
+  - Pattern detection ✅
+  - Pre-call briefs ✅
+  - Content engine prompts ✅
+- [x] Create upgrade modal component ✅
+- [x] Track upgrade trigger events ✅
 
-**Files to create/modify:**
+**Files created/modified:**
 
-- `web/src/app/app/components/UpgradeModal.tsx`
-- `web/src/app/app/pins/page.tsx` (pin limit check)
-- `web/src/lib/billing/plans.ts` (limit checks)
-- Feature access checks in relevant pages
+- `web/src/app/app/components/UpgradeModal.tsx` ✅
+- `web/src/app/app/leads/page.tsx` (lead limit check) ✅
+- `web/src/lib/billing/plans.ts` (limit checks) ✅
+- Feature access checks in relevant pages ✅
 
 **Acceptance Criteria:**
 
-- Modal appears when pin limit hit
-- Modal appears when premium feature accessed
-- Clear upgrade CTA with value proposition
-- Upgrade flow works correctly
+- ✅ Modal appears when lead limit hit
+- ✅ Modal appears when premium feature accessed
+- ✅ Clear upgrade CTA with value proposition
+- ✅ Upgrade flow works correctly
+- ✅ All Group 4.1 tests passed
 
 ---
 
@@ -441,34 +447,37 @@ _This enhancement has been moved to P2 (Nice-to-Have) backlog. See `docs/backlog
 
 ---
 
-#### 4.3 Plan Downgrade Handling ⏱
+#### 4.3 Plan Downgrade Handling ✅ **COMPLETE**
 
 **Priority:** P1 - Low  
 **Estimated Effort:** 2 days  
+**Status:** ✅ Complete  
 **Dependencies:** Plan limits, cancellation flow
 
-**What:** Premium → Standard: pin limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation
+**What:** Premium → Standard: lead limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation
 
 **Implementation:**
 
-- [ ] Detect plan downgrade in webhook
-- [ ] Check if user exceeds Standard plan limits (10 pins)
-- [ ] Show warning modal with pin limit info
-- [ ] Handle Standard → Cancel transition
-- [ ] Apply 7-day read-only grace period
-- [ ] Enable 30-day reactivation window
+- [x] Detect plan downgrade in webhook ✅
+- [x] Check if user exceeds Standard plan limits (10 leads) ✅
+- [x] Show warning modal with lead limit info ✅
+- [x] Handle Standard → Cancel transition ✅
+- [x] Apply 7-day read-only grace period ✅
+- [x] Enable 30-day reactivation window ✅
 
-**Files to create/modify:**
+**Files created/modified:**
 
-- `web/src/app/api/billing/webhook/route.ts` (downgrade detection)
-- `web/src/app/app/components/DowngradeWarningModal.tsx`
-- `web/src/lib/billing/plans.ts` (limit checks)
+- `web/src/app/api/billing/webhook/route.ts` (downgrade detection) ✅
+- `web/src/app/app/components/DowngradeWarningModal.tsx` ✅
+- `web/src/lib/billing/plans.ts` (limit checks) ✅
 
 **Acceptance Criteria:**
 
-- Warning shown when downgrading to Standard with >10 pins
-- Read-only mode applied when canceling Standard plan
-- Reactivation available within 30 days
+- ✅ Warning shown when downgrading to Standard with >10 leads
+- ✅ No warning for users within limit
+- ✅ Read-only mode applied when canceling Standard plan
+- ✅ Reactivation available within 30 days
+- ✅ All Group 4.3 tests passed
 
 ---
 
@@ -503,6 +512,140 @@ _This enhancement has been moved to P2 (Nice-to-Have) backlog. See `docs/backlog
 - ✅ Only new variables are synced
 - ✅ Workflow execution time reduced
 - ✅ Logs are clearer with sync statistics
+
+---
+
+### 📋 Additional Standalone P1 Items ✅ COMPLETE
+
+**Goal:** Core user experience and account management features  
+**Status:** ✅ Completed (January 2025)
+
+#### Account Overview: Password Change & Timezone Editing ✅
+
+**Priority:** P1 - Medium  
+**Estimated Effort:** 1-2 days  
+**Status:** ✅ Complete (completed earlier this week)  
+**Dependencies:** Settings page framework
+
+**What:** Allow users to change password and update timezone in Settings → Account overview
+
+**Implementation:**
+
+- [x] Password change UI with confirmation ✅
+- [x] Timezone dropdown with common options ✅
+- [x] Update user profile on save ✅
+- [x] Form validation and error handling ✅
+
+**Acceptance Criteria:**
+
+- ✅ Users can change password from Settings
+- ✅ Users can update timezone from Settings
+- ✅ Changes persist correctly
+- ✅ Proper validation and error messages
+
+---
+
+#### Password Reset / Forgot Password Flow ✅
+
+**Priority:** P1 - Medium  
+**Estimated Effort:** 2 days  
+**Status:** ✅ Complete (completed earlier this week)  
+**Dependencies:** Supabase Auth
+
+**What:** Implement "Forgot password?" link on sign-in page, password reset email flow, and reset password page
+
+**Implementation:**
+
+- [x] "Forgot password?" link on sign-in page ✅
+- [x] Forgot password page ✅
+- [x] Password reset email via Supabase ✅
+- [x] Reset password page with token validation ✅
+- [x] Proper session handling ✅
+
+**Acceptance Criteria:**
+
+- ✅ Users can request password reset
+- ✅ Reset email sent correctly
+- ✅ Reset link works with token validation
+- ✅ Password can be updated successfully
+
+---
+
+#### Notification Preferences Wiring ✅
+
+**Priority:** P1 - Medium  
+**Estimated Effort:** 2-3 days  
+**Status:** ✅ Complete (completed earlier this week)  
+**Dependencies:** Email infrastructure, cron jobs
+
+**What:** Wire up notification preferences (morning plan, fast win reminder, follow-up alerts, weekly summary)
+
+**Implementation:**
+
+- [x] Email templates created ✅
+- [x] API endpoints implemented ✅
+- [x] Cron jobs configured via cron-job.org ✅
+- [x] Rate limiting protection added ✅
+- [x] DMARC configured for improved deliverability ✅
+
+**Acceptance Criteria:**
+
+- ✅ All notification types working
+- ✅ User preferences respected
+- ✅ Emails sent on schedule
+- ✅ Rate limiting prevents abuse
+
+---
+
+#### Content Ideas List Page ✅
+
+**Priority:** P1 - Low  
+**Estimated Effort:** 2 days  
+**Status:** ✅ Complete (completed earlier this week)  
+**Dependencies:** Content prompts table
+
+**What:** Create a page to view and manage saved content prompts
+
+**Implementation:**
+
+- [x] Content Ideas page created ✅
+- [x] Filtering functionality ✅
+- [x] Copy to clipboard functionality ✅
+- [x] Archive functionality ✅
+- [x] Delete functionality ✅
+- [x] Empty state handling ✅
+
+**Acceptance Criteria:**
+
+- ✅ Users can view all saved prompts
+- ✅ Filtering works correctly
+- ✅ Copy, archive, and delete actions work
+- ✅ Empty state displays appropriately
+
+---
+
+#### Display Weekly Focus on Daily Plan Page ✅
+
+**Priority:** P1 - Low  
+**Estimated Effort:** 1-2 days  
+**Status:** ✅ Complete (completed earlier this week)  
+**Dependencies:** Weekly summaries table
+
+**What:** Fetch `next_week_focus` from `weekly_summaries` table and display in focus card
+
+**Implementation:**
+
+- [x] API endpoint to fetch weekly focus ✅
+- [x] Display in Daily Plan focus card ✅
+- [x] Proper priority hierarchy (adaptive recovery > weekly focus > placeholder) ✅
+- [x] Graceful fallbacks ✅
+
+**Acceptance Criteria:**
+
+- ✅ Weekly focus displays when available
+- ✅ Priority hierarchy respected
+- ✅ Fallbacks work correctly
+- ✅ See `docs/Planning/Weekly_Focus_Display_Plan.md` for details
 
 ---
 
@@ -638,10 +781,12 @@ Premium Plan Features
 1. ✅ **Group 1 Complete** - Trial & Conversion Optimization (tested January 2025)
 2. ✅ **Group 2 Complete** - Payment & Churn Recovery (tested January 2025)
 3. ✅ **Group 3 Complete** - User Experience & Engagement (tested January 2025)
-4. **Start with Group 4** - Premium Features & Upsells (only outstanding P1 group)
-5. **Set up tracking** for success metrics
-6. **Iterate based on data** from launch
+4. ✅ **Group 4 Complete** - Premium Features & Upsells (completed January 2025)
+5. ✅ **Group 5 Complete** - Technical Infrastructure (completed January 2025)
+6. ✅ **Additional Standalone P1 Items Complete** - Account management, password reset, notifications, content ideas, weekly focus display (completed earlier this week)
+7. ✅ **P1 Backlog Complete** - All P1 items implemented and tested
+8. **Ready for staging/dev setup and launch hardening**
 
 ---
 
-_Last updated: January 2025 (Groups 1, 2, and 3 completed)_
+_Last updated: January 2025 (All P1 groups completed - ready for launch hardening)_

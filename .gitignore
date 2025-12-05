@@ -73,3 +73,4 @@ pids
 tmp/
 temp/
 
+.staging-credentials.md

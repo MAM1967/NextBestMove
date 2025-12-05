@@ -14,16 +14,19 @@ This guide walks through setting up a separate Supabase project for staging envi
 ## Step 1: Create Staging Supabase Project
 
 1. **Go to Supabase Dashboard:**
+
    - Visit: https://supabase.com/dashboard
    - Click "New Project"
 
 2. **Project Configuration:**
+
    - **Name:** `nextbestmove-staging`
    - **Database Password:** Generate a strong password (save it securely)
    - **Region:** Choose the same region as production (for consistency)
    - **Pricing Plan:** Free tier is fine for staging
 
 3. **Wait for Project Creation:**
+
    - This takes 2-3 minutes
    - Note the project reference ID (you'll need this)
 
@@ -53,9 +56,11 @@ supabase db push
 ### Option B: Manual Migration via SQL Editor
 
 1. **Go to SQL Editor in Supabase Dashboard:**
+
    - Navigate to: SQL Editor → New Query
 
 2. **Apply migrations in order:**
+
    - Copy and paste each migration file from `supabase/migrations/` in chronological order
    - Start with: `202511260001_initial_schema.sql`
    - Then apply all others in order (sorted by filename)
@@ -67,6 +72,7 @@ supabase db push
    ```
 
 **Migration Order:**
+
 1. `202511260001_initial_schema.sql` (base schema)
 2. `202501270001_create_tasks_table.sql`
 3. `202501270002_add_users_insert_policy.sql`
@@ -80,17 +86,20 @@ supabase db push
 1. **Go to Authentication → Settings:**
 
 2. **Email Settings:**
+
    - ✅ **Enable email confirmations:** OFF (for easier testing)
    - Or use test email domains for staging
 
 3. **OAuth Providers:**
+
    - **Google:** Keep enabled if testing OAuth, or disable
    - **Outlook/Azure:** Keep enabled if testing OAuth, or disable
    - **Redirect URLs:** Add `https://staging.nextbestmove.app/auth/callback`
 
 4. **URL Configuration:**
+
    - **Site URL:** `https://staging.nextbestmove.app`
-   - **Redirect URLs:** 
+   - **Redirect URLs:**
      - `https://staging.nextbestmove.app/auth/callback`
      - `https://staging.nextbestmove.app/**`
 
@@ -112,7 +121,7 @@ Run this SQL in the SQL Editor to create test users:
 -- Password: TestPass123!
 
 -- Standard test user
--- Email: test+standard@example.com  
+-- Email: test+standard@example.com
 -- Password: TestPass123!
 
 -- Trial user (will be created via onboarding)
@@ -159,6 +168,7 @@ Staging Supabase Project:
 ```
 
 **Add to Vercel Environment Variables (Phase 1.3):**
+
 - `NEXT_PUBLIC_SUPABASE_URL` = `https://[project-ref].supabase.co`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `[anon-key]`
 - `SUPABASE_SERVICE_ROLE_KEY` = `[service-role-key]` (staging)
@@ -168,12 +178,14 @@ Staging Supabase Project:
 ## Step 7: Verify Setup
 
 1. **Test Database Connection:**
+
    ```bash
    # Using Supabase CLI
    supabase db remote list
    ```
 
 2. **Test Auth:**
+
    - Try signing up a test user
    - Verify user record created in `users` table
 
@@ -206,6 +218,7 @@ Staging Supabase Project:
 ## Next Steps
 
 After completing this setup:
+
 1. ✅ Document all credentials securely
 2. ✅ Move to Phase 1.3: Vercel Staging Configuration
 3. ✅ Add staging environment variables to Vercel
@@ -213,4 +226,3 @@ After completing this setup:
 ---
 
 **Last Updated:** January 2025
-
