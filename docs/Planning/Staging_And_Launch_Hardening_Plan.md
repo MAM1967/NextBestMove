@@ -264,24 +264,32 @@ This plan covers two critical pre-launch activities:
 
 **Goal:** Configure Resend for staging
 
+**Status:** ✅ Complete
+
 **Tasks:**
 
-1. [ ] Set up staging email configuration:
+1. [x] Set up staging email configuration:
 
-   - [ ] Use separate Resend API key (or test mode)
-   - [ ] Configure staging domain (if separate)
-   - [ ] Add `[STAGING]` prefix to email subjects in code
+   - [x] Use separate Resend API key (or test mode) ✅
+   - [x] Configure staging domain (if separate) ✅
+   - [x] Add `[STAGING]` prefix to email subjects in code ✅
 
-2. [ ] Test email sending:
-   - [ ] Send test email from staging
-   - [ ] Verify email received
-   - [ ] Verify `[STAGING]` prefix appears
+2. [x] Test email sending:
+   - [x] Send test email from staging ✅
+   - [x] Verify email received ✅
+   - [x] Verify `[STAGING]` prefix appears ✅
 
 **Acceptance Criteria:**
 
-- [ ] Staging emails configured
-- [ ] Test emails send successfully
-- [ ] Staging prefix visible in test emails
+- [x] Staging emails configured ✅
+- [x] Test emails send successfully ✅
+- [x] Staging prefix visible in test emails ✅
+
+**Configuration:**
+- Staging domain: `staging.nextbestmove.app` configured in Resend
+- From address: `noreply@staging.nextbestmove.app` (auto-detected in staging)
+- API key: `RESEND_API_KEY` set in Vercel (Preview scope)
+- All email subjects automatically prefixed with `[STAGING]` in staging
 
 ---
 
