@@ -9,8 +9,27 @@ if (!resendApiKey) {
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+// Detect staging environment
+const isStaging = 
+  process.env.VERCEL_ENV === "preview" ||
+  process.env.NEXT_PUBLIC_APP_URL?.includes("staging.nextbestmove.app") ||
+  process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
+
 // Default from address (using verified domain)
-const DEFAULT_FROM = "NextBestMove <noreply@nextbestmove.app>";
+// Use staging domain when in staging environment
+const DEFAULT_FROM = isStaging
+  ? "NextBestMove <noreply@staging.nextbestmove.app>"
+  : "NextBestMove <noreply@nextbestmove.app>";
+
+/**
+ * Add [STAGING] prefix to email subject when in staging
+ */
+function formatSubject(subject: string): string {
+  if (isStaging && !subject.startsWith("[STAGING]")) {
+    return `[STAGING] ${subject}`;
+  }
+  return subject;
+}
 
 /**
  * Send an email using Resend
@@ -31,17 +50,22 @@ export async function sendEmail({
   }
 
   try {
+    // Format subject with [STAGING] prefix if in staging
+    const formattedSubject = formatSubject(subject);
+
     console.log("📧 Attempting to send email via Resend:", {
       to,
       from,
-      subject,
+      subject: formattedSubject,
+      originalSubject: subject,
+      isStaging,
       hasApiKey: !!resendApiKey,
     });
 
     const { data, error } = await resend.emails.send({
       from,
       to,
-      subject,
+      subject: formattedSubject,
       html,
     });
 
@@ -57,8 +81,9 @@ export async function sendEmail({
     console.log("✅ Email sent successfully via Resend:", {
       emailId: data?.id,
       to,
-      subject,
+      subject: formattedSubject,
       from,
+      isStaging,
     });
 
     return data;
