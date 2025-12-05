@@ -36,10 +36,12 @@ export async function middleware(request: NextRequest) {
       const authHeader = request.headers.get("authorization");
 
       if (!authHeader || !authHeader.startsWith("Basic ")) {
+        // Return 401 with proper Basic Auth header to trigger browser prompt
         return new NextResponse("Authentication required", {
           status: 401,
           headers: {
-            "WWW-Authenticate": 'Basic realm="Staging Environment"',
+            "WWW-Authenticate": 'Basic realm="Staging Environment", charset="UTF-8"',
+            "Content-Type": "text/plain",
           },
         });
       }
@@ -51,10 +53,12 @@ export async function middleware(request: NextRequest) {
 
       // Verify credentials
       if (username !== stagingUser || password !== stagingPass) {
+        // Return 401 with proper Basic Auth header to trigger browser prompt
         return new NextResponse("Invalid credentials", {
           status: 401,
           headers: {
-            "WWW-Authenticate": 'Basic realm="Staging Environment"',
+            "WWW-Authenticate": 'Basic realm="Staging Environment", charset="UTF-8"',
+            "Content-Type": "text/plain",
           },
         });
       }

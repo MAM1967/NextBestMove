@@ -11,14 +11,17 @@
 ### Step 1: Add Environment Variables to Vercel
 
 1. **Go to Vercel Dashboard:**
+
    - Navigate to your project
    - Click **Settings** (top navigation)
 
 2. **Open Environment Variables:**
+
    - Click **Environment Variables** in the left sidebar
    - Or go to: Settings → Environment Variables
 
 3. **Add `STAGING_USER`:**
+
    - Click **Add New**
    - **Key:** `STAGING_USER`
    - **Value:** `staging` (or your preferred username)
@@ -37,12 +40,14 @@
 After adding the environment variables, you need to trigger a new deployment:
 
 **Option A: Push a commit (recommended)**
+
 ```bash
 git commit --allow-empty -m "chore: trigger staging deployment for Basic Auth"
 git push origin staging
 ```
 
 **Option B: Manual redeploy in Vercel**
+
 - Go to Vercel Dashboard → Deployments
 - Find the latest staging deployment
 - Click the three dots (⋯) → **Redeploy**
@@ -50,10 +55,12 @@ git push origin staging
 ### Step 3: Test Basic Auth
 
 1. **Open staging in incognito/private window:**
+
    - Visit: `https://staging.nextbestmove.app`
    - You should see a browser authentication prompt
 
 2. **Enter credentials:**
+
    - Username: `staging` (or whatever you set for `STAGING_USER`)
    - Password: `[your STAGING_PASS value]`
    - Click OK/Login
@@ -68,20 +75,26 @@ git push origin staging
 ## Troubleshooting
 
 ### Issue: Still no Basic Auth prompt after redeploy
+
 **Check:**
+
 - Environment variables are set to **Preview** scope (not Production)
 - Deployment completed successfully
 - Try hard refresh (Cmd+Shift+R / Ctrl+Shift+R)
 - Try incognito/private window
 
 ### Issue: Can't access with credentials
+
 **Check:**
+
 - Username/password match exactly (case-sensitive)
 - No extra spaces in environment variable values
 - Credentials are set correctly in Vercel
 
 ### Issue: API routes require Basic Auth
+
 **This shouldn't happen** - API routes are excluded. If it does:
+
 - Check middleware code (should skip `/api/*` routes)
 - Verify the route starts with `/api/`
 
@@ -99,16 +112,17 @@ git push origin staging
 ## Expected Behavior After Setup
 
 ✅ **With credentials set:**
+
 - Browser prompts for username/password
 - Correct credentials → site loads
 - Wrong credentials → 401 error
 - API routes work without Basic Auth
 
 ✅ **Without credentials (current state):**
+
 - Site loads directly (no authentication)
 - This is the current behavior you're seeing
 
 ---
 
 **Once you add the environment variables and redeploy, Basic Auth will be active!**
-
