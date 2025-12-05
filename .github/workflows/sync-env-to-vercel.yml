@@ -16,8 +16,8 @@ on:
         required: true
   push:
     branches:
-      - main
-      - staging
+      - main  # Syncs to production (sensitive secrets included)
+      - staging  # Syncs to preview (sensitive secrets EXCLUDED - only public vars)
     paths-ignore:
       - "**.md"
       - ".github/workflows/**"
@@ -42,8 +42,10 @@ jobs:
             echo "env=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/staging" ]; then
             echo "env=preview" >> $GITHUB_OUTPUT
+            echo "⚠️  Staging branch detected - sensitive secrets will NOT be synced (preview only)"
           else
             echo "env=production" >> $GITHUB_OUTPUT
+            echo "✅ Production branch detected - sensitive secrets will be synced"
           fi
 
       - name: Sync GitHub Secrets to Vercel
@@ -223,8 +225,12 @@ jobs:
             fi
           }
 
-          # Sync sensitive secrets (production only)
+          # ⚠️  SECURITY: Sync sensitive secrets ONLY to production
+          # Staging/preview environments should NOT receive production secrets
+          # Staging secrets must be manually configured in Vercel Dashboard
           if [ "$TARGET_ENV" == "production" ]; then
+            echo ""
+            echo "🔐 Syncing sensitive secrets to PRODUCTION only..."
             sync_var "SUPABASE_SERVICE_ROLE_KEY" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" "$TARGET_ENV"
             sync_var "STRIPE_SECRET_KEY" "${{ secrets.STRIPE_SECRET_KEY }}" "$TARGET_ENV"
             sync_var "STRIPE_WEBHOOK_SECRET" "${{ secrets.STRIPE_WEBHOOK_SECRET }}" "$TARGET_ENV"
@@ -247,9 +253,15 @@ jobs:
             sync_var "STRIPE_PRICE_ID_STANDARD_YEARLY" "${{ secrets.STRIPE_PRICE_ID_STANDARD_YEARLY }}" "$TARGET_ENV"
             sync_var "STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY" "${{ secrets.STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY }}" "$TARGET_ENV"
             sync_var "STRIPE_PRICE_ID_PROFESSIONAL_YEARLY" "${{ secrets.STRIPE_PRICE_ID_PROFESSIONAL_YEARLY }}" "$TARGET_ENV"
+            echo "✅ Production secrets sync completed"
+          else
+            echo ""
+            echo "⚠️  SKIPPING sensitive secrets for $TARGET_ENV (preview/staging)"
+            echo "   Staging secrets must be manually configured in Vercel Dashboard"
+            echo "   This prevents production secrets from being exposed to staging"
           fi
 
-          # Sync public variables (safe for all environments)
+          # Sync public variables (safe for all environments - production, preview, development)
           sync_var "NEXT_PUBLIC_SUPABASE_URL" "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" "$TARGET_ENV"
           sync_var "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" "$TARGET_ENV"
           sync_var "NEXT_PUBLIC_APP_URL" "${{ secrets.NEXT_PUBLIC_APP_URL }}" "$TARGET_ENV"
