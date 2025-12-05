@@ -40,6 +40,16 @@ Add these to Vercel (Preview scope):
 
 ## Setup Instructions
 
+### Step 0: Disable Vercel Password Protection (IMPORTANT!)
+
+**If you see "Log in to Vercel" when visiting staging, you need to disable Vercel's built-in password protection first:**
+
+1. Go to Vercel Dashboard → Your Project → **Settings** → **Deployment Protection**
+2. Disable **Password Protection** for Preview deployments
+3. This allows our Basic Auth middleware to handle authentication instead
+
+**See:** `docs/Planning/Phase_1.4_Disable_Vercel_Password_Protection.md` for detailed steps.
+
 ### Step 1: Add Environment Variables to Vercel
 
 1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables

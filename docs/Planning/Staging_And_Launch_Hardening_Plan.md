@@ -3,6 +3,7 @@
 **Status:** 📋 Ready for Implementation  
 **Priority:** P1 (Final P1 items before launch)  
 **Estimated Time:** 3-4 days total
+
 - Staging Environment Setup: 1-2 days
 - Launch Hardening: 1-2 days
 
@@ -16,6 +17,7 @@ This plan covers two critical pre-launch activities:
 2. **Launch Hardening** - Final QA, testing, and documentation before production launch
 
 **Reference Documents:**
+
 - `docs/Architecture/Staging_Environment_Setup_Guide.md` - Detailed staging setup guide
 - `docs/backlog.md` - Launch hardening checklist
 
@@ -28,19 +30,23 @@ This plan covers two critical pre-launch activities:
 **Goal:** Set up branch protection and workflow for staging
 
 **Tasks:**
+
 1. [ ] Create `staging` branch from `main`
+
    ```bash
    git checkout -b staging
    git push -u origin staging
    ```
 
 2. [ ] Configure branch protection rules in GitHub:
+
    - **Production (`main`):**
+
      - ✅ Require pull request reviews
      - ✅ Require status checks to pass (lint, type-check)
      - ✅ Require branches to be up to date before merging
      - ✅ No direct pushes
-   
+
    - **Staging (`staging`):**
      - ✅ Require pull request reviews (self-approval OK for solo dev)
      - ✅ Require status checks to pass
@@ -50,6 +56,7 @@ This plan covers two critical pre-launch activities:
    - Ensure workflows run on both `main` and `staging` branches
 
 **Acceptance Criteria:**
+
 - [ ] `staging` branch exists and is protected
 - [ ] Branch protection rules configured
 - [ ] Workflow: `feature/*` → `staging` → `main` is clear
@@ -61,27 +68,32 @@ This plan covers two critical pre-launch activities:
 **Goal:** Create separate Supabase project for staging
 
 **Tasks:**
+
 1. [ ] Create new Supabase project:
+
    - **Name:** `nextbestmove-staging`
    - **Region:** Same as production (for consistency)
    - **Database:** `nextbestmove_staging`
 
 2. [ ] Copy production schema to staging:
+
    ```bash
    # Export production schema (if needed)
    supabase db dump --project-ref <prod-id> > staging-schema.sql
-   
+
    # Apply all migrations to staging
    supabase db push --project-ref <staging-id>
    ```
 
 3. [ ] Configure staging auth settings:
+
    - [ ] Disable email confirmations (or use test domains)
    - [ ] Turn off OAuth providers (unless testing OAuth)
    - [ ] Set redirect URLs: `https://staging.nextbestmove.app/auth/callback`
    - [ ] Disable "invite users" functionality
 
 4. [ ] Create test users in staging:
+
    - [ ] Premium test user: `test+premium@example.com`
    - [ ] Standard test user: `test+standard@example.com`
    - [ ] Test users with various states (trial, active, canceled)
@@ -91,6 +103,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify data isolation
 
 **Acceptance Criteria:**
+
 - [ ] Staging Supabase project created
 - [ ] All migrations applied successfully
 - [ ] Test users created
@@ -98,6 +111,7 @@ This plan covers two critical pre-launch activities:
 - [ ] Staging project URL and keys documented
 
 **Environment Variables to Document:**
+
 - `NEXT_PUBLIC_SUPABASE_URL` (staging)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (staging)
 - `SUPABASE_SERVICE_ROLE_KEY` (staging)
@@ -109,18 +123,22 @@ This plan covers two critical pre-launch activities:
 **Goal:** Configure Vercel for staging branch deployment
 
 **Tasks:**
+
 1. [ ] Configure staging domain in Vercel:
+
    - [ ] Go to Project → Settings → Domains
    - [ ] Add domain: `staging.nextbestmove.app`
    - [ ] Assign `staging` branch to staging domain
    - [ ] Verify DNS: Add CNAME record for `staging.nextbestmove.app`
 
 2. [ ] Set up environment variables for staging:
+
    - [ ] Go to Project → Settings → Environment Variables
    - [ ] Add all staging environment variables (see checklist below)
    - [ ] Ensure variables are scoped to `staging` branch only
 
 3. [ ] Configure staging deployment settings:
+
    - [ ] Enable automatic deployments for `staging` branch
    - [ ] Set build command (if custom)
    - [ ] Set install command (if custom)
@@ -131,6 +149,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify environment variables are loaded correctly
 
 **Staging Environment Variables Checklist:**
+
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` (staging project)
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` (staging anon key)
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` (staging service role key)
@@ -151,6 +170,7 @@ This plan covers two critical pre-launch activities:
 - [ ] `STAGING_PASS` (for password protection, if using)
 
 **Acceptance Criteria:**
+
 - [ ] Staging domain configured in Vercel
 - [ ] DNS CNAME record added
 - [ ] All environment variables set for staging
@@ -166,12 +186,15 @@ This plan covers two critical pre-launch activities:
 **Status:** ✅ Implementation Complete - Ready for Configuration
 
 **Tasks:**
+
 1. [x] Choose protection method:
+
    - **Option A:** Vercel Pro Password Protection (if available)
    - **Option B:** Next.js middleware with Basic Auth ✅ **SELECTED**
    - **Option C:** IP restrictions (if team has static IPs)
 
 2. [x] Implement protection (if using middleware):
+
    - [x] Create/update `middleware.ts` with Basic Auth ✅
    - [ ] Add `STAGING_USER` and `STAGING_PASS` env vars (TODO: Add to Vercel)
    - [ ] Test password protection works (TODO: After env vars added)
@@ -182,6 +205,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Test API routes (should not be protected)
 
 **Acceptance Criteria:**
+
 - [x] Basic Auth middleware implemented
 - [ ] `STAGING_USER` and `STAGING_PASS` added to Vercel (Preview scope)
 - [ ] Staging site requires authentication
@@ -198,20 +222,24 @@ This plan covers two critical pre-launch activities:
 **Goal:** Configure Stripe test mode for staging
 
 **Tasks:**
+
 1. [ ] Switch to Stripe Test Mode in dashboard
 
 2. [ ] Create test products and prices:
+
    - [ ] Standard Plan (Monthly): $29.00 → Copy test price ID
    - [ ] Standard Plan (Yearly): $249.00 → Copy test price ID
    - [ ] Premium Plan (Monthly): $79.00 → Copy test price ID
    - [ ] Premium Plan (Yearly): $649.00 → Copy test price ID
 
 3. [ ] Create staging webhook endpoint:
+
    - [ ] URL: `https://staging.nextbestmove.app/api/billing/webhook`
    - [ ] Events: All billing events (`customer.subscription.*`, `invoice.*`, etc.)
    - [ ] Copy webhook signing secret
 
 4. [ ] Update staging environment variables:
+
    - [ ] `STRIPE_SECRET_KEY` = test secret key (`sk_test_...`)
    - [ ] `STRIPE_WEBHOOK_SECRET` = staging webhook secret
    - [ ] All price IDs = test price IDs
@@ -223,6 +251,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify subscription created in staging database
 
 **Acceptance Criteria:**
+
 - [ ] Test products and prices created
 - [ ] Staging webhook endpoint configured
 - [ ] Test payment flow works end-to-end
@@ -236,7 +265,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Configure Resend for staging
 
 **Tasks:**
+
 1. [ ] Set up staging email configuration:
+
    - [ ] Use separate Resend API key (or test mode)
    - [ ] Configure staging domain (if separate)
    - [ ] Add `[STAGING]` prefix to email subjects in code
@@ -247,6 +278,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify `[STAGING]` prefix appears
 
 **Acceptance Criteria:**
+
 - [ ] Staging emails configured
 - [ ] Test emails send successfully
 - [ ] Staging prefix visible in test emails
@@ -258,7 +290,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Set up cron jobs for staging
 
 **Tasks:**
+
 1. [ ] Configure cron jobs in `vercel.json` (if using Vercel Cron):
+
    - [ ] Daily plans generation
    - [ ] Weekly summaries
    - [ ] Payment failure recovery
@@ -267,6 +301,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Performance timeline aggregation
 
 2. [ ] Set up cron-job.org jobs (if using external service):
+
    - [ ] Create separate cron jobs for staging
    - [ ] Use staging URLs and `CRON_SECRET`
    - [ ] Test each cron endpoint manually
@@ -277,6 +312,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify no production data affected
 
 **Acceptance Criteria:**
+
 - [ ] All cron jobs configured for staging
 - [ ] Cron jobs use staging `CRON_SECRET`
 - [ ] Manual testing successful
@@ -289,12 +325,15 @@ This plan covers two critical pre-launch activities:
 **Goal:** Set up separate monitoring for staging
 
 **Tasks:**
+
 1. [ ] Set up Sentry/GlitchTip staging project:
+
    - [ ] Create separate project: `nextbestmove-staging`
    - [ ] Copy staging DSN to environment variables
    - [ ] Tag errors with `environment: staging`
 
 2. [ ] Set up Umami staging website:
+
    - [ ] Create separate website ID for staging
    - [ ] Update `NEXT_PUBLIC_UMAMI_WEBSITE_ID` for staging
    - [ ] Verify analytics tracking works
@@ -305,6 +344,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify error tagged with `environment: staging`
 
 **Acceptance Criteria:**
+
 - [ ] Staging monitoring projects created
 - [ ] Environment variables set
 - [ ] Error tracking tested and working
@@ -317,19 +357,23 @@ This plan covers two critical pre-launch activities:
 **Goal:** Comprehensive testing of staging environment
 
 **Tasks:**
+
 1. [ ] **Authentication & Onboarding:**
+
    - [ ] Sign up flow works
    - [ ] Sign in flow works
    - [ ] Email verification (if enabled)
    - [ ] Onboarding flow completes
 
 2. [ ] **Core Features:**
+
    - [ ] Pin management (create, edit, delete, archive)
    - [ ] Daily plan generation
    - [ ] Action completion flows
    - [ ] Weekly summary generation
 
 3. [ ] **Billing & Subscriptions:**
+
    - [ ] Stripe checkout (test mode)
    - [ ] Subscription creation
    - [ ] Webhook processing
@@ -337,12 +381,14 @@ This plan covers two critical pre-launch activities:
    - [ ] Plan upgrades/downgrades
 
 4. [ ] **Premium Features:**
+
    - [ ] Pattern detection access
    - [ ] Pre-call briefs
    - [ ] Performance timeline
    - [ ] Voice learning
 
 5. [ ] **Background Jobs:**
+
    - [ ] Daily plan cron job
    - [ ] Weekly summary cron job
    - [ ] Payment failure recovery
@@ -350,6 +396,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Performance timeline aggregation
 
 6. [ ] **Email Notifications:**
+
    - [ ] Morning plan email
    - [ ] Fast win reminder
    - [ ] Follow-up alerts
@@ -362,6 +409,7 @@ This plan covers two critical pre-launch activities:
    - [ ] API routes secured
 
 **Acceptance Criteria:**
+
 - [ ] All core features work on staging
 - [ ] No production data accessed
 - [ ] All tests pass
@@ -376,7 +424,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Comprehensive quality assurance testing
 
 **Tasks:**
+
 1. [ ] **Functional Testing:**
+
    - [ ] Test all user flows end-to-end
    - [ ] Test all Premium features
    - [ ] Test all Standard features
@@ -385,6 +435,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Test subscription management
 
 2. [ ] **Cross-Browser Testing:**
+
    - [ ] Chrome (latest)
    - [ ] Firefox (latest)
    - [ ] Safari (latest)
@@ -393,6 +444,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Chrome Mobile (Android)
 
 3. [ ] **Responsive Design Testing:**
+
    - [ ] Desktop (1920x1080, 1440x900)
    - [ ] Tablet (iPad, iPad Pro)
    - [ ] Mobile (iPhone, Android phones)
@@ -400,6 +452,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify forms work on mobile
 
 4. [ ] **Performance Testing:**
+
    - [ ] Page load times (< 3 seconds)
    - [ ] API response times (< 500ms)
    - [ ] Database query performance
@@ -415,6 +468,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Environment variable security
 
 **Acceptance Criteria:**
+
 - [ ] All critical user flows work
 - [ ] No critical bugs found
 - [ ] Performance acceptable
@@ -427,7 +481,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Ensure application is accessible to all users
 
 **Tasks:**
+
 1. [ ] **WCAG 2.1 AA Compliance:**
+
    - [ ] Color contrast ratios (4.5:1 for text)
    - [ ] Keyboard navigation
    - [ ] Screen reader compatibility
@@ -436,6 +492,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Form labels and error messages
 
 2. [ ] **Testing Tools:**
+
    - [ ] Use axe DevTools or WAVE
    - [ ] Test with screen reader (NVDA, JAWS, VoiceOver)
    - [ ] Test keyboard-only navigation
@@ -450,6 +507,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Non-semantic HTML
 
 **Acceptance Criteria:**
+
 - [ ] WCAG 2.1 AA compliance achieved
 - [ ] All accessibility issues fixed
 - [ ] Screen reader testing passed
@@ -462,13 +520,16 @@ This plan covers two critical pre-launch activities:
 **Goal:** Verify Stripe integration works in production mode
 
 **Tasks:**
+
 1. [ ] **Pre-Production Setup:**
+
    - [ ] Switch Stripe to Live Mode
    - [ ] Verify live API keys are in production env vars
    - [ ] Verify live price IDs are correct
    - [ ] Verify production webhook endpoint configured
 
 2. [ ] **Test Checkout Flow:**
+
    - [ ] Create checkout session (Standard Monthly)
    - [ ] Complete payment with real test card
    - [ ] Verify subscription created in database
@@ -476,6 +537,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify user has access to features
 
 3. [ ] **Test Subscription Management:**
+
    - [ ] Access customer portal
    - [ ] Test plan upgrade (Standard → Premium)
    - [ ] Test plan downgrade (Premium → Standard)
@@ -483,6 +545,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify webhooks process correctly
 
 4. [ ] **Test Payment Failure Handling:**
+
    - [ ] Use declined test card: `4000 0000 0000 0002`
    - [ ] Verify payment failure email sent
    - [ ] Verify recovery flow works
@@ -493,6 +556,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Verify idempotency handling
 
 **Acceptance Criteria:**
+
 - [ ] Checkout flow works end-to-end
 - [ ] Webhooks process correctly
 - [ ] Subscription management works
@@ -508,7 +572,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Ensure all documentation is up-to-date and accurate
 
 **Tasks:**
+
 1. [ ] **README Updates:**
+
    - [ ] Update installation instructions
    - [ ] Update environment variable list
    - [ ] Update deployment instructions
@@ -516,18 +582,21 @@ This plan covers two critical pre-launch activities:
    - [ ] Add troubleshooting section
 
 2. [ ] **API Documentation:**
+
    - [ ] Document all API endpoints
    - [ ] Document request/response formats
    - [ ] Document authentication requirements
    - [ ] Document error codes
 
 3. [ ] **Architecture Documentation:**
+
    - [ ] Update database schema docs
    - [ ] Update deployment architecture
    - [ ] Update environment setup guides
    - [ ] Update security documentation
 
 4. [ ] **User Documentation:**
+
    - [ ] Create user guide (if needed)
    - [ ] Update feature documentation
    - [ ] Create FAQ
@@ -540,6 +609,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Update rollback procedures
 
 **Acceptance Criteria:**
+
 - [ ] All documentation updated
 - [ ] No outdated information
 - [ ] Clear instructions for common tasks
@@ -552,7 +622,9 @@ This plan covers two critical pre-launch activities:
 **Goal:** Create and complete final release checklist
 
 **Tasks:**
+
 1. [ ] **Pre-Launch Checklist:**
+
    - [ ] All P1 features complete
    - [ ] All tests passing
    - [ ] Staging environment tested
@@ -562,6 +634,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Analytics configured
 
 2. [ ] **Security Checklist:**
+
    - [ ] All secrets in environment variables
    - [ ] No secrets in code
    - [ ] RLS policies tested
@@ -570,6 +643,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Rate limiting in place
 
 3. [ ] **Performance Checklist:**
+
    - [ ] Database indexes optimized
    - [ ] API response times acceptable
    - [ ] Page load times acceptable
@@ -577,6 +651,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Bundle size optimized
 
 4. [ ] **Legal/Compliance Checklist:**
+
    - [ ] Privacy policy published
    - [ ] Terms of service published
    - [ ] Cookie policy (if needed)
@@ -584,6 +659,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Email unsubscribe working
 
 5. [ ] **Monitoring Checklist:**
+
    - [ ] Error tracking active
    - [ ] Analytics tracking active
    - [ ] Uptime monitoring configured
@@ -597,6 +673,7 @@ This plan covers two critical pre-launch activities:
    - [ ] Environment variable rollback procedure
 
 **Acceptance Criteria:**
+
 - [ ] All checklist items completed
 - [ ] Rollback plan documented
 - [ ] Team ready for launch
@@ -606,11 +683,13 @@ This plan covers two critical pre-launch activities:
 ## Implementation Order
 
 ### Week 1: Staging Environment Setup
+
 - **Day 1:** Phases 1.1-1.4 (GitHub, Supabase, Vercel, Security)
 - **Day 2:** Phases 1.5-1.8 (Stripe, Email, Cron, Monitoring)
 - **Day 3:** Phase 1.9 (Staging Testing)
 
 ### Week 2: Launch Hardening
+
 - **Day 1:** Phase 2.1 (Full QA Sweep)
 - **Day 2:** Phase 2.2 (Accessibility Audit) + Phase 2.3 (Stripe Smoke Test)
 - **Day 3:** Phase 2.4 (Documentation) + Phase 2.5 (Release Checklist)
@@ -620,6 +699,7 @@ This plan covers two critical pre-launch activities:
 ## Success Criteria
 
 ### Staging Environment
+
 - ✅ Staging site accessible at `staging.nextbestmove.app`
 - ✅ All features work on staging
 - ✅ No production data accessible from staging
@@ -628,6 +708,7 @@ This plan covers two critical pre-launch activities:
 - ✅ Monitoring and error tracking active
 
 ### Launch Hardening
+
 - ✅ All critical bugs fixed
 - ✅ WCAG 2.1 AA compliance achieved
 - ✅ Production Stripe integration verified
@@ -640,11 +721,13 @@ This plan covers two critical pre-launch activities:
 ## Next Steps After Completion
 
 1. **Staging Environment:**
+
    - Use staging for all feature testing
    - Deploy to staging before production
    - Regular staging testing cycles
 
 2. **Launch:**
+
    - Complete final production deployment
    - Monitor production closely for first 48 hours
    - Be ready to rollback if needed
@@ -657,4 +740,3 @@ This plan covers two critical pre-launch activities:
 ---
 
 **End of Staging Environment & Launch Hardening Plan**
-

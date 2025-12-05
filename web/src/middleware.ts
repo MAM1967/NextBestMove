@@ -5,10 +5,27 @@ export async function middleware(request: NextRequest) {
   // Basic Auth protection for staging environment
   // Skip Basic Auth for API routes (webhooks, cron jobs need to work)
   const isApiRoute = request.nextUrl.pathname.startsWith("/api");
+  const hostname = request.nextUrl.hostname;
+  const vercelEnv = process.env.VERCEL_ENV;
+  
+  // Check if staging - prioritize hostname check (most reliable)
   const isStaging = 
-    process.env.VERCEL_ENV === "preview" ||
-    request.nextUrl.hostname === "staging.nextbestmove.app" ||
+    hostname === "staging.nextbestmove.app" ||
+    hostname?.endsWith(".vercel.app") && vercelEnv === "preview" ||
+    vercelEnv === "preview" ||
     process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
+
+  // Debug logging (only in staging to avoid production logs)
+  if (isStaging && process.env.NODE_ENV !== "production") {
+    console.log("[Middleware] Staging check:", {
+      hostname,
+      vercelEnv,
+      isStaging,
+      isApiRoute,
+      hasStagingUser: !!process.env.STAGING_USER,
+      hasStagingPass: !!process.env.STAGING_PASS,
+    });
+  }
 
   if (isStaging && !isApiRoute) {
     const stagingUser = process.env.STAGING_USER;
