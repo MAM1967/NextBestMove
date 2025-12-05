@@ -2,6 +2,48 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  // Basic Auth protection for staging environment
+  // Skip Basic Auth for API routes (webhooks, cron jobs need to work)
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
+  const isStaging = 
+    process.env.VERCEL_ENV === "preview" ||
+    request.nextUrl.hostname === "staging.nextbestmove.app" ||
+    process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
+
+  if (isStaging && !isApiRoute) {
+    const stagingUser = process.env.STAGING_USER;
+    const stagingPass = process.env.STAGING_PASS;
+
+    // Only enforce Basic Auth if credentials are configured
+    if (stagingUser && stagingPass) {
+      const authHeader = request.headers.get("authorization");
+
+      if (!authHeader || !authHeader.startsWith("Basic ")) {
+        return new NextResponse("Authentication required", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": 'Basic realm="Staging Environment"',
+          },
+        });
+      }
+
+      // Decode Basic Auth credentials (using atob for Edge runtime compatibility)
+      const base64Credentials = authHeader.split(" ")[1];
+      const credentials = atob(base64Credentials);
+      const [username, password] = credentials.split(":");
+
+      // Verify credentials
+      if (username !== stagingUser || password !== stagingPass) {
+        return new NextResponse("Invalid credentials", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": 'Basic realm="Staging Environment"',
+          },
+        });
+      }
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });

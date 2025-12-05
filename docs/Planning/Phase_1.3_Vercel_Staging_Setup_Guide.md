@@ -56,10 +56,12 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Supabase (Staging) - ✅ Already Have These
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL`
+
   - Value: `https://adgiptzbxnzddbgfeuut.supabase.co`
   - Scope: **Preview**
 
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
   - Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkZ2lwdHpieG56ZGRiZ2ZldXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4Nzk0MzIsImV4cCI6MjA4MDQ1NTQzMn0.ux0Hwx3zKUDqjYz1_6nJJqSQ8lHUkezcLl-m8VDZWUQ`
   - Scope: **Preview**
 
@@ -76,25 +78,30 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Stripe (Test Mode) - ⚠️ Need to Get These
 
 - [ ] `STRIPE_SECRET_KEY`
+
   - Value: `sk_test_...` (Stripe test mode secret key)
   - Scope: **Preview**
   - **How to get:** Stripe Dashboard → Developers → API keys → Test mode
 
 - [ ] `STRIPE_WEBHOOK_SECRET`
+
   - Value: `whsec_...` (Stripe webhook signing secret for staging)
   - Scope: **Preview**
   - **How to get:** Create webhook endpoint in Stripe (see Step 3)
 
 - [ ] `STRIPE_PRICE_ID_STANDARD_MONTHLY`
+
   - Value: `price_...` (Test mode price ID)
   - Scope: **Preview**
   - **How to get:** Stripe Dashboard → Products → Copy test price ID
 
 - [ ] `STRIPE_PRICE_ID_STANDARD_YEARLY`
+
   - Value: `price_...` (Test mode price ID)
   - Scope: **Preview**
 
 - [ ] `STRIPE_PRICE_ID_PREMIUM_MONTHLY`
+
   - Value: `price_...` (Test mode price ID)
   - Scope: **Preview**
   - **Note:** May be called "Professional" in Stripe
@@ -113,6 +120,7 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Cron Jobs
 
 - [ ] `CRON_SECRET`
+
   - Value: Generate a random secret (e.g., `openssl rand -hex 32`)
   - Scope: **Preview**
   - **How to generate:** `openssl rand -hex 32` or use a password generator
@@ -124,6 +132,7 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Analytics & Monitoring
 
 - [ ] `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+
   - Value: Create a new website in Umami for staging
   - Scope: **Preview**
   - **How to get:** Umami Dashboard → Add Website → Copy Website ID
@@ -143,18 +152,22 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Calendar OAuth (if testing calendar features)
 
 - [ ] `GOOGLE_CLIENT_ID`
+
   - Value: Google OAuth client ID
   - Scope: **Preview**
 
 - [ ] `GOOGLE_CLIENT_SECRET`
+
   - Value: Google OAuth client secret
   - Scope: **Preview**
 
 - [ ] `OUTLOOK_CLIENT_ID`
+
   - Value: Azure/Outlook OAuth client ID
   - Scope: **Preview**
 
 - [ ] `OUTLOOK_CLIENT_SECRET`
+
   - Value: Azure/Outlook OAuth client secret
   - Scope: **Preview**
 
@@ -171,6 +184,7 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 #### Staging Security (Optional - for password protection)
 
 - [ ] `STAGING_USER`
+
   - Value: Username for staging password protection
   - Scope: **Preview**
   - **Note:** Only needed if implementing password protection
@@ -300,10 +314,10 @@ Add each variable with the appropriate scope (Preview/Staging branch):
 ## Next Steps
 
 After completing Phase 1.3:
+
 1. ✅ Move to Phase 1.4: Staging Security (password protection)
 2. ✅ Or continue with Phase 1.5: Stripe Test Mode Setup (if not done)
 
 ---
 
 **Last Updated:** January 2025
-
