@@ -15,15 +15,17 @@ export async function middleware(request: NextRequest) {
     vercelEnv === "preview" ||
     process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
 
-  // Debug logging (only in staging to avoid production logs)
-  if (isStaging && process.env.NODE_ENV !== "production") {
+  // Debug logging for staging (always log in staging to debug)
+  if (isStaging) {
     console.log("[Middleware] Staging check:", {
       hostname,
       vercelEnv,
       isStaging,
       isApiRoute,
+      pathname: request.nextUrl.pathname,
       hasStagingUser: !!process.env.STAGING_USER,
       hasStagingPass: !!process.env.STAGING_PASS,
+      hasAuthHeader: !!request.headers.get("authorization"),
     });
   }
 
