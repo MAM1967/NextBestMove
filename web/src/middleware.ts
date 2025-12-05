@@ -30,8 +30,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isStaging && !isApiRoute) {
-    const stagingUser = process.env.STAGING_USER;
-    const stagingPass = process.env.STAGING_PASS;
+    // Trim whitespace from environment variables (Vercel sometimes adds trailing spaces)
+    const stagingUser = process.env.STAGING_USER?.trim();
+    const stagingPass = process.env.STAGING_PASS?.trim();
 
     // Only enforce Basic Auth if credentials are configured
     if (stagingUser && stagingPass) {
@@ -53,8 +54,24 @@ export async function middleware(request: NextRequest) {
       const credentials = atob(base64Credentials);
       const [username, password] = credentials.split(":");
 
-      // Verify credentials
-      if (username !== stagingUser || password !== stagingPass) {
+      // Trim credentials from user input (in case of whitespace)
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+
+      // Debug logging for credential mismatch (only log lengths, not actual values)
+      if (trimmedUsername !== stagingUser || trimmedPassword !== stagingPass) {
+        console.log("[Middleware] Basic Auth failed:", {
+          usernameMatch: trimmedUsername === stagingUser,
+          passwordMatch: trimmedPassword === stagingPass,
+          expectedUserLength: stagingUser.length,
+          providedUserLength: trimmedUsername.length,
+          expectedPassLength: stagingPass.length,
+          providedPassLength: trimmedPassword.length,
+        });
+      }
+
+      // Verify credentials (with trimming)
+      if (trimmedUsername !== stagingUser || trimmedPassword !== stagingPass) {
         // Return 401 with proper Basic Auth header to trigger browser prompt
         return new NextResponse("Invalid credentials", {
           status: 401,
