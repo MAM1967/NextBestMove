@@ -67,6 +67,11 @@ export async function createTestUserProgrammatically() {
     }
 
     console.log(`✅ Created test user programmatically: ${testUser.email} (${userId})`);
+    
+    // Small delay to ensure Supabase has processed the user creation
+    // This helps avoid race conditions where the user isn't immediately available for sign-in
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     return testUser;
   } catch (error: any) {
     console.error(`Failed to create test user programmatically:`, error);
