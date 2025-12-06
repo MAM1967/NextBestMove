@@ -130,10 +130,6 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     }
 
     // Verify we're on the daily plan page (or app page)
-    const currentUrl = page.url();
-    expect(currentUrl).toMatch(/\/app\/plan|\/app\/daily-plan|\/app/);
-
-    // Verify we're on the daily plan page
     expect(page.url()).toMatch(/\/app\/plan|\/app\/daily-plan|\/app/);
 
     // Verify daily plan is generated (has actions)
