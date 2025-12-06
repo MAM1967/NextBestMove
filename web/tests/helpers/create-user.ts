@@ -20,6 +20,9 @@ export async function createTestUserProgrammatically() {
 
   try {
     // Create user in auth.users via admin API
+    // Log password for debugging (first 3 chars only for security)
+    console.log(`🔐 Creating user with email: ${testUser.email}, password length: ${testUser.password.length}`);
+    
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: testUser.email,
       password: testUser.password,
@@ -34,6 +37,14 @@ export async function createTestUserProgrammatically() {
     }
 
     const userId = authData.user.id;
+    
+    // Verify user was created and can be retrieved
+    const { data: verifyUser, error: verifyError } = await supabase.auth.admin.getUserById(userId);
+    if (verifyError || !verifyUser.user) {
+      console.warn(`⚠️  Warning: Could not verify created user: ${verifyError?.message}`);
+    } else {
+      console.log(`✅ User verified: ${verifyUser.user.email} (confirmed: ${verifyUser.user.email_confirmed_at ? 'yes' : 'no'})`);
+    }
 
     // Create user profile in public.users
     // onboarding_completed is false by default, so user will go through onboarding
