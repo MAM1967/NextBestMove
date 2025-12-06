@@ -56,26 +56,46 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       // Submit or click next
       await page.click('button:has-text("Add"), button:has-text("Next"), button:has-text("Continue"), button[type="submit"]');
       
+      // Wait for navigation to next step (calendar step)
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+      
       // Step 3: Calendar connection - skip for smoke test
-      const skipButton = page.locator('button:has-text("Skip"), button:has-text("Skip for now"), a:has-text("Skip")');
-      if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await skipButton.click();
-      } else {
-        // If no skip button, calendar step might be optional - try to continue
-        await page.click('button:has-text("Next"), button:has-text("Continue")').catch(() => {});
-      }
+      // Wait for the skip button to be visible (it's a button with "Skip for now" text)
+      const skipButton = page.locator('button:has-text("Skip for now"), button:has-text("Skip"), a:has-text("Skip for now")');
+      await skipButton.waitFor({ timeout: 10000 });
+      await skipButton.click();
+      
+      // Wait for navigation to next step
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       
       // Step 4: Working hours - accept defaults
-      await page.click('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks good")').catch(() => {});
+      const nextButton4 = page.locator('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks good")');
+      await nextButton4.waitFor({ timeout: 10000 });
+      await nextButton4.click();
+      
+      // Wait for navigation
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       
       // Step 5: Weekend preference - accept defaults
-      await page.click('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks good")').catch(() => {});
+      const nextButton5 = page.locator('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks good")');
+      await nextButton5.waitFor({ timeout: 10000 });
+      await nextButton5.click();
+      
+      // Wait for navigation
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       
       // Step 6: Weekly focus - accept defaults
-      await page.click('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks right"), button:has-text("Looks good")').catch(() => {});
+      const nextButton6 = page.locator('button:has-text("Next"), button:has-text("Continue"), button:has-text("Looks right"), button:has-text("Looks good")');
+      await nextButton6.waitFor({ timeout: 10000 });
+      await nextButton6.click();
+      
+      // Wait for navigation to final step
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       
       // Step 7: Start free trial
-      await page.click('button:has-text("Start"), button:has-text("Start Free Trial"), button:has-text("Get Started")');
+      const startButton = page.locator('button:has-text("Start"), button:has-text("Start Free Trial"), button:has-text("Get Started")');
+      await startButton.waitFor({ timeout: 10000 });
+      await startButton.click();
     }
 
     // Wait for redirect to daily plan page
