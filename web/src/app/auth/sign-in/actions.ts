@@ -44,25 +44,10 @@ export async function signInAction(
         message: error.message,
         status: error.status,
         email: trimmedEmail ? `${trimmedEmail.substring(0, 3)}...${trimmedEmail.substring(trimmedEmail.length - 10)}` : "missing",
-        // Check if user exists in auth.users
         errorCode: error.message,
+        // Note: Cannot use admin API here (server action uses anon key)
+        // The error message should indicate if user doesn't exist or password is wrong
       });
-      
-      // Try to check if user exists (for debugging)
-      try {
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(trimmedEmail);
-        if (userError) {
-          console.error("[SignInAction] User lookup error:", userError.message);
-        } else {
-          console.log("[SignInAction] User exists in auth.users:", {
-            userId: userData.user?.id,
-            emailConfirmed: !!userData.user?.email_confirmed_at,
-            createdAt: userData.user?.created_at,
-          });
-        }
-      } catch (adminError) {
-        console.error("[SignInAction] Cannot check user (no admin access):", adminError);
-      }
     }
     return { error: error.message };
   }
