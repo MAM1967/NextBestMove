@@ -1,11 +1,26 @@
 import { Page } from "@playwright/test";
 import { STAGING_CONFIG, generateTestUser } from "./staging-config";
 import { confirmUserEmail } from "./test-data";
+import { createTestUserProgrammatically } from "./create-user";
 
 /**
  * Sign up a new user via the UI
+ * Falls back to programmatic creation if UI sign-up fails
  */
 export async function signUpUser(page: Page, email?: string, password?: string, name?: string) {
+  // Try programmatic creation first (more reliable for tests)
+  try {
+    console.log("🔧 Attempting to create user programmatically...");
+    const programmaticUser = await createTestUserProgrammatically();
+    // Sign in with the programmatically created user
+    await signInUser(page, programmaticUser.email, programmaticUser.password);
+    return programmaticUser;
+  } catch (programmaticError: any) {
+    console.log(`⚠️  Programmatic user creation failed: ${programmaticError.message}`);
+    console.log("🔄 Falling back to UI sign-up...");
+    // Fall through to UI sign-up
+  }
+
   const testUser = email && password && name 
     ? { email, password, name }
     : generateTestUser();
