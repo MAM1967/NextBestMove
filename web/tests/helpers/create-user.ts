@@ -5,6 +5,7 @@ import { generateTestUser } from "./staging-config";
 /**
  * Create a test user programmatically via Supabase Admin API
  * This bypasses the UI sign-up flow and email confirmation requirements
+ * User is created with email confirmed but onboarding NOT completed
  */
 export async function createTestUserProgrammatically() {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
@@ -35,6 +36,7 @@ export async function createTestUserProgrammatically() {
     const userId = authData.user.id;
 
     // Create user profile in public.users
+    // onboarding_completed is false by default, so user will go through onboarding
     const { error: profileError } = await supabase
       .from("users")
       .insert({
@@ -44,6 +46,7 @@ export async function createTestUserProgrammatically() {
         timezone: "America/New_York",
         streak_count: 0,
         calendar_connected: false,
+        onboarding_completed: false, // Explicitly set to false so user goes through onboarding
       });
 
     if (profileError) {
@@ -56,6 +59,51 @@ export async function createTestUserProgrammatically() {
     return testUser;
   } catch (error: any) {
     console.error(`Failed to create test user programmatically:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get or create a pre-seeded test user
+ * Reuses existing user if available, otherwise creates a new one
+ * This is more efficient for tests that don't need a fresh user each time
+ */
+export async function getOrCreatePreSeededUser(email?: string) {
+  if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
+    throw new Error("Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  }
+
+  const supabase = createClient(
+    STAGING_CONFIG.supabaseUrl,
+    STAGING_CONFIG.supabaseServiceRoleKey
+  );
+
+  // Use provided email or generate a consistent test email
+  const testEmail = email || `test-preseeded-${Date.now()}@staging.nextbestmove.app`;
+  const testPassword = "TestPassword123!";
+  const testName = `Pre-seeded Test User ${Date.now()}`;
+
+  try {
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id, email")
+      .eq("email", testEmail)
+      .single();
+
+    if (existingUser) {
+      console.log(`✅ Using existing pre-seeded user: ${testEmail}`);
+      return {
+        email: testEmail,
+        password: testPassword,
+        name: testName,
+      };
+    }
+
+    // Create new user
+    return await createTestUserProgrammatically();
+  } catch (error: any) {
+    console.error(`Failed to get or create pre-seeded user:`, error);
     throw error;
   }
 }

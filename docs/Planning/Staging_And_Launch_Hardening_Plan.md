@@ -286,6 +286,7 @@ This plan covers two critical pre-launch activities:
 - [x] Staging prefix visible in test emails ✅
 
 **Configuration:**
+
 - Staging domain: `staging.nextbestmove.app` configured in Resend
 - From address: `noreply@staging.nextbestmove.app` (auto-detected in staging)
 - API key: `RESEND_API_KEY` set in Vercel (Preview scope)
