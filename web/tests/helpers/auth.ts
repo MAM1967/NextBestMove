@@ -98,9 +98,10 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
         console.log("📧 Email confirmation required - auto-confirming user for testing...");
         
         // Wait a moment for the user to be created in the database
-        await page.waitForTimeout(2000);
+        // Sign-up creates user asynchronously, so we need to wait
+        await page.waitForTimeout(3000); // Increased wait time
         
-        // Auto-confirm the user
+        // Auto-confirm the user (this function will retry finding the user)
         const confirmed = await confirmUserEmail(testUser.email);
         
         if (confirmed) {
@@ -109,7 +110,15 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
           await signInUser(page, testUser.email, testUser.password);
           return testUser;
         } else {
-          throw new Error(`Failed to auto-confirm user email. Sign-up error: ${errorText}`);
+          // If confirmation failed, try signing in anyway - user might already be confirmed
+          console.log("⚠️  Auto-confirmation failed, attempting sign-in anyway...");
+          try {
+            await signInUser(page, testUser.email, testUser.password);
+            console.log("✅ Sign-in succeeded despite confirmation failure");
+            return testUser;
+          } catch (signInError) {
+            throw new Error(`Failed to auto-confirm user email and sign-in failed. Sign-up error: ${errorText}`);
+          }
         }
       }
       

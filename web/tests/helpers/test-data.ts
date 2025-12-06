@@ -73,34 +73,43 @@ export async function confirmUserEmail(email: string) {
       STAGING_CONFIG.supabaseServiceRoleKey
     );
 
-    // First try to get user ID from public.users table
+    // Retry finding the user (they may not be in DB yet due to async creation)
     let userId: string | null = null;
-    const { data: userRecord } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 seconds
     
-    if (userRecord?.id) {
-      userId = userRecord.id;
-    } else {
-      // If not in public.users, query auth.users directly via admin API
-      // List users and find by email (admin API doesn't have getUserByEmail)
-      const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // First try to get user ID from public.users table
+      const { data: userRecord } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", email)
+        .single();
       
-      if (listError) {
-        console.error(`Failed to list users:`, listError);
-        return false;
+      if (userRecord?.id) {
+        userId = userRecord.id;
+        break;
       }
       
-      const authUser = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-      if (authUser?.id) {
-        userId = authUser.id;
+      // If not in public.users, query auth.users directly via admin API
+      const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
+      
+      if (!listError && usersData) {
+        const authUser = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        if (authUser?.id) {
+          userId = authUser.id;
+          break;
+        }
+      }
+      
+      if (attempt < maxRetries) {
+        console.log(`   User ${email} not found yet (attempt ${attempt}/${maxRetries}), waiting ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
     
     if (!userId) {
-      console.log(`User ${email} not found in auth.users or public.users - cannot confirm`);
+      console.log(`User ${email} not found in auth.users or public.users after ${maxRetries} attempts - cannot confirm`);
       return false;
     }
 
