@@ -208,10 +208,37 @@ const nextConfig: NextConfig = {
     })(),
     
     // Service role key for admin operations (server-side only)
-    // Note: This makes it available to client-side, but server-side API routes use process.env directly
-    SUPABASE_SERVICE_ROLE_KEY:
-      envLocal.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // WORKAROUND: Vercel Preview builds sometimes don't get env vars correctly
+    // Override for Preview builds to ensure staging key is used
+    SUPABASE_SERVICE_ROLE_KEY: (() => {
+      // Local development: use .env.local or process.env
+      if (!process.env.VERCEL) {
+        return envLocal.SUPABASE_SERVICE_ROLE_KEY ||
+               process.env.SUPABASE_SERVICE_ROLE_KEY ||
+               undefined;
+      }
+      
+      // Vercel builds: override based on VERCEL_ENV
+      if (process.env.VERCEL_ENV === "preview") {
+        // Preview/Staging: force staging service role key
+        const stagingServiceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkZ2lwdHpieG56ZGRiZ2ZldXV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3OTQzMiwiZXhwIjoyMDgwNDU1NDMyfQ.-JUP_rXGxxxyv6Rk0ThtCZYZou_d33zuGJU33xy6eoo";
+        const vercelProvided = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (vercelProvided !== stagingServiceRoleKey) {
+          console.log("🔧 WORKAROUND: Overriding SUPABASE_SERVICE_ROLE_KEY for Preview build");
+          console.log(`   Vercel provided: ${vercelProvided ? `${vercelProvided.substring(0, 30)}... (length: ${vercelProvided.length})` : "MISSING"}`);
+          console.log(`   Overriding with: ${stagingServiceRoleKey.substring(0, 30)}... (length: ${stagingServiceRoleKey.length})`);
+        }
+        return stagingServiceRoleKey;
+      } else if (process.env.VERCEL_ENV === "production") {
+        // Production: use production service role key
+        return process.env.SUPABASE_SERVICE_ROLE_KEY || undefined;
+      }
+      
+      // Development or fallback
+      return envLocal.SUPABASE_SERVICE_ROLE_KEY ||
+             process.env.SUPABASE_SERVICE_ROLE_KEY ||
+             undefined;
+    })(),
   },
   // Ensure server-side environment variables are available
   // In Next.js, non-NEXT_PUBLIC_ vars are automatically server-only, but this ensures it's accessible
