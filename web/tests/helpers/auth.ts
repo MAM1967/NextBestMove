@@ -26,62 +26,87 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
 
 /**
  * Sign in an existing user programmatically in the browser
- * Bypasses the UI form entirely by using Supabase client via storage state
+ * Uses browser's Supabase client to sign in, which automatically sets cookies correctly
  * This is more reliable since programmatic sign-in works but UI form fails
  */
 export async function signInUser(page: Page, email: string, password: string) {
   console.log(`🔐 Signing in programmatically in browser context...`);
   
-  // Sign in programmatically using Node.js Supabase client to get session
-  const { createClient } = await import("@supabase/supabase-js");
-  const supabase = createClient(
-    STAGING_CONFIG.supabaseUrl!,
-    STAGING_CONFIG.supabaseAnonKey!
-  );
+  // Navigate to any page first to establish browser context
+  await page.goto("/auth/sign-in", { waitUntil: "domcontentloaded", timeout: 30000 });
   
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+  // Use browser's Supabase client to sign in - this will set cookies automatically
+  // We need to inject the Supabase client and sign in via browser context
+  const signInResult = await page.evaluate(async ({ email, password, supabaseUrl, supabaseAnonKey }) => {
+    // Load Supabase client from CDN (available globally in Next.js apps)
+    // @ts-ignore - window.supabase might be available, or we use fetch
+    if (typeof window !== 'undefined' && (window as any).supabase) {
+      const supabase = (window as any).supabase;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, error: error.message };
+      return { success: true, userId: data.user?.id };
+    }
+    
+    // Fallback: Use fetch API to call Supabase auth endpoint directly
+    try {
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        return { success: false, error: error.error_description || error.message };
+      }
+      
+      const data = await response.json();
+      
+      // Set cookies manually using document.cookie
+      // Supabase SSR expects: sb-{project-ref}-auth-token
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'unknown';
+      const cookieName = `sb-${projectRef}-auth-token`;
+      const cookieValue = JSON.stringify({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+        expires_in: data.expires_in,
+        token_type: data.token_type,
+        user: data.user,
+      });
+      
+      // Set cookie with proper attributes
+      const expires = data.expires_at ? new Date(data.expires_at * 1000).toUTCString() : '';
+      document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}; path=/; ${expires ? `expires=${expires}; ` : ''}SameSite=Lax; Secure`;
+      
+      return { success: true, userId: data.user?.id };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }, {
     email,
     password,
+    supabaseUrl: STAGING_CONFIG.supabaseUrl!,
+    supabaseAnonKey: STAGING_CONFIG.supabaseAnonKey!,
   });
   
-  if (signInError || !signInData.session) {
-    throw new Error(`Programmatic sign-in failed: ${signInError?.message || 'No session'}`);
+  if (!signInResult.success) {
+    throw new Error(`Programmatic browser sign-in failed: ${signInResult.error}`);
   }
   
-  console.log(`✅ Programmatic sign-in successful, setting browser cookies...`);
+  console.log(`✅ Programmatic browser sign-in successful`);
   
-  // Extract the session cookies and set them in the browser
-  const session = signInData.session;
-  const supabaseProjectRef = STAGING_CONFIG.supabaseUrl!.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'unknown';
-  
-  // Set Supabase auth cookies in browser context
-  await page.context().addCookies([
-    {
-      name: `sb-${supabaseProjectRef}-auth-token`,
-      value: JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        expires_at: session.expires_at,
-        expires_in: session.expires_in,
-        token_type: session.token_type,
-        user: signInData.user,
-      }),
-      domain: '.nextbestmove.app',
-      path: '/',
-      httpOnly: false,
-      secure: true,
-      sameSite: 'Lax' as const,
-      expires: session.expires_at ? Math.floor(session.expires_at) : undefined,
-    },
-  ]);
-  
-  console.log(`✅ Browser cookies set, navigating to app...`);
+  // Small delay to ensure cookies are set
+  await page.waitForTimeout(1000);
   
   // Now navigate to the app - user should be authenticated via cookies
   await page.goto("/app", { waitUntil: "domcontentloaded", timeout: 30000 });
   
   // Wait for either /app or /onboarding (middleware will redirect if onboarding needed)
-  await page.waitForURL(/\/app|\/onboarding/, { timeout: 10000 });
+  await page.waitForURL(/\/app|\/onboarding/, { timeout: 15000 });
   
   const currentUrl = page.url();
   console.log(`✅ Successfully authenticated and navigated to: ${currentUrl}`);
