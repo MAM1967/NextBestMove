@@ -68,9 +68,20 @@ export async function createTestUserProgrammatically() {
 
     console.log(`✅ Created test user programmatically: ${testUser.email} (${userId})`);
     
-    // Small delay to ensure Supabase has processed the user creation
-    // This helps avoid race conditions where the user isn't immediately available for sign-in
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Known issue: admin.createUser() sometimes doesn't set the password correctly
+    // Workaround: Update the password after creation to ensure it's properly hashed
+    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+      password: testUser.password, // Re-set the password to ensure it's properly hashed
+    });
+    
+    if (updateError) {
+      console.warn(`⚠️  Warning: Could not update user password: ${updateError.message}`);
+    } else {
+      console.log(`✅ User password updated/verified after creation`);
+    }
+    
+    // Additional delay to ensure Supabase has fully processed the password update
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     return testUser;
   } catch (error: any) {
