@@ -6,10 +6,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
-  fullyParallel: true,
+  fullyParallel: false, // Run sequentially to avoid email rate limits
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1, // Run one test at a time to avoid Supabase email rate limits
   reporter: "html",
   
   use: {

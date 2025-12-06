@@ -113,6 +113,50 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
         }
       }
       
+      // Check for rate limit errors
+      const isRateLimitError = 
+        errorText.toLowerCase().includes("rate limit") ||
+        errorText.toLowerCase().includes("too many requests");
+      
+      if (isRateLimitError) {
+        console.log("⏳ Email rate limit hit - waiting 10 seconds before retry...");
+        await page.waitForTimeout(10000); // Wait 10 seconds
+        // Retry sign-up once
+        console.log("🔄 Retrying sign-up after rate limit wait...");
+        await page.reload();
+        await page.waitForSelector('form, input[type="text"], input[type="email"]', { timeout: 10000 });
+        
+        // Fill form again
+        const nameInput = page.locator('input#name, input[name="name"], input[type="text"][autocomplete="name"]');
+        await nameInput.fill(testUser.name);
+        const emailInput = page.locator('input#email, input[name="email"], input[type="email"]');
+        await emailInput.fill(testUser.email);
+        const passwordInput = page.locator('input#password, input[name="password"], input[type="password"]');
+        await passwordInput.fill(testUser.password);
+        
+        const submitButton = page.locator('button[type="submit"]:has-text("Create account"), button:has-text("Creating account")');
+        await submitButton.click();
+        
+        // Wait for navigation again
+        try {
+          await page.waitForURL(/\/app|\/onboarding/, { timeout: 20000 });
+          await page.waitForLoadState("networkidle");
+          const finalUrl = page.url();
+          if (finalUrl.includes("/onboarding") || finalUrl.includes("/app")) {
+            console.log("✅ Sign-up succeeded after rate limit retry");
+            // Auto-confirm user email
+            try {
+              await confirmUserEmail(testUser.email);
+            } catch (confirmError) {
+              console.warn("⚠️  Failed to auto-confirm user email:", confirmError);
+            }
+            return testUser;
+          }
+        } catch (retryError) {
+          throw new Error(`Sign-up failed after rate limit retry: ${errorText}`);
+        }
+      }
+      
       // For other errors, throw normally
       throw new Error(`Sign-up failed on ${currentUrl}: ${errorText || "Unknown error"}`);
     }
