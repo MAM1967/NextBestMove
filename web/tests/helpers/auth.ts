@@ -12,11 +12,20 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
   try {
     console.log("🔧 Attempting to create user programmatically...");
     const programmaticUser = await createTestUserProgrammatically();
+    console.log("✅ User created, signing in...");
+    
     // Sign in with the programmatically created user
-    await signInUser(page, programmaticUser.email, programmaticUser.password);
-    return programmaticUser;
+    try {
+      await signInUser(page, programmaticUser.email, programmaticUser.password);
+      console.log("✅ Sign-in successful");
+      return programmaticUser;
+    } catch (signInError: any) {
+      console.log(`⚠️  Sign-in failed: ${signInError.message}`);
+      // If sign-in fails, fall through to UI sign-up
+      throw signInError;
+    }
   } catch (programmaticError: any) {
-    console.log(`⚠️  Programmatic user creation failed: ${programmaticError.message}`);
+    console.log(`⚠️  Programmatic user creation/sign-in failed: ${programmaticError.message}`);
     console.log("🔄 Falling back to UI sign-up...");
     // Fall through to UI sign-up
   }
@@ -211,7 +220,7 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
  */
 export async function signInUser(page: Page, email: string, password: string) {
   // Navigate to sign in page
-  await page.goto("/auth/sign-in", { waitUntil: "domcontentloaded" });
+  await page.goto("/auth/sign-in", { waitUntil: "domcontentloaded", timeout: 30000 });
   
   // Wait for the form to be visible
   const emailInput = page.locator('input#email, input[name="email"], input[type="email"]');
@@ -227,11 +236,21 @@ export async function signInUser(page: Page, email: string, password: string) {
   // Submit form
   const submitButton = page.locator('button[type="submit"]:has-text("Sign in"), button:has-text("Signing in")');
   await submitButton.waitFor({ state: "visible", timeout: 5000 });
-  await submitButton.click();
   
-  // Wait for redirect to app
-  await page.waitForURL(/\/app/, { timeout: 15000 });
+  // Click and wait for navigation (could go to /app or /onboarding)
+  await Promise.all([
+    page.waitForURL(/\/app|\/onboarding/, { timeout: 30000 }),
+    submitButton.click(),
+  ]);
+  
+  // Wait for page to load
   await page.waitForLoadState("networkidle");
+  
+  // Verify we're on the right page
+  const currentUrl = page.url();
+  if (!currentUrl.includes("/app") && !currentUrl.includes("/onboarding")) {
+    throw new Error(`Unexpected URL after sign-in: ${currentUrl}. Expected /app or /onboarding`);
+  }
 }
 
 /**
