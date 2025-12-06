@@ -18,21 +18,33 @@ These tests validate the 4 revenue-critical user paths:
 
 ## Environment Variables
 
-Create a `.env.test` file or set these environment variables:
+### Quick Setup (Recommended)
+
+Use the helper script to set environment variables:
 
 ```bash
-STAGING_USER=staging                    # Basic Auth username
-STAGING_PASS=your-password              # Basic Auth password
-CRON_SECRET=your-secret                 # For triggering cron jobs (optional, staging value in Preview scope)
-# Required for auto-confirming user emails in tests
-# Note: In Vercel Preview scope, these are named without STAGING_ prefix:
-# NEXT_PUBLIC_SUPABASE_URL (already set in Vercel Preview)
-# SUPABASE_SERVICE_ROLE_KEY (already set in Vercel Preview)
-# 
-# For local testing, you can set either naming convention:
-STAGING_SUPABASE_URL=https://adgiptzbxnzddbgfeuut.supabase.co  # OR use NEXT_PUBLIC_SUPABASE_URL
-STAGING_SUPABASE_SERVICE_ROLE_KEY=your-key                   # OR use SUPABASE_SERVICE_ROLE_KEY
+source tests/setup-env.sh
+npm run test:staging
 ```
+
+### Manual Setup
+
+Set these environment variables (matches Vercel Preview scope naming):
+
+```bash
+# Supabase credentials (required for auto-confirming user emails)
+export NEXT_PUBLIC_SUPABASE_URL="https://adgiptzbxnzddbgfeuut.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkZ2lwdHpieG56ZGRiZ2ZldXV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3OTQzMiwiZXhwIjoyMDgwNDU1NDMyfQ.-JUP_rXGxxxyv6Rk0ThtCZYZou_d33zuGJU33xy6eoo"
+
+# Basic Auth (optional, defaults provided)
+export STAGING_USER="staging"
+export STAGING_PASS="Jer29:11esv"
+
+# Cron secret (optional, for weekly summary test)
+export CRON_SECRET="your-cron-secret"
+```
+
+**Note:** The config checks both `STAGING_*` and direct names (e.g., `SUPABASE_SERVICE_ROLE_KEY`), so either naming convention works.
 
 ## Running Tests
 
