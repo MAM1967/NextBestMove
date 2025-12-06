@@ -7,8 +7,9 @@ export const STAGING_CONFIG = {
   stagingUser: process.env.STAGING_USER || "staging",
   stagingPass: process.env.STAGING_PASS || "",
   cronSecret: process.env.CRON_SECRET || "", // CRON_SECRET in Preview scope has staging value
+  // Check both STAGING_* prefix and direct names (Vercel Preview uses direct names)
   supabaseUrl: process.env.STAGING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  supabaseServiceRoleKey: process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || "",
+  supabaseServiceRoleKey: process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 } as const;
 
 /**

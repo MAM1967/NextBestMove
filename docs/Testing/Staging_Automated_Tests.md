@@ -67,8 +67,11 @@ Set these environment variables (or create `.env.test`):
 export STAGING_USER="staging"
 export STAGING_PASS="your-basic-auth-password"
 export CRON_SECRET="your-cron-secret"  # Optional, for weekly summary test (staging value in Preview scope)
-export STAGING_SUPABASE_URL="your-staging-supabase-url"  # Optional, for cleanup
-export STAGING_SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"  # Optional, for cleanup
+
+# For Supabase credentials, tests check both naming conventions:
+# - STAGING_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL (Vercel Preview uses NEXT_PUBLIC_SUPABASE_URL)
+# - STAGING_SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY (Vercel Preview uses SUPABASE_SERVICE_ROLE_KEY)
+# These are already set in Vercel Preview scope, so no need to set locally unless running tests outside CI
 ```
 
 ### 3. Run Tests

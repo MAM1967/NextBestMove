@@ -24,8 +24,14 @@ Create a `.env.test` file or set these environment variables:
 STAGING_USER=staging                    # Basic Auth username
 STAGING_PASS=your-password              # Basic Auth password
 CRON_SECRET=your-secret                 # For triggering cron jobs (optional, staging value in Preview scope)
-STAGING_SUPABASE_URL=your-url           # For test data cleanup (optional)
-STAGING_SUPABASE_SERVICE_ROLE_KEY=key   # For test data cleanup (optional)
+# Required for auto-confirming user emails in tests
+# Note: In Vercel Preview scope, these are named without STAGING_ prefix:
+# NEXT_PUBLIC_SUPABASE_URL (already set in Vercel Preview)
+# SUPABASE_SERVICE_ROLE_KEY (already set in Vercel Preview)
+# 
+# For local testing, you can set either naming convention:
+STAGING_SUPABASE_URL=https://adgiptzbxnzddbgfeuut.supabase.co  # OR use NEXT_PUBLIC_SUPABASE_URL
+STAGING_SUPABASE_SERVICE_ROLE_KEY=your-key                   # OR use SUPABASE_SERVICE_ROLE_KEY
 ```
 
 ## Running Tests
