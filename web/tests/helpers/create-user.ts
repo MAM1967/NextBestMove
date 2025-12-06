@@ -80,8 +80,34 @@ export async function createTestUserProgrammatically() {
       console.log(`✅ User password updated/verified after creation`);
     }
     
-    // Additional delay to ensure Supabase has fully processed the password update
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Test sign-in programmatically to verify password works
+    // This uses the anon key (not service role) to test actual authentication
+    if (STAGING_CONFIG.supabaseAnonKey) {
+      const testClient = createClient(
+        STAGING_CONFIG.supabaseUrl,
+        STAGING_CONFIG.supabaseAnonKey
+      );
+      
+      const { data: signInData, error: signInError } = await testClient.auth.signInWithPassword({
+        email: testUser.email,
+        password: testUser.password,
+      });
+      
+      if (signInError) {
+        console.error(`❌ Programmatic sign-in test FAILED: ${signInError.message}`);
+        console.error(`   This indicates the password is not set correctly in Supabase`);
+        // Don't throw - let the UI test try anyway, but log the issue
+      } else {
+        console.log(`✅ Programmatic sign-in test PASSED - password works correctly`);
+        // Sign out immediately (we don't want to stay signed in)
+        await testClient.auth.signOut();
+      }
+    } else {
+      console.warn(`⚠️  No anon key available - skipping programmatic sign-in test`);
+    }
+    
+    // Additional delay to ensure Supabase has fully processed everything
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     return testUser;
   } catch (error: any) {
