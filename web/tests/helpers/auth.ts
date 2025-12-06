@@ -38,11 +38,26 @@ export async function signInUser(page: Page, email: string, password: string) {
   await emailInput.waitFor({ state: "visible", timeout: 10000 });
   
   // Fill sign in form
+  // Clear any existing values first to avoid issues
+  await emailInput.clear();
   await emailInput.fill(email);
   
   const passwordInput = page.locator('input#password, input[name="password"], input[type="password"]');
   await passwordInput.waitFor({ state: "visible", timeout: 5000 });
+  await passwordInput.clear();
   await passwordInput.fill(password);
+  
+  // Verify values were filled correctly
+  const filledEmail = await emailInput.inputValue();
+  const filledPassword = await passwordInput.inputValue();
+  console.log(`📝 Form filled - Email: ${filledEmail.substring(0, 10)}... (length: ${filledEmail.length}), Password length: ${filledPassword.length}`);
+  
+  if (filledEmail !== email) {
+    throw new Error(`Email mismatch: expected "${email}", got "${filledEmail}"`);
+  }
+  if (filledPassword.length !== password.length) {
+    throw new Error(`Password length mismatch: expected ${password.length}, got ${filledPassword.length}`);
+  }
   
   // Submit form - wait for both network response AND navigation
   // React Server Actions make network requests, so we should wait for the response
