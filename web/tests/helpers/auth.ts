@@ -49,100 +49,100 @@ export async function signInUser(page: Page, email: string, password: string) {
   const submitButton = page.locator('button[type="submit"]');
   await submitButton.waitFor({ state: "visible", timeout: 5000 });
   
-  // Strategy 1: Wait for network response from the server action
-  // React Server Actions typically make POST requests to the same route
-  const responsePromise = page.waitForResponse(
-    (response) => {
-      const url = response.url();
-      // Wait for the server action response (Next.js server actions use POST to the same route)
-      return (
-        response.request().method() === "POST" &&
-        (url.includes("/auth/sign-in") || url.includes("/api/auth") || url.includes("signInAction"))
-      ) && response.status() < 400;
-    },
-    { timeout: 30000 }
-  );
-  
-  // Strategy 2: Wait for button state change (indicates form is submitting)
-  const buttonStatePromise = submitButton.waitFor({ 
-    state: "visible",
-    timeout: 5000 
-  }).then(() => {
-    // Wait for button text to change to "Signing in..." or button to be disabled
-    return Promise.race([
-      page.waitForSelector('button:has-text("Signing in")', { timeout: 2000 }).catch(() => null),
-      submitButton.waitFor({ state: "hidden" }).catch(() => null),
-    ]);
+  // Check if form is valid before submitting
+  const form = page.locator('form');
+  const isFormValid = await form.evaluate((form) => {
+    return (form as HTMLFormElement).checkValidity();
   });
   
-  // Strategy 3: Wait for navigation OR specific elements that appear after sign-in
-  const navigationPromise = Promise.race([
-    page.waitForURL(/\/app|\/onboarding/, { timeout: 30000 }),
-    // Also wait for elements that appear after successful sign-in
-    page.waitForSelector('h1, [data-testid], nav, main', { timeout: 30000 }).then(() => {
-      // Check if we're on a different page
-      const url = page.url();
-      if (url.includes("/app") || url.includes("/onboarding")) {
-        return url;
-      }
-      throw new Error("Still on sign-in page");
-    }),
-  ]);
+  if (!isFormValid) {
+    throw new Error("Form validation failed - check if email and password are filled correctly");
+  }
+  
+  // Strategy 1: Wait for network response from the server action
+  // React Server Actions use POST requests - monitor all POST requests
+  const responsePromise = page.waitForResponse(
+    (response) => {
+      const method = response.request().method();
+      const url = response.url();
+      // Next.js server actions make POST requests - look for any POST to the current route
+      return method === "POST" && response.status() < 500;
+    },
+    { timeout: 10000 }
+  ).catch(() => {
+    console.warn("⚠️  No POST response detected within 10s");
+    return null;
+  });
+  
+  // Strategy 2: Wait for button state change (indicates form is submitting)
+  // The button should change to "Signing in..." when submitting
+  const buttonTextPromise = page.waitForFunction(
+    () => {
+      const button = document.querySelector('button[type="submit"]');
+      return button?.textContent?.includes("Signing in") || false;
+    },
+    { timeout: 5000 }
+  ).catch(() => {
+    console.warn("⚠️  Button text didn't change to 'Signing in'");
+    return null;
+  });
+  
+  // Strategy 3: Wait for navigation OR error message
+  const navigationPromise = page.waitForURL(/\/app|\/onboarding/, { timeout: 30000 });
+  const errorMessagePromise = page.waitForSelector(
+    '[class*="error"], [class*="red"], .text-red-800, .text-red-600',
+    { timeout: 5000 }
+  ).catch(() => null);
   
   // Click submit button
+  console.log("🖱️  Clicking submit button...");
   await submitButton.click();
   
-  // Wait for the response first (confirms server action completed)
+  // Wait for button to show "Signing in..." state
+  try {
+    await buttonTextPromise;
+    console.log("✅ Button state changed to 'Signing in'");
+  } catch (error) {
+    console.warn("⚠️  Button state didn't change");
+  }
+  
+  // Wait for either navigation OR error message
+  const result = await Promise.race([
+    navigationPromise.then(() => ({ type: "navigation" as const })),
+    errorMessagePromise.then((errorEl) => ({ type: "error" as const, element: errorEl })),
+  ]);
+  
+  if (result.type === "error") {
+    // Error message appeared - get the text
+    const errorText = await page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600').first().textContent() || "Unknown error";
+    const currentUrl = page.url();
+    await page.screenshot({ path: "test-results/sign-in-error.png" });
+    throw new Error(`Sign-in failed with error: ${errorText}. Current URL: ${currentUrl}`);
+  }
+  
+  // Navigation succeeded - wait for page to stabilize
   try {
     await responsePromise;
     console.log("✅ Server action response received");
   } catch (error) {
-    console.warn("⚠️  No server action response detected, continuing...");
+    console.warn("⚠️  No server action response detected, but navigation occurred");
   }
   
-  // Wait for navigation or UI change
+  // Wait for page to stabilize
   try {
-    await navigationPromise;
-    
-    // Wait for page to stabilize
-    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
-      // If networkidle times out, that's okay - just continue
-      console.log("⚠️  Network idle timeout, continuing...");
-    });
-    
-    // Verify we're on the right page
-    const currentUrl = page.url();
-    if (!currentUrl.includes("/app") && !currentUrl.includes("/onboarding")) {
-      // Check for error messages
-      const errorMessage = page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600');
-      const errorVisible = await errorMessage.first().isVisible({ timeout: 2000 }).catch(() => false);
-      
-      if (errorVisible) {
-        const errorText = await errorMessage.first().textContent() || "";
-        throw new Error(`Sign-in failed: ${errorText}. Current URL: ${currentUrl}`);
-      }
-      
-      throw new Error(`Unexpected URL after sign-in: ${currentUrl}. Expected /app or /onboarding`);
-    }
-    
-    console.log(`✅ Successfully navigated to: ${currentUrl}`);
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
   } catch (error) {
-    // Check for error messages if navigation failed
-    const errorMessage = page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600');
-    const errorVisible = await errorMessage.first().isVisible({ timeout: 2000 }).catch(() => false);
-    
-    if (errorVisible) {
-      const errorText = await errorMessage.first().textContent() || "";
-      const currentUrl = page.url();
-      throw new Error(`Sign-in failed: ${errorText}. Current URL: ${currentUrl}`);
-    }
-    
-    // Take a screenshot for debugging
-    await page.screenshot({ path: "test-results/sign-in-failed.png" }).catch(() => {});
-    
-    // Re-throw original error
-    throw error;
+    console.warn("⚠️  Network idle timeout, continuing...");
   }
+  
+  // Verify we're on the right page
+  const currentUrl = page.url();
+  if (!currentUrl.includes("/app") && !currentUrl.includes("/onboarding")) {
+    await page.screenshot({ path: "test-results/sign-in-unexpected-url.png" });
+    throw new Error(`Unexpected URL after sign-in: ${currentUrl}. Expected /app or /onboarding`);
+  }
+  
+  console.log(`✅ Successfully navigated to: ${currentUrl}`);
 }
 
 /**
