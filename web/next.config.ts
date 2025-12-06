@@ -34,6 +34,48 @@ function readEnvLocal() {
 
 const envLocal = readEnvLocal();
 
+// Build-time validation: Ensure correct Supabase project for environment
+const supabaseUrl = envLocal.NEXT_PUBLIC_SUPABASE_URL || 
+                    process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/export$/, "") || 
+                    "";
+const supabaseProjectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+
+// Determine environment
+const isProduction = process.env.VERCEL_ENV === "production";
+const isPreview = process.env.VERCEL_ENV === "preview";
+
+// Expected project IDs
+const PRODUCTION_PROJECT_ID = "lilhqhbbougkblznspow";
+const STAGING_PROJECT_ID = "adgiptzbxnzddbgfeuut";
+
+// Validate project ID matches environment (only in Vercel builds)
+if (process.env.VERCEL && supabaseUrl) {
+  if (isProduction && supabaseProjectId !== PRODUCTION_PROJECT_ID) {
+    console.error("❌ BUILD FAILED: Production build using wrong Supabase project!");
+    console.error(`   Expected: ${PRODUCTION_PROJECT_ID}`);
+    console.error(`   Got: ${supabaseProjectId}`);
+    console.error(`   URL: ${supabaseUrl}`);
+    console.error("   Fix: Ensure NEXT_PUBLIC_SUPABASE_URL in Vercel Production scope uses production project");
+    process.exit(1);
+  }
+  
+  if (isPreview && supabaseProjectId !== STAGING_PROJECT_ID) {
+    console.error("❌ BUILD FAILED: Preview/Staging build using wrong Supabase project!");
+    console.error(`   Expected: ${STAGING_PROJECT_ID}`);
+    console.error(`   Got: ${supabaseProjectId}`);
+    console.error(`   URL: ${supabaseUrl}`);
+    console.error("   Fix: Ensure NEXT_PUBLIC_SUPABASE_URL in Vercel Preview scope uses staging project");
+    process.exit(1);
+  }
+  
+  // Log success
+  if (isProduction) {
+    console.log(`✅ Production build validated: Using Supabase project ${supabaseProjectId}`);
+  } else if (isPreview) {
+    console.log(`✅ Preview/Staging build validated: Using Supabase project ${supabaseProjectId}`);
+  }
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   // instrumentation.ts is automatically enabled in Next.js 16+
