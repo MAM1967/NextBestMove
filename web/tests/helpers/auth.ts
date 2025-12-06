@@ -26,7 +26,7 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
 
 /**
  * Sign in an existing user programmatically in the browser
- * Bypasses the UI form entirely by using Supabase client directly in browser context
+ * Bypasses the UI form entirely by calling Supabase auth API directly
  * This is more reliable since programmatic sign-in works but UI form fails
  */
 export async function signInUser(page: Page, email: string, password: string) {
@@ -35,25 +35,45 @@ export async function signInUser(page: Page, email: string, password: string) {
   // Navigate to any page first to establish browser context
   await page.goto("/auth/sign-in", { waitUntil: "domcontentloaded", timeout: 30000 });
   
-  // Use browser's Supabase client to sign in programmatically
+  // Call Supabase auth API directly via fetch in browser context
   // This will set the session cookies automatically
   const signInResult = await page.evaluate(async ({ email, password, supabaseUrl, supabaseAnonKey }) => {
-    // Dynamically import Supabase client in browser context
-    // @ts-ignore - Supabase will be available via CDN or we'll load it
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/esm/index.js');
-    
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      return { success: false, error: error.message };
+    try {
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { success: false, error: data.error_description || data.message || 'Unknown error' };
+      }
+      
+      // Set the session cookies manually
+      if (data.access_token) {
+        // Set the auth token cookie
+        document.cookie = `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token=${JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: data.expires_at,
+          expires_in: data.expires_in,
+          token_type: data.token_type,
+          user: data.user,
+        })}; path=/; max-age=${data.expires_in || 3600}; SameSite=Lax`;
+      }
+      
+      return { success: true, userId: data.user?.id, session: !!data.access_token };
+    } catch (error: any) {
+      return { success: false, error: error.message || 'Network error' };
     }
-    
-    return { success: true, userId: data.user?.id, session: !!data.session };
   }, {
     email,
     password,
@@ -66,6 +86,9 @@ export async function signInUser(page: Page, email: string, password: string) {
   }
   
   console.log(`✅ Programmatic browser sign-in successful`);
+  
+  // Small delay to ensure cookies are set
+  await page.waitForTimeout(500);
   
   // Now navigate to the app - user should be authenticated via cookies
   // Check if user needs onboarding (onboarding_completed = false)
