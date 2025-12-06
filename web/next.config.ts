@@ -44,6 +44,19 @@ const supabaseProjectId = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.
 const isProduction = process.env.VERCEL_ENV === "production";
 const isPreview = process.env.VERCEL_ENV === "preview";
 
+// Debug logging for Vercel builds to diagnose environment variable issues
+if (process.env.VERCEL) {
+  console.log("🔍 Build Environment Debug:");
+  console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || "undefined"}`);
+  console.log(`   VERCEL: ${process.env.VERCEL || "undefined"}`);
+  console.log(`   NEXT_PUBLIC_SUPABASE_URL from process.env: ${process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 50) || "undefined"}...`);
+  console.log(`   NEXT_PUBLIC_SUPABASE_URL from envLocal: ${envLocal.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 50) || "undefined"}...`);
+  console.log(`   Final supabaseUrl: ${supabaseUrl.substring(0, 50) || "undefined"}...`);
+  console.log(`   Detected project ID: ${supabaseProjectId || "none"}`);
+  console.log(`   isProduction: ${isProduction}`);
+  console.log(`   isPreview: ${isPreview}`);
+}
+
 // Expected project IDs
 const PRODUCTION_PROJECT_ID = "lilhqhbbougkblznspow";
 const STAGING_PROJECT_ID = "adgiptzbxnzddbgfeuut";
