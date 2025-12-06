@@ -24,8 +24,10 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
   });
 
   test.afterEach(async () => {
-    // Clean up test user
-    await cleanupTestUser(testUser.email);
+    // Clean up test user (if sign-up succeeded)
+    if (testUser?.email) {
+      await cleanupTestUser(testUser.email);
+    }
   });
 
   test("should complete onboarding and generate first daily plan with Fast Win", async ({ page }) => {

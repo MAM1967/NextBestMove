@@ -29,8 +29,10 @@ test.describe("Critical Path 2: Daily Habit Loop", () => {
   });
 
   test.afterEach(async () => {
-    // Clean up test user
-    await cleanupTestUser(testUser.email);
+    // Clean up test user (if sign-up succeeded)
+    if (testUser?.email) {
+      await cleanupTestUser(testUser.email);
+    }
   });
 
   test("should display daily plan and allow action completion", async ({ page }) => {

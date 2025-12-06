@@ -30,8 +30,10 @@ test.describe("Critical Path 3: Billing (Trial → Paid)", () => {
   });
 
   test.afterEach(async () => {
-    // Clean up test user
-    await cleanupTestUser(testUser.email);
+    // Clean up test user (if sign-up succeeded)
+    if (testUser?.email) {
+      await cleanupTestUser(testUser.email);
+    }
   });
 
   test("should complete Stripe checkout and activate subscription", async ({ page }) => {

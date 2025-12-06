@@ -45,12 +45,51 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
   // Submit form - wait for button to be enabled
   const submitButton = page.locator('button[type="submit"]:has-text("Create account"), button:has-text("Creating account")');
   await submitButton.waitFor({ state: "visible", timeout: 5000 });
+  
+  // Click submit button
   await submitButton.click();
   
-  // Wait for redirect to app (form uses server action, then router.push)
-  // Give it time for the server action to complete and redirect
-  await page.waitForURL(/\/app/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
+  // Wait for either navigation OR error message to appear
+  // The form uses server actions, so we need to wait for the response
+  try {
+    // Wait for navigation to app or onboarding (success case)
+    await page.waitForURL(/\/app|\/onboarding/, { timeout: 20000 });
+    
+    // Wait for page to load
+    await page.waitForLoadState("networkidle");
+    
+    // Check if we're on onboarding or app
+    const finalUrl = page.url();
+    if (finalUrl.includes("/onboarding")) {
+      // User is on onboarding - that's fine, they're authenticated
+      console.log("✅ User redirected to onboarding after sign-up");
+    } else if (finalUrl.includes("/app")) {
+      console.log("✅ User redirected to app after sign-up");
+    } else {
+      throw new Error(`Unexpected URL after sign-up: ${finalUrl}. Expected /app or /onboarding`);
+    }
+  } catch (error) {
+    // If navigation didn't happen, check for error messages
+    const errorMessage = page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600');
+    const errorVisible = await errorMessage.first().isVisible({ timeout: 3000 }).catch(() => false);
+    
+    if (errorVisible) {
+      const errorText = await errorMessage.first().textContent();
+      const currentUrl = page.url();
+      throw new Error(`Sign-up failed on ${currentUrl}: ${errorText || "Unknown error"}`);
+    }
+    
+    // Check if we're still on sign-up page (form submission failed)
+    const currentUrl = page.url();
+    if (currentUrl.includes("/auth/sign-up")) {
+      // Take a screenshot for debugging
+      await page.screenshot({ path: "test-results/sign-up-failed.png" });
+      throw new Error(`Sign-up form submission failed - still on ${currentUrl}. Check screenshot: test-results/sign-up-failed.png`);
+    }
+    
+    // Re-throw the original error if it wasn't a navigation timeout
+    throw error;
+  }
   
   return testUser;
 }
