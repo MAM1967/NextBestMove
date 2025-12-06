@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { STAGING_CONFIG, generateTestUser } from "./staging-config";
+import { confirmUserEmail } from "./test-data";
 
 /**
  * Sign up a new user via the UI
@@ -68,14 +69,51 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
     } else {
       throw new Error(`Unexpected URL after sign-up: ${finalUrl}. Expected /app or /onboarding`);
     }
+    
+    // Auto-confirm user email for testing (bypasses email confirmation requirement)
+    // This is needed because staging may require email confirmation
+    try {
+      await confirmUserEmail(testUser.email);
+    } catch (confirmError) {
+      console.warn("⚠️  Failed to auto-confirm user email (may need manual confirmation):", confirmError);
+      // Don't fail the test if confirmation fails - user might already be confirmed
+    }
   } catch (error) {
     // If navigation didn't happen, check for error messages
     const errorMessage = page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600');
     const errorVisible = await errorMessage.first().isVisible({ timeout: 3000 }).catch(() => false);
     
     if (errorVisible) {
-      const errorText = await errorMessage.first().textContent();
+      const errorText = await errorMessage.first().textContent() || "";
       const currentUrl = page.url();
+      
+      // Check if this is an email confirmation error
+      const isEmailConfirmationError = 
+        errorText.toLowerCase().includes("check your email") ||
+        errorText.toLowerCase().includes("confirmation email") ||
+        errorText.toLowerCase().includes("confirm your account") ||
+        errorText.toLowerCase().includes("email to confirm");
+      
+      if (isEmailConfirmationError) {
+        console.log("📧 Email confirmation required - auto-confirming user for testing...");
+        
+        // Wait a moment for the user to be created in the database
+        await page.waitForTimeout(2000);
+        
+        // Auto-confirm the user
+        const confirmed = await confirmUserEmail(testUser.email);
+        
+        if (confirmed) {
+          console.log("✅ User email confirmed - signing in...");
+          // Now sign in with the confirmed account
+          await signInUser(page, testUser.email, testUser.password);
+          return testUser;
+        } else {
+          throw new Error(`Failed to auto-confirm user email. Sign-up error: ${errorText}`);
+        }
+      }
+      
+      // For other errors, throw normally
       throw new Error(`Sign-up failed on ${currentUrl}: ${errorText || "Unknown error"}`);
     }
     
