@@ -89,11 +89,19 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       await nextButton6.waitFor({ timeout: 10000 });
       await nextButton6.click();
       
-      // Wait for navigation to final step
+      // Wait for navigation to step 7 (first plan ready)
       await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       
-      // Step 7: Start free trial
-      const startButton = page.locator('button:has-text("Start"), button:has-text("Start Free Trial"), button:has-text("Get Started")');
+      // Step 7: First plan ready - click Continue
+      const continueButton7 = page.locator('button:has-text("Continue")');
+      await continueButton7.waitFor({ timeout: 10000 });
+      await continueButton7.click();
+      
+      // Wait for navigation to final step (start free trial)
+      await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+      
+      // Step 8: Start free trial
+      const startButton = page.locator('button:has-text("Start Free Trial"), button:has-text("Start"), button:has-text("Get Started")');
       await startButton.waitFor({ timeout: 10000 });
       await startButton.click();
     }
