@@ -61,6 +61,9 @@ export async function cleanupTestUser(email: string) {
 export async function confirmUserEmail(email: string) {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
     console.warn("⚠️  Supabase credentials not configured - cannot confirm user");
+    console.warn(`   supabaseUrl: ${STAGING_CONFIG.supabaseUrl ? "✅ set" : "❌ missing"}`);
+    console.warn(`   supabaseServiceRoleKey: ${STAGING_CONFIG.supabaseServiceRoleKey ? "✅ set" : "❌ missing"}`);
+    console.warn(`   Checked env vars: STAGING_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_URL, STAGING_SUPABASE_SERVICE_ROLE_KEY, SUPABASE_SERVICE_ROLE_KEY`);
     return false;
   }
 
