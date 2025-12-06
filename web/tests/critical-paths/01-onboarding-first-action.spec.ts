@@ -155,6 +155,19 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     const completeButton = page.locator('button:has-text("Done"), button:has-text("Complete"), button:has-text("Mark as done"), [data-testid="complete-action"]').first();
     
     if (await completeButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      // Check if there's a paywall modal blocking the action
+      const paywallModal = page.locator('text=/Subscribe to unlock|Start Free Trial|Maybe Later/i');
+      const hasPaywall = await paywallModal.first().isVisible({ timeout: 2000 }).catch(() => false);
+      
+      if (hasPaywall) {
+        // Dismiss the paywall modal by clicking "Maybe Later"
+        const maybeLaterButton = page.locator('button:has-text("Maybe Later"), button:has-text("Later")');
+        if (await maybeLaterButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await maybeLaterButton.click();
+          await page.waitForTimeout(1000); // Wait for modal to close
+        }
+      }
+      
       await completeButton.click();
       
       // Wait for success confirmation or state update
