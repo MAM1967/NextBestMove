@@ -55,7 +55,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const adminClient = createAdminClient();
+    // Create admin client with error handling
+    let adminClient;
+    try {
+      adminClient = createAdminClient();
+    } catch (error: any) {
+      console.error("[Cron Daily Plans] Failed to create admin client:", error);
+      const errorMessage = error?.message || "Unknown error creating Supabase admin client";
+      if (isStaging) {
+        console.error("[Cron Daily Plans] Admin client creation error details:", {
+          hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 50) || "MISSING",
+          hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+          serviceRoleKeyPrefix: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) || "MISSING",
+        });
+      }
+      return NextResponse.json(
+        { error: "Failed to initialize Supabase client", details: errorMessage },
+        { status: 500 }
+      );
+    }
+
     const today = new Date().toISOString().split("T")[0];
 
     // Get all active users (users with active subscriptions or in trial)
@@ -66,7 +87,16 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false });
 
     if (usersError) {
-      console.error("Error fetching users:", usersError);
+      console.error("[Cron Daily Plans] Error fetching users:", usersError);
+      if (isStaging) {
+        console.error("[Cron Daily Plans] Supabase query error details:", {
+          errorCode: usersError.code,
+          errorMessage: usersError.message,
+          errorDetails: usersError.details,
+          errorHint: usersError.hint,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 50) || "MISSING",
+        });
+      }
       return NextResponse.json(
         { error: "Failed to fetch users", details: usersError.message },
         { status: 500 }
