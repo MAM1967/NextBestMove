@@ -117,6 +117,73 @@ export async function createTestUserProgrammatically() {
 }
 
 /**
+ * Create a test user with onboarding already completed
+ * Useful for tests that need to skip the onboarding flow
+ */
+export async function createTestUserWithOnboardingCompleted() {
+  if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
+    throw new Error("Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  }
+
+  const testUser = generateTestUser();
+  const supabase = createClient(
+    STAGING_CONFIG.supabaseUrl,
+    STAGING_CONFIG.supabaseServiceRoleKey
+  );
+
+  try {
+    console.log(`🔐 Creating user with onboarding completed: ${testUser.email}`);
+    
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: testUser.email,
+      password: testUser.password,
+      email_confirm: true,
+      user_metadata: {
+        name: testUser.name,
+      },
+    });
+
+    if (authError || !authData.user) {
+      throw new Error(`Failed to create auth user: ${authError?.message || "Unknown error"}`);
+    }
+
+    const userId = authData.user.id;
+
+    // Create user profile with onboarding_completed: true
+    const { error: profileError } = await supabase
+      .from("users")
+      .insert({
+        id: userId,
+        email: testUser.email,
+        name: testUser.name,
+        timezone: "America/New_York",
+        streak_count: 0,
+        calendar_connected: false,
+        onboarding_completed: true, // User has completed onboarding
+      });
+
+    if (profileError) {
+      await supabase.auth.admin.deleteUser(userId).catch(() => {});
+      throw new Error(`Failed to create user profile: ${profileError.message}`);
+    }
+
+    // Update password to ensure it's set correctly
+    await supabase.auth.admin.updateUserById(userId, {
+      password: testUser.password,
+    });
+
+    console.log(`✅ Created test user with onboarding completed: ${testUser.email}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return testUser;
+  } catch (error: any) {
+    console.error(`Failed to create test user with onboarding completed:`, error);
+    throw error;
+  }
+}
+
+/**
  * Get or create a pre-seeded test user
  * Reuses existing user if available, otherwise creates a new one
  * This is more efficient for tests that don't need a fresh user each time

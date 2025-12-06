@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { signUpUser, signInUser } from "../helpers/auth";
+import { signInUser } from "../helpers/auth";
 import { cleanupTestUser } from "../helpers/test-data";
+import { createTestUserWithOnboardingCompleted } from "../helpers/create-user";
 
 /**
  * Critical Path 2: Daily Habit Loop
@@ -20,8 +21,11 @@ test.describe("Critical Path 2: Daily Habit Loop", () => {
   let testUser: { email: string; password: string; name: string };
 
   test.beforeEach(async ({ page }) => {
-    // Sign up a new user (or use existing test user)
-    testUser = await signUpUser(page);
+    // Create a user with onboarding already completed (skip onboarding flow)
+    testUser = await createTestUserWithOnboardingCompleted();
+    
+    // Sign in the user
+    await signInUser(page, testUser.email, testUser.password);
     
     // Navigate to app to ensure user is set up
     await page.goto("/app");

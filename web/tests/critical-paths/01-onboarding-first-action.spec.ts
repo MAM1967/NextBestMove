@@ -40,9 +40,18 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       await page.click('button:has-text("Get Started"), button:has-text("Next"), button:has-text("Continue")');
       
       // Step 2: Add first lead/pin
-      // Look for name and URL inputs
-      await page.fill('input[placeholder*="name" i], input[name*="name" i], input[type="text"]:first-of-type', "Test Lead");
-      await page.fill('input[placeholder*="url" i], input[name*="url" i], input[type="url"], input[type="text"]:nth-of-type(2)', "https://example.com/test");
+      // Wait for the form to be visible first
+      await page.waitForSelector('input, form', { timeout: 10000 });
+      
+      // Look for name and URL inputs - try multiple strategies
+      const nameInput = page.locator('input[placeholder*="name" i], input[name*="name" i], input[type="text"]:first-of-type, input:first-of-type').first();
+      await nameInput.waitFor({ timeout: 10000 });
+      await nameInput.fill("Test Lead");
+      
+      // Try to find URL input - it might be the second text input or a URL input
+      const urlInput = page.locator('input[placeholder*="url" i], input[name*="url" i], input[type="url"], input[type="text"]:nth-of-type(2), input:nth-of-type(2)').first();
+      await urlInput.waitFor({ timeout: 10000 });
+      await urlInput.fill("https://example.com/test");
       
       // Submit or click next
       await page.click('button:has-text("Add"), button:has-text("Next"), button:has-text("Continue"), button[type="submit"]');

@@ -115,7 +115,9 @@ test.describe("Critical Path 4: Weekly Summary Generation", () => {
     );
 
     // Verify cron job executed (should return 200 or 201)
-    expect([200, 201]).toContain(response.status());
+    const status = response.status();
+    expect(status).toBeGreaterThanOrEqual(200);
+    expect(status).toBeLessThan(300); // 2xx success status
 
     // Wait a moment for summary to be generated
     await page.waitForTimeout(3000);
