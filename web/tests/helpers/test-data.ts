@@ -75,8 +75,8 @@ export async function confirmUserEmail(email: string) {
 
     // Retry finding the user (they may not be in DB yet due to async creation)
     let userId: string | null = null;
-    const maxRetries = 5;
-    const retryDelay = 2000; // 2 seconds
+    const maxRetries = 3; // Reduced retries to avoid timeout
+    const retryDelay = 3000; // 3 seconds between retries
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       // First try to get user ID from public.users table

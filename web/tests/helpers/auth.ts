@@ -99,7 +99,7 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
         
         // Wait a moment for the user to be created in the database
         // Sign-up creates user asynchronously, so we need to wait
-        await page.waitForTimeout(3000); // Increased wait time
+        await page.waitForTimeout(5000); // Increased wait time to 5 seconds
         
         // Auto-confirm the user (this function will retry finding the user)
         const confirmed = await confirmUserEmail(testUser.email);
@@ -111,13 +111,19 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
           return testUser;
         } else {
           // If confirmation failed, try signing in anyway - user might already be confirmed
+          // or Supabase might allow sign-in without confirmation in staging
           console.log("⚠️  Auto-confirmation failed, attempting sign-in anyway...");
           try {
             await signInUser(page, testUser.email, testUser.password);
-            console.log("✅ Sign-in succeeded despite confirmation failure");
+            console.log("✅ Sign-in succeeded despite confirmation failure - user may already be confirmed");
             return testUser;
-          } catch (signInError) {
-            throw new Error(`Failed to auto-confirm user email and sign-in failed. Sign-up error: ${errorText}`);
+          } catch (signInError: any) {
+            // If sign-in also fails, check if it's because user doesn't exist or needs confirmation
+            const signInErrorMsg = signInError?.message || String(signInError);
+            if (signInErrorMsg.includes("Invalid login credentials") || signInErrorMsg.includes("Email not confirmed")) {
+              throw new Error(`User created but cannot sign in. Confirmation failed and sign-in requires confirmation. Original error: ${errorText}`);
+            }
+            throw new Error(`Failed to auto-confirm user email and sign-in failed: ${signInErrorMsg}. Original sign-up error: ${errorText}`);
           }
         }
       }

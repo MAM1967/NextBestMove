@@ -23,8 +23,8 @@ export default defineConfig({
       username: process.env.STAGING_USER || "staging",
       password: process.env.STAGING_PASS || "Jer29:11esv",
     },
-    actionTimeout: 30000, // 30 seconds per action
-    navigationTimeout: 30000,
+    actionTimeout: 60000, // 60 seconds per action (increased for sign-up flow)
+    navigationTimeout: 60000, // 60 seconds for navigation
   },
 
   projects: [
