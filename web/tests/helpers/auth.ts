@@ -26,6 +26,7 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
 
 /**
  * Sign in an existing user via the UI
+ * Handles React Server Actions with client-side navigation
  */
 export async function signInUser(page: Page, email: string, password: string) {
   // Navigate to sign in page
@@ -42,23 +43,43 @@ export async function signInUser(page: Page, email: string, password: string) {
   await passwordInput.waitFor({ state: "visible", timeout: 5000 });
   await passwordInput.fill(password);
   
-  // Submit form
-  const submitButton = page.locator('button[type="submit"]:has-text("Sign in"), button:has-text("Signing in")');
+  // Submit form - click submit button and wait for navigation
+  const submitButton = page.locator('button[type="submit"]');
   await submitButton.waitFor({ state: "visible", timeout: 5000 });
   
-  // Click and wait for navigation (could go to /app or /onboarding)
-  await Promise.all([
-    page.waitForURL(/\/app|\/onboarding/, { timeout: 30000 }),
-    submitButton.click(),
-  ]);
+  // Wait for navigation (could go to /app or /onboarding)
+  // The form uses React Server Actions with client-side navigation via router.push()
+  // We need to wait for the URL to change, which happens after the server action completes
+  const navigationPromise = page.waitForURL(/\/app|\/onboarding/, { timeout: 30000 });
   
-  // Wait for page to load
-  await page.waitForLoadState("networkidle");
+  // Click submit button
+  await submitButton.click();
   
-  // Verify we're on the right page
-  const currentUrl = page.url();
-  if (!currentUrl.includes("/app") && !currentUrl.includes("/onboarding")) {
-    throw new Error(`Unexpected URL after sign-in: ${currentUrl}. Expected /app or /onboarding`);
+  // Wait for either navigation OR error message
+  try {
+    await navigationPromise;
+    
+    // Wait for page to be fully loaded
+    await page.waitForLoadState("networkidle");
+    
+    // Verify we're on the right page
+    const currentUrl = page.url();
+    if (!currentUrl.includes("/app") && !currentUrl.includes("/onboarding")) {
+      throw new Error(`Unexpected URL after sign-in: ${currentUrl}. Expected /app or /onboarding`);
+    }
+  } catch (error) {
+    // Check for error messages if navigation failed
+    const errorMessage = page.locator('[class*="error"], [class*="red"], .text-red-800, .text-red-600');
+    const errorVisible = await errorMessage.first().isVisible({ timeout: 2000 }).catch(() => false);
+    
+    if (errorVisible) {
+      const errorText = await errorMessage.first().textContent() || "";
+      const currentUrl = page.url();
+      throw new Error(`Sign-in failed: ${errorText}. Current URL: ${currentUrl}`);
+    }
+    
+    // Re-throw original error if no error message found
+    throw error;
   }
 }
 
