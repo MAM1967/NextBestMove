@@ -154,13 +154,14 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [ ] Action stays visible (not hidden)
 
 #### Test 1.2.3: Mark Action as "Got Reply"
-1. Find an action in "NEW" or "SENT" state
-2. Click "Got Reply" button
+1. Find an action in "NEW" or "SENT" state (preferably a FOLLOW_UP action)
+2. Click "Done - Got reply" button (for FOLLOW_UP actions)
 3. Verify:
-   - [ ] Follow-up flow modal opens (if applicable)
+   - [ ] Follow-up flow modal opens
    - [ ] Can schedule follow-up or mark complete
    - [ ] Action state changes appropriately
    - [ ] If scheduling: Follow-up date saved correctly
+   - [ ] Note added with scheduled date (if applicable)
 
 #### Test 1.2.4: Snooze Action
 1. Find an action

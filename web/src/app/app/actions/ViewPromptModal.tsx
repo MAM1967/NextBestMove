@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface ViewPromptModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,16 +49,27 @@ export function ViewPromptModal({
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-zinc-600">
-              {actionDescription || "Content prompt will be displayed here."}
+            <p className="text-sm text-zinc-600 mb-4">
+              {actionDescription || "Content action: Draft social media post or content."}
             </p>
-            <p className="mt-4 text-xs text-zinc-500">
-              Note: Full content prompt functionality will be available when the
-              content generation feature is implemented.
-            </p>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs text-zinc-600 mb-2">
+                <strong>Content Prompts:</strong> Generated content prompts are available in your Weekly Summary and saved to the Content Ideas page.
+              </p>
+              <p className="text-xs text-zinc-500">
+                Content prompts are generated weekly based on your activity. To view saved prompts, go to the <strong>Content Ideas</strong> page.
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-between pt-4">
+            <Link
+              href="/app/content-ideas"
+              onClick={onClose}
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            >
+              View Content Ideas
+            </Link>
             <button
               onClick={onClose}
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
