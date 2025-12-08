@@ -760,6 +760,7 @@ See `docs/Troubleshooting/Vercel_Environment_Variables_Solutions.md` for compreh
 - Long-term secret management options
 
 **Key Takeaway:** The current hardcoded secret workaround is temporary. Implement a proper secret management solution before launch to ensure:
+
 - No secrets in source code
 - Easy secret rotation
 - Proper environment isolation
