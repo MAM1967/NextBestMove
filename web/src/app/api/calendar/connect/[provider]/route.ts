@@ -42,7 +42,14 @@ export async function GET(
     const authorizationEndpoint = serverMetadata.authorization_endpoint;
     const clientMetadata = config.clientMetadata();
     
-    console.log(`[Calendar Connect] ${provider} - Client ID: ${clientMetadata.client_id.substring(0, 30)}..., Redirect URI: ${redirectUri}`);
+    console.log(`[Calendar Connect] ${provider} - Full OAuth Configuration:`, {
+      clientId: clientMetadata.client_id.substring(0, 30) + "...",
+      clientIdLength: clientMetadata.client_id.length,
+      redirectUri,
+      origin: request.nextUrl.origin,
+      hostname: request.nextUrl.hostname,
+      fullUrl: request.url,
+    });
 
     if (!authorizationEndpoint) {
       console.error("No authorization_endpoint in config", serverMetadata);
@@ -63,6 +70,15 @@ export async function GET(
     authorizationUrl.searchParams.set("code_challenge", codeChallenge);
     authorizationUrl.searchParams.set("code_challenge_method", "S256");
     authorizationUrl.searchParams.set("state", state);
+    
+    // Critical logging for production debugging
+    console.log(`[Calendar Connect] ${provider} - OAuth Authorization URL being generated:`, {
+      redirectUri,
+      clientId: clientMetadata.client_id.substring(0, 30) + "...",
+      scope: getProviderScope(provider),
+      authorizationEndpoint,
+      fullAuthUrl: authorizationUrl.toString().substring(0, 200) + "...", // Truncate for security
+    });
 
     // Add extra auth params (e.g., access_type=offline for Google)
     const extraParams = buildAuthParams(provider);
