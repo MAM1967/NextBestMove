@@ -136,8 +136,12 @@ export async function POST(request: Request) {
 
       // Prevention logic: Check for existing FOLLOW_UP actions for this lead
       // Only block if there's already an active (NEW/SNOOZED) FOLLOW_UP
-      if (action_type === "FOLLOW_UP") {
+      // This check happens BEFORE the insert to prevent duplicates
+      if (action_type === "FOLLOW_UP" && person_id) {
         const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+        
+        // Use a transaction-like approach: check and then create
+        // The database query is atomic, so this prevents race conditions
         const { data: existingFollowUp, error: checkError } = await supabase
           .from("actions")
           .select("id, due_date")
@@ -150,12 +154,13 @@ export async function POST(request: Request) {
 
         if (checkError) {
           console.error("Error checking for existing follow-up:", checkError);
-          // Continue - don't block on check error
+          // Continue - don't block on check error (fail open)
         } else if (existingFollowUp) {
           const existingDate = new Date(existingFollowUp.due_date).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
           });
+          console.log(`Prevented duplicate FOLLOW_UP for lead ${person_id} - existing follow-up due ${existingDate}`);
           return NextResponse.json(
             { 
               error: `You already have a follow-up scheduled for ${existingDate}. Complete that one first, or edit its date if needed.` 

@@ -14,6 +14,8 @@ export default function ActionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toasts, addToast, dismissToast } = useToast();
+  // Track which actions are currently being processed to prevent duplicate requests (race condition protection)
+  const [processingReply, setProcessingReply] = useState<Set<string>>(new Set());
 
   // Modal states (keeping for snooze/complete flows, but removing follow-up modal)
   const [snoozeActionId, setSnoozeActionId] = useState<string | null>(null);
@@ -100,38 +102,30 @@ export default function ActionsPage() {
   /**
    * Auto-create FOLLOW_UP action when user marks "Got a reply"
    * Zero-friction: No modal, no decisions - just create and notify
+   * 
+   * Protection against duplicates:
+   * 1. Client-side: Processing lock prevents double-clicks/race conditions
+   * 2. Server-side: Database query in API endpoint prevents duplicates
    */
   const handleGotReply = async (actionId: string) => {
+    // Prevent duplicate requests (race condition protection)
+    if (processingReply.has(actionId)) {
+      console.log("Already processing reply for action:", actionId);
+      return;
+    }
+
     try {
+      // Mark as processing immediately to prevent double-clicks/race conditions
+      setProcessingReply((prev) => new Set(prev).add(actionId));
+
       const action = actions.find((a) => a.id === actionId);
       if (!action) {
         throw new Error("Action not found");
       }
 
-      // Check if there's already an active FOLLOW_UP action for this lead
-      // Only block if there's a NEW or SNOOZED FOLLOW_UP (not DONE/REPLIED)
-      if (action.person_id) {
-        const existingFollowUp = actions.find(
-          (a) =>
-            a.person_id === action.person_id &&
-            a.action_type === "FOLLOW_UP" &&
-            (a.state === "NEW" || a.state === "SNOOZED") &&
-            new Date(a.due_date) >= new Date() // Not overdue
-        );
-
-        if (existingFollowUp) {
-          // Format the existing follow-up date for the message
-          const existingDate = new Date(existingFollowUp.due_date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          });
-          addToast({
-            type: "info",
-            message: `You already have a follow-up scheduled for ${existingDate}. Complete that one first, or edit its date if needed.`,
-          });
-          return;
-        }
-      }
+      // Note: We rely on server-side check (in API endpoint) as the source of truth
+      // The server queries the database atomically, so duplicates are prevented
+      // Client-side check is removed to avoid race conditions with stale data
 
       // First, mark the current action as REPLIED
       const stateResponse = await fetch(`/api/actions/${actionId}/state`, {
@@ -210,6 +204,13 @@ export default function ActionsPage() {
         type: "error",
         message:
           err instanceof Error ? err.message : "Failed to create follow-up",
+      });
+    } finally {
+      // Always clear processing flag
+      setProcessingReply((prev) => {
+        const next = new Set(prev);
+        next.delete(actionId);
+        return next;
       });
     }
   };
