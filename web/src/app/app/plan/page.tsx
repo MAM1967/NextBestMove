@@ -415,21 +415,8 @@ export default function DailyPlanPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={fetchDailyPlan}
-            className="mt-4 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Don't show full-screen error - show inline error instead (below)
+  // Full-screen errors should only be for critical failures
 
   const actions = dailyPlan?.actions || [];
   const fastWin = dailyPlan?.fast_win;
@@ -478,6 +465,71 @@ export default function DailyPlanPage() {
             </button>
           )}
         </div>
+
+        {/* Error Message (Inline) */}
+        {error && (
+          <div className={`rounded-lg border p-4 ${
+            error.includes("aren't generated") || error.includes("Weekends")
+              ? "border-blue-200 bg-blue-50"
+              : "border-red-200 bg-red-50"
+          }`}>
+            <div className="flex items-start gap-3">
+              <svg
+                className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+                  error.includes("aren't generated") || error.includes("Weekends")
+                    ? "text-blue-600"
+                    : "text-red-600"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                {error.includes("aren't generated") || error.includes("Weekends") ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                )}
+              </svg>
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${
+                  error.includes("aren't generated") || error.includes("Weekends")
+                    ? "text-blue-800"
+                    : "text-red-800"
+                }`}>
+                  {error}
+                </p>
+                {error.includes("Settings") && (
+                  <a
+                    href="/app/settings"
+                    className="mt-2 inline-block text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Go to Settings →
+                  </a>
+                )}
+                <button
+                  onClick={() => setError(null)}
+                  className={`mt-2 ml-4 text-sm ${
+                    error.includes("aren't generated") || error.includes("Weekends")
+                      ? "text-blue-600 hover:text-blue-800"
+                      : "text-red-600 hover:text-red-800"
+                  } underline`}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Celebration Banner */}
         <CelebrationBanner />
