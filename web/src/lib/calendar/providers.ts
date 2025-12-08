@@ -94,7 +94,7 @@ async function getConfiguration(
       
       // Override secret if staging
       if (hasStagingSecret) {
-        const hardcodedProductionSecret = "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";
+        const hardcodedProductionSecret = "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";
         console.log(`   🔧 FORCING production secret: ${hardcodedProductionSecret.substring(0, 10)}...`);
         clientSecret = hardcodedProductionSecret;
       }
@@ -154,7 +154,7 @@ async function getConfiguration(
       console.log(
         "🔧 CRITICAL: Production client ID detected but staging secret present - FORCING override"
       );
-      const hardcodedProductionSecret = "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";
+      const hardcodedProductionSecret = "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";
       clientSecret = hardcodedProductionSecret;
       console.log(
         `   Overriding staging secret with production secret: ${hardcodedProductionSecret.substring(0, 10)}...`
@@ -224,7 +224,7 @@ async function getConfiguration(
           // Hardcode production client secret (same pattern as client ID workaround)
           // Get this from Google Cloud Console → NextBestMove client → Client secret
           const hardcodedProductionSecret =
-            "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";
+            "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";
 
           console.log(
             "🔧 WORKAROUND: Vercel not providing PRODUCTION_GOOGLE_CLIENT_SECRET, using hardcoded value"
@@ -253,7 +253,7 @@ async function getConfiguration(
           "⚠️ CRITICAL: Staging secret detected in production context, forcing override"
         );
         const hardcodedProductionSecret =
-          "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";
+          "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";
         clientSecret = hardcodedProductionSecret;
         console.log(
           `   Overriding with hardcoded production secret: ${hardcodedProductionSecret.substring(
@@ -273,7 +273,7 @@ async function getConfiguration(
           "🔧 FORCING: Overriding staging secret to match production client ID"
         );
         const hardcodedProductionSecret =
-          "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";
+          "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";
         clientSecret = hardcodedProductionSecret;
       }
     }
