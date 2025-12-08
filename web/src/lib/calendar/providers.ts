@@ -59,6 +59,7 @@ async function getConfiguration(
   const vercelEnv = process.env.VERCEL_ENV;
   let isPreview = vercelEnv === "preview";
   let isProduction = vercelEnv === "production";
+  let isLocalhost = false;
 
   // Hostname-based detection (always check as verification/fallback)
   if (hostname) {
@@ -70,6 +71,16 @@ async function getConfiguration(
       hostname.includes("vercel.app")
     ) {
       isPreview = true;
+      isProduction = false;
+    } else if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.startsWith("localhost:") ||
+      hostname.startsWith("127.0.0.1:")
+    ) {
+      // Local development - use staging client (both staging and production have localhost configured)
+      isLocalhost = true;
+      isPreview = true; // Treat localhost as preview/staging for OAuth
       isProduction = false;
     }
   }
@@ -131,12 +142,44 @@ async function getConfiguration(
         const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
         console.log(`   🔧 Using staging client ID based on hostname: ${stagingClientId.substring(0, 30)}...`);
         clientId = stagingClientId;
+      } else if (isLocalhost) {
+        // For localhost, use staging client (both staging and production have localhost redirect URIs)
+        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+        console.log(`   🔧 Using staging client ID for localhost: ${stagingClientId.substring(0, 30)}...`);
+        clientId = stagingClientId;
       } else {
         // Default to production if we can't determine
         const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
         console.log(`   🔧 Using production client ID as default: ${productionClientId.substring(0, 30)}...`);
         clientId = productionClientId;
       }
+    }
+  }
+  
+  // For localhost development, ensure we use staging client and secret
+  if (provider === "google" && isLocalhost) {
+    const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+    const stagingSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    // Override to staging client for localhost (always override deleted client ID)
+    const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm");
+    if (hasDeletedClientId || !clientId || !clientId.startsWith("732850218816-kgrh")) {
+      console.log(`🔧 Localhost detected - using staging client ID for local development`);
+      if (hasDeletedClientId) {
+        console.log(`   ⚠️  Detected deleted client ID in .env.local - overriding with staging client ID`);
+      }
+      clientId = stagingClientId;
+    }
+    
+    // Use staging secret for localhost (if available in env vars)
+    // Note: User needs to set GOOGLE_CLIENT_SECRET in .env.local to staging secret
+    if (stagingSecret && stagingSecret.startsWith("GOCSPX-3zD")) {
+      clientSecret = stagingSecret;
+      console.log(`🔧 Localhost detected - using staging client secret`);
+    } else if (stagingSecret && !stagingSecret.startsWith("GOCSPX-3zD")) {
+      console.warn(`⚠️  Localhost detected but GOOGLE_CLIENT_SECRET doesn't look like staging secret (should start with GOCSPX-3zD)`);
+    } else {
+      console.warn(`⚠️  Localhost detected but no GOOGLE_CLIENT_SECRET found in .env.local`);
     }
   }
 
