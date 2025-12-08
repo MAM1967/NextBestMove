@@ -312,12 +312,24 @@ export async function generateDailyPlanForUser(
         .eq("status", "ACTIVE");
       
       // Try to auto-create actions from active leads if no candidate actions exist
-      if (activeLeads && activeLeads.length > 0) {
+      // But first check if user is at action limit
+      const { isAtActionLimit } = await import("@/lib/actions/limits");
+      const atLimit = await isAtActionLimit(userId, false);
+
+      if (activeLeads && activeLeads.length > 0 && !atLimit) {
         console.log(`No candidate actions found, attempting to create actions from ${activeLeads.length} active leads`);
         
         // Create OUTREACH actions for active leads that don't have recent actions
+        // Stop if we hit the action limit
         const newActions = [];
         for (const lead of activeLeads) {
+          // Check current pending count before each creation to respect limit
+          const currentLimit = await isAtActionLimit(userId, false);
+          if (currentLimit) {
+            console.log(`Action limit reached, stopping OUTREACH creation (created ${newActions.length} so far)`);
+            break;
+          }
+
           // Check if lead already has a recent NEW action
           const { data: existingAction } = await supabase
             .from("actions")
@@ -339,6 +351,7 @@ export async function generateDailyPlanForUser(
                 state: "NEW",
                 due_date: date,
                 description: `Reach out to ${lead.name}`,
+                notes: `Auto-created from daily plan generation on ${new Date().toLocaleDateString()}`,
                 auto_created: true,
               })
               .select()
@@ -373,6 +386,8 @@ export async function generateDailyPlanForUser(
           console.log(`Created ${newActions.length} new actions from active leads`);
           candidateActions.push(...newActions);
         }
+      } else if (atLimit) {
+        console.log(`User ${userId} is at action limit, skipping OUTREACH creation from daily plan fallback`);
       }
       
       // If still no candidate actions after trying to create from leads

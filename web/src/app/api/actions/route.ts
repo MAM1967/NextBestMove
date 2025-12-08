@@ -109,7 +109,11 @@ export async function POST(request: Request) {
     ];
     if (!validActionTypes.includes(action_type)) {
       return NextResponse.json(
-        { error: `Invalid action_type. Must be one of: ${validActionTypes.join(", ")}` },
+        {
+          error: `Invalid action_type. Must be one of: ${validActionTypes.join(
+            ", "
+          )}`,
+        },
         { status: 400 }
       );
     }
@@ -141,7 +145,8 @@ export async function POST(request: Request) {
           CONTENT: `Create content for ${lead.name}`,
           FAST_WIN: `Quick action for ${lead.name}`,
         };
-        body.description = actionDescriptions[action_type] || `Action for ${lead.name}`;
+        body.description =
+          actionDescriptions[action_type] || `Action for ${lead.name}`;
       }
     }
 
@@ -188,10 +193,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-
-
-
-
-
-

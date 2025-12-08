@@ -45,12 +45,13 @@ export default function ActionsPage() {
         (action: Action) => action.state !== "ARCHIVED"
       );
       console.log("Fetched actions:", visibleActions.length, "actions");
-      console.log("Action states:", visibleActions.map((a: Action) => ({ id: a.id, state: a.state })));
+      console.log(
+        "Action states:",
+        visibleActions.map((a: Action) => ({ id: a.id, state: a.state }))
+      );
       setActions(visibleActions);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load actions"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load actions");
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,7 @@ export default function ActionsPage() {
     try {
       const state = completionType === "sent" ? "SENT" : "DONE";
       console.log("Completing action:", actionId, "with state:", state);
-      
+
       const response = await fetch(`/api/actions/${actionId}/state`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -76,7 +77,7 @@ export default function ActionsPage() {
       const result = await response.json();
       console.log("Action completed successfully:", result);
       console.log("Updated action state:", result.action?.state);
-      
+
       await fetchActions();
     } catch (err) {
       console.error("Error completing action:", err);
@@ -140,11 +141,14 @@ export default function ActionsPage() {
 
       // Calculate follow-up date
       const followUpDate = calculateFollowUpDate();
-      const followUpDateFormatted = new Date(followUpDate).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      });
+      const followUpDateFormatted = new Date(followUpDate).toLocaleDateString(
+        "en-US",
+        {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
 
       // Create FOLLOW_UP action automatically
       const createResponse = await fetch("/api/actions", {
@@ -190,7 +194,8 @@ export default function ActionsPage() {
       console.error("Error handling got reply:", err);
       addToast({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to create follow-up",
+        message:
+          err instanceof Error ? err.message : "Failed to create follow-up",
       });
     }
   };
@@ -234,18 +239,18 @@ export default function ActionsPage() {
 
       // Close the scheduling modal
       setSchedulingActionId(null);
-      
+
       await fetchActions();
     } catch (err) {
       console.error("Error updating follow-up:", err);
       addToast({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to update follow-up",
+        message:
+          err instanceof Error ? err.message : "Failed to update follow-up",
       });
       throw err;
     }
   };
-
 
   const handleSnooze = async (actionId: string, snoozeUntil: string) => {
     try {
@@ -262,7 +267,7 @@ export default function ActionsPage() {
 
       // Close the snooze modal
       setSnoozeActionId(null);
-      
+
       await fetchActions();
     } catch (err) {
       throw err;
@@ -365,7 +370,7 @@ export default function ActionsPage() {
 
       {/* Modals */}
       {/* FollowUpFlowModal removed - FOLLOW_UP now auto-creates on "Got a reply" */}
-      
+
       {/* Scheduling modal now used only for editing existing FOLLOW_UP dates */}
       <FollowUpSchedulingModal
         isOpen={schedulingActionId !== null}
@@ -400,4 +405,3 @@ export default function ActionsPage() {
     </div>
   );
 }
-

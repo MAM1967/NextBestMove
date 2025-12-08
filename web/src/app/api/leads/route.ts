@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { MAX_PENDING_ACTIONS } from "@/lib/actions/limits";
 import { checkLeadLimit } from "@/lib/billing/subscription";
 
 // GET /api/leads - List all leads for the authenticated user
@@ -103,7 +104,11 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Lead limit reached",
-          message: `You've reached your limit of ${limitInfo.limit} leads on the ${limitInfo.plan === "premium" ? "Premium" : "Standard"} plan. Upgrade to Premium for unlimited leads.`,
+          message: `You've reached your limit of ${
+            limitInfo.limit
+          } leads on the ${
+            limitInfo.plan === "premium" ? "Premium" : "Standard"
+          } plan. Upgrade to Premium for unlimited leads.`,
           limitInfo,
         },
         { status: 403 }
@@ -132,22 +137,31 @@ export async function POST(request: Request) {
 
     // Automatically create an OUTREACH action for the new lead
     // This is core to the app's purpose: turn leads into revenue (actions)
-    // Check if there's already an OUTREACH action for this lead (shouldn't happen for new leads, but safety check)
-    const { data: existingAction } = await supabase
-      .from("actions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("person_id", lead.id)
-      .eq("action_type", "OUTREACH")
-      .eq("state", "NEW")
-      .maybeSingle();
+    // Check action limit first (unless user is adding their first lead)
+    const { isAtActionLimit } = await import("@/lib/actions/limits");
+    const atLimit = await isAtActionLimit(user.id, false);
 
-    if (!existingAction) {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-      
-      const { error: actionError } = await supabase
+    if (atLimit) {
+      // User is at action limit - log but don't fail lead creation
+      console.log(
+        `User ${user.id} is at action limit (${MAX_PENDING_ACTIONS}), skipping OUTREACH creation for new lead ${lead.id}`
+      );
+      // Continue - lead was created successfully, action can be created later when user completes some
+    } else {
+      // Check if there's already an OUTREACH action for this lead (shouldn't happen for new leads, but safety check)
+      const { data: existingAction } = await supabase
         .from("actions")
-        .insert({
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("person_id", lead.id)
+        .eq("action_type", "OUTREACH")
+        .eq("state", "NEW")
+        .maybeSingle();
+
+      if (!existingAction) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+
+        const { error: actionError } = await supabase.from("actions").insert({
           user_id: user.id,
           person_id: lead.id,
           action_type: "OUTREACH",
@@ -158,10 +172,11 @@ export async function POST(request: Request) {
           auto_created: true,
         });
 
-      if (actionError) {
-        // Log error but don't fail the lead creation - action can be created later
-        console.error("Error creating auto-action for new lead:", actionError);
-        // Continue - lead was created successfully, action creation is secondary
+        if (actionError) {
+          // Log error but don't fail the lead creation - action can be created later
+          console.error("Error creating auto-action for new lead:", actionError);
+          // Continue - lead was created successfully, action creation is secondary
+        }
       }
     }
 
@@ -174,4 +189,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
