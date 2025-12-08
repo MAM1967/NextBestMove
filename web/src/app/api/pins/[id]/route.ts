@@ -149,7 +149,7 @@ export async function DELETE(
     }
 
     const { error } = await supabase
-      .from("person_pins")
+      .from("leads")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);
