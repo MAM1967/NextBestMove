@@ -243,12 +243,15 @@ async function getConfiguration(
     );
   }
 
-  // Log client ID for debugging (first 30 chars only for security)
+  // Log final configuration being used (first 30 chars only for security)
   console.log(
-    `[OAuth Config] ${provider} client ID: ${clientId.substring(
-      0,
-      30
-    )}... (length: ${clientId.length})`
+    `[OAuth Config] ${provider} Final Configuration:`,
+    {
+      clientId: `${clientId.substring(0, 30)}... (length: ${clientId.length})`,
+      clientSecretPrefix: `${clientSecret.substring(0, 10)}... (length: ${clientSecret.length})`,
+      isProductionSecret: clientSecret.startsWith("GOCSPX-UDm"),
+      isStagingSecret: clientSecret.startsWith("GOCSPX-3zD"),
+    }
   );
 
   try {
