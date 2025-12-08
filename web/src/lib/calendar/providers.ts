@@ -53,17 +53,23 @@ async function getConfiguration(
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
 
-  // Detect environment: Check VERCEL_ENV first, then fall back to hostname-based detection
+  // Detect environment: Check VERCEL_ENV first, then verify/fallback to hostname-based detection
   const vercelEnv = process.env.VERCEL_ENV;
   let isPreview = vercelEnv === "preview";
   let isProduction = vercelEnv === "production";
 
-  // Fallback: If VERCEL_ENV is not set, detect from hostname
-  if (!vercelEnv && hostname) {
-    isProduction = hostname === "nextbestmove.app";
-    isPreview =
+  // Hostname-based detection (always check as verification/fallback)
+  if (hostname) {
+    if (hostname === "nextbestmove.app") {
+      isProduction = true;
+      isPreview = false;
+    } else if (
       hostname === "staging.nextbestmove.app" ||
-      hostname.includes("vercel.app");
+      hostname.includes("vercel.app")
+    ) {
+      isPreview = true;
+      isProduction = false;
+    }
   }
 
   // Log environment detection for debugging
@@ -74,6 +80,7 @@ async function getConfiguration(
       isProduction,
       isPreview,
       clientIdPrefix: clientId?.substring(0, 30) || "MISSING",
+      clientSecretPrefix: clientSecret?.substring(0, 10) || "MISSING",
     });
   }
 
@@ -104,7 +111,22 @@ async function getConfiguration(
         clientId = stagingClientId;
         // Note: Client secret should still come from env var (Vercel usually provides this correctly)
       }
-    } else if (isProduction) {
+    } 
+    
+    // CRITICAL: Always check for production environment (even if not explicitly detected)
+    // If we have production client ID or production hostname, ensure we use production secret
+    const hasProductionClientId = clientId?.startsWith("732850218816-5een");
+    const isProductionHostname = hostname === "nextbestmove.app";
+    const shouldUseProduction = isProduction || hasProductionClientId || isProductionHostname;
+    
+    if (shouldUseProduction) {
+      console.log(`[OAuth Config] Production mode detected:`, {
+        isProduction,
+        hasProductionClientId,
+        isProductionHostname,
+        hostname,
+      });
+      
       // Production: Use NextBestMove client
       const productionClientId =
         "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
@@ -131,14 +153,11 @@ async function getConfiguration(
       }
 
       // WORKAROUND: Vercel is providing staging client secret in production
-      // Check for production-specific env var first, then fall back to regular one
-      const productionClientSecret =
-        process.env.PRODUCTION_GOOGLE_CLIENT_SECRET?.trim() ||
-        process.env.GOOGLE_CLIENT_SECRET?.trim() ||
-        clientSecret;
+      // Always check and override if staging secret is detected in production
       const vercelProvidedSecret = clientSecret;
 
       // Override if Vercel provided staging secret (starts with GOCSPX-3zD)
+      // This MUST happen in production - staging secret won't work with production client ID
       if (
         vercelProvidedSecret &&
         vercelProvidedSecret.startsWith("GOCSPX-3zD")
@@ -183,8 +202,37 @@ async function getConfiguration(
 
           clientSecret = hardcodedProductionSecret;
         }
-      } else if (productionClientSecret) {
-        clientSecret = productionClientSecret;
+      }
+      
+      // CRITICAL SAFETY CHECK: If production mode but still have staging secret, ALWAYS override
+      // This handles edge cases where detection didn't work properly
+      if (clientSecret && clientSecret.startsWith("GOCSPX-3zD")) {
+        console.log(
+          "⚠️ CRITICAL: Staging secret detected in production context, forcing override"
+        );
+        const hardcodedProductionSecret =
+          "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";
+        clientSecret = hardcodedProductionSecret;
+        console.log(
+          `   Overriding with hardcoded production secret: ${hardcodedProductionSecret.substring(
+            0,
+            10
+          )}...`
+        );
+      }
+    } else if (hasProductionClientId) {
+      // Edge case: Production client ID detected but not in production block
+      // This should never happen, but be defensive
+      console.log(
+        "⚠️ WARNING: Production client ID detected but not in production block"
+      );
+      if (clientSecret && clientSecret.startsWith("GOCSPX-3zD")) {
+        console.log(
+          "🔧 FORCING: Overriding staging secret to match production client ID"
+        );
+        const hardcodedProductionSecret =
+          "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";
+        clientSecret = hardcodedProductionSecret;
       }
     }
   }
