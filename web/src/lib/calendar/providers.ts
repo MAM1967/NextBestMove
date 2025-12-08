@@ -160,6 +160,7 @@ async function getConfiguration(
   // For localhost development, ensure we use staging client and secret
   if (provider === "google" && isLocalhost) {
     const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+    const hardcodedStagingSecret = "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";
     const stagingSecret = process.env.GOOGLE_CLIENT_SECRET;
     
     // Override to staging client for localhost (always override deleted client ID)
@@ -172,17 +173,24 @@ async function getConfiguration(
       clientId = stagingClientId;
     }
     
-    // Use staging secret for localhost (if available in env vars)
-    // Note: User needs to set GOOGLE_CLIENT_SECRET in .env.local to staging secret
-    // Staging secret starts with GOCSPX-U9 (current) or GOCSPX-3zD (old/alternative)
-    const isStagingSecret = stagingSecret && (stagingSecret.startsWith("GOCSPX-U9") || stagingSecret.startsWith("GOCSPX-3zD"));
-    if (isStagingSecret) {
+    // Use staging secret for localhost
+    // Check if the provided secret is already the correct staging secret
+    const isCorrectStagingSecret = stagingSecret && (
+      stagingSecret.startsWith("GOCSPX-U9") || 
+      stagingSecret.startsWith("GOCSPX-3zD") ||
+      stagingSecret === hardcodedStagingSecret
+    );
+    
+    if (isCorrectStagingSecret) {
       clientSecret = stagingSecret;
-      console.log(`🔧 Localhost detected - using staging client secret`);
-    } else if (stagingSecret && !isStagingSecret) {
-      console.warn(`⚠️  Localhost detected but GOOGLE_CLIENT_SECRET doesn't look like staging secret (should start with GOCSPX-U9 or GOCSPX-3zD)`);
+      console.log(`🔧 Localhost detected - using staging client secret from .env.local`);
     } else {
-      console.warn(`⚠️  Localhost detected but no GOOGLE_CLIENT_SECRET found in .env.local`);
+      // Override with hardcoded staging secret if .env.local has wrong secret or no secret
+      console.warn(`⚠️  Localhost detected but GOOGLE_CLIENT_SECRET doesn't match staging secret pattern`);
+      console.log(`   🔧 FORCING staging client secret for localhost development`);
+      console.log(`   Env var secret: ${stagingSecret ? `${stagingSecret.substring(0, 10)}...` : "MISSING"}`);
+      clientSecret = hardcodedStagingSecret;
+      console.log(`   Using hardcoded staging secret: ${hardcodedStagingSecret.substring(0, 10)}...`);
     }
   }
 
