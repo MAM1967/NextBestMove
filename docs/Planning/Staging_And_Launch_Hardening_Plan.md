@@ -748,4 +748,23 @@ This plan covers two critical pre-launch activities:
 
 ---
 
+## Appendix: Vercel Environment Variables Solutions
+
+See `docs/Troubleshooting/Vercel_Environment_Variables_Solutions.md` for comprehensive documentation on:
+
+- Current Vercel environment variable issues
+- Root cause analysis
+- Recommended solutions (prioritized)
+- Immediate action plan
+- Code cleanup needed
+- Long-term secret management options
+
+**Key Takeaway:** The current hardcoded secret workaround is temporary. Implement a proper secret management solution before launch to ensure:
+- No secrets in source code
+- Easy secret rotation
+- Proper environment isolation
+- Production reliability
+
+---
+
 **End of Staging Environment & Launch Hardening Plan**
