@@ -79,7 +79,7 @@ export async function GET(request: Request) {
         if (actionData) {
           const action = {
             ...actionData,
-            person_pins: actionData.leads || [], // Keep property name for backward compatibility
+            leads: actionData.leads || [], // Use leads property name after migration
           };
           
           if (planAction.is_fast_win) {

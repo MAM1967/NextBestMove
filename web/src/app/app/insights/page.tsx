@@ -78,7 +78,7 @@ async function getStaleActions() {
     
     return {
       ...action,
-      person_pins: personPin, // Keep property name for backward compatibility
+      leads: personPin, // Use leads property name after migration
       days_old: daysOld,
     } as StaleAction;
   });

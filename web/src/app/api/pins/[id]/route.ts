@@ -18,7 +18,7 @@ export async function GET(
     }
 
     const { data, error } = await supabase
-      .from("person_pins")
+      .from("leads")
       .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
@@ -100,7 +100,7 @@ export async function PUT(
     }
 
     const { data, error } = await supabase
-      .from("person_pins")
+      .from("leads")
       .update({
         name: name.trim(),
         url: normalizedUrl,

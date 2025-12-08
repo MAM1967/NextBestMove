@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const status = searchParams.get("status"); // Optional filter: ACTIVE, SNOOZED, ARCHIVED
 
     let query = supabase
-      .from("person_pins")
+      .from("leads")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     }
 
     const { data: pin, error: pinError } = await supabase
-      .from("person_pins")
+      .from("leads")
       .insert({
         user_id: user.id,
         name: name.trim(),
