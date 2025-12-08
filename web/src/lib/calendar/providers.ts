@@ -138,6 +138,14 @@ async function getConfiguration(provider: CalendarProvider) {
           console.error(
             "   Please set PRODUCTION_GOOGLE_CLIENT_SECRET in Vercel (Production scope)"
           );
+          // Debug: Show all available env vars
+          const allGoogleVars = Object.keys(process.env)
+            .filter(k => k.includes("GOOGLE") || k.includes("PRODUCTION"))
+            .map(k => `${k}=${process.env[k]?.substring(0, 10)}...`)
+            .join(", ");
+          console.error(
+            `   Available env vars with 'GOOGLE' or 'PRODUCTION': ${allGoogleVars || "NONE"}`
+          );
         }
       } else if (productionClientSecret) {
         clientSecret = productionClientSecret;
