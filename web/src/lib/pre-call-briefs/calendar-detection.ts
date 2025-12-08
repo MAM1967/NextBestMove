@@ -1,4 +1,4 @@
-import type { CalendarEvent, PersonPin, DetectedCall } from "./types";
+import type { CalendarEvent, LeadBasic, DetectedCall } from "./types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -73,7 +73,7 @@ export async function matchEventToLead(
   supabase: SupabaseClient,
   userId: string,
   event: CalendarEvent
-): Promise<PersonPin | null> {
+): Promise<LeadBasic | null> {
   // Get all active leads for the user
   const { data: leads } = await supabase
     .from("leads")
@@ -158,7 +158,7 @@ export async function detectUpcomingCalls(
 
     upcomingCalls.push({
       event,
-      matchedPersonPin: matchedLead, // Keep property name for backward compatibility
+      matchedLead,
       confidence,
     });
   }

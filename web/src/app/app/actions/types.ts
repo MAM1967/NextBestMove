@@ -17,8 +17,8 @@ export type ActionState =
 
 import type { LeadBasic } from "@/lib/leads/types";
 
-// Re-export for convenience (keeping PersonPin alias for backward compatibility during migration)
-export type PersonPin = LeadBasic;
+// Re-export for convenience
+export type PersonPin = LeadBasic; // @deprecated Use LeadBasic instead
 
 export interface Action {
   id: string;
@@ -34,7 +34,7 @@ export interface Action {
   auto_created: boolean;
   created_at: string;
   updated_at: string;
-  leads?: PersonPin | null; // Supabase relation - renamed from person_pins
+  leads?: LeadBasic | null; // Supabase relation to leads table
 }
 
 

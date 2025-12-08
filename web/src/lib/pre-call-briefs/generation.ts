@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
-  PersonPin,
+  LeadBasic,
   ActionHistory,
   PreCallBrief,
   DetectedCall,
@@ -93,7 +93,7 @@ function generateNextStepSuggestions(history: ActionHistory): string[] {
  * Generate brief content from action history and lead
  */
 function generateBriefContent(
-  lead: PersonPin | null,
+  lead: LeadBasic | null,
   history: ActionHistory,
   suggestions: string[]
 ): string {
@@ -156,7 +156,7 @@ export async function generatePreCallBrief(
   userId: string,
   detectedCall: DetectedCall
 ): Promise<PreCallBrief> {
-  const { event, matchedPersonPin } = detectedCall;
+  const { event, matchedLead } = detectedCall;
 
   let history: ActionHistory = {
     lastActionDate: null,
@@ -166,25 +166,25 @@ export async function generatePreCallBrief(
     lastReplyDate: null,
   };
 
-  if (matchedPersonPin) {
-    history = await getActionHistory(supabase, userId, matchedPersonPin.id);
+  if (matchedLead) {
+    history = await getActionHistory(supabase, userId, matchedLead.id);
   }
 
   const suggestions = generateNextStepSuggestions(history);
   const briefContent = generateBriefContent(
-    matchedPersonPin,
+    matchedLead,
     history,
     suggestions
   );
 
   // Aggregate user notes from actions
   let userNotes: string | null = null;
-  if (matchedPersonPin) {
+  if (matchedLead) {
     const { data: actionsWithNotes } = await supabase
       .from("actions")
       .select("notes")
       .eq("user_id", userId)
-      .eq("person_id", matchedPersonPin.id)
+      .eq("person_id", matchedLead.id)
       .not("notes", "is", null)
       .order("created_at", { ascending: false })
       .limit(5);
@@ -202,9 +202,9 @@ export async function generatePreCallBrief(
     calendarEventId: event.id,
     eventTitle: event.title,
     eventStart: new Date(event.start),
-    leadId: matchedPersonPin?.id || null,
-    personPinId: matchedPersonPin?.id || null, // Legacy field for backward compatibility
-    personName: matchedPersonPin?.name || null,
+    leadId: matchedLead?.id || null,
+    personPinId: matchedLead?.id || null, // @deprecated Legacy field for backward compatibility - use leadId
+    personName: matchedLead?.name || null,
     briefContent,
     lastInteractionDate: history.lastActionDate,
     followUpCount: history.totalActions,

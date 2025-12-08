@@ -12,7 +12,10 @@ export interface CalendarEvent {
 
 import type { LeadBasic } from "@/lib/leads/types";
 
-// Re-export for convenience
+// Re-export LeadBasic for convenience
+export type { LeadBasic };
+
+// @deprecated Use LeadBasic instead - kept for backward compatibility
 export type PersonPin = LeadBasic;
 
 export interface ActionHistory {
@@ -29,7 +32,7 @@ export interface PreCallBrief {
   eventTitle: string;
   eventStart: Date;
   leadId: string | null; // Maps to person_pin_id in database (legacy column name)
-  personPinId: string | null; // Legacy field for backward compatibility
+  personPinId: string | null; // @deprecated Legacy field for backward compatibility - use leadId
   personName: string | null;
   briefContent: string;
   lastInteractionDate: Date | null;
@@ -41,7 +44,7 @@ export interface PreCallBrief {
 
 export interface DetectedCall {
   event: CalendarEvent;
-  matchedPersonPin: PersonPin | null;
+  matchedLead: LeadBasic | null;
   confidence: "high" | "medium" | "low";
 }
 

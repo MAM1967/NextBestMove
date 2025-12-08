@@ -72,13 +72,13 @@ async function getStaleActions() {
     );
     
     // Transform leads from array to single object or null
-    const personPin = Array.isArray(action.leads) && action.leads.length > 0
+    const lead = Array.isArray(action.leads) && action.leads.length > 0
       ? action.leads[0]
       : action.leads || null;
     
     return {
       ...action,
-      leads: personPin, // Use leads property name after migration
+      leads: lead,
       days_old: daysOld,
     } as StaleAction;
   });
