@@ -108,20 +108,26 @@ export default function ActionsPage() {
         throw new Error("Action not found");
       }
 
-      // Check if there's already a FOLLOW_UP action for this lead
+      // Check if there's already an active FOLLOW_UP action for this lead
+      // Only block if there's a NEW or SNOOZED FOLLOW_UP (not DONE/REPLIED)
       if (action.person_id) {
         const existingFollowUp = actions.find(
           (a) =>
             a.person_id === action.person_id &&
             a.action_type === "FOLLOW_UP" &&
             (a.state === "NEW" || a.state === "SNOOZED") &&
-            new Date(a.due_date) >= new Date()
+            new Date(a.due_date) >= new Date() // Not overdue
         );
 
         if (existingFollowUp) {
+          // Format the existing follow-up date for the message
+          const existingDate = new Date(existingFollowUp.due_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
           addToast({
             type: "info",
-            message: "You already have a follow-up scheduled for this lead.",
+            message: `You already have a follow-up scheduled for ${existingDate}. Complete that one first, or edit its date if needed.`,
           });
           return;
         }
@@ -168,6 +174,14 @@ export default function ActionsPage() {
 
       if (!createResponse.ok) {
         const data = await createResponse.json();
+        // If server says there's already a follow-up, show helpful message
+        if (data.error && data.error.includes("already have a follow-up")) {
+          addToast({
+            type: "info",
+            message: data.error,
+          });
+          return; // Don't throw error, just show the message
+        }
         throw new Error(data.error || "Failed to create follow-up action");
       }
 

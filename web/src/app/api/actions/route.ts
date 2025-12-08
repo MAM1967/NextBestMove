@@ -134,6 +134,37 @@ export async function POST(request: Request) {
         );
       }
 
+      // Prevention logic: Check for existing FOLLOW_UP actions for this lead
+      // Only block if there's already an active (NEW/SNOOZED) FOLLOW_UP
+      if (action_type === "FOLLOW_UP") {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+        const { data: existingFollowUp, error: checkError } = await supabase
+          .from("actions")
+          .select("id, due_date")
+          .eq("user_id", user.id)
+          .eq("person_id", person_id)
+          .eq("action_type", "FOLLOW_UP")
+          .in("state", ["NEW", "SNOOZED"])
+          .gte("due_date", today)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("Error checking for existing follow-up:", checkError);
+          // Continue - don't block on check error
+        } else if (existingFollowUp) {
+          const existingDate = new Date(existingFollowUp.due_date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+          return NextResponse.json(
+            { 
+              error: `You already have a follow-up scheduled for ${existingDate}. Complete that one first, or edit its date if needed.` 
+            },
+            { status: 400 }
+          );
+        }
+      }
+
       // Auto-generate description if not provided
       if (!description) {
         const actionDescriptions: Record<string, string> = {
