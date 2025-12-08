@@ -101,14 +101,13 @@ export async function POST(request: Request) {
     const actionIds = neverInteracted.map((a) => a.id);
     const archivedNote = `Auto-archived: No user interaction within 7 days of due date`;
 
-    const { error: updateError, count } = await supabase
+    const { error: updateError } = await supabase
       .from("actions")
       .update({
         state: "ARCHIVED",
         notes: archivedNote,
       })
-      .in("id", actionIds)
-      .select("id", { count: "exact" });
+      .in("id", actionIds);
 
     if (updateError) {
       console.error("Error archiving stale actions:", updateError);
