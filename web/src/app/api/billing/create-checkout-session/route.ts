@@ -37,17 +37,12 @@ export async function POST(request: NextRequest) {
 
     const priceId = getPriceId(plan, interval);
     if (!priceId) {
-      const isProd =
-        process.env.VERCEL_ENV === "production" ||
-        process.env.NEXT_PUBLIC_ENVIRONMENT === "production";
-      const suffix = isProd ? "_L" : "";
       console.error(`Price ID not found for ${plan}/${interval}`);
       console.error("Environment check:", {
-        env: isProd ? "production" : "non-production",
-        STANDARD_MONTHLY: process.env[`STRIPE_PRICE_ID_STANDARD_MONTHLY${suffix}`] ? "set" : "missing",
-        STANDARD_YEARLY: process.env[`STRIPE_PRICE_ID_STANDARD_YEARLY${suffix}`] ? "set" : "missing",
-        PREMIUM_MONTHLY: process.env[`STRIPE_PRICE_ID_PREMIUM_MONTHLY${suffix}`] ? "set" : "missing",
-        PREMIUM_YEARLY: process.env[`STRIPE_PRICE_ID_PREMIUM_YEARLY${suffix}`] ? "set" : "missing",
+        STANDARD_MONTHLY: process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY ? "set" : "missing",
+        STANDARD_YEARLY: process.env.STRIPE_PRICE_ID_STANDARD_YEARLY ? "set" : "missing",
+        PREMIUM_MONTHLY: process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY ? "set" : "missing",
+        PREMIUM_YEARLY: process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY ? "set" : "missing",
       });
       return NextResponse.json(
         { 

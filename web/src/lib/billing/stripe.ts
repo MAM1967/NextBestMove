@@ -9,30 +9,13 @@ import {
 // Lazy initialization to avoid errors during build when env vars aren't available
 let stripeInstance: Stripe | null = null;
 
-/**
- * Determine if we're running in production
- */
-function isProduction(): boolean {
-  return (
-    process.env.VERCEL_ENV === "production" ||
-    process.env.NEXT_PUBLIC_ENVIRONMENT === "production"
-  );
-}
-
 function getStripe(): Stripe {
   if (!stripeInstance) {
-    // Use _L suffix variables in production, regular variables otherwise
-    const secretKey = isProduction()
-      ? process.env.STRIPE_SECRET_KEY_L || process.env.STRIPE_SECRET_KEY
-      : process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY_L;
-
-    if (!secretKey) {
-      throw new Error(
-        `STRIPE_SECRET_KEY${isProduction() ? "_L" : ""} is not set`
-      );
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not set");
     }
     // Sanitize the API key: remove any whitespace, newlines, or invalid characters
-    const sanitizedKey = secretKey.trim().replace(/\s+/g, "");
+    const sanitizedKey = process.env.STRIPE_SECRET_KEY.trim().replace(/\s+/g, "");
 
     // Validate key format
     if (!sanitizedKey.match(/^sk_(test|live)_[a-zA-Z0-9]+$/)) {
@@ -63,33 +46,16 @@ export type { PlanType, IntervalType };
 
 /**
  * Get price ID from environment variables dynamically
- * Uses _L suffix variables in production, regular variables otherwise
  */
 function getPriceIdFromEnv(
   plan: PlanType,
   interval: IntervalType
 ): string | null {
-  const prod = isProduction();
-  const suffix = prod ? "_L" : "";
-  const fallbackSuffix = prod ? "" : "_L";
-
   const envVarMap: Record<string, string> = {
-    standard_month:
-      process.env[`STRIPE_PRICE_ID_STANDARD_MONTHLY${suffix}`] ||
-      process.env[`STRIPE_PRICE_ID_STANDARD_MONTHLY${fallbackSuffix}`] ||
-      "",
-    standard_year:
-      process.env[`STRIPE_PRICE_ID_STANDARD_YEARLY${suffix}`] ||
-      process.env[`STRIPE_PRICE_ID_STANDARD_YEARLY${fallbackSuffix}`] ||
-      "",
-    premium_month:
-      process.env[`STRIPE_PRICE_ID_PREMIUM_MONTHLY${suffix}`] ||
-      process.env[`STRIPE_PRICE_ID_PREMIUM_MONTHLY${fallbackSuffix}`] ||
-      "",
-    premium_year:
-      process.env[`STRIPE_PRICE_ID_PREMIUM_YEARLY${suffix}`] ||
-      process.env[`STRIPE_PRICE_ID_PREMIUM_YEARLY${fallbackSuffix}`] ||
-      "",
+    standard_month: process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY || "",
+    standard_year: process.env.STRIPE_PRICE_ID_STANDARD_YEARLY || "",
+    premium_month: process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY || "",
+    premium_year: process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY || "",
   };
 
   const key = `${plan}_${interval === "month" ? "month" : "year"}`;

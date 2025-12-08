@@ -22,19 +22,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // Use _L suffix variables in production, regular variables otherwise
-  const isProd =
-    process.env.VERCEL_ENV === "production" ||
-    process.env.NEXT_PUBLIC_ENVIRONMENT === "production";
-  const suffix = isProd ? "_L" : "";
-  const fallbackSuffix = isProd ? "" : "_L";
-
-  const webhookSecret =
-    process.env[`STRIPE_WEBHOOK_SECRET${suffix}`] ||
-    process.env[`STRIPE_WEBHOOK_SECRET${fallbackSuffix}`];
-
-  if (!webhookSecret) {
-    logError(`STRIPE_WEBHOOK_SECRET${suffix} is not set`, undefined, {
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    logError("STRIPE_WEBHOOK_SECRET is not set", undefined, {
       context: "webhook_config",
     });
     return NextResponse.json(
@@ -46,7 +35,11 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err: any) {
     logWebhookEvent("Webhook signature verification failed", {
       status: "error",
