@@ -74,21 +74,25 @@ async function getConfiguration(
     }
   }
 
-  // CRITICAL FIX: In production, ALWAYS override if we detect staging credentials
+  // CRITICAL FIX: In production, ALWAYS override if we detect staging credentials or deleted client IDs
   // This must happen BEFORE any other logic to ensure correct credentials from the start
   if (provider === "google" && isProduction) {
     const hasStagingClientId = clientId?.startsWith("732850218816-kgrh");
+    const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm"); // Deleted client ID
     const hasStagingSecret = clientSecret?.startsWith("GOCSPX-3zD");
     
-    if (hasStagingClientId || hasStagingSecret) {
-      console.log("🚨 CRITICAL: Production environment detected but staging credentials found!");
+    if (hasStagingClientId || hasDeletedClientId || hasStagingSecret) {
+      console.log("🚨 CRITICAL: Production environment detected but incorrect credentials found!");
       console.log(`   Client ID: ${clientId?.substring(0, 30) || "MISSING"}...`);
       console.log(`   Secret prefix: ${clientSecret?.substring(0, 10) || "MISSING"}...`);
       
-      // Override client ID if staging
-      if (hasStagingClientId) {
+      // Override client ID if staging or deleted
+      if (hasStagingClientId || hasDeletedClientId) {
         const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
         console.log(`   🔧 FORCING production client ID: ${productionClientId.substring(0, 30)}...`);
+        if (hasDeletedClientId) {
+          console.log(`   ⚠️  Detected deleted client ID - replacing with production client ID`);
+        }
         clientId = productionClientId;
       }
       
@@ -97,6 +101,41 @@ async function getConfiguration(
         const hardcodedProductionSecret = "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";
         console.log(`   🔧 FORCING production secret: ${hardcodedProductionSecret.substring(0, 10)}...`);
         clientSecret = hardcodedProductionSecret;
+      }
+    }
+  }
+  
+  // Also check for deleted client ID in preview/staging (shouldn't happen, but safety check)
+  if (provider === "google" && isPreview) {
+    const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm");
+    if (hasDeletedClientId) {
+      console.log("🚨 CRITICAL: Preview environment detected but deleted client ID found!");
+      const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+      console.log(`   🔧 FORCING staging client ID: ${stagingClientId.substring(0, 30)}...`);
+      clientId = stagingClientId;
+    }
+  }
+  
+  // Also check for deleted client ID even if environment isn't clearly detected (safety net)
+  if (provider === "google") {
+    const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm");
+    if (hasDeletedClientId) {
+      console.log("🚨 CRITICAL: Deleted client ID detected - attempting to determine correct client ID");
+      
+      // Use hostname to determine which client ID to use
+      if (hostname === "nextbestmove.app") {
+        const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
+        console.log(`   🔧 Using production client ID based on hostname: ${productionClientId.substring(0, 30)}...`);
+        clientId = productionClientId;
+      } else if (hostname === "staging.nextbestmove.app" || hostname.includes("vercel.app")) {
+        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+        console.log(`   🔧 Using staging client ID based on hostname: ${stagingClientId.substring(0, 30)}...`);
+        clientId = stagingClientId;
+      } else {
+        // Default to production if we can't determine
+        const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
+        console.log(`   🔧 Using production client ID as default: ${productionClientId.substring(0, 30)}...`);
+        clientId = productionClientId;
       }
     }
   }
