@@ -133,11 +133,16 @@ This guide walks you through manual testing for launch hardening. Revenue critic
 
 #### Test 1.2.1: View Action Details
 1. Navigate to `/app/actions`
-2. Click on an action card (or "View Details")
-3. Verify:
-   - [ ] Action details modal/page opens
-   - [ ] Shows: description, lead name (if linked), due date, state, notes
-   - [ ] All information is accurate
+2. Review action cards (details are shown directly on each card)
+3. Verify each card displays:
+   - [ ] Action description/title
+   - [ ] Action type badge (OUTREACH, FOLLOW_UP, NURTURE, etc.)
+   - [ ] State badge (Done, Sent, Replied, Snoozed) if completed
+   - [ ] Due date with urgency indicator (Due today, Overdue X days, etc.)
+   - [ ] Lead link (if action is linked to a lead) - shows as "Email", "LinkedIn", or "Link"
+   - [ ] Notes (if present) - shown below description with notepad icon
+   - [ ] Action buttons (Done, Snooze, Add note, etc.)
+   - [ ] All information is accurate and matches database
 
 #### Test 1.2.2: Mark Action as "Done"
 1. On `/app/actions`, find an action in "NEW" state
