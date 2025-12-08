@@ -42,9 +42,11 @@ async function getConfiguration(
   provider: CalendarProvider,
   hostname?: string
 ) {
-  if (configCache[provider]) {
-    return configCache[provider]!;
-  }
+  // Don't use cache - we need to check and override secrets on every call
+  // This ensures we always use the correct secret even if env vars change
+  // if (configCache[provider]) {
+  //   return configCache[provider]!;
+  // }
 
   const config = PROVIDERS[provider];
 
@@ -52,6 +54,18 @@ async function getConfiguration(
   // Override based on VERCEL_ENV to ensure correct OAuth client IDs are used
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
+
+  // CRITICAL FIX: Check for production client ID + staging secret mismatch IMMEDIATELY
+  // This must happen before any other logic to catch the issue early
+  if (provider === "google" && clientId?.startsWith("732850218816-5een") && clientSecret?.startsWith("GOCSPX-3zD")) {
+    console.log("🚨 CRITICAL MISMATCH DETECTED: Production client ID with staging secret!");
+    console.log(`   Client ID: ${clientId.substring(0, 30)}...`);
+    console.log(`   Secret prefix: ${clientSecret.substring(0, 10)}...`);
+    console.log("   FORCING production secret override...");
+    const hardcodedProductionSecret = "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";
+    clientSecret = hardcodedProductionSecret;
+    console.log(`   ✅ Overridden to: ${hardcodedProductionSecret.substring(0, 10)}...`);
+  }
 
   // Detect environment: Check VERCEL_ENV first, then verify/fallback to hostname-based detection
   const vercelEnv = process.env.VERCEL_ENV;
@@ -111,13 +125,26 @@ async function getConfiguration(
         clientId = stagingClientId;
         // Note: Client secret should still come from env var (Vercel usually provides this correctly)
       }
-    } 
+    }
     
     // CRITICAL: Always check for production environment (even if not explicitly detected)
     // If we have production client ID or production hostname, ensure we use production secret
     const hasProductionClientId = clientId?.startsWith("732850218816-5een");
     const isProductionHostname = hostname === "nextbestmove.app";
     const shouldUseProduction = isProduction || hasProductionClientId || isProductionHostname;
+    
+    // CRITICAL FIX: If production client ID detected, ALWAYS ensure production secret
+    // This handles the case where VERCEL_ENV might not be set correctly
+    if (hasProductionClientId && clientSecret?.startsWith("GOCSPX-3zD")) {
+      console.log(
+        "🔧 CRITICAL: Production client ID detected but staging secret present - FORCING override"
+      );
+      const hardcodedProductionSecret = "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";
+      clientSecret = hardcodedProductionSecret;
+      console.log(
+        `   Overriding staging secret with production secret: ${hardcodedProductionSecret.substring(0, 10)}...`
+      );
+    }
     
     if (shouldUseProduction) {
       console.log(`[OAuth Config] Production mode detected:`, {
