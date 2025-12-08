@@ -74,12 +74,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Actions
           </Link>
           <Link
-            href="/app/tasks"
-            className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
-          >
-            Tasks
-          </Link>
-          <Link
             href="/app/weekly-summary"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
