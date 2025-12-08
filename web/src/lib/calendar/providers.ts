@@ -13,6 +13,8 @@ type ProviderConfig = {
 const PROVIDERS: Record<CalendarProvider, ProviderConfig> = {
   google: {
     issuerUrl: "https://accounts.google.com",
+    // Using calendar.readonly as required by Google Trust and Safety
+    // Must NOT use calendar.calendars.readonly (remove from Google Cloud Console)
     scope: "openid email https://www.googleapis.com/auth/calendar.readonly",
     extraAuthParams: {
       access_type: "offline",
@@ -23,15 +25,14 @@ const PROVIDERS: Record<CalendarProvider, ProviderConfig> = {
   },
   outlook: {
     issuerUrl: "https://login.microsoftonline.com/common/v2.0",
-    scope: "openid email https://graph.microsoft.com/Calendars.Read offline_access",
+    scope:
+      "openid email https://graph.microsoft.com/Calendars.Read offline_access",
     clientIdEnv: "OUTLOOK_CLIENT_ID",
     clientSecretEnv: "OUTLOOK_CLIENT_SECRET",
   },
 };
 
-const configCache: Partial<
-  Record<CalendarProvider, client.Configuration>
-> = {};
+const configCache: Partial<Record<CalendarProvider, client.Configuration>> = {};
 
 export function isSupportedProvider(value: string): value is CalendarProvider {
   return value === "google" || value === "outlook";
@@ -43,42 +44,64 @@ async function getConfiguration(provider: CalendarProvider) {
   }
 
   const config = PROVIDERS[provider];
-  
+
   // WORKAROUND: Vercel sometimes doesn't pass env vars correctly to runtime
   // Override based on VERCEL_ENV to ensure correct OAuth client IDs are used
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
-  
+
   const isPreview = process.env.VERCEL_ENV === "preview";
   const isProduction = process.env.VERCEL_ENV === "production";
-  
+
   if (provider === "google") {
     if (isPreview) {
       // Staging: Use NextBestMove-Test client
-      const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+      const stagingClientId =
+        "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
       const vercelProvided = clientId;
-      
+
       // Only override if Vercel provided wrong client ID or if client ID is missing
       if (!vercelProvided || !vercelProvided.startsWith("732850218816-kgrh")) {
         if (vercelProvided !== stagingClientId) {
-          console.log("🔧 WORKAROUND: Overriding GOOGLE_CLIENT_ID for Preview build");
-          console.log(`   Vercel provided: ${vercelProvided ? `${vercelProvided.substring(0, 30)}...` : "MISSING"}`);
-          console.log(`   Overriding with: ${stagingClientId.substring(0, 30)}...`);
+          console.log(
+            "🔧 WORKAROUND: Overriding GOOGLE_CLIENT_ID for Preview build"
+          );
+          console.log(
+            `   Vercel provided: ${
+              vercelProvided
+                ? `${vercelProvided.substring(0, 30)}...`
+                : "MISSING"
+            }`
+          );
+          console.log(
+            `   Overriding with: ${stagingClientId.substring(0, 30)}...`
+          );
         }
         clientId = stagingClientId;
         // Note: Client secret should still come from env var (Vercel usually provides this correctly)
       }
     } else if (isProduction) {
       // Production: Use NextBestMove client
-      const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
+      const productionClientId =
+        "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
       const vercelProvided = clientId;
-      
+
       // Only override if Vercel provided wrong client ID (staging) or if client ID is missing
       if (!vercelProvided || !vercelProvided.startsWith("732850218816-5een")) {
         if (vercelProvided !== productionClientId) {
-          console.log("🔧 WORKAROUND: Overriding GOOGLE_CLIENT_ID for Production build");
-          console.log(`   Vercel provided: ${vercelProvided ? `${vercelProvided.substring(0, 30)}...` : "MISSING"}`);
-          console.log(`   Overriding with: ${productionClientId.substring(0, 30)}...`);
+          console.log(
+            "🔧 WORKAROUND: Overriding GOOGLE_CLIENT_ID for Production build"
+          );
+          console.log(
+            `   Vercel provided: ${
+              vercelProvided
+                ? `${vercelProvided.substring(0, 30)}...`
+                : "MISSING"
+            }`
+          );
+          console.log(
+            `   Overriding with: ${productionClientId.substring(0, 30)}...`
+          );
         }
         clientId = productionClientId;
         // Note: Client secret should still come from env var (Vercel usually provides this correctly)
@@ -93,7 +116,12 @@ async function getConfiguration(provider: CalendarProvider) {
   }
 
   // Log client ID for debugging (first 30 chars only for security)
-  console.log(`[OAuth Config] ${provider} client ID: ${clientId.substring(0, 30)}... (length: ${clientId.length})`);
+  console.log(
+    `[OAuth Config] ${provider} client ID: ${clientId.substring(
+      0,
+      30
+    )}... (length: ${clientId.length})`
+  );
 
   try {
     const serverUrl = new URL(config.issuerUrl);
