@@ -106,16 +106,41 @@ async function getConfiguration(provider: CalendarProvider) {
         clientId = productionClientId;
       }
 
-      // Log client secret status for debugging (first 10 chars only)
-      if (clientSecret) {
-        console.log(
-          `[OAuth Config] Production client secret: ${clientSecret.substring(
-            0,
-            10
-          )}... (length: ${clientSecret.length})`
-        );
-      } else {
-        console.error("[OAuth Config] Production client secret is MISSING!");
+      // WORKAROUND: Vercel is providing staging client secret in production
+      // Check for production-specific env var first, then fall back to regular one
+      const productionClientSecret =
+        process.env.PRODUCTION_GOOGLE_CLIENT_SECRET?.trim() ||
+        process.env.GOOGLE_CLIENT_SECRET?.trim() ||
+        clientSecret;
+      const vercelProvidedSecret = clientSecret;
+
+      // Override if Vercel provided staging secret (starts with GOCSPX-3zD)
+      if (vercelProvidedSecret && vercelProvidedSecret.startsWith("GOCSPX-3zD")) {
+        // Staging secret detected - use production-specific env var if available
+        if (process.env.PRODUCTION_GOOGLE_CLIENT_SECRET) {
+          console.log(
+            "🔧 WORKAROUND: Overriding GOOGLE_CLIENT_SECRET for Production build"
+          );
+          console.log(
+            `   Vercel provided (staging): ${vercelProvidedSecret.substring(
+              0,
+              10
+            )}... (length: ${vercelProvidedSecret.length})`
+          );
+          console.log(
+            `   Using PRODUCTION_GOOGLE_CLIENT_SECRET env var instead`
+          );
+          clientSecret = process.env.PRODUCTION_GOOGLE_CLIENT_SECRET.trim();
+        } else {
+          console.error(
+            "[OAuth Config] Production build detected staging client secret, but PRODUCTION_GOOGLE_CLIENT_SECRET env var not set!"
+          );
+          console.error(
+            "   Please set PRODUCTION_GOOGLE_CLIENT_SECRET in Vercel (Production scope)"
+          );
+        }
+      } else if (productionClientSecret) {
+        clientSecret = productionClientSecret;
       }
     }
   }
