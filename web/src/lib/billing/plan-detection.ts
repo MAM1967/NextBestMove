@@ -13,8 +13,19 @@ export interface PlanInfo {
 }
 
 /**
+ * Determine if we're running in production
+ */
+function isProduction(): boolean {
+  return (
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NEXT_PUBLIC_ENVIRONMENT === "production"
+  );
+}
+
+/**
  * Determine plan information from Stripe price_id
  * Compares against environment variables to identify the plan
+ * Uses _L suffix variables in production, regular variables otherwise
  */
 export function getPlanFromPriceId(priceId: string | null | undefined): PlanInfo {
   if (!priceId) {
@@ -25,10 +36,22 @@ export function getPlanFromPriceId(priceId: string | null | undefined): PlanInfo
     };
   }
 
-  const premiumMonthly = process.env.STRIPE_PRICE_ID_PREMIUM_MONTHLY?.trim();
-  const premiumYearly = process.env.STRIPE_PRICE_ID_PREMIUM_YEARLY?.trim();
-  const standardMonthly = process.env.STRIPE_PRICE_ID_STANDARD_MONTHLY?.trim();
-  const standardYearly = process.env.STRIPE_PRICE_ID_STANDARD_YEARLY?.trim();
+  const prod = isProduction();
+  const suffix = prod ? "_L" : "";
+  const fallbackSuffix = prod ? "" : "_L";
+
+  const premiumMonthly =
+    process.env[`STRIPE_PRICE_ID_PREMIUM_MONTHLY${suffix}`]?.trim() ||
+    process.env[`STRIPE_PRICE_ID_PREMIUM_MONTHLY${fallbackSuffix}`]?.trim();
+  const premiumYearly =
+    process.env[`STRIPE_PRICE_ID_PREMIUM_YEARLY${suffix}`]?.trim() ||
+    process.env[`STRIPE_PRICE_ID_PREMIUM_YEARLY${fallbackSuffix}`]?.trim();
+  const standardMonthly =
+    process.env[`STRIPE_PRICE_ID_STANDARD_MONTHLY${suffix}`]?.trim() ||
+    process.env[`STRIPE_PRICE_ID_STANDARD_MONTHLY${fallbackSuffix}`]?.trim();
+  const standardYearly =
+    process.env[`STRIPE_PRICE_ID_STANDARD_YEARLY${suffix}`]?.trim() ||
+    process.env[`STRIPE_PRICE_ID_STANDARD_YEARLY${fallbackSuffix}`]?.trim();
 
   const trimmedPriceId = priceId.trim();
 

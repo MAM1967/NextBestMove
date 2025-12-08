@@ -12,12 +12,8 @@ import Stripe from "stripe";
  */
 export async function POST(request: Request) {
   try {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        { error: "Stripe configuration error", details: "STRIPE_SECRET_KEY is not set" },
-        { status: 500 }
-      );
-    }
+    // Stripe instance will validate key on access, so we don't need to check here
+    // This will use STRIPE_SECRET_KEY_L in production, STRIPE_SECRET_KEY otherwise
 
     const supabase = await createClient();
     const {
