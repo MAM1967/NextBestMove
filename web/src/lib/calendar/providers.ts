@@ -104,7 +104,17 @@ async function getConfiguration(provider: CalendarProvider) {
           );
         }
         clientId = productionClientId;
-        // Note: Client secret should still come from env var (Vercel usually provides this correctly)
+      }
+      
+      // Log client secret status for debugging (first 10 chars only)
+      if (clientSecret) {
+        console.log(
+          `[OAuth Config] Production client secret: ${clientSecret.substring(0, 10)}... (length: ${clientSecret.length})`
+        );
+      } else {
+        console.error(
+          "[OAuth Config] Production client secret is MISSING!"
+        );
       }
     }
   }

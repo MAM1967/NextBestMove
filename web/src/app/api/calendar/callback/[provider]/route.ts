@@ -124,6 +124,20 @@ export async function GET(
     
     const redirectUri = `${request.nextUrl.origin}/api/calendar/callback/${provider}`;
     const config = await getProviderConfiguration(provider);
+    
+    // Debug: Log client ID and secret status for production
+    if (process.env.VERCEL_ENV === "production" && provider === "google") {
+      const clientMetadata = config.clientMetadata();
+      const clientId = clientMetadata.client_id || "MISSING";
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "MISSING";
+      console.log("[Calendar Callback] Production OAuth Debug:", {
+        clientIdPrefix: clientId.substring(0, 30),
+        clientIdLength: clientId.length,
+        hasClientSecret: !!clientSecret && clientSecret !== "MISSING",
+        clientSecretLength: clientSecret !== "MISSING" ? clientSecret.length : 0,
+        clientSecretPrefix: clientSecret !== "MISSING" ? clientSecret.substring(0, 10) : "MISSING",
+      });
+    }
 
     // Use openid-client's authorizationCodeGrant function
     const tokenSet = await client.authorizationCodeGrant(
