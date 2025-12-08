@@ -19,15 +19,11 @@ function buildRedirectUrl(
   callbackUrl?: string | null
 ) {
   // Whitelist of allowed callback paths (relative paths only)
-  const ALLOWED_PATHS = [
-    "/app/settings",
-    "/onboarding",
-    "/app",
-  ];
+  const ALLOWED_PATHS = ["/app/settings", "/onboarding", "/app"];
 
   // Validate callbackUrl - must be a relative path starting with /
   let basePath = "/app/settings"; // Default fallback
-  
+
   if (callbackUrl) {
     // Security: Only allow relative paths (must start with /)
     // Reject absolute URLs (http://, https://, //) to prevent open redirect
@@ -42,7 +38,7 @@ function buildRedirectUrl(
         (allowed) =>
           callbackUrl === allowed || callbackUrl.startsWith(`${allowed}/`)
       );
-      
+
       if (isAllowed) {
         basePath = callbackUrl;
       } else {
@@ -53,9 +49,7 @@ function buildRedirectUrl(
       }
     } else {
       // Log attempted open redirect attack
-      console.error(
-        `[Security] Blocked open redirect attempt: ${callbackUrl}`
-      );
+      console.error(`[Security] Blocked open redirect attempt: ${callbackUrl}`);
     }
   }
 
@@ -76,15 +70,24 @@ export async function GET(
   const { provider: providerParam } = await params;
   const providerLower = providerParam?.toLowerCase();
   if (!isSupportedProvider(providerLower)) {
-    return NextResponse.json({ error: "Unsupported provider" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Unsupported provider" },
+      { status: 400 }
+    );
   }
   const provider = providerLower as CalendarProvider;
 
   const cookieStore = await cookies();
-  const expectedState = cookieStore.get(`nbm_calendar_state_${provider}`)?.value;
-  const codeVerifier = cookieStore.get(`nbm_calendar_verifier_${provider}`)?.value;
+  const expectedState = cookieStore.get(
+    `nbm_calendar_state_${provider}`
+  )?.value;
+  const codeVerifier = cookieStore.get(
+    `nbm_calendar_verifier_${provider}`
+  )?.value;
   const userId = cookieStore.get(`nbm_calendar_user_${provider}`)?.value;
-  const callbackUrl = cookieStore.get(`nbm_calendar_callback_${provider}`)?.value;
+  const callbackUrl = cookieStore.get(
+    `nbm_calendar_callback_${provider}`
+  )?.value;
 
   if (!expectedState || !codeVerifier || !userId) {
     return NextResponse.redirect(
@@ -103,28 +106,37 @@ export async function GET(
   let accessToken: string | undefined;
 
   try {
-    console.log("Calendar callback: Starting", { userId, provider, hasState: !!expectedState, hasVerifier: !!codeVerifier });
-    
+    console.log("Calendar callback: Starting", {
+      userId,
+      provider,
+      hasState: !!expectedState,
+      hasVerifier: !!codeVerifier,
+    });
+
     // Use admin client to bypass RLS since we're storing the connection server-side
     const supabase = createAdminClient();
-    
+
     // Verify the user exists before proceeding
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("id")
       .eq("id", userId)
       .single();
-    
+
     if (userError || !userData) {
-      console.error("Calendar callback: User not found", { userId, error: userError });
+      console.error("Calendar callback: User not found", {
+        userId,
+        error: userError,
+      });
       throw new Error(`User not found: ${userId}`);
     }
-    
+
     console.log("Calendar callback: User verified", { userId });
-    
+
     const redirectUri = `${request.nextUrl.origin}/api/calendar/callback/${provider}`;
-    const config = await getProviderConfiguration(provider);
-    
+    const hostname = request.nextUrl.hostname;
+    const config = await getProviderConfiguration(provider, hostname);
+
     // Debug: Log client ID and secret status for production
     if (process.env.VERCEL_ENV === "production" && provider === "google") {
       const clientMetadata = config.clientMetadata();
@@ -134,8 +146,12 @@ export async function GET(
         clientIdPrefix: clientId.substring(0, 30),
         clientIdLength: clientId.length,
         hasClientSecret: !!clientSecret && clientSecret !== "MISSING",
-        clientSecretLength: clientSecret !== "MISSING" ? clientSecret.length : 0,
-        clientSecretPrefix: clientSecret !== "MISSING" ? clientSecret.substring(0, 10) : "MISSING",
+        clientSecretLength:
+          clientSecret !== "MISSING" ? clientSecret.length : 0,
+        clientSecretPrefix:
+          clientSecret !== "MISSING"
+            ? clientSecret.substring(0, 10)
+            : "MISSING",
       });
     }
 
@@ -171,20 +187,27 @@ export async function GET(
 
     const encryptedRefresh = refreshToken
       ? encryptSecret(refreshToken)
-      : (await supabase
-          .from("calendar_connections")
-          .select("refresh_token")
-          .eq("user_id", userId)
-          .eq("provider", provider)
-          .maybeSingle()).data?.refresh_token || "";
+      : (
+          await supabase
+            .from("calendar_connections")
+            .select("refresh_token")
+            .eq("user_id", userId)
+            .eq("provider", provider)
+            .maybeSingle()
+        ).data?.refresh_token || "";
 
     const encryptedAccess = accessToken ? encryptSecret(accessToken) : null;
 
-    console.log("Calendar callback: Saving connection", { userId, provider, hasRefreshToken: !!encryptedRefresh, hasAccessToken: !!encryptedAccess });
-    
+    console.log("Calendar callback: Saving connection", {
+      userId,
+      provider,
+      hasRefreshToken: !!encryptedRefresh,
+      hasAccessToken: !!encryptedAccess,
+    });
+
     // Set last_sync_at to now since we successfully got tokens (connection is working)
     const now = new Date().toISOString();
-    
+
     const { data: savedConnection, error } = await supabase
       .from("calendar_connections")
       .upsert(
@@ -205,11 +228,20 @@ export async function GET(
       .single();
 
     if (error) {
-      console.error("Calendar callback: Database error", { error, userId, provider });
+      console.error("Calendar callback: Database error", {
+        error,
+        userId,
+        provider,
+      });
       throw error;
     }
-    
-    console.log("Calendar callback: Connection saved successfully", { connectionId: savedConnection?.id, userId, provider, lastSyncAt: now });
+
+    console.log("Calendar callback: Connection saved successfully", {
+      connectionId: savedConnection?.id,
+      userId,
+      provider,
+      lastSyncAt: now,
+    });
   } catch (error) {
     console.error("Calendar callback error:", {
       error,
@@ -220,27 +252,25 @@ export async function GET(
       hasRefreshToken: !!refreshToken,
       hasAccessToken: !!accessToken,
     });
-    
+
     // Try to save error message to database for debugging
     try {
       const supabase = createAdminClient();
-      await supabase
-        .from("calendar_connections")
-        .upsert(
-          {
-            user_id: userId,
-            provider,
-            status: "error",
-            error_message: error instanceof Error ? error.message : String(error),
-            refresh_token: "", // Empty since connection failed
-            calendar_id: "primary",
-          },
-          { onConflict: "user_id,provider" }
-        );
+      await supabase.from("calendar_connections").upsert(
+        {
+          user_id: userId,
+          provider,
+          status: "error",
+          error_message: error instanceof Error ? error.message : String(error),
+          refresh_token: "", // Empty since connection failed
+          calendar_id: "primary",
+        },
+        { onConflict: "user_id,provider" }
+      );
     } catch (dbError) {
       console.error("Failed to save error to database:", dbError);
     }
-    
+
     return NextResponse.redirect(
       buildRedirectUrl(request.nextUrl.origin, "error", callbackUrl)
     );

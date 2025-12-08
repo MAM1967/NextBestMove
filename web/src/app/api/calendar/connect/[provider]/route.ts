@@ -33,10 +33,11 @@ export async function GET(
 
   const provider = providerLower as CalendarProvider;
   const origin = request.nextUrl.origin;
+  const hostname = request.nextUrl.hostname;
   const redirectUri = `${origin}/api/calendar/callback/${provider}`;
 
   try {
-    const config = await getProviderConfiguration(provider);
+    const config = await getProviderConfiguration(provider, hostname);
     const serverMetadata = config.serverMetadata();
     const authorizationEndpoint = serverMetadata.authorization_endpoint;
     const clientMetadata = config.clientMetadata();

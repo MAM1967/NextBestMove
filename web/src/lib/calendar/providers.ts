@@ -38,7 +38,10 @@ export function isSupportedProvider(value: string): value is CalendarProvider {
   return value === "google" || value === "outlook";
 }
 
-async function getConfiguration(provider: CalendarProvider) {
+async function getConfiguration(
+  provider: CalendarProvider,
+  hostname?: string
+) {
   if (configCache[provider]) {
     return configCache[provider]!;
   }
@@ -50,8 +53,29 @@ async function getConfiguration(provider: CalendarProvider) {
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
 
-  const isPreview = process.env.VERCEL_ENV === "preview";
-  const isProduction = process.env.VERCEL_ENV === "production";
+  // Detect environment: Check VERCEL_ENV first, then fall back to hostname-based detection
+  const vercelEnv = process.env.VERCEL_ENV;
+  let isPreview = vercelEnv === "preview";
+  let isProduction = vercelEnv === "production";
+
+  // Fallback: If VERCEL_ENV is not set, detect from hostname
+  if (!vercelEnv && hostname) {
+    isProduction = hostname === "nextbestmove.app";
+    isPreview =
+      hostname === "staging.nextbestmove.app" ||
+      hostname.includes("vercel.app");
+  }
+
+  // Log environment detection for debugging
+  if (provider === "google") {
+    console.log(`[OAuth Config] Environment detection:`, {
+      vercelEnv: vercelEnv || "NOT_SET",
+      hostname: hostname || "NOT_PROVIDED",
+      isProduction,
+      isPreview,
+      clientIdPrefix: clientId?.substring(0, 30) || "MISSING",
+    });
+  }
 
   if (provider === "google") {
     if (isPreview) {
@@ -138,8 +162,9 @@ async function getConfiguration(provider: CalendarProvider) {
           // WORKAROUND: Vercel env var bug - PRODUCTION_GOOGLE_CLIENT_SECRET not available at runtime
           // Hardcode production client secret (same pattern as client ID workaround)
           // Get this from Google Cloud Console → NextBestMove client → Client secret
-          const hardcodedProductionSecret = "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";
-          
+          const hardcodedProductionSecret =
+            "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";
+
           console.log(
             "🔧 WORKAROUND: Vercel not providing PRODUCTION_GOOGLE_CLIENT_SECRET, using hardcoded value"
           );
@@ -155,7 +180,7 @@ async function getConfiguration(provider: CalendarProvider) {
               10
             )}... (length: ${hardcodedProductionSecret.length})`
           );
-          
+
           clientSecret = hardcodedProductionSecret;
         }
       } else if (productionClientSecret) {
@@ -200,9 +225,10 @@ async function getConfiguration(provider: CalendarProvider) {
 }
 
 export async function getProviderConfiguration(
-  provider: CalendarProvider
+  provider: CalendarProvider,
+  hostname?: string
 ): Promise<client.Configuration> {
-  return getConfiguration(provider);
+  return getConfiguration(provider, hostname);
 }
 
 export function buildAuthParams(provider: CalendarProvider) {
