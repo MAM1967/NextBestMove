@@ -123,7 +123,7 @@ async function getConfiguration(
       console.log("🚨 CRITICAL: Deleted client ID detected - attempting to determine correct client ID");
       
       // Use hostname to determine which client ID to use
-      if (hostname === "nextbestmove.app") {
+      if (hostname && hostname === "nextbestmove.app") {
         const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
         console.log(`   🔧 Using production client ID based on hostname: ${productionClientId.substring(0, 30)}...`);
         clientId = productionClientId;
