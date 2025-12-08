@@ -158,23 +158,59 @@ export async function generateDailyPlanForUser(
       return { success: false, error: "Plan already exists for this date" };
     }
 
-    // Check if date is a weekend and user excludes weekends
-    const dateObj = new Date(date);
-    const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-    // Get user preference for weekends
+    // Get user preference for weekends and timezone
     const { data: userProfile } = await supabase
       .from("users")
-      .select("exclude_weekends")
+      .select("exclude_weekends, timezone")
       .eq("id", userId)
       .single();
 
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
+    const userTimezone = userProfile?.timezone || "America/New_York"; // Default fallback
 
-    // If weekend and user excludes weekends, skip
+    // Check if date is a weekend in the user's timezone
+    // Parse date string (YYYY-MM-DD) and create date at noon to avoid timezone edge cases
+    const dateParts = date.split("-").map(Number);
+    const planYear = dateParts[0];
+    const planMonth = dateParts[1];
+    const planDay = dateParts[2];
+    
+    // Create date object for the given date (at noon UTC to avoid DST issues)
+    const dateAtNoonUTC = new Date(Date.UTC(planYear, planMonth - 1, planDay, 12, 0, 0));
+    
+    // Get day of week using user's timezone
+    // Use a date formatter to get the day name, then convert to day number
+    const dayName = new Intl.DateTimeFormat("en-US", {
+      timeZone: userTimezone,
+      weekday: "long",
+    }).format(dateAtNoonUTC);
+    
+    // Get day of week number (0 = Sunday, 6 = Saturday) using user's timezone
+    // We need to format a known date to establish the pattern, then use it
+    const dayOfWeekStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: userTimezone,
+      weekday: "long",
+    }).format(dateAtNoonUTC);
+    
+    // Convert day name to day number (0 = Sunday, 6 = Saturday)
+    const dayNames: Record<string, number> = {
+      Sunday: 0,
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+    const dayOfWeek = dayNames[dayName] ?? 1; // Default to Monday if not found
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    // If weekend and user excludes weekends, skip with helpful message
     if (isWeekend && excludeWeekends) {
-      return { success: false, error: "Weekends are excluded from daily plan generation" };
+      return {
+        success: false,
+        error: `Daily plans aren't generated on ${dayName}s. You can change this preference in Settings if you'd like to receive plans on weekends.`,
+      };
     }
 
     // Calculate capacity from calendar (or use default)
