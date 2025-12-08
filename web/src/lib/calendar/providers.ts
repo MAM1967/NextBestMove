@@ -115,7 +115,10 @@ async function getConfiguration(provider: CalendarProvider) {
       const vercelProvidedSecret = clientSecret;
 
       // Override if Vercel provided staging secret (starts with GOCSPX-3zD)
-      if (vercelProvidedSecret && vercelProvidedSecret.startsWith("GOCSPX-3zD")) {
+      if (
+        vercelProvidedSecret &&
+        vercelProvidedSecret.startsWith("GOCSPX-3zD")
+      ) {
         // Staging secret detected - use production-specific env var if available
         if (process.env.PRODUCTION_GOOGLE_CLIENT_SECRET) {
           console.log(
@@ -132,20 +135,28 @@ async function getConfiguration(provider: CalendarProvider) {
           );
           clientSecret = process.env.PRODUCTION_GOOGLE_CLIENT_SECRET.trim();
         } else {
-          console.error(
-            "[OAuth Config] Production build detected staging client secret, but PRODUCTION_GOOGLE_CLIENT_SECRET env var not set!"
+          // WORKAROUND: Vercel env var bug - PRODUCTION_GOOGLE_CLIENT_SECRET not available at runtime
+          // Hardcode production client secret (same pattern as client ID workaround)
+          // Get this from Google Cloud Console → NextBestMove client → Client secret
+          const hardcodedProductionSecret = "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";
+          
+          console.log(
+            "🔧 WORKAROUND: Vercel not providing PRODUCTION_GOOGLE_CLIENT_SECRET, using hardcoded value"
           );
-          console.error(
-            "   Please set PRODUCTION_GOOGLE_CLIENT_SECRET in Vercel (Production scope)"
+          console.log(
+            `   Vercel provided (staging): ${vercelProvidedSecret.substring(
+              0,
+              10
+            )}... (length: ${vercelProvidedSecret.length})`
           );
-          // Debug: Show all available env vars
-          const allGoogleVars = Object.keys(process.env)
-            .filter(k => k.includes("GOOGLE") || k.includes("PRODUCTION"))
-            .map(k => `${k}=${process.env[k]?.substring(0, 10)}...`)
-            .join(", ");
-          console.error(
-            `   Available env vars with 'GOOGLE' or 'PRODUCTION': ${allGoogleVars || "NONE"}`
+          console.log(
+            `   Using hardcoded production secret: ${hardcodedProductionSecret.substring(
+              0,
+              10
+            )}... (length: ${hardcodedProductionSecret.length})`
           );
+          
+          clientSecret = hardcodedProductionSecret;
         }
       } else if (productionClientSecret) {
         clientSecret = productionClientSecret;
