@@ -128,7 +128,7 @@ async function getConfiguration(
         console.log(`   🔧 Using production client ID based on hostname: ${productionClientId.substring(0, 30)}...`);
         clientId = productionClientId;
       } else if (hostname && (hostname === "staging.nextbestmove.app" || hostname.includes("vercel.app"))) {
-        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
         console.log(`   🔧 Using staging client ID based on hostname: ${stagingClientId.substring(0, 30)}...`);
         clientId = stagingClientId;
       } else {
@@ -156,7 +156,7 @@ async function getConfiguration(
     if (isPreview) {
       // Staging: Use NextBestMove-Test client
       const stagingClientId =
-        "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+        "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
       const vercelProvided = clientId;
 
       // Only override if Vercel provided wrong client ID or if client ID is missing
