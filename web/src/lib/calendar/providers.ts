@@ -127,7 +127,7 @@ async function getConfiguration(
         const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
         console.log(`   🔧 Using production client ID based on hostname: ${productionClientId.substring(0, 30)}...`);
         clientId = productionClientId;
-      } else if (hostname === "staging.nextbestmove.app" || hostname.includes("vercel.app")) {
+      } else if (hostname && (hostname === "staging.nextbestmove.app" || hostname.includes("vercel.app"))) {
         const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
         console.log(`   🔧 Using staging client ID based on hostname: ${stagingClientId.substring(0, 30)}...`);
         clientId = stagingClientId;
