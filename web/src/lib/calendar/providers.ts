@@ -396,6 +396,40 @@ async function getConfiguration(
 
   try {
     const serverUrl = new URL(config.issuerUrl);
+    const discoveryUrl = `${serverUrl.origin}/.well-known/openid-configuration`;
+    
+    console.log(`[OAuth Discovery] Attempting to fetch discovery document for ${provider}:`, {
+      issuerUrl: config.issuerUrl,
+      discoveryUrl,
+      serverUrl: serverUrl.toString(),
+      nodeVersion: process.version,
+    });
+
+    // Test if discovery URL is reachable first (helps diagnose network issues)
+    if (provider === "google") {
+      try {
+        const testResponse = await fetch(discoveryUrl, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          // Add a shorter timeout for the test
+          signal: AbortSignal.timeout(5000),
+        });
+        
+        if (!testResponse.ok) {
+          console.warn(`[OAuth Discovery] Discovery URL returned status ${testResponse.status}`);
+        } else {
+          console.log(`[OAuth Discovery] Discovery URL is reachable (status ${testResponse.status})`);
+        }
+      } catch (testError) {
+        console.warn(`[OAuth Discovery] Direct fetch test failed:`, {
+          error: testError instanceof Error ? testError.message : String(testError),
+          discoveryUrl,
+        });
+        // Continue anyway - openid-client might handle it differently
+      }
+    }
+
+    // Use openid-client's discovery function
     const configuration = await client.discovery(
       serverUrl,
       clientId,
@@ -403,14 +437,34 @@ async function getConfiguration(
       client.ClientSecretPost(clientSecret) // clientAuthentication
     );
 
+    console.log(`[OAuth Discovery] Successfully discovered ${provider} configuration`);
     configCache[provider] = configuration;
     return configuration;
   } catch (error) {
-    console.error(`Failed to discover ${provider} configuration:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    const errorCause = error instanceof Error && 'cause' in error ? error.cause : undefined;
+    
+    console.error(`[OAuth Discovery] Failed to discover ${provider} configuration:`, {
+      error: errorMessage,
+      errorStack,
+      errorCause,
+      issuerUrl: config.issuerUrl,
+      discoveryUrl: `${config.issuerUrl}/.well-known/openid-configuration`,
+      clientIdPrefix: clientId?.substring(0, 30) || "MISSING",
+      hasClientSecret: !!clientSecret,
+      nodeVersion: process.version,
+    });
+
+    // Provide more helpful error message
+    if (errorMessage.includes("fetch failed") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ENOTFOUND") || errorMessage.includes("network")) {
+      throw new Error(
+        `Network error connecting to ${provider} OAuth service. Check your internet connection, firewall settings, and DNS. If you're behind a proxy, configure Node.js to use it. Original error: ${errorMessage}`
+      );
+    }
+
     throw new Error(
-      `Failed to discover ${provider} OAuth configuration: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
+      `Failed to discover ${provider} OAuth configuration: ${errorMessage}`
     );
   }
 }
