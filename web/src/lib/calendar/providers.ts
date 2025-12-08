@@ -362,7 +362,11 @@ async function getConfiguration(
       console.log(
         "⚠️ WARNING: Production client ID detected but not in production block"
       );
-      if (clientSecret && clientSecret.startsWith("GOCSPX-3zD")) {
+      const hasStagingSecretEdgeCase = clientSecret && (
+        clientSecret.startsWith("GOCSPX-U9") || 
+        clientSecret.startsWith("GOCSPX-3zD")
+      );
+      if (hasStagingSecretEdgeCase) {
         console.log(
           "🔧 FORCING: Overriding staging secret to match production client ID"
         );
