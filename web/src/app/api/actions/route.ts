@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       description,
       due_date,
       notes,
+      auto_created,
     } = body;
 
     // Validate required fields
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
         description: body.description || description || null,
         due_date,
         notes: notes || null,
-        auto_created: false,
+        auto_created: auto_created === true, // Default to false if not provided
       })
       .select(
         `

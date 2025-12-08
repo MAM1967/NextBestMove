@@ -154,6 +154,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
 
 **Priority Order:**
+
 1. Company research & enrichment (first P2 item to tackle)
 2. Other P2 items (order TBD)
 
@@ -170,6 +171,18 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
 - [ ] **Enhanced pre-call brief detection for video conferencing**  
        _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
+
+- [ ] **POST_CALL auto-generation**  
+       _Automatically create POST_CALL actions when calendar events (calls) end. Real-time creation when call ends, detect ended calls from calendar events, match to leads, create action immediately. Requires calendar event detection and real-time processing. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
+
+- [ ] **CALL_PREP auto-generation**  
+       _Automatically create CALL_PREP actions 24 hours before detected calls. Hourly cron with timezone filtering, detect calls 24 hours in advance, match calendar events to leads, create action day before call. Requires hourly cron with timezone awareness. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
+
+- [ ] **NURTURE auto-generation**  
+       _Automatically create NURTURE actions for leads that haven't been contacted in 21+ days. Daily cron to detect stale leads, create actions (max 3 per day), prioritize by engagement history, handle returning users gracefully. Estimated: 3-4 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
+
+- [ ] **CONTENT action conversion from weekly summaries**  
+       _Convert weekly summary content prompts to CONTENT actions. Spread across week (Monday/Wednesday), link to content_prompts table, create actions when prompts are generated. Estimated: 2-3 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
 ---
 

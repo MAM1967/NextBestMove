@@ -154,6 +154,7 @@ export async function POST(request: Request) {
           state: "NEW",
           description: `Reach out to ${lead.name}`,
           due_date: today,
+          notes: `Auto-created when lead added on ${new Date().toLocaleDateString()}`,
           auto_created: true,
         });
 

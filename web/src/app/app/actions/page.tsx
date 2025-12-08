@@ -2,29 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { ActionCard } from "./ActionCard";
-import { FollowUpFlowModal } from "./FollowUpFlowModal";
 import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
 import { ViewPromptModal } from "./ViewPromptModal";
 import { Action } from "./types";
+import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toasts, addToast, dismissToast } = useToast();
 
-  // Modal states
-  const [followUpFlowAction, setFollowUpFlowAction] = useState<Action | null>(
-    null
-  );
-  const [schedulingActionId, setSchedulingActionId] = useState<string | null>(
-    null
-  );
+  // Modal states (keeping for snooze/complete flows, but removing follow-up modal)
   const [snoozeActionId, setSnoozeActionId] = useState<string | null>(null);
   const [noteActionId, setNoteActionId] = useState<string | null>(null);
   const [noteAction, setNoteAction] = useState<Action | null>(null);
   const [viewPromptAction, setViewPromptAction] = useState<Action | null>(null);
+  // Keep scheduling modal for editing follow-up date if user clicks "Adjust"
+  const [schedulingActionId, setSchedulingActionId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchActions();
@@ -85,19 +84,48 @@ export default function ActionsPage() {
     }
   };
 
-  const handleGotReply = (actionId: string) => {
-    const action = actions.find((a) => a.id === actionId);
-    if (action) {
-      setFollowUpFlowAction(action);
-    }
+  /**
+   * Calculate smart default follow-up date
+   * Standard: 2-3 days out
+   * Future enhancement: Adjust based on lead engagement history
+   */
+  const calculateFollowUpDate = (): string => {
+    const daysOut = 2; // Standard default (can be enhanced later)
+    const date = new Date();
+    date.setDate(date.getDate() + daysOut);
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD format
   };
 
-  const handleScheduleFollowUp = async (
-    actionId: string,
-    followUpDate: string,
-    note?: string
-  ) => {
+  /**
+   * Auto-create FOLLOW_UP action when user marks "Got a reply"
+   * Zero-friction: No modal, no decisions - just create and notify
+   */
+  const handleGotReply = async (actionId: string) => {
     try {
+      const action = actions.find((a) => a.id === actionId);
+      if (!action) {
+        throw new Error("Action not found");
+      }
+
+      // Check if there's already a FOLLOW_UP action for this lead
+      if (action.person_id) {
+        const existingFollowUp = actions.find(
+          (a) =>
+            a.person_id === action.person_id &&
+            a.action_type === "FOLLOW_UP" &&
+            (a.state === "NEW" || a.state === "SNOOZED") &&
+            new Date(a.due_date) >= new Date()
+        );
+
+        if (existingFollowUp) {
+          addToast({
+            type: "info",
+            message: "You already have a follow-up scheduled for this lead.",
+          });
+          return;
+        }
+      }
+
       // First, mark the current action as REPLIED
       const stateResponse = await fetch(`/api/actions/${actionId}/state`, {
         method: "PATCH",
@@ -110,42 +138,114 @@ export default function ActionsPage() {
         throw new Error(data.error || "Failed to mark action as replied");
       }
 
-      // Format the scheduled date for display
+      // Calculate follow-up date
+      const followUpDate = calculateFollowUpDate();
+      const followUpDateFormatted = new Date(followUpDate).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+
+      // Create FOLLOW_UP action automatically
+      const createResponse = await fetch("/api/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action_type: "FOLLOW_UP",
+          person_id: action.person_id || null,
+          due_date: followUpDate,
+          description: action.leads?.name
+            ? `Follow up with ${action.leads.name}`
+            : "Follow up on recent reply",
+          notes: `Auto-created after reply on ${new Date().toLocaleDateString()}`,
+          auto_created: true,
+        }),
+      });
+
+      if (!createResponse.ok) {
+        const data = await createResponse.json();
+        throw new Error(data.error || "Failed to create follow-up action");
+      }
+
+      const { action: newFollowUpAction } = await createResponse.json();
+
+      // Show toast notification with edit option
+      addToast({
+        type: "success",
+        message: `Follow-up scheduled for ${followUpDateFormatted}.`,
+        action: {
+          label: "Adjust",
+          onClick: () => {
+            // Open scheduling modal to edit the follow-up date
+            if (newFollowUpAction) {
+              setSchedulingActionId(newFollowUpAction.id);
+            }
+          },
+        },
+      });
+
+      // Refresh actions to show the new FOLLOW_UP
+      await fetchActions();
+    } catch (err) {
+      console.error("Error handling got reply:", err);
+      addToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to create follow-up",
+      });
+    }
+  };
+
+  /**
+   * Handle scheduling/editing follow-up date
+   * This is now used for editing an already-created FOLLOW_UP action
+   */
+  const handleScheduleFollowUp = async (
+    actionId: string,
+    followUpDate: string,
+    note?: string
+  ) => {
+    try {
+      // This endpoint is now used for editing an existing FOLLOW_UP action
+      // Update the due date and notes
+      const updateResponse = await fetch(`/api/actions/${actionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          due_date: followUpDate,
+          notes: note || undefined, // Only update if note provided
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        const data = await updateResponse.json();
+        throw new Error(data.error || "Failed to update follow-up");
+      }
+
       const scheduledDate = new Date(followUpDate).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
       });
 
-      // Build note with scheduled date
-      let noteWithDate = note ? `${note}\n\n` : "";
-      noteWithDate += `Follow-up scheduled for ${scheduledDate}`;
-
-      // Add note with scheduled date
-      const noteResponse = await fetch(`/api/actions/${actionId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: noteWithDate }),
+      addToast({
+        type: "success",
+        message: `Follow-up date updated to ${scheduledDate}.`,
       });
-
-      if (!noteResponse.ok) {
-        console.warn("Failed to add note, but action was updated");
-      }
-
-      // TODO: Create a new FOLLOW_UP action for the scheduled date
-      // This will be implemented when we have the action creation API
-      console.log(
-        `TODO: Create FOLLOW_UP action for ${followUpDate} based on action ${actionId}`
-      );
 
       // Close the scheduling modal
       setSchedulingActionId(null);
       
       await fetchActions();
     } catch (err) {
+      console.error("Error updating follow-up:", err);
+      addToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update follow-up",
+      });
       throw err;
     }
   };
+
 
   const handleSnooze = async (actionId: string, snoozeUntil: string) => {
     try {
@@ -222,6 +322,9 @@ export default function ActionsPage() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
@@ -261,35 +364,9 @@ export default function ActionsPage() {
       )}
 
       {/* Modals */}
-      <FollowUpFlowModal
-        isOpen={followUpFlowAction !== null}
-        onClose={() => setFollowUpFlowAction(null)}
-        action={followUpFlowAction}
-        onSchedule={() => {
-          if (followUpFlowAction) {
-            setSchedulingActionId(followUpFlowAction.id);
-          }
-        }}
-        onSnooze={() => {
-          if (followUpFlowAction) {
-            setSnoozeActionId(followUpFlowAction.id);
-            setFollowUpFlowAction(null);
-          }
-        }}
-        onComplete={() => {
-          if (followUpFlowAction) {
-            handleComplete(followUpFlowAction.id);
-            setFollowUpFlowAction(null);
-          }
-        }}
-        onAddNote={() => {
-          if (followUpFlowAction) {
-            handleAddNote(followUpFlowAction.id);
-            setFollowUpFlowAction(null);
-          }
-        }}
-      />
-
+      {/* FollowUpFlowModal removed - FOLLOW_UP now auto-creates on "Got a reply" */}
+      
+      {/* Scheduling modal now used only for editing existing FOLLOW_UP dates */}
       <FollowUpSchedulingModal
         isOpen={schedulingActionId !== null}
         onClose={() => setSchedulingActionId(null)}
