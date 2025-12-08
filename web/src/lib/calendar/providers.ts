@@ -408,12 +408,17 @@ async function getConfiguration(
     // Test if discovery URL is reachable first (helps diagnose network issues)
     if (provider === "google") {
       try {
+        // Use a simple timeout implementation that works in all Node.js versions
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
         const testResponse = await fetch(discoveryUrl, {
           method: "GET",
           headers: { "Accept": "application/json" },
-          // Add a shorter timeout for the test
-          signal: AbortSignal.timeout(5000),
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
         
         if (!testResponse.ok) {
           console.warn(`[OAuth Discovery] Discovery URL returned status ${testResponse.status}`);
@@ -421,10 +426,14 @@ async function getConfiguration(
           console.log(`[OAuth Discovery] Discovery URL is reachable (status ${testResponse.status})`);
         }
       } catch (testError) {
-        console.warn(`[OAuth Discovery] Direct fetch test failed:`, {
-          error: testError instanceof Error ? testError.message : String(testError),
-          discoveryUrl,
-        });
+        const isAborted = testError instanceof Error && testError.name === 'AbortError';
+        if (!isAborted) {
+          console.warn(`[OAuth Discovery] Direct fetch test failed:`, {
+            error: testError instanceof Error ? testError.message : String(testError),
+            errorName: testError instanceof Error ? testError.name : undefined,
+            discoveryUrl,
+          });
+        }
         // Continue anyway - openid-client might handle it differently
       }
     }
