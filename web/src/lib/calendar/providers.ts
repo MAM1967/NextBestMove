@@ -110,7 +110,7 @@ async function getConfiguration(
     const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm");
     if (hasDeletedClientId) {
       console.log("🚨 CRITICAL: Preview environment detected but deleted client ID found!");
-      const stagingClientId = "732850218816-kgrhcoagfcibsrrta1q8uk86jo4o8dk96cm.apps.googleusercontent.com";
+      const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
       console.log(`   🔧 FORCING staging client ID: ${stagingClientId.substring(0, 30)}...`);
       clientId = stagingClientId;
     }
