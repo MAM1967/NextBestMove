@@ -55,19 +55,7 @@ async function getConfiguration(
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
 
-  // CRITICAL FIX: Check for production client ID + staging secret mismatch IMMEDIATELY
-  // This must happen before any other logic to catch the issue early
-  if (provider === "google" && clientId?.startsWith("732850218816-5een") && clientSecret?.startsWith("GOCSPX-3zD")) {
-    console.log("🚨 CRITICAL MISMATCH DETECTED: Production client ID with staging secret!");
-    console.log(`   Client ID: ${clientId.substring(0, 30)}...`);
-    console.log(`   Secret prefix: ${clientSecret.substring(0, 10)}...`);
-    console.log("   FORCING production secret override...");
-    const hardcodedProductionSecret = "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";
-    clientSecret = hardcodedProductionSecret;
-    console.log(`   ✅ Overridden to: ${hardcodedProductionSecret.substring(0, 10)}...`);
-  }
-
-  // Detect environment: Check VERCEL_ENV first, then verify/fallback to hostname-based detection
+  // Detect environment FIRST - needed for immediate override checks
   const vercelEnv = process.env.VERCEL_ENV;
   let isPreview = vercelEnv === "preview";
   let isProduction = vercelEnv === "production";
@@ -83,6 +71,33 @@ async function getConfiguration(
     ) {
       isPreview = true;
       isProduction = false;
+    }
+  }
+
+  // CRITICAL FIX: In production, ALWAYS override if we detect staging credentials
+  // This must happen BEFORE any other logic to ensure correct credentials from the start
+  if (provider === "google" && isProduction) {
+    const hasStagingClientId = clientId?.startsWith("732850218816-kgrh");
+    const hasStagingSecret = clientSecret?.startsWith("GOCSPX-3zD");
+    
+    if (hasStagingClientId || hasStagingSecret) {
+      console.log("🚨 CRITICAL: Production environment detected but staging credentials found!");
+      console.log(`   Client ID: ${clientId?.substring(0, 30) || "MISSING"}...`);
+      console.log(`   Secret prefix: ${clientSecret?.substring(0, 10) || "MISSING"}...`);
+      
+      // Override client ID if staging
+      if (hasStagingClientId) {
+        const productionClientId = "732850218816-5eenvpldj6cd3i1abv18s8udqqs6s9gk.apps.googleusercontent.com";
+        console.log(`   🔧 FORCING production client ID: ${productionClientId.substring(0, 30)}...`);
+        clientId = productionClientId;
+      }
+      
+      // Override secret if staging
+      if (hasStagingSecret) {
+        const hardcodedProductionSecret = "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";
+        console.log(`   🔧 FORCING production secret: ${hardcodedProductionSecret.substring(0, 10)}...`);
+        clientSecret = hardcodedProductionSecret;
+      }
     }
   }
 
