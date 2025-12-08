@@ -109,16 +109,9 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [ ] Lead appears in ACTIVE view
    - [ ] Lead removed from ARCHIVED view
 
-#### Test 1.1.7: Delete Lead
-1. Create a test lead specifically for deletion
-2. Click Delete
-3. Confirm deletion if prompted
-4. Verify:
-   - [ ] Lead is removed from all views
-   - [ ] Confirmation message shown
-   - [ ] Lead no longer exists (can't find in database/search)
+**Note:** Archive serves as the "delete" functionality for users. Archived leads are permanently removed from active use but retained for analytics/history purposes (per PRD Section 9.1: "ARCHIVED — no further use; used only for history/analytics"). There is no hard delete button in the UI - Archive is the correct pattern for v0.1.
 
-#### Test 1.1.8: Filter Leads
+#### Test 1.1.7: Filter Leads
 1. Ensure you have leads in different statuses (at least 1 ACTIVE, 1 SNOOZED, 1 ARCHIVED)
 2. Test each filter:
    - [ ] "All" - Shows all leads
