@@ -237,7 +237,7 @@ async function getConfiguration(
     // This handles the case where VERCEL_ENV might not be set correctly
     const hasStagingSecretWithProductionClient = clientSecret && (
       clientSecret.startsWith("GOCSPX-U9") || 
-      clientSecret.startsWith("GOCSPX-3zD")
+      clientSecret.startsWith("GOCSPX-U9") || clientSecret.startsWith("GOCSPX-3zD")
     );
     if (hasProductionClientId && hasStagingSecretWithProductionClient) {
       console.log(
@@ -291,7 +291,7 @@ async function getConfiguration(
       // This MUST happen in production - staging secret won't work with production client ID
       const isStagingSecretPrefix = vercelProvidedSecret && (
         vercelProvidedSecret.startsWith("GOCSPX-U9") || 
-        vercelProvidedSecret.startsWith("GOCSPX-3zD")
+        vercelProvidedSecret.startsWith("GOCSPX-U9") || vercelProvidedSecret.startsWith("GOCSPX-3zD")
       );
       if (isStagingSecretPrefix) {
         // Staging secret detected - use production-specific env var if available
@@ -338,7 +338,11 @@ async function getConfiguration(
       
       // CRITICAL SAFETY CHECK: If production mode but still have staging secret, ALWAYS override
       // This handles edge cases where detection didn't work properly
-      if (clientSecret && clientSecret.startsWith("GOCSPX-3zD")) {
+      const hasStagingSecretInProductionContext = clientSecret && (
+        clientSecret.startsWith("GOCSPX-U9") || 
+        clientSecret.startsWith("GOCSPX-3zD")
+      );
+      if (hasStagingSecretInProductionContext) {
         console.log(
           "⚠️ CRITICAL: Staging secret detected in production context, forcing override"
         );
