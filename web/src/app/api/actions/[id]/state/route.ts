@@ -58,7 +58,7 @@ export async function PATCH(
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,

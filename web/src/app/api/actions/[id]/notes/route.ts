@@ -38,7 +38,7 @@ export async function POST(
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,

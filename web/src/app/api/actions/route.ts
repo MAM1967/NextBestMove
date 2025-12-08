@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       .select(
         `
         *,
-        person_pins (
+        leads (
           id,
           name,
           url,
