@@ -23,6 +23,9 @@ export async function GET() {
       set: !!process.env.STRIPE_SECRET_KEY,
       length: process.env.STRIPE_SECRET_KEY?.length || 0,
       startsWith: process.env.STRIPE_SECRET_KEY?.substring(0, 3) || "N/A",
+      isLive: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") || false,
+      isTest: process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") || false,
+      mode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "TEST" : "UNKNOWN",
     },
     NEXT_PUBLIC_APP_URL: {
       set: !!process.env.NEXT_PUBLIC_APP_URL,
@@ -42,7 +45,7 @@ export async function GET() {
         ? `✅ Set (length: ${envVars.SUPABASE_SERVICE_ROLE_KEY.length}, should start with "eyJ")`
         : "❌ NOT SET",
       STRIPE_SECRET_KEY: envVars.STRIPE_SECRET_KEY.set
-        ? `✅ Set (length: ${envVars.STRIPE_SECRET_KEY.length}, should start with "sk_")`
+        ? `✅ Set (length: ${envVars.STRIPE_SECRET_KEY.length}, mode: ${envVars.STRIPE_SECRET_KEY.mode}, starts with "${envVars.STRIPE_SECRET_KEY.startsWith}")`
         : "❌ NOT SET",
     },
   });
