@@ -90,7 +90,8 @@ async function getConfiguration(
   if (provider === "google" && isProduction) {
     const hasStagingClientId = clientId?.startsWith("732850218816-kgrh");
     const hasDeletedClientId = clientId?.includes("6b8ft52uum9dh2m18uk86jo4o8dk96cm"); // Deleted client ID
-    const hasStagingSecret = clientSecret?.startsWith("GOCSPX-3zD");
+    // Staging secret starts with GOCSPX-U9 (current) or GOCSPX-3zD (old/alternative)
+    const hasStagingSecret = clientSecret?.startsWith("GOCSPX-U9") || clientSecret?.startsWith("GOCSPX-3zD");
     
     if (hasStagingClientId || hasDeletedClientId || hasStagingSecret) {
       console.log("🚨 CRITICAL: Production environment detected but incorrect credentials found!");
@@ -173,11 +174,13 @@ async function getConfiguration(
     
     // Use staging secret for localhost (if available in env vars)
     // Note: User needs to set GOOGLE_CLIENT_SECRET in .env.local to staging secret
-    if (stagingSecret && stagingSecret.startsWith("GOCSPX-3zD")) {
+    // Staging secret starts with GOCSPX-U9 (current) or GOCSPX-3zD (old/alternative)
+    const isStagingSecret = stagingSecret && (stagingSecret.startsWith("GOCSPX-U9") || stagingSecret.startsWith("GOCSPX-3zD"));
+    if (isStagingSecret) {
       clientSecret = stagingSecret;
       console.log(`🔧 Localhost detected - using staging client secret`);
-    } else if (stagingSecret && !stagingSecret.startsWith("GOCSPX-3zD")) {
-      console.warn(`⚠️  Localhost detected but GOOGLE_CLIENT_SECRET doesn't look like staging secret (should start with GOCSPX-3zD)`);
+    } else if (stagingSecret && !isStagingSecret) {
+      console.warn(`⚠️  Localhost detected but GOOGLE_CLIENT_SECRET doesn't look like staging secret (should start with GOCSPX-U9 or GOCSPX-3zD)`);
     } else {
       console.warn(`⚠️  Localhost detected but no GOOGLE_CLIENT_SECRET found in .env.local`);
     }
@@ -232,7 +235,11 @@ async function getConfiguration(
     
     // CRITICAL FIX: If production client ID detected, ALWAYS ensure production secret
     // This handles the case where VERCEL_ENV might not be set correctly
-    if (hasProductionClientId && clientSecret?.startsWith("GOCSPX-3zD")) {
+    const hasStagingSecretWithProductionClient = clientSecret && (
+      clientSecret.startsWith("GOCSPX-U9") || 
+      clientSecret.startsWith("GOCSPX-3zD")
+    );
+    if (hasProductionClientId && hasStagingSecretWithProductionClient) {
       console.log(
         "🔧 CRITICAL: Production client ID detected but staging secret present - FORCING override"
       );
@@ -280,12 +287,13 @@ async function getConfiguration(
       // Always check and override if staging secret is detected in production
       const vercelProvidedSecret = clientSecret;
 
-      // Override if Vercel provided staging secret (starts with GOCSPX-3zD)
+      // Override if Vercel provided staging secret (starts with GOCSPX-U9 or GOCSPX-3zD)
       // This MUST happen in production - staging secret won't work with production client ID
-      if (
-        vercelProvidedSecret &&
+      const isStagingSecretPrefix = vercelProvidedSecret && (
+        vercelProvidedSecret.startsWith("GOCSPX-U9") || 
         vercelProvidedSecret.startsWith("GOCSPX-3zD")
-      ) {
+      );
+      if (isStagingSecretPrefix) {
         // Staging secret detected - use production-specific env var if available
         if (process.env.PRODUCTION_GOOGLE_CLIENT_SECRET) {
           console.log(
@@ -374,7 +382,7 @@ async function getConfiguration(
       clientId: `${clientId.substring(0, 30)}... (length: ${clientId.length})`,
       clientSecretPrefix: `${clientSecret.substring(0, 10)}... (length: ${clientSecret.length})`,
       isProductionSecret: clientSecret.startsWith("GOCSPX-UDm"),
-      isStagingSecret: clientSecret.startsWith("GOCSPX-3zD"),
+      isStagingSecret: clientSecret.startsWith("GOCSPX-U9") || clientSecret.startsWith("GOCSPX-3zD"),
     }
   );
 
