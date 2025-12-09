@@ -23,16 +23,9 @@ export function logInfo(message: string, context?: LogContext) {
 export function logWarn(message: string, context?: LogContext) {
   console.warn(`[WARN] ${message}`, context || "");
   
-  // Send warnings to GlitchTip as breadcrumbs
-  try {
-    Sentry.addBreadcrumb({
-      message,
-      level: "warning",
-      data: context,
-    });
-  } catch {
-    // Ignore errors - logging shouldn't break the app
-  }
+  // Don't send warnings as breadcrumbs to reduce event volume
+  // Breadcrumbs count toward GlitchTip event limits
+  // Only log to console for now
 }
 
 /**

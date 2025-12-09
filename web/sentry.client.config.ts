@@ -17,22 +17,28 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
 Sentry.init({
   dsn: dsn || undefined,
   
-  // Set tracesSampleRate to 1.0 to capture 100% of transactions
-  // Reduce in production if needed
-  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  // Reduce trace sampling to minimize events (was 0.1, now 0.01 = 1%)
+  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.01 : 0,
 
-  // Capture Replay for 10% of all sessions,
-  // plus 100% of sessions with an error
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1.0,
+  // DISABLE session replay - it's very event-heavy and we're hitting limits
+  // Only enable if upgrading GlitchTip plan
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 0,
+
+  // Sample errors - only send 50% of errors to stay within free tier limits
+  // Adjust this based on your needs (0.5 = 50%, 0.1 = 10%, etc.)
+  sampleRate: process.env.NODE_ENV === "production" ? 0.5 : 0,
 
   // Only send errors in production
   enabled: process.env.NODE_ENV === "production" && !!dsn,
 
   environment: process.env.NODE_ENV || "development",
   
-  // Debug mode to see what's happening
-  debug: process.env.NODE_ENV === "production" && !!dsn,
+  // Debug mode disabled to reduce noise
+  debug: false,
+
+  // Reduce breadcrumbs to minimize events
+  maxBreadcrumbs: 10, // Reduced from default 100
 
   // Filter out known non-critical errors
   ignoreErrors: [
@@ -45,8 +51,12 @@ Sentry.init({
     // Network errors that are expected
     "NetworkError",
     "Failed to fetch",
+    "fetch failed",
     // Stripe errors that are handled
     "StripeInvalidRequestError",
+    // Common non-critical errors
+    "ResizeObserver loop limit exceeded",
+    "Non-Error promise rejection captured",
   ],
 
   beforeSend(event, hint) {
