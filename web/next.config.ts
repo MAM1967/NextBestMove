@@ -240,6 +240,69 @@ const nextConfig: NextConfig = {
              process.env.SUPABASE_SERVICE_ROLE_KEY ||
              undefined;
     })(),
+    
+    // Google OAuth credentials
+    // WORKAROUND: Vercel Preview builds sometimes get wrong env vars
+    // Override for Preview builds to ensure staging credentials are used
+    GOOGLE_CLIENT_ID: (() => {
+      // Local development: use .env.local or process.env
+      if (!process.env.VERCEL) {
+        return envLocal.GOOGLE_CLIENT_ID ||
+               process.env.GOOGLE_CLIENT_ID ||
+               undefined;
+      }
+      
+      // Vercel builds: override based on VERCEL_ENV
+      if (process.env.VERCEL_ENV === "preview") {
+        // Preview/Staging: force staging client ID (NextBestMove-Test)
+        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+        const vercelProvided = process.env.GOOGLE_CLIENT_ID;
+        if (vercelProvided !== stagingClientId) {
+          console.log("🔧 WORKAROUND: Overriding GOOGLE_CLIENT_ID for Preview build");
+          console.log(`   Vercel provided: ${vercelProvided ? `${vercelProvided.substring(0, 30)}...` : "MISSING"}`);
+          console.log(`   Overriding with: ${stagingClientId.substring(0, 30)}...`);
+        }
+        return stagingClientId;
+      } else if (process.env.VERCEL_ENV === "production") {
+        // Production: use production client ID
+        return process.env.GOOGLE_CLIENT_ID || undefined;
+      }
+      
+      // Development or fallback
+      return envLocal.GOOGLE_CLIENT_ID ||
+             process.env.GOOGLE_CLIENT_ID ||
+             undefined;
+    })(),
+    
+    GOOGLE_CLIENT_SECRET: (() => {
+      // Local development: use .env.local or process.env
+      if (!process.env.VERCEL) {
+        return envLocal.GOOGLE_CLIENT_SECRET ||
+               process.env.GOOGLE_CLIENT_SECRET ||
+               undefined;
+      }
+      
+      // Vercel builds: override based on VERCEL_ENV
+      if (process.env.VERCEL_ENV === "preview") {
+        // Preview/Staging: force staging client secret (NextBestMove-Test)
+        const stagingClientSecret = "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";
+        const vercelProvided = process.env.GOOGLE_CLIENT_SECRET;
+        if (vercelProvided !== stagingClientSecret) {
+          console.log("🔧 WORKAROUND: Overriding GOOGLE_CLIENT_SECRET for Preview build");
+          console.log(`   Vercel provided: ${vercelProvided ? `${vercelProvided.substring(0, 10)}...` : "MISSING"}`);
+          console.log(`   Overriding with: ${stagingClientSecret.substring(0, 10)}...`);
+        }
+        return stagingClientSecret;
+      } else if (process.env.VERCEL_ENV === "production") {
+        // Production: use production client secret
+        return process.env.GOOGLE_CLIENT_SECRET || undefined;
+      }
+      
+      // Development or fallback
+      return envLocal.GOOGLE_CLIENT_SECRET ||
+             process.env.GOOGLE_CLIENT_SECRET ||
+             undefined;
+    })(),
   },
   // Ensure server-side environment variables are available
   // In Next.js, non-NEXT_PUBLIC_ vars are automatically server-only, but this ensures it's accessible
