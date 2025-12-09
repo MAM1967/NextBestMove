@@ -113,9 +113,9 @@ export function SignUpForm() {
         {passwordError ? (
           <p className="mt-1 text-xs text-red-600">{passwordError}</p>
         ) : (
-          <p className="mt-1 text-xs text-zinc-500">
-            Must be at least 6 characters
-          </p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Must be at least 6 characters
+        </p>
         )}
       </div>
 

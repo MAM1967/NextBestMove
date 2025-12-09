@@ -98,13 +98,14 @@ const nextConfig: NextConfig = {
         // Apply these headers to all routes
         source: '/:path*',
         headers: [
-          // Stricter Content Security Policy (without unsafe-inline/unsafe-eval for scripts)
-          // Note: This uses 'strict-dynamic' which is more secure for Next.js
+          // Stricter Content Security Policy (without unsafe-eval/unsafe-inline for scripts)
+          // Note: Using 'strict-dynamic' allows scripts loaded by trusted scripts (Next.js)
+          // This is more secure than unsafe-inline/unsafe-eval
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cloud.umami.is", // Next.js requires unsafe-eval and unsafe-inline for chunks and runtime, Umami analytics
+              "script-src 'self' 'strict-dynamic' https://cloud.umami.is", // strict-dynamic allows Next.js scripts and Umami analytics
               "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",

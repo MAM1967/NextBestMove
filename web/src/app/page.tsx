@@ -67,21 +67,21 @@ export default function MarketingHome() {
         <footer className="border-t border-zinc-200 pt-8">
           <div className="flex flex-col items-center gap-6 text-sm text-zinc-600">
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between w-full">
-              <p>Copyright © MAM Growth Strategies LLC 2025</p>
-              <div className="flex gap-6">
-                <a
-                  href="/terms"
-                  className="hover:text-zinc-900 hover:underline"
-                >
-                  Terms of Service
-                </a>
-                <a
-                  href="/privacy"
-                  className="hover:text-zinc-900 hover:underline"
-                >
-                  Privacy Policy
-                </a>
-              </div>
+            <p>Copyright © MAM Growth Strategies LLC 2025</p>
+            <div className="flex gap-6">
+              <a
+                href="/terms"
+                className="hover:text-zinc-900 hover:underline"
+              >
+                Terms of Service
+              </a>
+              <a
+                href="/privacy"
+                className="hover:text-zinc-900 hover:underline"
+              >
+                Privacy Policy
+              </a>
+            </div>
             </div>
             <p className="text-sm text-zinc-500 text-center">This site uses privacy-friendly analytics</p>
           </div>

@@ -6,7 +6,18 @@ set -e
 
 PROJECT_REF="adgiptzbxnzddbgfeuut"
 PROJECT_URL="https://${PROJECT_REF}.supabase.co"
-SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkZ2lwdHpieG56ZGRiZ2ZldXV0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDg3OTQzMiwiZXhwIjoyMDgwNDU1NDMyfQ.-JUP_rXGxxxyv6Rk0ThtCZYZou_d33zuGJU33xy6eoo"
+
+# Service role key must be provided via environment variable (from Doppler)
+# Never hardcode secrets in source code!
+if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+    echo "❌ Error: SUPABASE_SERVICE_ROLE_KEY environment variable is not set"
+    echo ""
+    echo "Please set it from Doppler:"
+    echo "   export SUPABASE_SERVICE_ROLE_KEY=\$(doppler secrets get SUPABASE_SERVICE_ROLE_KEY --config stg --plain)"
+    echo ""
+    echo "Or add it to your .env.local file (for local development only)"
+    exit 1
+fi
 
 echo "🚀 Pushing migrations to staging Supabase..."
 echo "Project: $PROJECT_URL"
