@@ -320,7 +320,7 @@
       }
     }
   },
-  "borderRadius": {
+  "radius": {
     "sm": {
       "$type": "dimension",
       "$value": {
@@ -370,97 +370,95 @@
       }
     }
   },
-  "typography": {
-    "fontSize": {
-      "h1": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 32,
-          "unit": "px"
-        }
-      },
-      "h2": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 24,
-          "unit": "px"
-        }
-      },
-      "h3": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 20,
-          "unit": "px"
-        }
-      },
-      "h4": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 18,
-          "unit": "px"
-        }
-      },
-      "body-large": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 16,
-          "unit": "px"
-        }
-      },
-      "body": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 14,
-          "unit": "px"
-        }
-      },
-      "body-small": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 12,
-          "unit": "px"
-        }
-      },
-      "caption": {
-        "$type": "dimension",
-        "$value": {
-          "dimensionType": "length",
-          "value": 11,
-          "unit": "px"
-        }
+  "fontSizes": {
+    "h1": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 32,
+        "unit": "px"
       }
     },
-    "fontWeight": {
-      "light": {
-        "$type": "number",
-        "$value": 300
-      },
-      "regular": {
-        "$type": "number",
-        "$value": 400
-      },
-      "medium": {
-        "$type": "number",
-        "$value": 500
-      },
-      "semibold": {
-        "$type": "number",
-        "$value": 600
-      },
-      "bold": {
-        "$type": "number",
-        "$value": 700
+    "h2": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "h3": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 20,
+        "unit": "px"
+      }
+    },
+    "h4": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 18,
+        "unit": "px"
+      }
+    },
+    "body-large": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "body": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 14,
+        "unit": "px"
+      }
+    },
+    "body-small": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 12,
+        "unit": "px"
+      }
+    },
+    "caption": {
+      "$type": "dimension",
+      "$value": {
+        "dimensionType": "length",
+        "value": 11,
+        "unit": "px"
       }
     }
   },
-  "shadow": {
+  "fontWeights": {
+    "light": {
+      "$type": "number",
+      "$value": 300
+    },
+    "regular": {
+      "$type": "number",
+      "$value": 400
+    },
+    "medium": {
+      "$type": "number",
+      "$value": 500
+    },
+    "semibold": {
+      "$type": "number",
+      "$value": 600
+    },
+    "bold": {
+      "$type": "number",
+      "$value": 700
+    }
+  },
+  "shadows": {
     "sm": {
       "$type": "string",
       "$value": "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
