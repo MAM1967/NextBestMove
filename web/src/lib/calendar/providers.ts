@@ -49,15 +49,38 @@ async function getConfiguration(
 
   const config = PROVIDERS[provider];
 
-  // Get credentials from environment variables
-  const clientId = process.env[config.clientIdEnv]?.trim();
-  const clientSecret = process.env[config.clientSecretEnv]?.trim();
-
   // Detect environment for logging/debugging purposes only
   const vercelEnv = process.env.VERCEL_ENV;
   const isProduction = vercelEnv === "production" || hostname === "nextbestmove.app";
   const isPreview = vercelEnv === "preview" || hostname?.includes("vercel.app") || hostname === "staging.nextbestmove.app";
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname?.startsWith("localhost:") || hostname?.startsWith("127.0.0.1:");
+
+  // Get credentials from environment variables
+  let clientId = process.env[config.clientIdEnv]?.trim();
+  let clientSecret = process.env[config.clientSecretEnv]?.trim();
+
+  // WORKAROUND: Force staging Google OAuth credentials for Preview builds
+  // Vercel sometimes provides wrong env vars, so we override at runtime
+  if (provider === "google" && isPreview && !isLocalhost) {
+    const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+    const stagingClientSecret = "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";
+    
+    // Check if we're using the wrong (deleted) client ID
+    if (clientId && clientId.startsWith("732850218816-6b8ft")) {
+      console.log("🔧 RUNTIME WORKAROUND: Overriding deleted Google OAuth client ID for staging");
+      console.log(`   Wrong client ID detected: ${clientId.substring(0, 30)}...`);
+      console.log(`   Overriding with staging client ID: ${stagingClientId.substring(0, 30)}...`);
+      clientId = stagingClientId;
+      clientSecret = stagingClientSecret;
+    } else if (!clientId || !clientId.startsWith("732850218816-kgrh")) {
+      // If client ID is missing or wrong, use staging credentials
+      console.log("🔧 RUNTIME WORKAROUND: Using staging Google OAuth credentials");
+      console.log(`   Current client ID: ${clientId ? `${clientId.substring(0, 30)}...` : "MISSING"}`);
+      console.log(`   Overriding with staging client ID: ${stagingClientId.substring(0, 30)}...`);
+      clientId = stagingClientId;
+      clientSecret = stagingClientSecret;
+    }
+  }
 
   // Log environment detection for debugging
   if (provider === "google") {
