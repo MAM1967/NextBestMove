@@ -9,11 +9,7 @@ export function SignInForm({ redirect: redirectTo }: { redirect?: string }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(signInAction, null);
 
-  useEffect(() => {
-    if (state?.success && state.redirectTo) {
-      router.push(state.redirectTo);
-    }
-  }, [state, router]);
+  // No need for redirect effect - server action handles redirect server-side
 
   return (
     <form action={formAction} className="space-y-4">

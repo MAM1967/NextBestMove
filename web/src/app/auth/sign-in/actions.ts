@@ -1,11 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export async function signInAction(
   prevState: { error?: string } | null,
   formData: FormData
-): Promise<{ error?: string; success?: boolean; redirectTo?: string }> {
+): Promise<{ error?: string } | never> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const redirectPath = formData.get("redirect") as string | null;
@@ -60,7 +61,8 @@ export async function signInAction(
     });
   }
 
-  return { success: true, redirectTo: redirectPath || "/app" };
+  // Redirect server-side (this throws, so the return type is never)
+  redirect(redirectPath || "/app");
 }
 
 
