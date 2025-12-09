@@ -23,7 +23,7 @@ Vercel automatically detects Node.js version using these methods (in order of pr
 **Content:**
 
 ```
-22
+24
 ```
 
 ### ✅ `package.json` Engines

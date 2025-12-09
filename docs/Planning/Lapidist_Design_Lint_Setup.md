@@ -19,8 +19,8 @@ This document outlines the setup and testing plan for `@lapidist/design-lint` on
 - ✅ Package installed: `@lapidist/design-lint@6.0.6`
 - ✅ Configuration created: `web/designlint.config.ts` (TypeScript config)
 - ✅ Script added: `npm run lint:design`
-- ✅ **Node.js upgraded:** v22.21.1 (installed and set as default)
-- ✅ Dependencies reinstalled with Node.js 22
+- ✅ **Node.js version:** v24.11.1 (matches Vercel, design-lint compatible)
+- ✅ Dependencies tested and compatible with Node.js 24
 - ✅ Design-lint runs successfully (minimal config)
 
 ### Issues Identified
