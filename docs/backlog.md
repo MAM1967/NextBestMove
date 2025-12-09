@@ -184,6 +184,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **CONTENT action conversion from weekly summaries**  
        _Convert weekly summary content prompts to CONTENT actions. Spread across week (Monday/Wednesday), link to content_prompts table, create actions when prompts are generated. Estimated: 2-3 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
+- [ ] **Industry/work type selection & trend-based content generation**  
+       _Add onboarding/settings field for users to select their industry/work type (e.g., marketing, finance, recruiting, sales, operations, etc.). Implement weekly scraping of headlines and trends for each industry category. Use this data to enhance content generation, making content prompts more on-trend and industry-relevant. Store user's industry in `users` table, create scraping service/API integration for trend data, update content generation logic to incorporate industry trends. Lowest priority P2 item - nice-to-have enhancement for content personalization._
+
 ---
 
 ## Launch Hardening
