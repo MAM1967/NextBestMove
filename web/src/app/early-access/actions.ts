@@ -81,7 +81,13 @@ export async function submitEarlyAccessForm(
 
   if (insertError) {
     console.error("[EarlyAccess] Error inserting signup:", insertError);
-    return { error: "Failed to submit form. Please try again." };
+    // Check if it's a duplicate constraint violation
+    if (insertError.code === "23505" || insertError.message?.includes("duplicate") || insertError.message?.includes("unique")) {
+      return {
+        error: "This email is already registered for early access. We'll be in touch soon!",
+      };
+    }
+    return { error: "We're sorry, something went wrong. Please try again in a moment." };
   }
 
   // Send confirmation email

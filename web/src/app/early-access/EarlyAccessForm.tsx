@@ -1,10 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { submitEarlyAccessForm } from "./actions";
 
 export function EarlyAccessForm() {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(submitEarlyAccessForm, null);
+
+  // Redirect to homepage after successful submission (2-3 second delay)
+  useEffect(() => {
+    if (state?.success) {
+      const timer = setTimeout(() => {
+        router.push("/");
+      }, 2500); // 2.5 second delay
+      return () => clearTimeout(timer);
+    }
+  }, [state?.success, router]);
 
   return (
     <form action={formAction} className="space-y-6">
