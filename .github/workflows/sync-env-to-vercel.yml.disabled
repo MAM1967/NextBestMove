@@ -1,0 +1,11 @@
+# DISABLED: This workflow is no longer used
+# 
+# Reason: We now use Doppler as the source of truth for secrets.
+# Secrets are synced to Vercel via:
+# - scripts/sync-doppler-to-vercel.sh (production)
+# - scripts/sync-doppler-to-vercel-preview.sh (staging/preview)
+#
+# These scripts are run manually or as part of deployment workflows.
+#
+# Date disabled: December 9, 2025
+
