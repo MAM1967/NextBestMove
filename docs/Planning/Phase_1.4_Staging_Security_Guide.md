@@ -37,9 +37,15 @@ The `web/src/middleware.ts` file now includes Basic Auth protection that:
 | `STAGING_PASS` | Password for Basic Auth | `SecurePassword123!` | **Doppler** (synced to Vercel) |
 
 **Setup:**
-1. Add `STAGING_USER` and `STAGING_PASS` to Doppler (project: `nextbestmove-prd`, config: `prd`)
+1. Add `STAGING_USER` and `STAGING_PASS` to Doppler (project: `nextbestmove-prd`, config: `stg`)
 2. Run `./scripts/sync-doppler-to-vercel-preview.sh` to sync to Vercel
-3. Or they will be synced automatically during deployment via `deploy-staging.sh`
+   - You should see `📤 Syncing STAGING_USER to Vercel (preview)...` in the output
+   - You should see `📤 Syncing STAGING_PASS to Vercel (preview)...` in the output
+3. Or they will be synced automatically during deployment via `deploy-staging.sh` (Step 3/5)
+
+**Verification:**
+- After sync, check that `STAGING_USER` and `STAGING_PASS` appear in the sync output
+- If they don't appear, verify they're in Doppler (project: `nextbestmove-prd`, config: `stg`)
 
 **Note:** If these variables are not set, Basic Auth will be skipped (useful for testing).
 

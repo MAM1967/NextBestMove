@@ -93,13 +93,16 @@ RESEND_API_KEY=re_...
 
 ### 2.2 Preview/Staging Secrets
 
-1. Select `preview` config (or `prd` config if using same config for staging)
+1. Select `stg` config (staging config - separate from production)
 2. Add staging secrets (test Stripe keys, staging Google OAuth, etc.)
 3. **Add Basic Auth credentials:**
    - `STAGING_USER=staging` (username for staging site protection)
    - `STAGING_PASS=[your-secure-password]` (password for staging site protection)
    
-   **Note:** These are synced to Vercel automatically via `sync-doppler-to-vercel-preview.sh` script.
+   **Note:** 
+   - Staging uses `stg` config in Doppler
+   - Production uses `prd` config in Doppler
+   - These are synced to Vercel automatically via `sync-doppler-to-vercel-preview.sh` script (uses `stg` config)
 
 ### 2.3 Development Secrets
 

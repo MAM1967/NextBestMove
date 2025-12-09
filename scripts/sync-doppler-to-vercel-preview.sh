@@ -5,7 +5,7 @@
 set -e
 
 DOPPLER_PROJECT="nextbestmove-prd"
-DOPPLER_CONFIG="prd"
+DOPPLER_CONFIG="stg"
 VERCEL_ENV="preview"
 
 echo "📥 Fetching secrets from Doppler for Preview builds..."

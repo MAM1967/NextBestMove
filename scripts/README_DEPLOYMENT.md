@@ -125,12 +125,13 @@ Before running these scripts, ensure you have:
 
 ### Doppler Configuration
 - **Project:** `nextbestmove-prd`
-- **Config:** `prd` (used for both staging and production)
+- **Staging Config:** `stg` (used for staging/preview deployments)
+- **Production Config:** `prd` (used for production deployments)
 - **Location:** All secrets stored in Doppler, synced to Vercel
 
 ### Vercel Environments
-- **Preview:** All preview/staging builds (from `staging` branch)
-- **Production:** Production builds (from `main` branch)
+- **Preview:** All preview/staging builds (from `staging` branch) - syncs from Doppler `stg` config
+- **Production:** Production builds (from `main` branch) - syncs from Doppler `prd` config
 
 ## Troubleshooting
 
