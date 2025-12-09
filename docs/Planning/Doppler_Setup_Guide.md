@@ -177,6 +177,7 @@ Repeat for preview:
 ### 5.2 Configure Integration
 
 **Important:** If the integration auto-created a project, you can either:
+
 - **Option A:** Use your existing project (recommended if you already have secrets there)
 - **Option B:** Use the auto-created project and add secrets there
 
