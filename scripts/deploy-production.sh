@@ -25,7 +25,7 @@ fi
 
 # Step 1: Type Check
 echo ""
-echo "📋 Step 1/3: Running TypeScript type check..."
+echo "📋 Step 1/4: Running TypeScript type check..."
 cd "$WEB_DIR"
 if ! npm run type-check; then
     echo "❌ Type check failed! Aborting deployment."
@@ -34,7 +34,19 @@ fi
 echo "✅ Type check passed"
 echo ""
 
-# Step 2: Sync Doppler to Production
+# Step 2: Design Lint (Optional - requires Node.js 22+)
+# Currently enabled for production with minimal config
+# Set to warn mode - won't block deployment
+echo "📋 Step 2/4: Running design lint..."
+cd "$WEB_DIR"
+if ! npm run lint:design; then
+    echo "⚠️  Design lint warnings found. Continuing deployment..."
+    # Don't fail build, just warn (change to exit 1 if you want strict enforcement)
+fi
+echo "✅ Design lint complete"
+echo ""
+
+# Step 3: Sync Doppler to Production
 echo "📋 Step 2/3: Syncing Doppler secrets to Vercel Production..."
 cd "$PROJECT_ROOT"
 if ! bash "$SCRIPT_DIR/sync-doppler-to-vercel.sh"; then
@@ -44,8 +56,8 @@ fi
 echo "✅ Doppler sync complete"
 echo ""
 
-# Step 3: Git push to main
-echo "📋 Step 3/3: Pushing to main branch..."
+# Step 4: Git push to main
+echo "📋 Step 4/4: Pushing to main branch..."
 cd "$PROJECT_ROOT"
 
 # Check if we're on main branch

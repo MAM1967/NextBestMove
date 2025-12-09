@@ -40,10 +40,13 @@
 
 3. **Check Build Logs:**
    - Click **Build Logs** tab (or scroll down to build output)
-   - Look for the design lint section:
+   - Look for the design lint section (runs as `prebuild` script):
 
    ```
-   📋 Step 2/5: Running design lint (staging testing)...
+   > web@0.1.0 prebuild
+   > npm run lint:design || true
+   
+   > web@0.1.0 lint:design
    > design-lint 'src/**/*.{ts,tsx}'
    
    [OK] src/middleware.ts
@@ -51,7 +54,6 @@
    [OK] src/app/page.tsx
    ...
    Linted 224 files in 0.26s
-   ✅ Design lint complete
    ```
 
 4. **What to Look For:**
