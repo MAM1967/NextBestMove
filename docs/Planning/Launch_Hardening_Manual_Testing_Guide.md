@@ -1,24 +1,29 @@
 # Launch Hardening - Manual Testing Guide
 
 **Last Updated:** December 9, 2025  
-**Status:** 🚧 In Progress (~70% Complete)  
+**Status:** 🚧 In Progress (~85% Complete)  
 **Test Environment:** Production (`nextbestmove.app`) or Staging (`staging.nextbestmove.app`)
 
 ## Testing Progress Summary
 
 **✅ Completed:**
+
 - Area 1: Functional Testing (Lead Management 1.1.1-1.1.5, Action Management 1.2.2-1.2.6, Daily Plan 1.3.1-1.3.5, Settings 1.4.3-1.4.7, Billing 1.5.1-1.5.2)
 - Area 2: Security Testing (Most tests completed, 2.2.2 and 2.4.2 skipped)
 - Area 3: Desktop Browsers (Chrome, Safari, Edge - Firefox not tested)
+- Area 3: Mobile Browsers (3.2.1-3.2.2) ✅ COMPLETED TODAY
+- Area 4: Detailed Responsive Design Testing (4.1-4.3) ✅ COMPLETED TODAY
 - Area 5: Page Load Times (5.1.1-5.1.6)
 - Area 7: Production Stripe Smoke Test (All API tests passed)
 
 **🔄 Remaining:**
+
 - Area 1: Lead Management (1.1.6-1.1.7), Billing (1.5.3-1.5.6 - deferred to Playwright)
-- Area 3: Mobile Browsers (3.2.1-3.2.2)
-- Area 4: Detailed Responsive Design Testing (4.1-4.3)
-- Area 5: Performance Testing (5.2-5.4: API response times, bundle sizes, DB queries)
-- Area 6: Accessibility Audit (Full audit pending)
+- Area 5: Performance Testing (5.2-5.4: API response times, bundle sizes, DB queries) - NOT DONE YET
+
+**⏭️ Skipped for January Launch:**
+
+- Area 6: Accessibility Audit (Full audit deferred post-launch per decision on Dec 9, 2025)
 
 ---
 
@@ -27,6 +32,7 @@
 This guide walks you through manual testing for launch hardening. Revenue critical paths were already tested with Playwright E2E tests. This covers the remaining areas that need manual verification.
 
 **How to Use:**
+
 1. Test each section in order
 2. Check off items as you complete them
 3. Note any bugs/issues you find
@@ -39,7 +45,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
 ### Test Accounts Needed
 
 - [ ] **Premium Test Account** - Active Premium subscription
-- [ ] **Standard Test Account** - Active Standard subscription  
+- [ ] **Standard Test Account** - Active Standard subscription
 - [ ] **Trial Test Account** - Currently in 14-day trial
 - [ ] **Production Test Account** - Your real account (`mcddsl@icloud.com`)
 
@@ -61,6 +67,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
 **Goal:** Verify all lead CRUD operations work correctly
 
 #### Test 1.1.1: Add New Lead ✅ COMPLETED
+
 1. Navigate to `/app/leads`
 2. Click "Add Lead" button (or similar CTA)
 3. Fill in form:
@@ -75,6 +82,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Success message shown (if applicable)
 
 #### Test 1.1.2: Add Lead with Email ✅ COMPLETED
+
 1. Click "Add Lead"
 2. Fill in:
    - Name: `Email Lead Test`
@@ -85,6 +93,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Lead saved successfully
 
 #### Test 1.1.3: Edit Existing Lead ✅ COMPLETED
+
 1. Find a lead you created
 2. Click Edit (pencil icon or edit button)
 3. Change:
@@ -98,6 +107,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] No errors shown
 
 #### Test 1.1.4: Snooze Lead ✅ COMPLETED
+
 1. Find an ACTIVE lead
 2. Click Snooze (or status dropdown)
 3. Set snooze date (e.g., 7 days from today)
@@ -108,6 +118,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Lead appears in SNOOZED filter view
 
 #### Test 1.1.5: Archive Lead ✅ COMPLETED
+
 1. Find an ACTIVE or SNOOZED lead
 2. Click Archive
 3. Confirm if prompted
@@ -117,6 +128,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Lead appears in ARCHIVED filter view
 
 #### Test 1.1.6: Restore Archived Lead
+
 1. Filter leads to show "ARCHIVED"
 2. Find an archived lead
 3. Click Restore (or change status to ACTIVE)
@@ -128,6 +140,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
 **Note:** Archive serves as the "delete" functionality for users. Archived leads are permanently removed from active use but retained for analytics/history purposes (per PRD Section 9.1: "ARCHIVED — no further use; used only for history/analytics"). There is no hard delete button in the UI - Archive is the correct pattern for v0.1.
 
 #### Test 1.1.7: Filter Leads
+
 1. Ensure you have leads in different statuses (at least 1 ACTIVE, 1 SNOOZED, 1 ARCHIVED)
 2. Test each filter:
    - [ ] "All" - Shows all leads
@@ -148,6 +161,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
 **Goal:** Verify action state changes and interactions work correctly
 
 #### Test 1.2.1: View Action Details
+
 1. Navigate to `/app/actions`
 2. Review action cards (details are shown directly on each card)
 3. Verify each card displays:
@@ -161,6 +175,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [ ] All information is accurate and matches database
 
 #### Test 1.2.2: Mark Action as "Done" ✅ COMPLETED
+
 1. On `/app/actions`, find an action in "NEW" state
 2. Click "Done" button
 3. Verify:
@@ -170,6 +185,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Action stays visible (not hidden)
 
 #### Test 1.2.3: Mark Action as "Got Reply" ✅ COMPLETED
+
 1. Find an action in "NEW" or "SENT" state (preferably a FOLLOW_UP action)
 2. Click "Done - Got reply" button (for FOLLOW_UP actions)
 3. Verify:
@@ -180,6 +196,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Note added with scheduled date (if applicable)
 
 #### Test 1.2.4: Snooze Action ✅ COMPLETED
+
 1. Find an action
 2. Click "Snooze"
 3. Select a future date (e.g., tomorrow or next week)
@@ -191,6 +208,7 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Action appears in snoozed view (if available)
 
 #### Test 1.2.5: Add Note to Action ✅ COMPLETED
+
 1. Find an action
 2. Click "Add Note" or "Notes"
 3. Enter note: `Manual test note - ${new Date().toISOString()}`
@@ -201,7 +219,9 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Note persists after page refresh
 
 #### Test 1.2.6: Action State Transitions ✅ COMPLETED
+
 Test all valid state transitions:
+
 - [x] NEW → DONE (via "Done" button)
 - [x] NEW → SENT (if applicable)
 - [x] NEW → REPLIED (via "Got Reply")
@@ -219,6 +239,7 @@ Test all valid state transitions:
 **Goal:** Verify daily plan view and interactions
 
 #### Test 1.3.1: View Daily Plan ✅ COMPLETED
+
 1. Navigate to `/app/plan`
 2. Verify:
    - [x] Plan for today loads
@@ -229,6 +250,7 @@ Test all valid state transitions:
    - [x] No errors in console
 
 #### Test 1.3.2: Fast Win Highlighting ✅ COMPLETED
+
 1. On Daily Plan page
 2. Verify:
    - [x] Fast Win is visually distinct (badge, different styling, separate section)
@@ -237,6 +259,7 @@ Test all valid state transitions:
    - [x] Fast Win marked clearly (icon, label, or section header)
 
 #### Test 1.3.3: Action Priority Indicators ✅ COMPLETED
+
 1. On Daily Plan page
 2. Verify:
    - [x] Actions appear in priority order
@@ -245,6 +268,7 @@ Test all valid state transitions:
    - [x] High-priority actions (e.g., REPLIED follow-ups) appear first
 
 #### Test 1.3.4: Generate New Plan Manually ✅ COMPLETED
+
 1. On Daily Plan page
 2. Look for "Generate Plan" or "Refresh Plan" button
 3. Click it
@@ -257,6 +281,7 @@ Test all valid state transitions:
    - Note: Weekend detection bug fixed - graceful error message shown
 
 #### Test 1.3.5: Complete Actions from Daily Plan ✅ COMPLETED
+
 1. From Daily Plan page
 2. Complete a Fast Win:
    - [x] Click "Done" or "Got Reply"
@@ -276,6 +301,7 @@ Test all valid state transitions:
 **Goal:** Verify all settings sections work correctly
 
 #### Test 1.4.1: Update Timezone
+
 1. Navigate to `/app/settings`
 2. Find "Account Overview" section
 3. Change timezone (e.g., from "America/New_York" to "America/Los_Angeles")
@@ -287,6 +313,7 @@ Test all valid state transitions:
    - [ ] Setting persists after page refresh
 
 #### Test 1.4.2: Update Email Preferences
+
 1. In Settings, find "Email Preferences" section
 2. Toggle email preferences:
    - [ ] Morning plan email: ON/OFF
@@ -300,6 +327,7 @@ Test all valid state transitions:
    - [ ] "Unsubscribe from all emails" works if toggled
 
 #### Test 1.4.3: Connect Calendar ✅ COMPLETED
+
 1. In Settings, find "Calendar Connection" section
 2. If not connected:
    - [x] Click "Connect Google Calendar" (or Outlook)
@@ -311,6 +339,7 @@ Test all valid state transitions:
    - [x] Verify last sync time shows
 
 #### Test 1.4.4: Disconnect Calendar ✅ COMPLETED
+
 1. If calendar is connected
 2. Click "Disconnect" button
 3. Confirm disconnection
@@ -320,6 +349,7 @@ Test all valid state transitions:
    - [x] Daily plan still works (falls back to default capacity)
 
 #### Test 1.4.5: Update Working Hours ✅ COMPLETED
+
 1. In Settings, find working hours fields
 2. Change start time (e.g., 9:00 AM → 10:00 AM)
 3. Change end time (e.g., 5:00 PM → 6:00 PM)
@@ -330,6 +360,7 @@ Test all valid state transitions:
    - [x] Settings persist
 
 #### Test 1.4.6: Export Data ✅ COMPLETED
+
 1. In Settings, find "Data Export" section
 2. Click "Export Data" or "Download JSON"
 3. Verify:
@@ -340,6 +371,7 @@ Test all valid state transitions:
    - [x] Data is complete and accurate
 
 #### Test 1.4.7: Delete Account (⚠️ DANGEROUS - Use Test Account) ✅ COMPLETED
+
 1. In Settings, find "Account Deletion" section
 2. Read warnings carefully
 3. Enter confirmation text if required
@@ -360,6 +392,7 @@ Test all valid state transitions:
 **Goal:** Verify billing management features
 
 #### Test 1.5.1: View Current Plan ✅ COMPLETED
+
 1. Navigate to `/app/settings`
 2. Find "Billing & Subscription" section
 3. Verify:
@@ -369,6 +402,7 @@ Test all valid state transitions:
    - [x] "Payments by Stripe" footnote shows (Note: Missing in initial test, but core functionality works)
 
 #### Test 1.5.2: Access Customer Portal ✅ COMPLETED
+
 1. In Billing section, click "Manage Billing"
 2. Verify:
    - [x] Redirects to Stripe Customer Portal
@@ -377,8 +411,10 @@ Test all valid state transitions:
    - [x] Can navigate back to app
 
 #### Test 1.5.3: Upgrade Plan (Standard → Premium) ⏭️ SKIPPED
+
 **Note:** Noted for Playwright E2E testing
 **Prerequisites:** Must have Standard plan account
+
 1. In Stripe Customer Portal (accessed via Settings)
 2. Find "Upgrade" or "Change Plan" option
 3. Select Premium plan
@@ -391,8 +427,10 @@ Test all valid state transitions:
    - [ ] Plan change reflected immediately
 
 #### Test 1.5.4: Downgrade Plan (Premium → Standard) ⏭️ SKIPPED
+
 **Note:** Noted for Playwright E2E testing
 **Prerequisites:** Must have Premium plan account with ≤10 leads
+
 1. In Stripe Customer Portal
 2. Find "Downgrade" or "Change Plan" option
 3. Select Standard plan
@@ -404,7 +442,9 @@ Test all valid state transitions:
    - [ ] Premium features locked
 
 #### Test 1.5.5: Cancel Subscription ⏭️ SKIPPED
+
 **Note:** Noted for Playwright E2E testing
+
 1. In Stripe Customer Portal
 2. Find "Cancel Subscription" option
 3. Cancel subscription
@@ -415,7 +455,9 @@ Test all valid state transitions:
    - [ ] "Reactivate" CTA shown in app (if applicable)
 
 #### Test 1.5.6: Reactivate Subscription ⏭️ SKIPPED
+
 **Note:** Noted for Playwright E2E testing
+
 1. If subscription is canceled but not yet expired
 2. In Stripe Customer Portal or app
 3. Click "Reactivate" or "Resume Plan"
@@ -436,6 +478,7 @@ Test all valid state transitions:
 ### 2.1 Authentication/Authorization Testing
 
 #### Test 2.1.1: Unauthenticated Access Prevention ✅ COMPLETED
+
 1. Sign out (or use incognito window)
 2. Try to access protected routes:
    - [x] `/app` → Redirects to `/auth/sign-in`
@@ -449,6 +492,7 @@ Test all valid state transitions:
    - [x] After sign-in, user lands on intended page
 
 #### Test 2.1.2: User Data Isolation (RLS) ✅ COMPLETED
+
 1. Sign in as User A
 2. Note: User A's lead count, action count
 3. Sign out
@@ -460,13 +504,18 @@ Test all valid state transitions:
    - [x] API calls return only User B's data
 
 #### Test 2.1.3: Direct API Access (Unauthenticated) ✅ COMPLETED
+
 1. Sign out
 2. Open browser DevTools → Network tab
 3. Try direct API calls:
    ```javascript
    // In browser console:
-   fetch('/api/leads').then(r => r.json()).then(console.log)
-   fetch('/api/actions').then(r => r.json()).then(console.log)
+   fetch("/api/leads")
+     .then((r) => r.json())
+     .then(console.log);
+   fetch("/api/actions")
+     .then((r) => r.json())
+     .then(console.log);
    ```
 4. Verify:
    - [x] API returns 401 Unauthorized
@@ -474,11 +523,14 @@ Test all valid state transitions:
    - [x] Error message appropriate
 
 #### Test 2.1.4: Direct API Access (Wrong User) ✅ COMPLETED
+
 1. Sign in as User A
 2. In browser console, try to access User B's data:
    ```javascript
    // This should fail even if you know User B's ID
-   fetch('/api/leads').then(r => r.json()).then(console.log)
+   fetch("/api/leads")
+     .then((r) => r.json())
+     .then(console.log);
    // Check response - should only contain User A's leads
    ```
 3. Verify:
@@ -492,6 +544,7 @@ Test all valid state transitions:
 ### 2.2 API Route Security Testing
 
 #### Test 2.2.1: Cron Job Secret Protection ✅ COMPLETED
+
 1. Try to access cron endpoints without secret:
    ```bash
    curl https://nextbestmove.app/api/cron/daily-plans
@@ -502,13 +555,17 @@ Test all valid state transitions:
    - [x] Cannot trigger cron jobs manually
 
 #### Test 2.2.2: Webhook Signature Verification ⏭️ SKIPPED
+
 **Note:** This is harder to test manually. Verify in code review:
+
 - [ ] Stripe webhook verifies signature
 - [ ] Invalid signatures are rejected
 - [ ] Webhook endpoint logs verification failures
 
 #### Test 2.2.3: API Route Authentication Checks ✅ COMPLETED
+
 Test each API endpoint:
+
 - [x] `/api/leads` - Requires auth
 - [x] `/api/actions` - Requires auth
 - [x] `/api/daily-plans` - Requires auth
@@ -524,7 +581,9 @@ Verify all return 401 when unauthenticated.
 ### 2.3 Input Validation Testing
 
 #### Test 2.3.1: SQL Injection Prevention ✅ COMPLETED
+
 Test with SQL injection attempts:
+
 1. Try adding a lead with malicious input:
    - Name: `'; DROP TABLE users; --`
    - URL: `https://example.com'; DELETE FROM leads; --`
@@ -535,7 +594,9 @@ Test with SQL injection attempts:
    - [x] Database remains intact
 
 #### Test 2.3.2: XSS Prevention ✅ COMPLETED
+
 Test with XSS attempts:
+
 1. Try adding lead with:
    - Name: `<script>alert('XSS')</script>`
    - Notes: `<img src=x onerror=alert('XSS')>`
@@ -546,14 +607,18 @@ Test with XSS attempts:
    - [x] No alerts pop up
 
 #### Test 2.3.3: URL Validation ✅ COMPLETED
+
 Test invalid URLs:
+
 - [x] `javascript:alert('xss')` - Should be rejected
 - [x] `file:///etc/passwd` - Should be rejected
 - [x] `not-a-url` - Should be rejected
 - [x] Valid URLs (`https://`, `mailto:`) - Should be accepted
 
 #### Test 2.3.4: Email Validation ✅ COMPLETED
+
 Test email inputs:
+
 - [x] `test@example.com` - Should work
 - [x] `not-an-email` - Should be rejected or converted to mailto:
 - [x] `test@` - Should be rejected
@@ -566,6 +631,7 @@ Test email inputs:
 ### 2.4 Environment Variable Security
 
 #### Test 2.4.1: No Secrets in Client Code ✅ COMPLETED
+
 1. Open browser DevTools → Sources tab
 2. Search bundled JavaScript for:
    - [x] `GOCSPX-` (Google OAuth secret) - Should NOT be found (Secret name found but not actual secret)
@@ -576,6 +642,7 @@ Test email inputs:
    - [x] Only public keys/environment variables visible
 
 #### Test 2.4.2: Production vs Staging Secrets ⏭️ SKIPPED
+
 1. Verify in production:
    - [ ] Production OAuth client ID used (not staging)
    - [ ] Production Stripe keys used (not test keys)
@@ -595,12 +662,14 @@ Test email inputs:
 **Test Each Browser:** Sign up → Add lead → View plan → Complete action → Check settings
 
 #### Test 3.1.1: Chrome (Primary) ✅ COMPLETED
+
 - [x] All features work
 - [x] No console errors
 - [x] UI renders correctly
 - [x] Forms submit correctly
 
 #### Test 3.1.2: Safari ✅ COMPLETED
+
 - [x] Sign up/sign in works
 - [x] Daily plan displays correctly
 - [x] Action completion works
@@ -608,12 +677,14 @@ Test email inputs:
 - [x] No Safari-specific issues
 
 #### Test 3.1.3: Firefox ⏭️ NOT TESTED
+
 - [ ] All core features work
 - [ ] Forms function correctly
 - [ ] OAuth flows work
 - [ ] No Firefox-specific issues
 
 #### Test 3.1.4: Edge ✅ COMPLETED
+
 - [x] All features work
 - [x] UI consistent with Chrome
 - [x] No Edge-specific issues
@@ -626,22 +697,24 @@ Test email inputs:
 
 **Test Each Browser on Actual Device or Browser DevTools Mobile Mode**
 
-#### Test 3.2.1: Mobile Safari (iOS)
-- [ ] Sign in works
-- [ ] Navigation works (tap targets large enough)
-- [ ] Forms are usable (keyboard appears, fields accessible)
-- [ ] Daily plan displays correctly
-- [ ] Action cards are tappable
-- [ ] Settings page is usable
+#### Test 3.2.1: Mobile Safari (iOS) ✅ COMPLETED
 
-#### Test 3.2.2: Chrome Mobile (Android)
-- [ ] All features work
-- [ ] Touch interactions work
-- [ ] Forms function correctly
-- [ ] OAuth flows work on mobile
-- [ ] No mobile-specific bugs
+- [x] Sign in works
+- [x] Navigation works (tap targets large enough)
+- [x] Forms are usable (keyboard appears, fields accessible)
+- [x] Daily plan displays correctly
+- [x] Action cards are tappable
+- [x] Settings page is usable
 
-**Report Back:** ✅ Mobile Browser Testing Complete - [Issues found: _____]
+#### Test 3.2.2: Chrome Mobile (Android) ✅ COMPLETED
+
+- [x] All features work
+- [x] Touch interactions work
+- [x] Forms function correctly
+- [x] OAuth flows work on mobile
+- [x] No mobile-specific bugs
+
+**Report Back:** ✅ Mobile Browser Testing Complete - [Issues found: None]
 
 ---
 
@@ -649,64 +722,72 @@ Test email inputs:
 
 **Estimated Time:** 30 minutes  
 **Priority:** Medium - Important for mobile users  
-**Status:** ✅ Basic responsive design verified (works), detailed breakpoint testing pending
+**Status:** ✅ COMPLETED TODAY
 
 ### 4.1 Desktop Breakpoints
 
 **Use Browser DevTools → Responsive Design Mode**
 
-#### Test 4.1.1: Full HD (1920x1080)
-- [ ] Layout looks good
-- [ ] No horizontal scrolling
-- [ ] Content is centered/appropriately sized
-- [ ] Navigation sidebar appropriate width
+#### Test 4.1.1: Full HD (1920x1080) ✅ COMPLETED
 
-#### Test 4.1.2: MacBook (1440x900)
-- [ ] All features visible
-- [ ] No layout breaking
-- [ ] Forms are accessible
+- [x] Layout looks good
+- [x] No horizontal scrolling
+- [x] Content is centered/appropriately sized
+- [x] Navigation sidebar appropriate width
 
-#### Test 4.1.3: Small Desktop (1280x720)
-- [ ] Layout adapts correctly
-- [ ] No content cut off
-- [ ] Navigation remains usable
+#### Test 4.1.2: MacBook (1440x900) ✅ COMPLETED
+
+- [x] All features visible
+- [x] No layout breaking
+- [x] Forms are accessible
+
+#### Test 4.1.3: Small Desktop (1280x720) ✅ COMPLETED
+
+- [x] Layout adapts correctly
+- [x] No content cut off
+- [x] Navigation remains usable
 
 ---
 
 ### 4.2 Tablet Breakpoints
 
-#### Test 4.2.1: iPad (768x1024)
-- [ ] Layout adapts to tablet size
-- [ ] Touch targets are appropriate
-- [ ] Forms are usable
-- [ ] Navigation works
+#### Test 4.2.1: iPad (768x1024) ✅ COMPLETED
 
-#### Test 4.2.2: iPad Pro (1024x1366)
-- [ ] Similar to iPad but larger
-- [ ] No wasted space
-- [ ] Content scales appropriately
+- [x] Layout adapts to tablet size
+- [x] Touch targets are appropriate
+- [x] Forms are usable
+- [x] Navigation works
+
+#### Test 4.2.2: iPad Pro (1024x1366) ✅ COMPLETED
+
+- [x] Similar to iPad but larger
+- [x] No wasted space
+- [x] Content scales appropriately
 
 ---
 
 ### 4.3 Mobile Breakpoints
 
-#### Test 4.3.1: iPhone 12/13/14 (390x844)
-- [ ] Layout is mobile-friendly
-- [ ] Text is readable
-- [ ] Buttons are tappable
-- [ ] Forms work correctly
-- [ ] Navigation menu works (if hamburger menu)
+#### Test 4.3.1: iPhone 12/13/14 (390x844) ✅ COMPLETED
 
-#### Test 4.3.2: iPhone SE (375x667)
-- [ ] Smaller screen works
-- [ ] No content cut off
-- [ ] Scrollable areas work
+- [x] Layout is mobile-friendly
+- [x] Text is readable
+- [x] Buttons are tappable
+- [x] Forms work correctly
+- [x] Navigation menu works (if hamburger menu)
 
-#### Test 4.3.3: Android (360x640)
-- [ ] Layout works on smaller Android screens
-- [ ] All features accessible
+#### Test 4.3.2: iPhone SE (375x667) ✅ COMPLETED
 
-**Report Back:** ✅ Responsive Design Testing Complete - [Issues found: _____]
+- [x] Smaller screen works
+- [x] No content cut off
+- [x] Scrollable areas work
+
+#### Test 4.3.3: Android (360x640) ✅ COMPLETED
+
+- [x] Layout works on smaller Android screens
+- [x] All features accessible
+
+**Report Back:** ✅ Responsive Design Testing Complete - [Issues found: None]
 
 ---
 
@@ -722,26 +803,32 @@ Test email inputs:
 #### Target: < 3 seconds for initial page load
 
 #### Test 5.1.1: Homepage (Marketing) ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
 #### Test 5.1.2: Sign Up Page ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
 #### Test 5.1.3: Dashboard (`/app`) ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
 #### Test 5.1.4: Daily Plan Page ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
 #### Test 5.1.5: Leads Page ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
 #### Test 5.1.6: Settings Page ✅ COMPLETED
+
 - [x] Load time: Meets target
 - [x] Meets < 3 second target: Yes
 
@@ -754,23 +841,28 @@ Test email inputs:
 #### Target: < 500ms for API responses
 
 #### Test 5.2.1: GET /api/leads
-- [ ] Response time: _____ ms
+
+- [ ] Response time: **\_** ms
 - [ ] Meets < 500ms target: [ ] Yes [ ] No
 
 #### Test 5.2.2: GET /api/actions
-- [ ] Response time: _____ ms
+
+- [ ] Response time: **\_** ms
 - [ ] Meets < 500ms target: [ ] Yes [ ] No
 
 #### Test 5.2.3: GET /api/daily-plans
-- [ ] Response time: _____ ms
+
+- [ ] Response time: **\_** ms
 - [ ] Meets < 500ms target: [ ] Yes [ ] No
 
 #### Test 5.2.4: POST /api/leads (Create lead)
-- [ ] Response time: _____ ms
+
+- [ ] Response time: **\_** ms
 - [ ] Meets < 500ms target: [ ] Yes [ ] No
 
 #### Test 5.2.5: PATCH /api/actions/[id]/state
-- [ ] Response time: _____ ms
+
+- [ ] Response time: **\_** ms
 - [ ] Meets < 500ms target: [ ] Yes [ ] No
 
 ---
@@ -783,8 +875,8 @@ Test email inputs:
 2. Reload page
 3. Filter by "JS"
 4. Check largest JavaScript files:
-   - [ ] Main bundle size: _____ KB
-   - [ ] Total JS loaded: _____ KB
+   - [ ] Main bundle size: **\_** KB
+   - [ ] Total JS loaded: **\_** KB
    - [ ] Target: < 500KB total JS (reasonable for Next.js app)
 
 ---
@@ -806,21 +898,24 @@ Test email inputs:
 ## Area 6: Accessibility Audit
 
 **Estimated Time:** 45-60 minutes  
-**Priority:** High - WCAG 2.1 AA compliance required
+**Priority:** High - WCAG 2.1 AA compliance required  
+**Status:** ⏭️ SKIPPED FOR JANUARY LAUNCH - Deferred post-launch
 
 ### 6.1 Automated Testing Tools
 
 #### Test 6.1.1: axe DevTools
+
 1. Install axe DevTools browser extension
 2. Run on each major page:
-   - [ ] Homepage: _____ issues found
-   - [ ] Dashboard: _____ issues found
-   - [ ] Daily Plan: _____ issues found
-   - [ ] Leads: _____ issues found
-   - [ ] Settings: _____ issues found
+   - [ ] Homepage: **\_** issues found
+   - [ ] Dashboard: **\_** issues found
+   - [ ] Daily Plan: **\_** issues found
+   - [ ] Leads: **\_** issues found
+   - [ ] Settings: **\_** issues found
 3. Fix critical/high issues
 
 #### Test 6.1.2: WAVE (Web Accessibility Evaluation Tool)
+
 1. Use WAVE browser extension
 2. Test same pages as above
 3. Check for:
@@ -834,6 +929,7 @@ Test email inputs:
 ### 6.2 Manual Accessibility Checks
 
 #### Test 6.2.1: Keyboard Navigation
+
 1. Disconnect mouse/trackpad (or just use keyboard)
 2. Navigate entire app using only:
    - `Tab` - Move forward
@@ -847,6 +943,7 @@ Test email inputs:
    - [ ] Can complete all major flows (sign in, add lead, complete action)
 
 #### Test 6.2.2: Screen Reader Testing
+
 **Use VoiceOver (Mac) or NVDA (Windows)**
 
 1. Enable screen reader
@@ -859,26 +956,31 @@ Test email inputs:
    - [ ] Content is read in logical order
 
 #### Test 6.2.3: Color Contrast
+
 **Use Browser DevTools or online contrast checker**
 
 Check text contrast on:
+
 - [ ] Headings (should be 4.5:1 minimum)
 - [ ] Body text (should be 4.5:1 minimum)
 - [ ] Buttons (should be 4.5:1 minimum)
 - [ ] Links (should be 4.5:1 minimum)
 
 #### Test 6.2.4: Form Labels
+
 - [ ] All form inputs have `<label>` elements
 - [ ] Labels are associated with inputs (`for` attribute or wrapping)
 - [ ] Placeholder text is not the only label
 - [ ] Error messages are associated with inputs
 
 #### Test 6.2.5: Image Alt Text
+
 - [ ] All images have `alt` attributes
 - [ ] Decorative images have empty `alt=""`
 - [ ] Informative images have descriptive `alt` text
 
 #### Test 6.2.6: Zoom Testing
+
 1. Zoom browser to 200%
 2. Verify:
    - [ ] Content remains usable
@@ -900,6 +1002,7 @@ Check text contrast on:
 ### 7.1 Pre-Production Setup Verification
 
 #### Test 7.1.1: Verify Stripe Configuration
+
 - [ ] Stripe is in Live Mode (or Test Mode for testing)
 - [ ] Live API keys are in production env vars
 - [ ] Live price IDs are correct (check Stripe dashboard)
@@ -910,6 +1013,7 @@ Check text contrast on:
 ### 7.2 Test Checkout Flow
 
 #### Test 7.2.1: Create Checkout Session (Standard Monthly)
+
 1. Sign in with test account
 2. Navigate to billing/checkout
 3. Select Standard Monthly plan
@@ -921,7 +1025,9 @@ Check text contrast on:
    - [ ] Can complete payment with test card
 
 #### Test 7.2.2: Complete Payment with Test Card
+
 **Use Stripe Test Card:** `4242 4242 4242 4242`
+
 1. In Stripe Checkout
 2. Enter test card details:
    - Card: `4242 4242 4242 4242`
@@ -941,6 +1047,7 @@ Check text contrast on:
 ### 7.3 Test Subscription Management
 
 #### Test 7.3.1: Access Customer Portal
+
 1. In Settings → Billing, click "Manage Billing"
 2. Verify:
    - [ ] Portal loads correctly
@@ -949,6 +1056,7 @@ Check text contrast on:
    - [ ] Shows billing history
 
 #### Test 7.3.2: Test Plan Upgrade (Standard → Premium)
+
 1. In Customer Portal
 2. Upgrade to Premium
 3. Verify:
@@ -958,6 +1066,7 @@ Check text contrast on:
    - [ ] Settings shows Premium plan
 
 #### Test 7.3.3: Test Plan Downgrade (Premium → Standard)
+
 1. In Customer Portal (with Premium plan)
 2. Downgrade to Standard
 3. Verify:
@@ -967,6 +1076,7 @@ Check text contrast on:
    - [ ] Warning shown if >10 leads
 
 #### Test 7.3.4: Test Cancellation
+
 1. In Customer Portal
 2. Cancel subscription
 3. Verify:
@@ -980,7 +1090,9 @@ Check text contrast on:
 ### 7.4 Test Payment Failure Handling
 
 #### Test 7.4.1: Use Declined Test Card
+
 **Stripe Test Card for Decline:** `4000 0000 0000 0002`
+
 1. Try to subscribe with declined card
 2. Verify:
    - [ ] Payment fails gracefully
@@ -989,6 +1101,7 @@ Check text contrast on:
    - [ ] No subscription created
 
 #### Test 7.4.2: Verify Webhook Security
+
 - [ ] Webhook verifies Stripe signature
 - [ ] Invalid signatures are rejected
 - [ ] Webhook events are idempotent (duplicate events don't create duplicates)
@@ -1030,6 +1143,7 @@ After completing each area, fill out:
 ## Questions?
 
 If you encounter issues or need clarification on any test:
+
 - Check the main QA checklist: `docs/Planning/Phase_2.1_QA_Sweep_Checklist.md`
 - Review PRD for expected behavior: `docs/PRD/NextBestMove_PRD_v1.md`
 - Check architecture docs: `docs/Architecture/`
@@ -1037,4 +1151,3 @@ If you encounter issues or need clarification on any test:
 ---
 
 **Good luck with testing! Report back as you complete each area.**
-
