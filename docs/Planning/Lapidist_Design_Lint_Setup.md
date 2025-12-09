@@ -18,10 +18,11 @@ This document outlines the setup and testing plan for `@lapidist/design-lint` on
 
 - ✅ Package installed: `@lapidist/design-lint@6.0.6`
 - ✅ Configuration created: `web/designlint.config.ts` (TypeScript config)
+- ✅ DTIF token file created: `web/design.tokens.json` (Design Token Interchange Format)
 - ✅ Script added: `npm run lint:design`
 - ✅ **Node.js version:** v24.11.1 (matches Vercel, design-lint compatible)
 - ✅ Dependencies tested and compatible with Node.js 24
-- ✅ Design-lint runs successfully (minimal config)
+- ✅ Design-lint runs successfully with DTIF tokens configured
 
 ### Issues Identified
 
@@ -408,10 +409,16 @@ Once Node.js is upgraded, create `designlint.config.json`:
 **Status:** ✅ **TOKENS CONFIGURED** - Ready for Staging Testing
 
 **Current Configuration:**
-- ✅ Design tokens mapped from UI Specifications
+- ✅ Design tokens defined in DTIF format (`web/design.tokens.json`)
+- ✅ Config file (`web/designlint.config.ts`) imports DTIF tokens
 - ✅ Colors, spacing, typography, border radius, shadows configured
 - ✅ Rules enabled in warn mode (can escalate to error later)
 - ✅ Running in Vercel builds (Node.js 24.x)
+
+**Token File Structure:**
+- `design.tokens.json` - DTIF format document with all design tokens
+- `designlint.config.ts` - Imports tokens and configures linting rules
+- Tokens follow DTIF specification: `$version`, `$type`, `$value` structure
 
 **Next Steps:**
 - Monitor linting output in staging builds
