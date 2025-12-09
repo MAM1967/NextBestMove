@@ -105,7 +105,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'strict-dynamic' https://cloud.umami.is", // 'self' allows Next.js chunks, 'strict-dynamic' allows dynamically loaded scripts
+              "script-src 'self' https://cloud.umami.is", // 'self' allows Next.js chunks from same origin
               "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
