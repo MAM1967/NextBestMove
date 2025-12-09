@@ -33,7 +33,7 @@ Vercel automatically detects Node.js version using these methods (in order of pr
 
 ```json
 "engines": {
-  "node": "22.x",
+  "node": "24.x",
   "npm": ">=10.0.0"
 }
 ```
@@ -83,7 +83,7 @@ Should show:
 
 ```json
 "engines": {
-  "node": "22.x",
+  "node": "24.x",
   "npm": ">=10.0.0"
 }
 ```
