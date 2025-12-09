@@ -356,6 +356,100 @@ Once a solution is working, remove hardcoded secrets:
 
 ---
 
+## Stripe Environment Variables Issue (December 2025)
+
+### Problem
+Production deployments show `sk_test_...` keys instead of `sk_live_...` keys, even after:
+- Setting correct values in Vercel Dashboard
+- Force redeploying production
+- Waiting for deployment to complete
+
+### Diagnostic
+Check production environment:
+```bash
+curl https://nextbestmove.app/api/check-env | jq '.variables.STRIPE_SECRET_KEY'
+```
+
+**Symptoms:**
+- `"prefix": "sk_test_..."` (should be `sk_live_...`)
+- `"mode": "TEST"` (should be `"LIVE"`)
+- `"hasWhitespace": true` (indicates trailing whitespace/newlines)
+
+### Immediate Solutions
+
+**Solution 1: Delete and Recreate Variable (Most Reliable)**
+
+1. Go to Vercel Dashboard → Project → Settings → Environment Variables
+2. **Delete** `STRIPE_SECRET_KEY` from Production scope
+3. **Re-add** `STRIPE_SECRET_KEY` with production value:
+   - Value: `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`
+   - **Important:** Copy-paste directly, no trailing spaces/newlines
+   - Scope: **Production** only
+4. Repeat for all Stripe price IDs
+5. **Force redeploy production:**
+   ```bash
+   vercel --prod --force
+   ```
+
+**Solution 2: Use Vercel CLI**
+
+```bash
+# Delete existing variable
+vercel env rm STRIPE_SECRET_KEY production
+
+# Add with correct value (will prompt for value)
+vercel env add STRIPE_SECRET_KEY production
+
+# Repeat for price IDs
+vercel env add STRIPE_PRICE_ID_STANDARD_MONTHLY production
+vercel env add STRIPE_PRICE_ID_STANDARD_YEARLY production
+vercel env add STRIPE_PRICE_ID_PREMIUM_MONTHLY production
+vercel env add STRIPE_PRICE_ID_PREMIUM_YEARLY production
+
+# Force redeploy
+vercel --prod --force
+```
+
+**Solution 3: Runtime Workaround (Already Implemented)**
+
+The code now includes a runtime workaround in `web/src/lib/billing/stripe.ts`:
+- Detects production environment with test keys
+- Automatically overrides with hardcoded production keys
+- Logs warnings when override occurs
+
+**This is a temporary fix** until Vercel env var propagation is resolved.
+
+### Verification Steps
+
+After redeploy:
+1. Wait for deployment to complete (check Vercel dashboard)
+2. Check diagnostic endpoint:
+   ```bash
+   curl https://nextbestmove.app/api/check-env | jq '.variables.STRIPE_SECRET_KEY'
+   ```
+3. Should see:
+   - `"prefix": "sk_live_..."` ✅
+   - `"mode": "LIVE"` ✅
+   - `"hasWhitespace": false` ✅ (or at least `trimmedPrefix` shows `sk_live_...`)
+
+### Why This Happens
+
+Vercel environment variables are injected at **build time**. Common causes:
+1. **Build cache:** Old builds cached with previous env vars
+2. **Variable scoping:** Variables set in wrong scope (Preview vs Production)
+3. **Whitespace corruption:** Trailing spaces/newlines copied when setting
+4. **Timing:** Deployment started before env vars were fully saved
+
+### Prevention
+
+1. **Always delete and recreate** env vars instead of editing (ensures clean state)
+2. **Verify scope** is Production (not Preview/Development)
+3. **Check for whitespace** before saving (copy-paste carefully)
+4. **Force redeploy** after any env var changes
+5. **Use Vercel CLI** for more reliable variable management
+
+---
+
 ## Related Documents
 
 - `docs/Troubleshooting/Production_OAuth_Diagnosis.md`
