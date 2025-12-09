@@ -904,6 +904,7 @@ Test email inputs:
    - [x] Indexes are being used: **System queries detected - application queries not visible in this sample**
 
 **Findings:**
+
 - **System/Metadata Queries:** Detected multiple PostgreSQL catalog queries (schema introspection) taking 1079-1384ms
 - **Query Type:** These appear to be Supabase/PostgREST internal metadata queries (`c.oid::int8`, `c.relkind`)
 - **Impact:** These are likely one-time or infrequent system queries, not user-facing application queries
