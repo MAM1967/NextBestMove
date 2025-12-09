@@ -11,11 +11,13 @@
 This guide sets up **Doppler** to manage secrets externally, removing dependency on Vercel's unreliable environment variable system.
 
 **Architecture:**
+
 - **Vercel:** Continues to handle Next.js hosting and deployment
 - **Doppler:** Manages all secrets (Stripe, Google OAuth, etc.)
 - **Runtime:** Application fetches secrets from Doppler API on startup
 
 **Benefits:**
+
 - ✅ Reliable secret management
 - ✅ No secrets in code or Vercel dashboard
 - ✅ Easy secret rotation
@@ -27,24 +29,29 @@ This guide sets up **Doppler** to manage secrets externally, removing dependency
 ## Step 1: Set Up Doppler Account
 
 ### 1.1 Create Account
+
 1. Go to https://doppler.com
 2. Sign up for free account
 3. Verify email
 
 ### 1.2 Create Project
+
 1. Click "New Project"
 2. Name: `NextBestMove`
 3. Description: `NextBestMove production secrets`
 4. Click "Create Project"
 
 ### 1.3 Create Configs (Environments)
+
 Create configs for each environment:
 
 1. **Production Config:**
+
    - Name: `prd`
    - Click "Create Config"
 
 2. **Preview/Staging Config:**
+
    - Name: `preview`
    - Click "Create Config"
 
@@ -101,16 +108,19 @@ RESEND_API_KEY=re_...
 ### 3.1 Install on Local Machine
 
 **macOS (Homebrew):**
+
 ```bash
 brew install dopplerhq/cli/doppler
 ```
 
 **Or using npm:**
+
 ```bash
 npm install -g doppler-cli
 ```
 
 ### 3.2 Authenticate
+
 ```bash
 doppler login
 ```
@@ -118,12 +128,14 @@ doppler login
 Follow browser prompts to authenticate.
 
 ### 3.3 Link Project
+
 ```bash
 cd /Users/michaelmcdermott/NextBestMove/web
 doppler setup
 ```
 
 Select:
+
 - Project: `NextBestMove`
 - Config: `dev` (for local development)
 
@@ -145,26 +157,71 @@ Select:
 ### 4.2 Generate Preview Token
 
 Repeat for preview:
+
 - Name: `vercel-preview`
 - Config: `preview`
 
 ---
 
-## Step 5: Install Doppler SDK in Application
+## Step 5: Install Doppler Vercel Integration (RECOMMENDED - No Code Changes!)
 
-### 5.1 Install Package
+**This is the SIMPLEST approach** - Doppler syncs secrets directly to Vercel automatically. No SDK needed, no code changes required!
+
+### 5.1 Install from Vercel Marketplace
+
+1. Go to [Vercel Marketplace - Doppler](https://vercel.com/marketplace/doppler)
+2. Click **"Add Integration"**
+3. Authorize Doppler to access your Vercel account
+4. Follow the setup wizard
+
+### 5.2 Configure Integration
+
+1. In Doppler dashboard, go to your project
+2. Click **"Integrations"** → **"Vercel"**
+3. Select:
+   - **Doppler Project:** `NextBestMove`
+   - **Doppler Config:** `prd` (for production)
+   - **Vercel Project:** Your NextBestMove project
+   - **Vercel Environment:** Production
+4. Click **"Setup Integration"**
+
+### 5.3 Sync Preview Environment
+
+Repeat for preview:
+- **Doppler Config:** `preview`
+- **Vercel Environment:** Preview
+
+### 5.4 How It Works
+
+- Doppler automatically syncs secrets to Vercel environment variables
+- When you update secrets in Doppler, they sync to Vercel
+- Vercel deployments automatically get the synced secrets
+- **No code changes needed** - your app uses `process.env` as normal!
+
+**This solves the propagation issue** because Doppler handles the sync, not Vercel.
+
+---
+
+## Alternative: Runtime API Approach (If You Need Dynamic Secrets)
+
+If you need to fetch secrets at runtime (not recommended for most cases), use this approach:
+
+### 5.1 Install Doppler SDK
 
 ```bash
 cd /Users/michaelmcdermott/NextBestMove/web
-npm install @dopplerhq/node
+npm install doppler-node
 ```
+
+**Note:** The package name is `doppler-node`, not `@dopplerhq/node`
 
 ### 5.2 Create Doppler Client Utility
 
 Create `web/src/lib/secrets/doppler.ts`:
 
 ```typescript
-import { Doppler } from "@dopplerhq/node";
+// Using doppler-node package
+import Doppler from "doppler-node";
 
 let dopplerClient: Doppler | null = null;
 let secretsCache: Record<string, string> | null = null;
@@ -176,7 +233,7 @@ function getDopplerClient(): Doppler {
   if (!dopplerClient) {
     // Service token from environment (set in Vercel)
     const serviceToken = process.env.DOPPLER_TOKEN;
-    
+
     if (!serviceToken) {
       throw new Error(
         "DOPPLER_TOKEN is not set. Set this in Vercel environment variables."
@@ -186,8 +243,15 @@ function getDopplerClient(): Doppler {
     dopplerClient = new Doppler({
       token: serviceToken,
     });
+    
+    // Alternative: If using project/config instead of service token
+    // dopplerClient = new Doppler({
+    //   project: process.env.DOPPLER_PROJECT,
+    //   config: process.env.DOPPLER_CONFIG,
+    //   token: serviceToken,
+    // });
   }
-  
+
   return dopplerClient;
 }
 
@@ -206,7 +270,7 @@ export async function getSecrets(): Promise<Record<string, string>> {
 
     // Cache secrets
     secretsCache = response.secrets;
-    
+
     // Clear cache after 5 minutes
     setTimeout(() => {
       secretsCache = null;
@@ -247,7 +311,7 @@ const USE_DOPPLER = !!process.env.DOPPLER_TOKEN;
 
 /**
  * Get secret value with fallback to environment variables
- * 
+ *
  * Priority:
  * 1. Doppler (if DOPPLER_TOKEN is set)
  * 2. Environment variable (fallback for local dev without Doppler)
@@ -262,7 +326,7 @@ export async function getSecretValue(key: string): Promise<string | undefined> {
       return process.env[key];
     }
   }
-  
+
   // Local development: use env vars directly
   return process.env[key];
 }
@@ -280,7 +344,7 @@ export async function getAllSecrets(): Promise<Record<string, string>> {
       return process.env as Record<string, string>;
     }
   }
-  
+
   return process.env as Record<string, string>;
 }
 ```
@@ -308,7 +372,7 @@ async function getStripeSecretKey(): Promise<string> {
 
   // Try Doppler first, fallback to env var
   const key = await getSecretValue("STRIPE_SECRET_KEY");
-  
+
   if (!key) {
     throw new Error("STRIPE_SECRET_KEY is not set");
   }
@@ -318,7 +382,9 @@ async function getStripeSecretKey(): Promise<string> {
 
   // Validate
   if (!sanitizedKey.match(/^sk_(test|live)_[a-zA-Z0-9]+$/)) {
-    throw new Error(`Invalid STRIPE_SECRET_KEY format: ${sanitizedKey.substring(0, 20)}...`);
+    throw new Error(
+      `Invalid STRIPE_SECRET_KEY format: ${sanitizedKey.substring(0, 20)}...`
+    );
   }
 
   // Cache
@@ -329,7 +395,7 @@ async function getStripeSecretKey(): Promise<string> {
 export async function getStripe(): Promise<Stripe> {
   if (!stripeInstance) {
     const key = await getStripeSecretKey();
-    
+
     stripeInstance = new Stripe(key, {
       apiVersion: "2025-11-17.clover",
       typescript: true,
@@ -344,7 +410,9 @@ export const stripe = new Proxy({} as Stripe, {
     // This is a sync proxy, but we need async
     // We'll need to refactor to make this work properly
     // For now, use getStripe() directly in API routes
-    throw new Error("Use getStripe() instead of stripe proxy when using Doppler");
+    throw new Error(
+      "Use getStripe() instead of stripe proxy when using Doppler"
+    );
   },
 });
 ```
@@ -361,7 +429,7 @@ import { getStripe } from "@/lib/billing/stripe";
 export async function POST(request: NextRequest) {
   // Get Stripe instance (async when using Doppler)
   const stripe = await getStripe();
-  
+
   // ... rest of the code
 }
 ```
@@ -381,7 +449,7 @@ async function getConfiguration(provider: CalendarProvider, hostname?: string) {
   const clientSecret = await getSecretValue(
     provider === "google" ? "GOOGLE_CLIENT_SECRET" : "OUTLOOK_CLIENT_SECRET"
   );
-  
+
   // ... rest of configuration logic
 }
 ```
@@ -395,6 +463,7 @@ async function getConfiguration(provider: CalendarProvider, hostname?: string) {
 1. Go to Vercel Dashboard
 2. Project → Settings → Environment Variables
 3. Add for **Production**:
+
    - Key: `DOPPLER_TOKEN`
    - Value: `<production-service-token-from-step-4.1>`
    - Scope: **Production**
@@ -407,6 +476,7 @@ async function getConfiguration(provider: CalendarProvider, hostname?: string) {
 ### 7.2 Optional: Remove Old Env Vars
 
 Once Doppler is working:
+
 - You can remove `STRIPE_SECRET_KEY`, `GOOGLE_CLIENT_SECRET`, etc. from Vercel
 - Keep only `DOPPLER_TOKEN` in Vercel
 - All other secrets come from Doppler
@@ -468,6 +538,7 @@ curl http://localhost:3000/api/check-env
 Once Doppler is working:
 
 1. Remove hardcoded secrets from:
+
    - `web/src/lib/billing/stripe.ts`
    - `web/src/lib/calendar/providers.ts`
 
@@ -480,12 +551,14 @@ Once Doppler is working:
 ## Pricing
 
 **Doppler Free Tier:**
+
 - 1 project
 - Unlimited secrets
 - Unlimited configs
 - Team members: 2
 
 **Doppler Team ($12/month):**
+
 - Unlimited projects
 - Unlimited secrets
 - Unlimited configs
@@ -503,7 +576,7 @@ Once Doppler is working:
 ✅ **Flexible:** Works with any hosting platform  
 ✅ **Easy Rotation:** Update secrets in Doppler, clear cache  
 ✅ **Audit Trail:** Track who accessed/changed secrets  
-✅ **Keep Vercel:** Don't lose Vercel's Next.js features  
+✅ **Keep Vercel:** Don't lose Vercel's Next.js features
 
 ---
 
@@ -526,15 +599,18 @@ Once Doppler is working:
 ## Troubleshooting
 
 ### Secrets not loading
+
 - Check `DOPPLER_TOKEN` is set in Vercel
 - Verify service token has correct config access
 - Check Doppler logs for errors
 
 ### Slow startup
+
 - Secrets are cached for 5 minutes (adjustable)
 - First request may be slower
 
 ### Local development issues
+
 - Use `doppler run -- npm run dev` to inject secrets
 - Or ensure `.env.local` has fallback values
 
@@ -551,5 +627,3 @@ Once Doppler is working:
 **Estimated Setup Time:** 2-3 hours  
 **Difficulty:** Medium  
 **Recommended:** Yes - Best solution for keeping Vercel with reliable secrets
-
-
