@@ -375,13 +375,13 @@ nextbestmove/
 │   │   └── signup/
 │   ├── (dashboard)/
 │   │   ├── daily-plan/
-│   │   ├── pins/
+│   │   ├── leads/
 │   │   ├── weekly-summary/
 │   │   └── settings/
 │   ├── onboarding/
 │   ├── api/                      # API routes
 │   │   ├── daily-plans/
-│   │   ├── pins/
+│   │   ├── leads/
 │   │   ├── actions/
 │   │   ├── weekly-summaries/
 │   │   └── billing/
@@ -397,10 +397,10 @@ nextbestmove/
 │   │   └── ...
 │   ├── pages/                    # Page components
 │   │   ├── DailyPlanPage.tsx
-│   │   ├── PinManagementPage.tsx
+│   │   ├── LeadsPage.tsx
 │   │   └── ...
 │   ├── modals/                   # Modal components
-│   │   ├── AddPersonModal.tsx
+│   │   ├── AddLeadModal.tsx
 │   │   └── ...
 │   └── onboarding/               # Onboarding components
 │       └── ...

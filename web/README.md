@@ -1,36 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextBestMove Web Application
+
+Next.js web application for NextBestMove v0.1.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ and npm/pnpm/yarn
+- Supabase account and project
+- Google OAuth client (for calendar integration)
+- Stripe account (for billing)
+
+### Installation
+
+1. Install dependencies:
 
 ```bash
-npm run dev
+pnpm install
 # or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Copy environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.local.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Configure environment variables in `.env.local` (see root README.md for full list)
 
-## Learn More
+4. Run development server:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+# or
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+web/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── app/               # Main application pages
+│   │   ├── api/               # API routes
+│   │   └── page.tsx           # Landing page
+│   ├── components/            # React components
+│   │   ├── ui/               # Base UI components
+│   │   └── ...
+│   └── lib/                  # Utilities and services
+│       ├── actions/          # Action-related utilities
+│       ├── billing/          # Stripe integration
+│       ├── calendar/         # Calendar OAuth integration
+│       ├── plans/            # Daily plan generation
+│       └── ...
+├── public/                    # Static assets
+├── package.json
+└── tsconfig.json
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Available Scripts
+
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm start` - Start production server
+- `pnpm type-check` - Run TypeScript type checking
+- `pnpm lint` - Run ESLint
+
+---
+
+## Key Technologies
+
+- **Next.js 14+** (App Router)
+- **React 18**
+- **TypeScript**
+- **Tailwind CSS**
+- **Supabase** (Database & Auth)
+- **Stripe** (Billing)
+
+---
+
+## Environment Variables
+
+See root `README.md` for complete environment variable documentation.
+
+**Required for development:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+- `CALENDAR_ENCRYPTION_KEY`
+
+---
+
+## Development Guidelines
+
+### Code Style
+
+- Use TypeScript for all new code
+- Follow existing component patterns
+- Use Tailwind CSS for styling
+- Write self-documenting code with clear variable names
+
+### API Routes
+
+API routes are in `src/app/api/`. Each route should:
+- Validate input (using Zod)
+- Check authentication
+- Handle errors gracefully
+- Return appropriate HTTP status codes
+
+### Database
+
+- All database operations use Supabase client
+- Row Level Security (RLS) policies enforce data isolation
+- Use migrations for schema changes (in `supabase/migrations/`)
+
+---
+
+## Testing
+
+See `docs/Testing/` for test plans and guides.
+
+- Manual testing guides for all features
+- Playwright E2E tests for critical paths
+- Launch hardening test checklist
+
+---
+
+## Deployment
+
+See `scripts/README_DEPLOYMENT.md` for deployment workflow.
+
+**Deployment Process:**
+1. Type check: `pnpm type-check`
+2. Sync environment variables (Doppler → Vercel)
+3. Push to Git (triggers Vercel deployment)
+
+---
+
+## Documentation
+
+- Root `README.md` - Project overview
+- `docs/Architecture/` - Technical specifications
+- `docs/Planning/` - User stories and plans
+- `docs/Testing/` - Test guides
+
+---
+
+## License
+
+See root directory for license information.

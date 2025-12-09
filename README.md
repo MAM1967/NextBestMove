@@ -26,12 +26,12 @@ Copy `.env.local.example` to `.env.local` and set:
 
 - `RESEND_API_KEY` (for trial reminders, payment failures, win-back campaigns)
 
-**Billing (when implemented):**
+**Billing:**
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRICE_ID_STANDARD_MONTHLY` / `STRIPE_PRICE_ID_STANDARD_YEARLY`
-- `STRIPE_PRICE_ID_PROFESSIONAL_MONTHLY` / `STRIPE_PRICE_ID_PROFESSIONAL_YEARLY`
+- `STRIPE_PRICE_ID_PREMIUM_MONTHLY` / `STRIPE_PRICE_ID_PREMIUM_YEARLY`
 
 **Note:** Never commit `.env.local` to git. Add it to `.gitignore`.
 
@@ -40,16 +40,22 @@ Copy `.env.local.example` to `.env.local` and set:
 ```
 NextBestMove/
 ├── README.md                          # This file
+├── web/                               # Next.js web application
+│   ├── src/
+│   │   ├── app/                      # Next.js App Router
+│   │   ├── components/               # React components
+│   │   └── lib/                      # Utilities & services
+│   └── package.json
+├── supabase/                          # Supabase migrations
+│   └── migrations/                   # Database migration files
+├── scripts/                           # Deployment and utility scripts
 ├── docs/                              # Documentation
 │   ├── PRD/                          # Product Requirements
 │   ├── UI-UX/                        # Design specifications
 │   ├── Architecture/                 # Technical specifications
-│   └── Planning/                     # User stories & planning
-├── [code/]                           # Application code (coming soon)
-│   ├── app/                         # Next.js app directory
-│   ├── components/                  # React components
-│   ├── lib/                         # Utilities & services
-│   └── ...
+│   ├── Planning/                     # User stories & planning
+│   ├── Testing/                      # Test plans and guides
+│   └── Troubleshooting/              # Troubleshooting guides
 └── .gitignore
 ```
 
@@ -89,7 +95,7 @@ NextBestMove is an actions-first workflow app that answers the question every so
 
 Instead of managing a CRM or juggling spreadsheets, you simply:
 
-1. **Pin** people you don't want to lose track of
+1. **Add leads** - People you don't want to lose track of
 2. **Get** a short, realistic daily plan (3–8 actions), sized to your actual calendar
 3. **Mark** actions as done / got reply / snooze
 4. **Receive** a weekly summary with an insight and 1–2 content prompts
@@ -104,11 +110,11 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - Automatically sized based on your calendar availability
 - Includes one Fast Win to build momentum in under 5 minutes
 
-### Pin, Don't Manage
+### Leads, Not CRM Complexity
 
-- Add simple "Pins" (name + URL) for people you don't want to forget
+- Add simple leads (name + URL) for people you don't want to forget
 - No CRM fields, no enrichment, no complexity
-- Snooze Pins when timing isn't right; archive when done
+- Snooze leads when timing isn't right; archive when done
 
 ### Follow-Up Done Right
 
@@ -130,11 +136,12 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - Daily plans adjust so you never feel overloaded
 - If no calendar connected → fixed lightweight plan
 
-### Billing Readiness
+### Billing & Subscriptions
 
 - Stripe-powered checkout and customer portal
+- Standard and Premium pricing tiers
+- 14-day free trial
 - Subscription status gates access to core workflows
-- Pricing tier TBD, but billing infrastructure is ready for launch
 
 ---
 
@@ -149,7 +156,7 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 - **Calendar Integration:**
   - Google Calendar API (read-only free/busy)
   - Microsoft Graph API (Outlook)
-  - NextAuth.js for OAuth
+  - Direct OAuth 2.0 implementation
 - **AI:** OpenAI GPT-4 for weekly summaries
 - **Hosting:** Vercel + Supabase
 
@@ -159,7 +166,7 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 
 ### Core Entities
 
-**PersonPin**
+**Lead**
 
 - name, url, notes (optional)
 - status: ACTIVE | SNOOZED | ARCHIVED
@@ -168,7 +175,7 @@ Instead of managing a CRM or juggling spreadsheets, you simply:
 
 - type: OUTREACH | FOLLOW_UP | NURTURE | CALL_PREP | POST_CALL | CONTENT | FAST_WIN
 - state: NEW | SENT | REPLIED | SNOOZED | DONE | ARCHIVED
-- due_date, notes (optional), linked to PersonPin
+- due_date, notes (optional), linked to Lead
 
 **DailyPlan**
 
@@ -201,14 +208,18 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 - ✅ Database schema
 - ✅ API specifications
 - ✅ User stories
-- 🚧 Code implementation in progress
+- ✅ Core features implemented
+- ✅ Stripe billing integration
+- ✅ Calendar integration (Google & Outlook)
+- ✅ Production deployment ready
+- 🚧 Launch hardening in progress
 
 ### v0.2 (Future)
 
 - Manual "Busy / Light day" override
 - "Why this action?" explanation tooltips
 - Improved templates
-- Cleanup mode for stale Pins
+- Cleanup mode for stale leads
 - Daily email plan (opt-in)
 
 ### v1.0 (Future)
@@ -233,6 +244,8 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 - [Database Schema](docs/Architecture/Database_Schema.md)
 - [Calendar API Specifications](docs/Architecture/Calendar_API_Specifications.md)
 - [Implementation Guide](docs/Architecture/Implementation_Guide.md)
+- [Deployment Guide](scripts/README_DEPLOYMENT.md)
+- [Testing Guides](docs/Testing/)
 
 ### For Planning
 
@@ -243,11 +256,14 @@ See [Database Schema](docs/Architecture/Database_Schema.md) for complete schema.
 
 ## 🧪 Development Status
 
-🚧 **Early Development**
+✅ **Pre-Launch Phase**
 
 - ✅ Complete documentation and specifications
-- 🚧 Code implementation starting
-- 📋 80+ user stories ready for sprint planning
+- ✅ Core features implemented and tested
+- ✅ Stripe billing integration complete
+- ✅ Calendar integration complete
+- ✅ Launch hardening in progress
+- 🎯 Target launch: January 1, 2026
 
 ---
 

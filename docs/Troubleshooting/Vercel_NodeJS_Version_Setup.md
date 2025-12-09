@@ -18,15 +18,19 @@ Vercel automatically detects Node.js version using these methods (in order of pr
 ## Files Created/Updated
 
 ### ✅ `.nvmrc` File
+
 **Location:** `/web/.nvmrc`  
 **Content:**
+
 ```
 22
 ```
 
 ### ✅ `package.json` Engines
+
 **Location:** `/web/package.json`  
 **Added:**
+
 ```json
 "engines": {
   "node": "22.x",
@@ -76,6 +80,7 @@ cat package.json | grep -A 3 '"engines"'
 ```
 
 Should show:
+
 ```json
 "engines": {
   "node": "22.x",
@@ -99,16 +104,19 @@ Should show: `22`
 ### If Node.js Version Doesn't Change
 
 1. **Clear Build Cache:**
+
    - Vercel Dashboard → Settings → Build & Deployment
    - Scroll to bottom → **Clear Build Cache**
    - Redeploy
 
 2. **Force Redeploy:**
+
    - Go to Deployments
    - Click **⋯** (three dots) on latest deployment
    - Select **Redeploy**
 
 3. **Check Build Command:**
+
    - Ensure no custom build command is overriding Node version
    - Settings → Build & Deployment → Build Command
 
@@ -139,4 +147,3 @@ Should show: `22`
 ---
 
 **Last Updated:** December 9, 2025
-

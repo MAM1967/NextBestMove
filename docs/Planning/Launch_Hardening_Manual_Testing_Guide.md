@@ -1,25 +1,24 @@
 # Launch Hardening - Manual Testing Guide
 
 **Last Updated:** December 9, 2025  
-**Status:** ✅ ~95% Complete (Performance testing completed, minor items remaining)  
+**Status:** ✅ ~98% Complete (All manual testing complete, only Playwright E2E billing tests remaining)  
 **Test Environment:** Production (`nextbestmove.app`) or Staging (`staging.nextbestmove.app`)
 
 ## Testing Progress Summary
 
 **✅ Completed:**
 
-- Area 1: Functional Testing (Lead Management 1.1.1-1.1.5, Action Management 1.2.2-1.2.6, Daily Plan 1.3.1-1.3.5, Settings 1.4.3-1.4.7, Billing 1.5.1-1.5.2)
+- Area 1: Functional Testing (Lead Management 1.1.1-1.1.7 ✅ ALL, Action Management 1.2.2-1.2.6, Daily Plan 1.3.1-1.3.5, Settings 1.4.3-1.4.7, Billing 1.5.1-1.5.2)
 - Area 2: Security Testing (Most tests completed, 2.2.2 and 2.4.2 skipped)
 - Area 3: Desktop Browsers (Chrome, Safari, Edge - Firefox not tested)
-- Area 3: Mobile Browsers (3.2.1-3.2.2) ✅ COMPLETED TODAY
-- Area 4: Detailed Responsive Design Testing (4.1-4.3) ✅ COMPLETED TODAY
-- Area 5: Page Load Times (5.1.1-5.1.6)
-- Area 7: Production Stripe Smoke Test (All API tests passed)
+- Area 3: Mobile Browsers (3.2.1-3.2.2) ✅ COMPLETED
+- Area 4: Detailed Responsive Design Testing (4.1-4.3) ✅ COMPLETED
+- Area 5: Performance Testing (5.1.1-5.1.6, 5.2.1-5.2.5, 5.3, 5.4) ✅ COMPLETED
+- Area 7: Production Stripe Smoke Test (All API tests passed) ✅ COMPLETED
 
 **🔄 Remaining:**
 
-- Area 1: Lead Management (1.1.6-1.1.7), Billing (1.5.3-1.5.6 - deferred to Playwright)
-- Area 5: Performance Testing - ✅ COMPLETED (some APIs exceed targets but acceptable for launch)
+- Area 1: Billing (1.5.3-1.5.6 - deferred to Playwright E2E testing)
 
 **⏭️ Skipped for January Launch:**
 
@@ -127,32 +126,32 @@ This guide walks you through manual testing for launch hardening. Revenue critic
    - [x] Lead disappears from ACTIVE/SNOOZED views
    - [x] Lead appears in ARCHIVED filter view
 
-#### Test 1.1.6: Restore Archived Lead
+#### Test 1.1.6: Restore Archived Lead ✅ COMPLETED
 
 1. Filter leads to show "ARCHIVED"
 2. Find an archived lead
 3. Click Restore (or change status to ACTIVE)
 4. Verify:
-   - [ ] Lead status changes to "ACTIVE"
-   - [ ] Lead appears in ACTIVE view
-   - [ ] Lead removed from ARCHIVED view
+   - [x] Lead status changes to "ACTIVE"
+   - [x] Lead appears in ACTIVE view
+   - [x] Lead removed from ARCHIVED view
 
 **Note:** Archive serves as the "delete" functionality for users. Archived leads are permanently removed from active use but retained for analytics/history purposes (per PRD Section 9.1: "ARCHIVED — no further use; used only for history/analytics"). There is no hard delete button in the UI - Archive is the correct pattern for v0.1.
 
-#### Test 1.1.7: Filter Leads
+#### Test 1.1.7: Filter Leads ✅ COMPLETED
 
 1. Ensure you have leads in different statuses (at least 1 ACTIVE, 1 SNOOZED, 1 ARCHIVED)
 2. Test each filter:
-   - [ ] "All" - Shows all leads
-   - [ ] "Active" - Shows only ACTIVE leads
-   - [ ] "Snoozed" - Shows only SNOOZED leads
-   - [ ] "Archived" - Shows only ARCHIVED leads
+   - [x] "All" - Shows all leads
+   - [x] "Active" - Shows only ACTIVE leads
+   - [x] "Snoozed" - Shows only SNOOZED leads
+   - [x] "Archived" - Shows only ARCHIVED leads
 3. Verify:
-   - [ ] Correct leads shown for each filter
-   - [ ] Counts are accurate (if shown)
-   - [ ] No leads appear in wrong status filter
+   - [x] Correct leads shown for each filter
+   - [x] Counts are accurate (if shown)
+   - [x] No leads appear in wrong status filter
 
-**Report Back:** ✅ Lead Management Testing Complete (1.1.1-1.1.5 tested) - [Any issues found: None. Archive serves as delete functionality per PRD]
+**Report Back:** ✅ Lead Management Testing Complete (1.1.1-1.1.7 ALL TESTED) - [Any issues found: None. Archive serves as delete functionality per PRD]
 
 ---
 

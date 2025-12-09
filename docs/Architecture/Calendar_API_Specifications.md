@@ -1,14 +1,16 @@
 # Calendar API Endpoint Specifications
-## NextBestMove v0.1 - Direct Integration with NextAuth.js
+## NextBestMove v0.1 - Direct OAuth Integration
+
+> ⚠️ **NOTE:** This document is partially outdated. The implementation uses direct OAuth 2.0 with `openid-client` library, NOT NextAuth.js. The endpoint specifications are still accurate, but the OAuth flow details need updating to match the actual implementation. See `/web/src/app/api/calendar/` for current implementation.
 
 ---
 
 ## Overview
 
-This document specifies the API endpoints for Google Calendar and Outlook Calendar integration using direct API integration with NextAuth.js for OAuth handling.
+This document specifies the API endpoints for Google Calendar and Outlook Calendar integration using direct OAuth 2.0 integration.
 
-**Approach:** Option 1 - Direct API Integration  
-**OAuth Library:** NextAuth.js  
+**Approach:** Direct OAuth 2.0 Integration  
+**OAuth Library:** `openid-client` (NOT NextAuth.js)  
 **Error Strategy:** Graceful degradation with clear user messaging
 
 ---

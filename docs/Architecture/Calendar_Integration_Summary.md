@@ -29,7 +29,7 @@
 **Contents:**
 - ✅ 9 complete table definitions:
   - `users` - User accounts
-  - `person_pins` - Pinned people
+  - `leads` - Leads/contacts
   - `actions` - Action items
   - `daily_plans` - Generated daily plans
   - `daily_plan_actions` - Junction table (ordered actions)
@@ -92,7 +92,7 @@
 ### Core Tables
 
 1. **users** - User accounts with timezone, streak tracking
-2. **person_pins** - Pinned contacts with status management
+2. **leads** - Leads/contacts with status management
 3. **actions** - Action items with state machine support
 4. **daily_plans** - Daily plans with capacity tracking
 5. **weekly_summaries** - Weekly reports with AI insights

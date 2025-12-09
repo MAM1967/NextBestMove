@@ -1314,22 +1314,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 // stores/uiStore.ts
 interface UIState {
   // Modals
-  isAddPersonModalOpen: boolean;
-  isEditPersonModalOpen: boolean;
-  selectedPin: PersonPin | null;
+  isAddLeadModalOpen: boolean;
+  isEditLeadModalOpen: boolean;
+  selectedLead: Lead | null;
   
   // Filters
-  pinFilter: PinFilter;
+  leadFilter: LeadFilter;
   
   // Toasts
   toasts: Toast[];
   
   // Actions
-  openAddPersonModal: () => void;
-  closeAddPersonModal: () => void;
-  openEditPersonModal: (pin: PersonPin) => void;
-  closeEditPersonModal: () => void;
-  setPinFilter: (filter: PinFilter) => void;
+  openAddLeadModal: () => void;
+  closeAddLeadModal: () => void;
+  openEditLeadModal: (lead: Lead) => void;
+  closeEditLeadModal: () => void;
+  setLeadFilter: (filter: LeadFilter) => void;
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   
@@ -1355,13 +1355,13 @@ export const dailyPlanApi = {
   generate: (date: string) => fetch(`/api/daily-plans/${date}/generate`, { method: 'POST' }),
 };
 
-// api/pins.ts
-export const pinsApi = {
-  list: () => fetch('/api/pins'),
-  get: (id: string) => fetch(`/api/pins/${id}`),
-  create: (data: CreatePinData) => fetch('/api/pins', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: UpdatePinData) => fetch(`/api/pins/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: string) => fetch(`/api/pins/${id}`, { method: 'DELETE' }),
+// api/leads.ts
+export const leadsApi = {
+  list: () => fetch('/api/leads'),
+  get: (id: string) => fetch(`/api/leads/${id}`),
+  create: (data: CreateLeadData) => fetch('/api/leads', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: UpdateLeadData) => fetch(`/api/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => fetch(`/api/leads/${id}`, { method: 'DELETE' }),
 };
 
 // api/actions.ts

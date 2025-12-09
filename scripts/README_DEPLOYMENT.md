@@ -94,6 +94,10 @@ Syncs Doppler secrets to Vercel **Preview** environment (for staging/preview bui
 
 ## Prerequisites
 
+- **Node.js 22+** required for design linting (local and Vercel)
+  - Local: Install via `nvm install 22 && nvm use 22`
+  - Vercel: Update in Project Settings → General → Node.js Version to 22.x
+
 Before running these scripts, ensure you have:
 
 1. **Doppler CLI** installed and authenticated
