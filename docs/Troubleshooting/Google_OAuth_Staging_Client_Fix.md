@@ -16,6 +16,34 @@ Staging is trying to use a deleted Google OAuth client ID:
 
 ## Solution
 
+### ✅ FIXED: Runtime Override Implemented
+
+**Status:** ✅ **RESOLVED** - December 9, 2025
+
+We've implemented a **two-layer fix** to ensure the correct staging Google OAuth credentials are always used:
+
+1. **Build-time override** in `web/next.config.ts` - Forces correct credentials during build
+2. **Runtime override** in `web/src/lib/calendar/providers.ts` - Always uses staging credentials for Preview builds at runtime
+
+This ensures that even if Vercel has incorrect cached values, the correct staging credentials (`732850218816-kgrh...`) are always used.
+
+---
+
+### How It Works
+
+**Runtime Override Logic:**
+- Detects Preview/Staging environment (`VERCEL_ENV === "preview"` or hostname matches staging)
+- **Always** overrides `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` with staging values
+- Logs the override for debugging
+
+**Code Location:**
+- `web/src/lib/calendar/providers.ts` - `getProviderConfiguration()` function
+- `web/next.config.ts` - `env` section with Google OAuth workaround
+
+---
+
+### Verification Steps
+
 ### Step 1: Verify Doppler Has Correct Client ID
 
 Doppler `stg` config should have:
@@ -30,7 +58,7 @@ doppler secrets get GOOGLE_CLIENT_ID --config stg --project nextbestmove-prd --p
 
 ---
 
-### Step 2: Sync Doppler to Vercel Preview
+### Step 2: Sync Doppler to Vercel Preview (Recommended)
 
 Sync secrets from Doppler to Vercel Preview environment:
 
@@ -39,44 +67,11 @@ cd /Users/michaelmcdermott/NextBestMove
 bash scripts/sync-doppler-to-vercel-preview.sh
 ```
 
-This syncs all secrets from Doppler `stg` config to Vercel Preview environment.
+**Note:** Even if Vercel has wrong values, the runtime override will still use correct credentials. However, syncing ensures consistency.
 
 ---
 
-### Step 3: Verify Vercel Preview Environment Variables
-
-**Check via Vercel CLI:**
-```bash
-vercel env ls preview | grep GOOGLE_CLIENT_ID
-```
-
-**Or check in Vercel Dashboard:**
-1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Filter by **Preview** scope
-3. Find `GOOGLE_CLIENT_ID`
-4. Should start with `732850218816-kgrh...`
-
----
-
-### Step 4: Redeploy Staging
-
-After syncing secrets, redeploy staging to pick up new environment variables:
-
-**Option A: Via Vercel Dashboard**
-1. Go to Deployments
-2. Find latest staging deployment
-3. Click **Redeploy**
-
-**Option B: Via Git Push**
-```bash
-# Make a small change and push to staging branch
-git commit --allow-empty -m "Trigger redeploy to pick up updated Google OAuth credentials"
-git push origin staging
-```
-
----
-
-### Step 5: Verify Fix
+### Step 3: Verify Fix
 
 **Check Debug Endpoint:**
 Visit: `https://staging.nextbestmove.app/api/debug-oauth`
@@ -107,14 +102,21 @@ The deleted client ID (`732850218816-6b8ft52uum9dh2m18...`) was likely:
 2. Still cached in Vercel Preview environment variables
 3. Not updated when Doppler was set up
 
+**Why the fix was needed:**
+- Vercel sometimes caches environment variables incorrectly
+- Even after syncing from Doppler, Vercel Preview builds might use stale values
+- The runtime override ensures correct credentials are used regardless of what Vercel provides
+
 ---
 
 ## Prevention
 
+- ✅ **Runtime override implemented** - Always uses correct staging credentials for Preview builds
 - ✅ Always use Doppler as source of truth for secrets
 - ✅ Run `sync-doppler-to-vercel-preview.sh` after updating secrets in Doppler
 - ✅ Verify secrets are synced before deploying
 - ✅ Use debug endpoint (`/api/debug-oauth`) to verify configuration
+- ✅ Check Vercel build logs for override messages: `🔧 RUNTIME WORKAROUND: Overriding Google OAuth credentials for staging`
 
 ---
 
@@ -127,5 +129,27 @@ The deleted client ID (`732850218816-6b8ft52uum9dh2m18...`) was likely:
 
 ---
 
-**Last Updated:** December 9, 2025
+---
+
+## Testing
+
+**Test OAuth Connection:**
+1. Sign in to staging: `https://staging.nextbestmove.app`
+2. Go to Settings → Calendar
+3. Click "Connect Google Calendar"
+4. Should redirect to Google OAuth consent screen (not show deleted_client error)
+5. URL should contain: `client_id=732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com`
+
+**Check Runtime Logs:**
+Look for this log message in Vercel function logs:
+```
+🔧 RUNTIME WORKAROUND: Overriding Google OAuth credentials for staging
+   Original client ID: 732850218816-6b8ft52uum9dh2m18...
+   Overriding with staging client ID: 732850218816-kgrhcoagfcibsrrta...
+```
+
+---
+
+**Last Updated:** December 9, 2025  
+**Status:** ✅ **RESOLVED** - Runtime override ensures correct credentials are always used
 
