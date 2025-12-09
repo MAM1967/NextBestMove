@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { fetchCalendarStatus } from "@/lib/calendar/status";
 import { CalendarConnectionSection } from "./CalendarConnectionSection";
 import { CalendarEventsView } from "./CalendarEventsView";
@@ -374,6 +375,29 @@ export default async function SettingsPage({
       >
         <AccountDeletionSection />
       </SectionCard>
+
+      <footer className="border-t border-zinc-200 pt-6">
+        <div className="flex flex-col items-center gap-4 text-sm text-zinc-600 sm:flex-row sm:justify-between">
+          <p>© MAM Growth Strategies LLC 2025</p>
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-6">
+            <p className="text-xs text-zinc-500">This site uses privacy-friendly analytics</p>
+            <div className="flex gap-6">
+              <Link
+                href="/terms"
+                className="hover:text-zinc-900 hover:underline"
+              >
+                Terms of Service
+              </Link>
+              <Link
+                href="/privacy"
+                className="hover:text-zinc-900 hover:underline"
+              >
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

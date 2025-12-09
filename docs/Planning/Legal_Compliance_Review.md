@@ -80,25 +80,24 @@ This document outlines legal and compliance requirements for launching NextBestM
 
 ## 3. Cookie Policy
 
-**Status:** ❌ **NOT CREATED**
+**Status:** ⏭️ **DEFERRED - NOT NEEDED UNTIL 25K+ USERS**
 
-**Requirement:** Cookie policy may be required depending on:
+**Requirement:** Cookie policy typically required for sites with 25K+ users. Currently at 0 users (pre-launch).
 
-- Cookie usage (authentication cookies, analytics cookies)
-- Jurisdiction (GDPR for EU users)
-- Analytics services used
+**Current Cookie Usage:**
+
+- Authentication cookies (Supabase auth cookies) - Essential
+- Analytics cookies (Umami, if used) - Optional
+- No third-party advertising cookies
 
 **Action Items:**
 
-- [ ] Assess cookie usage:
-  - [ ] Authentication cookies (Supabase auth cookies) - Essential
-  - [ ] Analytics cookies (Umami, if used) - Optional
-  - [ ] No third-party advertising cookies (confirm)
-- [ ] Create cookie policy document (if required)
-- [ ] Implement cookie consent banner (if using non-essential cookies)
-- [ ] Link cookie policy in footer
+- [x] Assess cookie usage ✅ (Only essential auth cookies)
+- [ ] **Defer until user base grows** - Not required at launch (0 users)
+- [ ] Revisit when approaching 25K users
+- [ ] If needed: Create cookie policy document or add statement to privacy policy
 
-**Note:** If only using essential cookies (authentication), a simple statement in the privacy policy may suffice.
+**Note:** Cookie policy not required at launch. Will reassess when user base grows.
 
 ---
 

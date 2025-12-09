@@ -89,6 +89,34 @@ export function SignUpForm() {
         </p>
       </div>
 
+      <div className="flex items-start gap-2">
+        <input
+          id="terms"
+          name="terms"
+          type="checkbox"
+          required
+          className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-black focus:ring-2 focus:ring-zinc-500"
+        />
+        <label htmlFor="terms" className="text-sm text-zinc-600">
+          I agree to the{" "}
+          <Link
+            href="/terms"
+            className="font-medium text-zinc-900 hover:underline"
+            target="_blank"
+          >
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy"
+            className="font-medium text-zinc-900 hover:underline"
+            target="_blank"
+          >
+            Privacy Policy
+          </Link>
+        </label>
+      </div>
+
       <button
         type="submit"
         disabled={isPending}
