@@ -1,7 +1,7 @@
 # Vercel Node.js Version Setup
 
 **Date:** December 9, 2025  
-**Purpose:** Configure Node.js 22.x for Vercel builds
+**Purpose:** Configure Node.js 24.x for Vercel builds (requires >= 22 for design-lint)
 
 ---
 
@@ -131,11 +131,12 @@ Should show: `22`
 
 ---
 
-## Why Node.js 22?
+## Why Node.js 24?
 
-- **Required for:** `@lapidist/design-lint@6.0.6`
+- **Required minimum:** Node.js >= 22 for `@lapidist/design-lint@6.0.6`
+- **Previously used:** Node.js 24.x (restored to maintain consistency)
 - **Design Linting:** Enabled in staging deployment workflow
-- **Compatibility:** All dependencies tested and compatible
+- **Compatibility:** All dependencies tested and compatible with Node 24
 
 ---
 

@@ -1,14 +1,14 @@
-# How to Verify Node.js 22 in Vercel Builds
+# How to Verify Node.js 24 in Vercel Builds
 
-**Quick Guide:** After deploying, verify Vercel is using Node.js 22
+**Quick Guide:** After deploying, verify Vercel is using Node.js 24
 
 ---
 
 ## Automatic Detection
 
 Vercel automatically detects Node.js version from:
-1. `.nvmrc` file (highest priority) ✅ Created: `web/.nvmrc` with `22`
-2. `package.json` engines field ✅ Configured: `"node": "22.x"`
+1. `.nvmrc` file (highest priority) ✅ Created: `web/.nvmrc` with `24`
+2. `package.json` engines field ✅ Configured: `"node": "24.x"`
 
 **You don't need to set it manually in the UI** - Vercel will use these files automatically.
 
@@ -19,7 +19,7 @@ Vercel automatically detects Node.js version from:
 ### Step 1: Deploy to Staging
 
 ```bash
-./scripts/deploy-staging.sh "Configure Node.js 22 and design linting"
+./scripts/deploy-staging.sh "Configure Node.js 24 and design linting"
 ```
 
 ### Step 2: Check Build Logs
@@ -33,8 +33,8 @@ Vercel automatically detects Node.js version from:
 
 ```
 Installing dependencies...
-Found '/vercel/path0/web/.nvmrc' with version <22>
-Now using node v22.x.x (npm v10.x.x)
+Found '/vercel/path0/web/.nvmrc' with version <24>
+Now using node v24.x.x (npm v11.x.x)
 ```
 
 ### Step 3: Verify Design Lint Runs
@@ -48,7 +48,7 @@ Running design lint...
 ```
 
 If you see this, it confirms:
-- ✅ Node.js 22 is active (design-lint requires Node 22+)
+- ✅ Node.js 24 is active (design-lint requires Node 22+, Node 24 works perfectly)
 - ✅ Design linting is running
 
 ---
@@ -93,8 +93,8 @@ When working correctly, you should see in build logs:
 
 ```
 # Node version detection
-Found '/vercel/path0/web/.nvmrc' with version <22>
-Now using node v22.21.1 (npm v10.9.4)
+Found '/vercel/path0/web/.nvmrc' with version <24>
+Now using node v24.x.x (npm v11.x.x)
 
 # Design lint (if enabled in deployment script)
 Running design lint...
@@ -119,7 +119,7 @@ Running "npm run build"...
 
 After deploying, verify:
 
-- [ ] Build logs show `Now using node v22.x.x`
+- [ ] Build logs show `Now using node v24.x.x`
 - [ ] Build completes successfully
 - [ ] Design lint runs (if enabled) without errors
 - [ ] Type check passes
