@@ -139,7 +139,8 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getUser();
 
   // Protect /app routes - redirect to sign-in if not authenticated
-  if (request.nextUrl.pathname.startsWith("/app")) {
+  // Skip POST requests (server actions) - they handle auth internally
+  if (request.nextUrl.pathname.startsWith("/app") && request.method !== "POST") {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -154,7 +155,10 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   // Exception: allow /auth/reset-password when user has a recovery session
-  if (request.nextUrl.pathname.startsWith("/auth") && request.nextUrl.pathname !== "/auth/reset-password") {
+  // Skip POST requests (server actions) - they handle redirects internally
+  if (request.nextUrl.pathname.startsWith("/auth") && 
+      request.nextUrl.pathname !== "/auth/reset-password" &&
+      request.method !== "POST") {
     const {
       data: { user },
     } = await supabase.auth.getUser();
