@@ -22,6 +22,7 @@ curl https://nextbestmove.app/api/check-env | jq '.variables.STRIPE_SECRET_KEY'
 ```
 
 **Expected:**
+
 - `"mode": "LIVE"`
 - `"prefix": "sk_live_..."`
 - `"isLive": true`
@@ -47,6 +48,7 @@ curl -X POST https://nextbestmove.app/api/billing/create-checkout-session \
 ```
 
 **Expected:**
+
 - Returns `{ "url": "https://checkout.stripe.com/..." }`
 - URL should be valid Stripe checkout URL
 
@@ -71,9 +73,11 @@ curl -X POST https://nextbestmove.app/api/billing/start-trial \
 ```
 
 **Expected:**
+
 - `{ "success": true, "subscriptionId": "sub_...", "trialEndsAt": "..." }`
 
 **Verify in Stripe Dashboard:**
+
 - Go to Stripe Dashboard → Live mode → Subscriptions
 - Should see the new subscription with status "trialing"
 
@@ -92,6 +96,7 @@ curl -X POST https://nextbestmove.app/api/billing/customer-portal \
 ```
 
 **Expected:**
+
 - `{ "url": "https://billing.stripe.com/session/..." }`
 - URL should be valid Stripe billing portal URL
 
@@ -118,6 +123,7 @@ curl -X POST https://nextbestmove.app/api/billing/create-checkout-session \
 ```
 
 **Verify in Response:**
+
 - Session should be created successfully
 - If price ID is wrong, you'll get an error about invalid price
 
@@ -136,8 +142,9 @@ curl https://nextbestmove.app/api/billing/subscription-status \
 ```
 
 **Or query Supabase directly:**
+
 ```sql
-SELECT 
+SELECT
   bs.status,
   bs.stripe_subscription_id,
   bs.current_period_end,
@@ -218,6 +225,7 @@ curl https://api.stripe.com/v1/customers \
 ```
 
 **Verify:**
+
 - Customers created from your app should appear
 - Email addresses should match your test users
 
@@ -339,6 +347,7 @@ echo "✅ Tests complete!"
 To get your session cookie for testing:
 
 1. **Browser Method:**
+
    - Log in to your app
    - Open Developer Tools → Application/Storage → Cookies
    - Copy the session cookie value
@@ -364,6 +373,7 @@ After running tests, verify in Stripe Dashboard (Live mode):
 ## Summary of Testable Items
 
 ✅ **Can Test Without Cards:**
+
 - Environment variable configuration
 - Checkout session creation
 - Trial creation
@@ -373,6 +383,7 @@ After running tests, verify in Stripe Dashboard (Live mode):
 - Authentication checks
 
 ❌ **Cannot Test Without Cards:**
+
 - Actual payment processing
 - Subscription activation (after trial)
 - Payment method management
@@ -391,5 +402,3 @@ After running tests, verify in Stripe Dashboard (Live mode):
 ---
 
 **Last Updated:** December 9, 2025
-
-
