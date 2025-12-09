@@ -29,12 +29,14 @@ This bypasses the integration entirely and manually syncs secrets from Doppler t
    - Click **"Save"**
 4. Repeat for all secrets
 
-**Pros:**  
+**Pros:**
+
 - ✅ Works immediately
 - ✅ No UI dependencies
 - ✅ Full control
 
-**Cons:**  
+**Cons:**
+
 - ⚠️ Manual process
 - ⚠️ Need to re-sync when secrets change
 
@@ -99,10 +101,10 @@ while IFS='=' read -r key value; do
   if [[ -z "$key" ]] || [[ "$key" =~ ^# ]]; then
     continue
   fi
-  
+
   # Remove quotes from value if present
   value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//')
-  
+
   if [ -n "$key" ] && [ -n "$value" ]; then
     echo "📤 Syncing $key to Vercel ($VERCEL_ENV)..."
     echo "$value" | vercel env add "$key" "$VERCEL_ENV" --force
@@ -113,6 +115,7 @@ echo "✅ Sync complete!"
 ```
 
 Make it executable:
+
 ```bash
 chmod +x scripts/sync-doppler-to-vercel.sh
 ```
@@ -126,12 +129,14 @@ chmod +x scripts/sync-doppler-to-vercel.sh
 **To sync Preview environment:**
 Change `DOPPLER_CONFIG` and `VERCEL_ENV` in the script, or create separate scripts.
 
-**Pros:**  
+**Pros:**
+
 - ✅ Automated
 - ✅ Can run anytime
 - ✅ Works regardless of UI
 
-**Cons:**  
+**Cons:**
+
 - ⚠️ Requires CLI setup
 - ⚠️ Need to run manually when secrets change
 
@@ -152,64 +157,70 @@ If you want to build a custom sync tool.
 Create `scripts/sync-doppler-api.js`:
 
 ```javascript
-const https = require('https');
-const { execSync } = require('child_process');
+const https = require("https");
+const { execSync } = require("child_process");
 
 const DOPPLER_TOKEN = process.env.DOPPLER_TOKEN; // From service token
-const DOPPLER_PROJECT = 'nextbestmove-prd';
-const DOPPLER_CONFIG = 'prd';
-const VERCEL_ENV = 'production';
+const DOPPLER_PROJECT = "nextbestmove-prd";
+const DOPPLER_CONFIG = "prd";
+const VERCEL_ENV = "production";
 
 // Fetch secrets from Doppler API
 function getSecretsFromDoppler() {
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'api.doppler.com',
+      hostname: "api.doppler.com",
       path: `/v3/configs/config/secrets/download?project=${DOPPLER_PROJECT}&config=${DOPPLER_CONFIG}&format=json`,
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${DOPPLER_TOKEN}`,
-        'Accept': 'application/json'
-      }
+        Authorization: `Bearer ${DOPPLER_TOKEN}`,
+        Accept: "application/json",
+      },
     };
 
-    https.get(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
+    https
+      .get(options, (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve(parsed);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      })
+      .on("error", reject);
   });
 }
 
 // Sync to Vercel
 async function syncToVercel() {
   const secrets = await getSecretsFromDoppler();
-  
+
   for (const [key, value] of Object.entries(secrets)) {
     console.log(`Syncing ${key}...`);
     try {
-      execSync(`echo "${value}" | vercel env add "${key}" ${VERCEL_ENV} --force`, {
-        stdio: 'inherit'
-      });
+      execSync(
+        `echo "${value}" | vercel env add "${key}" ${VERCEL_ENV} --force`,
+        {
+          stdio: "inherit",
+        }
+      );
     } catch (error) {
       console.error(`Failed to sync ${key}:`, error.message);
     }
   }
-  
-  console.log('✅ Sync complete!');
+
+  console.log("✅ Sync complete!");
 }
 
 syncToVercel();
 ```
 
 Run:
+
 ```bash
 export DOPPLER_TOKEN="your-service-token"
 node scripts/sync-doppler-api.js
@@ -232,12 +243,14 @@ This isn't ideal long-term, but it gets you unblocked for launch.
 ## Recommendation: Start with Option 2 (CLI Script)
 
 **Why:**
+
 - ✅ Reliable and works regardless of UI
 - ✅ Can automate later
 - ✅ Easy to verify it's working
 - ✅ No UI dependency
 
 **Steps:**
+
 1. Install CLI tools (5 minutes)
 2. Create sync script (5 minutes)
 3. Run sync (2 minutes)
@@ -250,6 +263,7 @@ This isn't ideal long-term, but it gets you unblocked for launch.
 Make sure these are synced from Doppler to Vercel:
 
 **Production:**
+
 - `STRIPE_SECRET_KEY` (live key)
 - `STRIPE_PRICE_ID_STANDARD_MONTHLY`
 - `STRIPE_PRICE_ID_STANDARD_YEARLY`
@@ -286,5 +300,3 @@ This is the fastest path to working production.
 3. **Once working:** We can automate or revisit integration later
 
 **Which option do you want to try first?**
-
-

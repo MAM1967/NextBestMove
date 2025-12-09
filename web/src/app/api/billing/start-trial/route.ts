@@ -13,8 +13,6 @@ import Stripe from "stripe";
 export async function POST(request: Request) {
   try {
     // Stripe instance will validate key on access, so we don't need to check here
-    // This will use STRIPE_SECRET_KEY_L in production, STRIPE_SECRET_KEY otherwise
-
     const supabase = await createClient();
     const {
       data: { user },

@@ -8,11 +8,13 @@
 ## The Issue
 
 When you install the Doppler integration from the **Vercel Marketplace**, it defaults to:
+
 - **Importing** existing Vercel environment variables into Doppler
 - Creating a new Doppler project
 - Syncing FROM Vercel → TO Doppler
 
 **But you want the opposite:**
+
 - Use your **existing** Doppler project (`nextbestmove-prd`)
 - Sync secrets FROM Doppler → TO Vercel
 
@@ -116,6 +118,7 @@ echo "Sync complete!"
 ```
 
 Run it:
+
 ```bash
 chmod +x sync-doppler-to-vercel.sh
 ./sync-doppler-to-vercel.sh
@@ -126,10 +129,12 @@ chmod +x sync-doppler-to-vercel.sh
 ## Why This Happens
 
 The Vercel Marketplace integration is designed for teams that:
+
 - Already have secrets in Vercel
 - Want to import them into Doppler for centralized management
 
 But you:
+
 - Already have secrets in Doppler
 - Want to sync them TO Vercel
 
@@ -140,6 +145,7 @@ But you:
 ## After Setup
 
 Once working correctly:
+
 - ✅ Secrets flow FROM Doppler → TO Vercel
 - ✅ Updates in Doppler automatically sync to Vercel
 - ✅ Vercel deployments get synced secrets
@@ -150,12 +156,14 @@ Once working correctly:
 ## Troubleshooting
 
 **If secrets still don't sync:**
+
 1. Check Doppler integration logs
 2. Verify Vercel project permissions
 3. Check if secrets exist in both places (conflicts)
 4. Try removing existing secrets from Vercel and let Doppler populate them
 
 **If sync direction is still wrong:**
+
 1. Remove integration completely
 2. Set up FROM Doppler dashboard (not Vercel marketplace)
 3. Double-check sync direction before saving
@@ -163,5 +171,3 @@ Once working correctly:
 ---
 
 **Key Takeaway:** Set up integrations FROM the source system (Doppler) not the destination (Vercel) to control sync direction.
-
-

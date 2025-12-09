@@ -137,24 +137,19 @@ export async function GET(
     const hostname = request.nextUrl.hostname;
     const config = await getProviderConfiguration(provider, hostname);
 
-    // Debug: Log client ID and secret status for production
-    // Note: We log env vars for comparison, but actual config uses overridden values
+    // Debug: Log client ID and secret status for debugging
     if (provider === "google") {
       const clientMetadata = config.clientMetadata();
       const clientId = clientMetadata.client_id || "MISSING";
       const rawClientSecret = process.env.GOOGLE_CLIENT_SECRET || "MISSING";
-      const productionSecret = process.env.PRODUCTION_GOOGLE_CLIENT_SECRET || "MISSING";
       
       console.log("[Calendar Callback] OAuth Configuration Debug:", {
         hostname: request.nextUrl.hostname,
         vercelEnv: process.env.VERCEL_ENV || "NOT_SET",
         clientIdPrefix: clientId.substring(0, 30),
         clientIdLength: clientId.length,
-        isProductionClient: clientId.startsWith("732850218816-5een"),
         rawClientSecretPrefix: rawClientSecret !== "MISSING" ? rawClientSecret.substring(0, 10) : "MISSING",
         rawClientSecretLength: rawClientSecret !== "MISSING" ? rawClientSecret.length : 0,
-        hasProductionSecretEnv: productionSecret !== "MISSING",
-        // Note: Actual secret used in config is not accessible, but should be overridden if staging detected
       });
     }
 
