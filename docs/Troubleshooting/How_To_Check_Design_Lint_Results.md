@@ -99,27 +99,28 @@ If you see Node.js 24, design-lint will work (requires Node >= 22).
 
 ## Current Configuration
 
-### What's Being Checked (Minimal Config)
+### What's Being Checked (Tokens Configured)
 
 **File:** `web/designlint.config.ts`
 
-```typescript
-export default defineConfig({
-  tokens: {},  // Empty - not enforcing specific tokens yet
-  rules: {},   // Empty - not enforcing specific rules yet
-});
-```
+**Status:** ✅ Design tokens configured from UI Specifications
 
-**Result:** All files pass because we're not enforcing any rules yet (testing mode).
+**Tokens Configured:**
+- **Colors:** Primary blue, success green, warning orange, error red, fast win accent, gray scale (9 shades)
+- **Spacing:** 4px base unit (xs: 4, sm: 8, md: 12, base: 16, lg: 24, xl: 32, 2xl: 48, 3xl: 64)
+- **Typography:** Font sizes (h1: 32px, h2: 24px, h3: 20px, h4: 18px, body: 14px, etc.)
+- **Font Weights:** 300, 400, 500, 600, 700
+- **Border Radius:** sm: 4px, base: 8px, md: 12px, lg: 16px, xl: 24px, full: 9999px
+- **Shadows:** sm, base, md, lg, xl (from UI spec)
 
-### Future Configuration (When Ready)
+**Rules:** Enabled in `warn` mode (will show warnings but won't block builds)
 
-Once we configure design tokens, it will check:
-
-- **Colors:** Only allow colors from your design system (`#2563EB`, `#10B981`, etc.)
-- **Spacing:** Only allow 4px increments (4, 8, 12, 16, 24, 32, 48, 64)
-- **Typography:** Only allow specified font sizes (32px, 24px, 20px, etc.)
-- **Border Radius:** Only allow specified values (4px, 8px, 12px, etc.)
+**What It Checks:**
+- **Colors:** Validates colors match design system tokens
+- **Spacing:** Validates spacing uses 4px increments
+- **Typography:** Validates font sizes and weights match specifications
+- **Border Radius:** Validates border radius values match design system
+- **Shadows:** Validates box-shadow values match design system
 
 ---
 
@@ -179,7 +180,7 @@ Linted 224 files in 0.26s
 ✅ Design lint complete
 ```
 
-### ⚠️ With Warnings (Future - When Rules Configured)
+### ⚠️ With Warnings (Now Active - Tokens Configured)
 
 ```
 📋 Step 2/5: Running design lint (staging testing)...
@@ -194,6 +195,8 @@ Linted 224 files in 0.30s
 ⚠️  Design lint warnings found. Continuing deployment...
 ✅ Design lint complete
 ```
+
+**Note:** Warnings are now active. Review and fix violations to maintain design system consistency.
 
 ---
 

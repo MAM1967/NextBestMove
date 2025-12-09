@@ -377,7 +377,7 @@ export default async function SettingsPage({
       </SectionCard>
 
       <footer className="border-t border-zinc-200 pt-6">
-        <div className="flex flex-col items-center gap-4 text-sm text-zinc-600">
+        <div className="flex flex-col items-center gap-6 text-sm text-zinc-600">
           <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between w-full">
             <p>© MAM Growth Strategies LLC 2025</p>
             <div className="flex gap-6">
@@ -395,7 +395,7 @@ export default async function SettingsPage({
               </Link>
             </div>
           </div>
-          <p className="text-sm text-zinc-500">This site uses privacy-friendly analytics</p>
+          <p className="text-sm text-zinc-500 text-center">This site uses privacy-friendly analytics</p>
         </div>
       </footer>
     </div>
