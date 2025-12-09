@@ -176,18 +176,40 @@ Repeat for preview:
 
 ### 5.2 Configure Integration
 
-1. In Doppler dashboard, go to your project
-2. Click **"Integrations"** → **"Vercel"**
-3. Select:
-   - **Doppler Project:** `NextBestMove`
+**Important:** If the integration auto-created a project, you can either:
+- **Option A:** Use your existing project (recommended if you already have secrets there)
+- **Option B:** Use the auto-created project and add secrets there
+
+**Option A: Use Existing Project (`nextbestmove-prd`)**
+
+1. In Doppler dashboard, go to your **existing project** (e.g., `nextbestmove-prd`)
+2. Click **"Integrations"** → **"Vercel"** (or "Add Integration" if not already added)
+3. If integration was created with wrong project:
+   - Go to **"Integrations"** in the sidebar
+   - Find the Vercel integration
+   - Click **"Edit"** or **"Remove"** and recreate with correct project
+4. Select:
+   - **Doppler Project:** `nextbestmove-prd` (your existing project with secrets)
    - **Doppler Config:** `prd` (for production)
    - **Vercel Project:** Your NextBestMove project
    - **Vercel Environment:** Production
-4. Click **"Setup Integration"**
+5. Click **"Setup Integration"**
+
+**Option B: Use Auto-Created Project (`next-best-move`)**
+
+1. In Doppler dashboard, go to the auto-created project (`next-best-move`)
+2. Copy secrets from `nextbestmove-prd`:
+   - Go to `nextbestmove-prd` → Select config (e.g., `prd`)
+   - Export secrets or manually copy them
+   - Go to `next-best-move` → Add secrets
+3. Configure integration as in Option A, but use `next-best-move` as the project
+
+**Recommendation:** Use Option A if you already have all secrets in `nextbestmove-prd` - no need to duplicate.
 
 ### 5.3 Sync Preview Environment
 
 Repeat for preview:
+
 - **Doppler Config:** `preview`
 - **Vercel Environment:** Preview
 
@@ -243,7 +265,7 @@ function getDopplerClient(): Doppler {
     dopplerClient = new Doppler({
       token: serviceToken,
     });
-    
+
     // Alternative: If using project/config instead of service token
     // dopplerClient = new Doppler({
     //   project: process.env.DOPPLER_PROJECT,
