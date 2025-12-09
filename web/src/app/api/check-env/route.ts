@@ -8,6 +8,10 @@ import { NextResponse } from "next/server";
  * configured in Vercel. It shows which variables are set (without revealing values).
  */
 export async function GET() {
+  // Check the raw and trimmed values for STRIPE_SECRET_KEY
+  const rawStripeKey = process.env.STRIPE_SECRET_KEY;
+  const trimmedStripeKey = rawStripeKey?.trim();
+  
   const envVars = {
     RESEND_API_KEY: {
       set: !!process.env.RESEND_API_KEY,
@@ -20,17 +24,20 @@ export async function GET() {
       startsWith: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 3) || "N/A",
     },
     STRIPE_SECRET_KEY: {
-      set: !!process.env.STRIPE_SECRET_KEY,
-      length: process.env.STRIPE_SECRET_KEY?.length || 0,
-      startsWith: process.env.STRIPE_SECRET_KEY?.substring(0, 3) || "N/A",
+      set: !!rawStripeKey,
+      length: rawStripeKey?.length || 0,
+      startsWith: rawStripeKey?.substring(0, 3) || "N/A",
       // Show first 20 chars for debugging (safe to expose - these are public prefixes)
-      prefix: process.env.STRIPE_SECRET_KEY?.substring(0, 20) || "N/A",
-      isLive: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") || false,
-      isTest: process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") || false,
-      mode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "TEST" : "UNKNOWN",
+      prefix: rawStripeKey?.substring(0, 20) || "N/A",
+      trimmedPrefix: trimmedStripeKey?.substring(0, 20) || "N/A",
+      isLive: trimmedStripeKey?.startsWith("sk_live_") || false,
+      isTest: trimmedStripeKey?.startsWith("sk_test_") || false,
+      mode: trimmedStripeKey?.startsWith("sk_live_") ? "LIVE" : trimmedStripeKey?.startsWith("sk_test_") ? "TEST" : "UNKNOWN",
       // Additional diagnostic: check for whitespace or hidden characters
-      hasWhitespace: process.env.STRIPE_SECRET_KEY ? /\s/.test(process.env.STRIPE_SECRET_KEY) : false,
-      trimmedLength: process.env.STRIPE_SECRET_KEY?.trim().length || 0,
+      hasWhitespace: rawStripeKey ? /\s/.test(rawStripeKey) : false,
+      trimmedLength: trimmedStripeKey?.length || 0,
+      // Show the difference - helpful for debugging
+      whitespaceChars: rawStripeKey && trimmedStripeKey ? rawStripeKey.length - trimmedStripeKey.length : 0,
     },
     NEXT_PUBLIC_APP_URL: {
       set: !!process.env.NEXT_PUBLIC_APP_URL,
