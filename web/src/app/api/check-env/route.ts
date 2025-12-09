@@ -23,9 +23,14 @@ export async function GET() {
       set: !!process.env.STRIPE_SECRET_KEY,
       length: process.env.STRIPE_SECRET_KEY?.length || 0,
       startsWith: process.env.STRIPE_SECRET_KEY?.substring(0, 3) || "N/A",
+      // Show first 20 chars for debugging (safe to expose - these are public prefixes)
+      prefix: process.env.STRIPE_SECRET_KEY?.substring(0, 20) || "N/A",
       isLive: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") || false,
       isTest: process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") || false,
       mode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "TEST" : "UNKNOWN",
+      // Additional diagnostic: check for whitespace or hidden characters
+      hasWhitespace: process.env.STRIPE_SECRET_KEY ? /\s/.test(process.env.STRIPE_SECRET_KEY) : false,
+      trimmedLength: process.env.STRIPE_SECRET_KEY?.trim().length || 0,
     },
     NEXT_PUBLIC_APP_URL: {
       set: !!process.env.NEXT_PUBLIC_APP_URL,
