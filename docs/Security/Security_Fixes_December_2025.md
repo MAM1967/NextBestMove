@@ -1,7 +1,7 @@
 # Security Fixes - December 2025
 
 **Date:** December 9, 2025  
-**Status:** 🔄 In Progress  
+**Status:** ✅ **Deployed to Staging** (pending verification)  
 **Priority:** High
 
 ---
@@ -38,10 +38,16 @@ SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 - `scripts/push-migrations-to-staging.sh`
 
 ### Verification
-- [ ] Script reads from environment variable
-- [ ] Key removed from source code
-- [ ] Key stored in Doppler `stg` config
-- [ ] Script works when key is provided via env var
+- [x] Script reads from environment variable ✅
+- [x] Key removed from source code ✅
+- [ ] Key stored in Doppler `stg` config (⚠️ **ACTION REQUIRED** - see note below)
+- [ ] Script works when key is provided via env var (pending Doppler setup)
+
+**⚠️ IMPORTANT:** The script now requires `SUPABASE_SERVICE_ROLE_KEY` to be set in Doppler (`stg` config). The key was synced to Vercel Preview, but you'll need to add it to Doppler for local script execution:
+
+```bash
+doppler secrets set SUPABASE_SERVICE_ROLE_KEY="<your-key>" --config stg
+```
 
 ---
 
@@ -99,11 +105,11 @@ Content Security Policy allows:
 - `web/next.config.ts`
 
 ### Verification
-- [ ] CSP header doesn't include unsafe-eval
-- [ ] CSP header doesn't include unsafe-inline (or uses nonces)
-- [ ] Next.js app loads correctly
-- [ ] Umami analytics still works
-- [ ] No console errors related to CSP
+- [x] CSP header doesn't include unsafe-eval ✅
+- [x] CSP header doesn't include unsafe-inline ✅ (using strict-dynamic instead)
+- [ ] Next.js app loads correctly (pending staging deployment verification)
+- [ ] Umami analytics still works (pending staging deployment verification)
+- [ ] No console errors related to CSP (pending staging deployment verification)
 
 ---
 
@@ -113,10 +119,10 @@ Content Security Policy allows:
 - [x] Fix JWT exposure (move to env var)
 - [x] Fix jws vulnerability (already resolved - verified)
 - [x] Fix CSP weaknesses (remove unsafe directives)
-- [ ] Test all fixes on staging
-- [ ] Verify no regressions
-- [ ] Deploy to staging
-- [ ] Update this document with completion status
+- [x] Deploy to staging ✅
+- [ ] Test all fixes on staging (pending Vercel build completion)
+- [ ] Verify no regressions (pending staging verification)
+- [ ] Add SUPABASE_SERVICE_ROLE_KEY to Doppler `stg` config (for local script execution)
 
 ---
 
