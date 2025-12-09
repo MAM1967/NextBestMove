@@ -65,10 +65,9 @@ export default function MarketingHome() {
         </section>
 
         <footer className="border-t border-zinc-200 pt-8">
-          <div className="flex flex-col items-center gap-4 text-sm text-zinc-600 sm:flex-row sm:justify-between">
-            <p>Copyright © MAM Growth Strategies LLC 2025</p>
-            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-6">
-              <p className="text-xs text-zinc-500">This site uses privacy-friendly analytics</p>
+          <div className="flex flex-col items-center gap-4 text-sm text-zinc-600">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between w-full">
+              <p>Copyright © MAM Growth Strategies LLC 2025</p>
               <div className="flex gap-6">
                 <a
                   href="/terms"
@@ -84,6 +83,7 @@ export default function MarketingHome() {
                 </a>
               </div>
             </div>
+            <p className="text-sm text-zinc-500">This site uses privacy-friendly analytics</p>
           </div>
         </footer>
       </div>

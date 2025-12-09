@@ -27,12 +27,19 @@ The `web/src/middleware.ts` file now includes Basic Auth protection that:
 
 ### Environment Variables
 
-Add these to Vercel (Preview scope):
+**⚠️ IMPORTANT: All environment variables are stored in Doppler and synced to Vercel automatically.**
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `STAGING_USER` | Username for Basic Auth | `staging` |
-| `STAGING_PASS` | Password for Basic Auth | `SecurePassword123!` |
+**Doppler is the source of truth** for all environment variables. The `sync-doppler-to-vercel-preview.sh` script automatically syncs all variables from Doppler to Vercel Preview environment.
+
+| Variable | Description | Example | Location |
+|----------|-------------|---------|----------|
+| `STAGING_USER` | Username for Basic Auth | `staging` | **Doppler** (synced to Vercel) |
+| `STAGING_PASS` | Password for Basic Auth | `SecurePassword123!` | **Doppler** (synced to Vercel) |
+
+**Setup:**
+1. Add `STAGING_USER` and `STAGING_PASS` to Doppler (project: `nextbestmove-prd`, config: `prd`)
+2. Run `./scripts/sync-doppler-to-vercel-preview.sh` to sync to Vercel
+3. Or they will be synced automatically during deployment via `deploy-staging.sh`
 
 **Note:** If these variables are not set, Basic Auth will be skipped (useful for testing).
 
@@ -50,14 +57,24 @@ Add these to Vercel (Preview scope):
 
 **See:** `docs/Planning/Phase_1.4_Disable_Vercel_Password_Protection.md` for detailed steps.
 
-### Step 1: Add Environment Variables to Vercel
+### Step 1: Add Environment Variables to Doppler
 
-1. Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-2. Add the following variables with **Preview** scope:
+**⚠️ IMPORTANT: Environment variables are managed in Doppler, not directly in Vercel.**
+
+1. Go to Doppler Dashboard → Project: `nextbestmove-prd` → Config: `prd`
+2. Add the following variables:
    - `STAGING_USER` = `staging` (or your preferred username)
    - `STAGING_PASS` = `[your-secure-password]` (use a strong password)
 
-3. **Important:** These should be scoped to **Preview** only (not Production)
+3. **Sync to Vercel:**
+   - Run `./scripts/sync-doppler-to-vercel-preview.sh` to sync all variables from Doppler to Vercel
+   - Or they will be synced automatically during deployment via `deploy-staging.sh`
+
+**Why Doppler?**
+- Single source of truth for all environment variables
+- Avoids Vercel environment variable sync issues
+- Easier to manage and update
+- Automatic sync during deployment
 
 ### Step 2: Redeploy Staging
 
@@ -117,9 +134,11 @@ If you need stricter security:
 
 ### Issue: Basic Auth not prompting
 **Solution:** 
-- Check that `STAGING_USER` and `STAGING_PASS` are set in Vercel (Preview scope)
+- Check that `STAGING_USER` and `STAGING_PASS` are set in **Doppler** (project: `nextbestmove-prd`, config: `prd`)
+- Run `./scripts/sync-doppler-to-vercel-preview.sh` to sync to Vercel
 - Verify the deployment has the latest code
 - Check browser console for errors
+- Check Vercel build logs for environment variable presence
 
 ### Issue: Can't access API routes
 **Solution:** 
