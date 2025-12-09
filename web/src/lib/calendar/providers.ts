@@ -59,26 +59,22 @@ async function getConfiguration(
   let clientId = process.env[config.clientIdEnv]?.trim();
   let clientSecret = process.env[config.clientSecretEnv]?.trim();
 
-  // WORKAROUND: Force staging Google OAuth credentials for Preview builds
-  // Vercel sometimes provides wrong env vars, so we override at runtime
+  // WORKAROUND: ALWAYS force staging Google OAuth credentials for Preview builds
+  // Vercel sometimes provides wrong env vars, so we override at runtime unconditionally
   if (provider === "google" && isPreview && !isLocalhost) {
     const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
     const stagingClientSecret = "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";
     
-    // Check if we're using the wrong (deleted) client ID
-    if (clientId && clientId.startsWith("732850218816-6b8ft")) {
-      console.log("🔧 RUNTIME WORKAROUND: Overriding deleted Google OAuth client ID for staging");
-      console.log(`   Wrong client ID detected: ${clientId.substring(0, 30)}...`);
+    // Always override for staging to ensure correct credentials
+    const originalClientId = clientId;
+    clientId = stagingClientId;
+    clientSecret = stagingClientSecret;
+    
+    // Log the override for debugging
+    if (originalClientId !== stagingClientId) {
+      console.log("🔧 RUNTIME WORKAROUND: Overriding Google OAuth credentials for staging");
+      console.log(`   Original client ID: ${originalClientId ? `${originalClientId.substring(0, 30)}...` : "MISSING"}`);
       console.log(`   Overriding with staging client ID: ${stagingClientId.substring(0, 30)}...`);
-      clientId = stagingClientId;
-      clientSecret = stagingClientSecret;
-    } else if (!clientId || !clientId.startsWith("732850218816-kgrh")) {
-      // If client ID is missing or wrong, use staging credentials
-      console.log("🔧 RUNTIME WORKAROUND: Using staging Google OAuth credentials");
-      console.log(`   Current client ID: ${clientId ? `${clientId.substring(0, 30)}...` : "MISSING"}`);
-      console.log(`   Overriding with staging client ID: ${stagingClientId.substring(0, 30)}...`);
-      clientId = stagingClientId;
-      clientSecret = stagingClientSecret;
     }
   }
 
