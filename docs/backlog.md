@@ -153,12 +153,29 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
 
-**Priority Order:**
+**Priority Order (January 2026):**
 
-1. Company research & enrichment (first P2 item to tackle)
-2. Other P2 items (order TBD)
+1. **Help/FAQ System** 🔴 **TOP PRIORITY - JANUARY 2026**
+2. **Jira Integration Form** 🔴 **HIGH PRIORITY - JANUARY 2026**
+3. Company research & enrichment (Phase 2)
+4. Other P2 items (order TBD)
 
-- [ ] **Company research & enrichment for pre-call briefs** 🔄 **NEXT P2 ITEM**  
+- [ ] **Help/FAQ System** 🔴 **TOP PRIORITY - JANUARY 2026**
+   - Help center page with searchable FAQ
+   - Common questions organized by category
+   - Contact support form (integrated with Jira)
+   - In-app contextual help tooltips
+   - Estimated: 2-3 days
+   - Reference: `docs/Planning/Help_FAQ_System_Plan.md`
+
+- [ ] **Jira Integration Form** 🔴 **HIGH PRIORITY - JANUARY 2026**
+   - Simple form with attachment capability
+   - Sends bug reports and enhancement requests to Jira
+   - User-facing feedback form
+   - Estimated: 1-2 days
+   - Reference: `docs/Planning/Jira_Integration_Plan.md`
+
+- [ ] **Company research & enrichment for pre-call briefs** 🟡 **MEDIUM PRIORITY**  
        _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 - [ ] **Design token compliance (incremental)** ⏱ **POST-LAUNCH**  
        _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
