@@ -18,8 +18,25 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
     const { searchParams } = new URL(request.url);
     const querySecret = searchParams.get("secret");
-    const cronSecret = process.env.CRON_SECRET;
-    const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY;
+    const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, '');
+    const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(/\r?\n/g, '');
+    
+    // Debug logging for production (to diagnose authorization issues)
+    const hostname = new URL(request.url).hostname;
+    const isProduction = hostname === "nextbestmove.app";
+    if (isProduction) {
+      console.log("[Follow-Up Alerts] Auth Debug:", {
+        hasAuthHeader: !!authHeader,
+        authHeaderLength: authHeader?.length || 0,
+        authHeaderPrefix: authHeader?.substring(0, 30) || "none",
+        hasQuerySecret: !!querySecret,
+        querySecretLength: querySecret?.length || 0,
+        hasCronSecret: !!cronSecret,
+        cronSecretLength: cronSecret?.length || 0,
+        hasCronJobOrgApiKey: !!cronJobOrgApiKey,
+        cronJobOrgApiKeyLength: cronJobOrgApiKey?.length || 0,
+      });
+    }
     
     // Check Authorization header (Vercel Cron secret or cron-job.org API key), then query param (cron-job.org secret)
     const isAuthorized = (
@@ -29,6 +46,13 @@ export async function GET(request: Request) {
     );
     
     if (!isAuthorized) {
+      if (isProduction) {
+        console.log("[Follow-Up Alerts] Authorization failed:", {
+          authHeaderMatchesCronSecret: cronSecret ? authHeader === `Bearer ${cronSecret}` : false,
+          authHeaderMatchesApiKey: cronJobOrgApiKey ? authHeader === `Bearer ${cronJobOrgApiKey}` : false,
+          querySecretMatches: cronSecret ? querySecret === cronSecret : false,
+        });
+      }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
