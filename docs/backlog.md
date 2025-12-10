@@ -161,7 +161,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Company research & enrichment for pre-call briefs** 🔄 **NEXT P2 ITEM**  
        _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 - [ ] **Design token compliance (incremental)** ⏱ **POST-LAUNCH**  
-       _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~48 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
+       _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
 - [ ] Manual "Busy / Light day" capacity override
 - [ ] Action detail modal / history view
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
