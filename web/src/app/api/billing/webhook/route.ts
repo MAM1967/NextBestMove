@@ -6,141 +6,198 @@ import Stripe from "stripe";
 import { logWebhookEvent, logError, logBillingEvent } from "@/lib/utils/logger";
 import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
 
+// Configure route for webhook handling
+export const runtime = "nodejs"; // Use Node.js runtime for better compatibility
+export const maxDuration = 30; // Allow up to 30 seconds for webhook processing (Vercel Pro plan)
+
 export async function POST(request: Request) {
-  const body = await request.text();
-  const headersList = await headers();
-  const signature = headersList.get("stripe-signature");
-
-  if (!signature) {
-    logWebhookEvent("Missing stripe-signature header", {
-      status: "error",
-      webhookType: "stripe",
-    });
-    return NextResponse.json(
-      { error: "Missing stripe-signature header" },
-      { status: 400 }
-    );
-  }
-
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    logError("STRIPE_WEBHOOK_SECRET is not set", undefined, {
-      context: "webhook_config",
-    });
-    return NextResponse.json(
-      { error: "Webhook secret not configured" },
-      { status: 500 }
-    );
-  }
-
-  let event: Stripe.Event;
-
+  // Wrap everything in try-catch to ensure we always return a response
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err: any) {
-    logWebhookEvent("Webhook signature verification failed", {
-      status: "error",
-      webhookType: "stripe",
-      error: err.message,
-    });
-    return NextResponse.json(
-      { error: `Webhook Error: ${err.message}` },
-      { status: 400 }
-    );
-  }
+    const body = await request.text();
+    const headersList = await headers();
+    const signature = headersList.get("stripe-signature");
 
-  // Use admin client for webhook - no user auth context, need to bypass RLS
-  const supabase = createAdminClient();
+    if (!signature) {
+      logWebhookEvent("Missing stripe-signature header", {
+        status: "error",
+        webhookType: "stripe",
+      });
+      return NextResponse.json(
+        { error: "Missing stripe-signature header" },
+        { status: 400 }
+      );
+    }
 
-  // Store event for auditing
-  try {
-    await supabase.from("billing_events").insert({
-      stripe_event_id: event.id,
-      type: event.type,
-      payload: event.data.object as any,
-      processed_at: new Date().toISOString(),
-    });
-    logWebhookEvent("Billing event stored", {
-      eventId: event.id,
-      webhookType: "stripe",
-      eventType: event.type,
-      status: "success",
-    });
-  } catch (error) {
-    logError("Error storing billing event", error, {
-      eventId: event.id,
-      eventType: event.type,
-    });
-    // Continue processing even if event storage fails
-  }
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      logError("STRIPE_WEBHOOK_SECRET is not set", undefined, {
+        context: "webhook_config",
+      });
+      // Return 500 so Stripe knows to retry (this is a server configuration issue)
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 }
+      );
+    }
 
-  // Handle different event types
-  try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(supabase, session);
-        break;
-      }
+    let event: Stripe.Event;
 
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(supabase, subscription);
-        break;
-      }
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err: any) {
+      logWebhookEvent("Webhook signature verification failed", {
+        status: "error",
+        webhookType: "stripe",
+        error: err.message,
+      });
+      // Return 400 for signature verification failures (don't retry)
+      return NextResponse.json(
+        { error: `Webhook Error: ${err.message}` },
+        { status: 400 }
+      );
+    }
 
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(supabase, subscription);
-        break;
-      }
+    // Use admin client for webhook - no user auth context, need to bypass RLS
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch (adminError: any) {
+      logError("Failed to create admin client", adminError, {
+        context: "webhook_admin_client",
+        eventId: event.id,
+      });
+      // Return 500 so Stripe retries (this is a server configuration issue)
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
 
-      case "invoice.paid": {
-        // event.data.object may have expanded properties not in the base Invoice type
-        const invoice = event.data.object as Stripe.Invoice & {
-          subscription?: string | Stripe.Subscription | null;
-        };
-        await handleInvoicePaid(supabase, invoice);
-        break;
-      }
-
-      case "invoice.payment_failed": {
-        // event.data.object may have expanded properties not in the base Invoice type
-        const invoice = event.data.object as Stripe.Invoice & {
-          subscription?: string | Stripe.Subscription | null;
-        };
-        await handleInvoicePaymentFailed(supabase, invoice);
-        break;
-      }
-
-      default:
-        logWebhookEvent("Unhandled event type", {
+    // Store event for auditing
+    try {
+      const { error: insertError } = await supabase.from("billing_events").insert({
+        stripe_event_id: event.id,
+        type: event.type,
+        payload: event.data.object as any,
+        processed_at: new Date().toISOString(),
+      });
+      
+      if (insertError) {
+        // Check if it's a duplicate (idempotency) - that's okay
+        if (insertError.code === "23505") {
+          logWebhookEvent("Billing event already exists (idempotency)", {
+            eventId: event.id,
+            webhookType: "stripe",
+            eventType: event.type,
+            status: "warning",
+          });
+        } else {
+          logError("Error storing billing event", insertError, {
+            eventId: event.id,
+            eventType: event.type,
+            errorCode: insertError.code,
+          });
+          // Continue processing even if event storage fails
+        }
+      } else {
+        logWebhookEvent("Billing event stored", {
           eventId: event.id,
           webhookType: "stripe",
           eventType: event.type,
-          status: "warning",
+          status: "success",
         });
+      }
+    } catch (error) {
+      logError("Error storing billing event (exception)", error, {
+        eventId: event.id,
+        eventType: event.type,
+      });
+      // Continue processing even if event storage fails
     }
 
-    logWebhookEvent("Webhook processed successfully", {
-      eventId: event.id,
-      webhookType: "stripe",
-      eventType: event.type,
-      status: "success",
-    });
+    // Handle different event types
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session;
+          await handleCheckoutCompleted(supabase, session);
+          break;
+        }
 
-    return NextResponse.json({ received: true });
-  } catch (error: any) {
-    logError("Error processing webhook", error, {
-      eventId: event.id,
-      eventType: event.type,
+        case "customer.subscription.created":
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription;
+          await handleSubscriptionUpdated(supabase, subscription);
+          break;
+        }
+
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription;
+          await handleSubscriptionDeleted(supabase, subscription);
+          break;
+        }
+
+        case "invoice.paid": {
+          // event.data.object may have expanded properties not in the base Invoice type
+          const invoice = event.data.object as Stripe.Invoice & {
+            subscription?: string | Stripe.Subscription | null;
+          };
+          await handleInvoicePaid(supabase, invoice);
+          break;
+        }
+
+        case "invoice.payment_failed": {
+          // event.data.object may have expanded properties not in the base Invoice type
+          const invoice = event.data.object as Stripe.Invoice & {
+            subscription?: string | Stripe.Subscription | null;
+          };
+          await handleInvoicePaymentFailed(supabase, invoice);
+          break;
+        }
+
+        default:
+          logWebhookEvent("Unhandled event type", {
+            eventId: event.id,
+            webhookType: "stripe",
+            eventType: event.type,
+            status: "warning",
+          });
+      }
+
+      logWebhookEvent("Webhook processed successfully", {
+        eventId: event.id,
+        webhookType: "stripe",
+        eventType: event.type,
+        status: "success",
+      });
+
+      // Always return 200 for successful processing
+      return NextResponse.json({ received: true }, { status: 200 });
+    } catch (error: any) {
+      logError("Error processing webhook", error, {
+        eventId: event.id,
+        eventType: event.type,
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+      });
+      // Return 500 so Stripe retries the webhook
+      return NextResponse.json(
+        { error: "Webhook processing failed", details: error?.message },
+        { status: 500 }
+      );
+    }
+  } catch (outerError: any) {
+    // Catch any errors in the outer try-catch (e.g., reading request body, headers)
+    logError("Fatal error in webhook handler", outerError, {
+      errorMessage: outerError?.message,
+      errorStack: outerError?.stack,
     });
+    // Return 500 so Stripe retries
     return NextResponse.json(
-      { error: "Webhook processing failed", details: error.message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -150,68 +207,79 @@ async function handleCheckoutCompleted(
   supabase: any,
   session: Stripe.Checkout.Session
 ) {
-  const customerId = session.customer as string;
-  const subscriptionId = session.subscription as string;
+  try {
+    const customerId = session.customer as string;
+    const subscriptionId = session.subscription as string;
 
-  logBillingEvent("checkout.session.completed", {
-    customerId,
-    subscriptionId,
-    eventId: session.id,
-  });
+    logBillingEvent("checkout.session.completed", {
+      customerId,
+      subscriptionId,
+      eventId: session.id,
+    });
 
-  if (!customerId || !subscriptionId) {
-    logError(
-      "Missing customer or subscription ID in checkout session",
-      undefined,
-      {
+    if (!customerId || !subscriptionId) {
+      logError(
+        "Missing customer or subscription ID in checkout session",
+        undefined,
+        {
+          sessionId: session.id,
+        }
+      );
+      // Don't throw - this is a data issue, not a processing failure
+      return;
+    }
+
+    // Get customer from database
+    const { data: customer, error: customerError } = await supabase
+      .from("billing_customers")
+      .select("id, user_id")
+      .eq("stripe_customer_id", customerId)
+      .maybeSingle();
+
+    if (customerError) {
+      logError("Error fetching customer", customerError, {
+        customerId,
         sessionId: session.id,
-      }
-    );
-    return;
-  }
+      });
+      // Throw for database errors so webhook can retry
+      throw new Error(`Database error fetching customer: ${customerError.message}`);
+    }
 
-  // Get customer from database
-  const { data: customer, error: customerError } = await supabase
-    .from("billing_customers")
-    .select("id, user_id")
-    .eq("stripe_customer_id", customerId)
-    .maybeSingle();
+    if (!customer) {
+      logError("Customer not found in database", undefined, {
+        customerId,
+        sessionId: session.id,
+      });
+      // Don't throw - customer might not exist yet, this is expected in some flows
+      return;
+    }
 
-  if (customerError) {
-    logError("Error fetching customer", customerError, {
+    logBillingEvent("Customer found in database", {
       customerId,
+      userId: customer.user_id,
       sessionId: session.id,
     });
-    return;
-  }
 
-  if (!customer) {
-    logError("Customer not found in database", undefined, {
+    // Get subscription from Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    logBillingEvent("Subscription retrieved from Stripe", {
+      subscriptionId: subscription.id,
+      status: subscription.status,
       customerId,
+    });
+
+    await handleSubscriptionUpdated(supabase, subscription, customer.id);
+    logBillingEvent("Subscription updated in database", {
+      subscriptionId: subscription.id,
+      customerId,
+    });
+  } catch (error: any) {
+    logError("Error in handleCheckoutCompleted", error, {
       sessionId: session.id,
     });
-    return;
+    // Re-throw so main handler can catch and return 500 for retry
+    throw error;
   }
-
-  logBillingEvent("Customer found in database", {
-    customerId,
-    userId: customer.user_id,
-    sessionId: session.id,
-  });
-
-  // Get subscription from Stripe
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  logBillingEvent("Subscription retrieved from Stripe", {
-    subscriptionId: subscription.id,
-    status: subscription.status,
-    customerId,
-  });
-
-  await handleSubscriptionUpdated(supabase, subscription, customer.id);
-  logBillingEvent("Subscription updated in database", {
-    subscriptionId: subscription.id,
-    customerId,
-  });
 }
 
 export async function handleSubscriptionUpdated(
@@ -219,23 +287,33 @@ export async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription,
   billingCustomerId?: string
 ) {
-  // Get customer ID if not provided
-  if (!billingCustomerId) {
-    const { data: customer } = await supabase
-      .from("billing_customers")
-      .select("id")
-      .eq("stripe_customer_id", subscription.customer as string)
-      .maybeSingle();
+  try {
+    // Get customer ID if not provided
+    if (!billingCustomerId) {
+      const { data: customer, error: customerError } = await supabase
+        .from("billing_customers")
+        .select("id")
+        .eq("stripe_customer_id", subscription.customer as string)
+        .maybeSingle();
 
-    if (!customer) {
-      logError("Customer not found for subscription update", undefined, {
-        subscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer as string,
-      });
-      return;
+      if (customerError) {
+        logError("Error fetching customer for subscription update", customerError, {
+          subscriptionId: subscription.id,
+          stripeCustomerId: subscription.customer as string,
+        });
+        throw new Error(`Database error fetching customer: ${customerError.message}`);
+      }
+
+      if (!customer) {
+        logError("Customer not found for subscription update", undefined, {
+          subscriptionId: subscription.id,
+          stripeCustomerId: subscription.customer as string,
+        });
+        // Don't throw - customer might not exist yet
+        return;
+      }
+      billingCustomerId = customer.id;
     }
-    billingCustomerId = customer.id;
-  }
 
   // Extract plan metadata from subscription
   const priceId = subscription.items.data[0]?.price.id;
@@ -340,74 +418,104 @@ export async function handleSubscriptionUpdated(
     )
     .select();
 
-  if (upsertError) {
-    logError("Error upserting subscription", upsertError, {
+    if (upsertError) {
+      logError("Error upserting subscription", upsertError, {
+        subscriptionId: subscription.id,
+        billingCustomerId,
+      });
+      throw new Error(`Failed to save subscription: ${upsertError.message}`);
+    }
+
+    logBillingEvent("Subscription successfully saved to database", {
       subscriptionId: subscription.id,
+      databaseId: upsertedData?.[0]?.id,
       billingCustomerId,
     });
-    throw new Error(`Failed to save subscription: ${upsertError.message}`);
-  }
 
-  logBillingEvent("Subscription successfully saved to database", {
-    subscriptionId: subscription.id,
-    databaseId: upsertedData?.[0]?.id,
-    billingCustomerId,
-  });
+    // Detect plan downgrade (Premium → Standard)
+    if (upsertedData && upsertedData.length > 0) {
 
-  // Detect plan downgrade (Premium → Standard)
-  if (upsertedData && upsertedData.length > 0) {
+      // Check if downgrading from Premium to Standard
+      if (
+        (oldPlanType === "premium" || oldPlanType === "professional") &&
+        newPlanType === "standard" &&
+        status === "active"
+      ) {
+        // Get user ID to check pin count
+        const { data: customer, error: customerError } = await supabase
+          .from("billing_customers")
+          .select("user_id")
+          .eq("id", billingCustomerId)
+          .single();
 
-    // Check if downgrading from Premium to Standard
-    if (
-      (oldPlanType === "premium" || oldPlanType === "professional") &&
-      newPlanType === "standard" &&
-      status === "active"
-    ) {
-      // Get user ID to check pin count
-      const { data: customer } = await supabase
-        .from("billing_customers")
-        .select("user_id")
-        .eq("id", billingCustomerId)
-        .single();
-
-      if (customer) {
-        // Check pin count
-        const { count } = await supabase
-          .from("leads")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", customer.user_id)
-          .eq("status", "ACTIVE");
-
-        const leadCount = count || 0;
-        if (leadCount > 10) {
-          // Store downgrade warning flag in metadata
-          // Merge with existing metadata to preserve other fields
-          const existingMetadata = upsertedData[0].metadata as any || {};
-          await supabase
-            .from("billing_subscriptions")
-            .update({
-              metadata: {
-                ...existingMetadata,
-                ...planMetadata,
-                downgrade_warning_shown: false, // Frontend will check and show modal
-                downgrade_pin_count: leadCount, // Legacy field name
-                downgrade_lead_count: leadCount,
-                downgrade_detected_at: new Date().toISOString(),
-              },
-            })
-            .eq("id", upsertedData[0].id);
-
-          logBillingEvent("Plan downgrade detected with lead limit exceeded", {
+        if (customerError) {
+          logError("Error fetching customer for downgrade check", customerError, {
             subscriptionId: subscription.id,
-            userId: customer.user_id,
-            leadCount,
-            pinCount: leadCount, // Legacy field for backward compatibility
-            oldPlan: oldPlanType,
-            newPlan: newPlanType,
+            billingCustomerId,
           });
+          // Don't throw - downgrade check is non-critical
+        } else if (customer) {
+          // Check pin count
+          const { count, error: countError } = await supabase
+            .from("leads")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", customer.user_id)
+            .eq("status", "ACTIVE");
+
+          if (countError) {
+            logError("Error counting leads for downgrade check", countError, {
+              subscriptionId: subscription.id,
+              userId: customer.user_id,
+            });
+            // Don't throw - downgrade check is non-critical
+          } else {
+            const leadCount = count || 0;
+            if (leadCount > 10) {
+              // Store downgrade warning flag in metadata
+              // Merge with existing metadata to preserve other fields
+              const existingMetadata = upsertedData[0].metadata as any || {};
+              const { error: updateError } = await supabase
+                .from("billing_subscriptions")
+                .update({
+                  metadata: {
+                    ...existingMetadata,
+                    ...planMetadata,
+                    downgrade_warning_shown: false, // Frontend will check and show modal
+                    downgrade_pin_count: leadCount, // Legacy field name
+                    downgrade_lead_count: leadCount,
+                    downgrade_detected_at: new Date().toISOString(),
+                  },
+                })
+                .eq("id", upsertedData[0].id);
+
+              if (updateError) {
+                logError("Error updating subscription metadata for downgrade", updateError, {
+                  subscriptionId: subscription.id,
+                  userId: customer.user_id,
+                });
+                // Don't throw - metadata update is non-critical
+              } else {
+                logBillingEvent("Plan downgrade detected with lead limit exceeded", {
+                  subscriptionId: subscription.id,
+                  userId: customer.user_id,
+                  leadCount,
+                  pinCount: leadCount, // Legacy field for backward compatibility
+                  oldPlan: oldPlanType,
+                  newPlan: newPlanType,
+                });
+              }
+            }
+          }
         }
       }
     }
+  } catch (error: any) {
+    logError("Error in handleSubscriptionUpdated", error, {
+      subscriptionId: subscription.id,
+      billingCustomerId,
+    });
+    // Re-throw so main handler can catch and return 500 for retry
+    throw error;
   }
 }
 
@@ -415,28 +523,50 @@ async function handleSubscriptionDeleted(
   supabase: any,
   subscription: Stripe.Subscription
 ) {
-  // Get existing subscription to preserve metadata
-  const { data: existingSubscription } = await supabase
-    .from("billing_subscriptions")
-    .select("metadata")
-    .eq("stripe_subscription_id", subscription.id)
-    .maybeSingle();
+  try {
+    // Get existing subscription to preserve metadata
+    const { data: existingSubscription, error: fetchError } = await supabase
+      .from("billing_subscriptions")
+      .select("metadata")
+      .eq("stripe_subscription_id", subscription.id)
+      .maybeSingle();
 
-  const existingMetadata = (existingSubscription?.metadata as any) || {};
+    if (fetchError) {
+      logError("Error fetching subscription for deletion", fetchError, {
+        subscriptionId: subscription.id,
+      });
+      // Continue - we'll still try to update
+    }
 
-  // Update subscription status to canceled and store canceled_at timestamp
-  // This enables 30-day reactivation window
-  await supabase
-    .from("billing_subscriptions")
-    .update({
-      status: "canceled",
-      cancel_at_period_end: false,
-      metadata: {
-        ...existingMetadata,
-        canceled_at: new Date().toISOString(),
-      },
-    })
-    .eq("stripe_subscription_id", subscription.id);
+    const existingMetadata = (existingSubscription?.metadata as any) || {};
+
+    // Update subscription status to canceled and store canceled_at timestamp
+    // This enables 30-day reactivation window
+    const { error: updateError } = await supabase
+      .from("billing_subscriptions")
+      .update({
+        status: "canceled",
+        cancel_at_period_end: false,
+        metadata: {
+          ...existingMetadata,
+          canceled_at: new Date().toISOString(),
+        },
+      })
+      .eq("stripe_subscription_id", subscription.id);
+
+    if (updateError) {
+      logError("Error updating subscription status to canceled", updateError, {
+        subscriptionId: subscription.id,
+      });
+      throw new Error(`Failed to update subscription: ${updateError.message}`);
+    }
+  } catch (error: any) {
+    logError("Error in handleSubscriptionDeleted", error, {
+      subscriptionId: subscription.id,
+    });
+    // Re-throw so main handler can catch and return 500 for retry
+    throw error;
+  }
 }
 
 async function handleInvoicePaid(
@@ -445,18 +575,26 @@ async function handleInvoicePaid(
     subscription?: string | Stripe.Subscription | null;
   }
 ) {
-  // Invoice.subscription can be a string ID or a Subscription object
-  if (!invoice.subscription) return;
+  try {
+    // Invoice.subscription can be a string ID or a Subscription object
+    if (!invoice.subscription) return;
 
-  const subscriptionId =
-    typeof invoice.subscription === "string"
-      ? invoice.subscription
-      : invoice.subscription.id;
-  if (!subscriptionId) return;
+    const subscriptionId =
+      typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription.id;
+    if (!subscriptionId) return;
 
-  // Get subscription from Stripe to update our records
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  await handleSubscriptionUpdated(supabase, subscription);
+    // Get subscription from Stripe to update our records
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    await handleSubscriptionUpdated(supabase, subscription);
+  } catch (error: any) {
+    logError("Error in handleInvoicePaid", error, {
+      invoiceId: invoice.id,
+    });
+    // Re-throw so main handler can catch and return 500 for retry
+    throw error;
+  }
 }
 
 async function handleInvoicePaymentFailed(
@@ -465,72 +603,98 @@ async function handleInvoicePaymentFailed(
     subscription?: string | Stripe.Subscription | null;
   }
 ) {
-  // Invoice.subscription can be a string ID or a Subscription object
-  if (!invoice.subscription) return;
+  try {
+    // Invoice.subscription can be a string ID or a Subscription object
+    if (!invoice.subscription) return;
 
-  const subscriptionId =
-    typeof invoice.subscription === "string"
-      ? invoice.subscription
-      : invoice.subscription.id;
-  if (!subscriptionId) return;
+    const subscriptionId =
+      typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription.id;
+    if (!subscriptionId) return;
 
-  // Get subscription to check if payment_failed_at is already set
-  const { data: existingSubscription } = await supabase
-    .from("billing_subscriptions")
-    .select(
-      "id, payment_failed_at, billing_customer_id, billing_customers!inner(user_id, users!inner(email, name))"
-    )
-    .eq("stripe_subscription_id", subscriptionId)
-    .maybeSingle();
+    // Get subscription to check if payment_failed_at is already set
+    const { data: existingSubscription, error: fetchError } = await supabase
+      .from("billing_subscriptions")
+      .select(
+        "id, payment_failed_at, billing_customer_id, billing_customers!inner(user_id, users!inner(email, name))"
+      )
+      .eq("stripe_subscription_id", subscriptionId)
+      .maybeSingle();
 
-  if (!existingSubscription) {
-    logError("Subscription not found for payment failure", undefined, {
-      subscriptionId,
-      invoiceId: invoice.id,
-    });
-    return;
-  }
+    if (fetchError) {
+      logError("Error fetching subscription for payment failure", fetchError, {
+        subscriptionId,
+        invoiceId: invoice.id,
+      });
+      throw new Error(`Database error fetching subscription: ${fetchError.message}`);
+    }
 
-  const now = new Date().toISOString();
-  const isFirstFailure = !existingSubscription.payment_failed_at;
+    if (!existingSubscription) {
+      logError("Subscription not found for payment failure", undefined, {
+        subscriptionId,
+        invoiceId: invoice.id,
+      });
+      // Don't throw - subscription might not exist yet
+      return;
+    }
 
-  // Update subscription status to past_due and set payment_failed_at if first failure
-  const updateData: any = {
-    status: "past_due",
-  };
+    const now = new Date().toISOString();
+    const isFirstFailure = !existingSubscription.payment_failed_at;
 
-  if (isFirstFailure) {
-    updateData.payment_failed_at = now;
-  }
+    // Update subscription status to past_due and set payment_failed_at if first failure
+    const updateData: any = {
+      status: "past_due",
+    };
 
-  await supabase
-    .from("billing_subscriptions")
-    .update(updateData)
-    .eq("stripe_subscription_id", subscriptionId);
+    if (isFirstFailure) {
+      updateData.payment_failed_at = now;
+    }
 
-  // Send Day 0 email immediately on first failure
-  if (isFirstFailure) {
-    const user = (existingSubscription.billing_customers as any)?.users;
-    if (user?.email) {
-      try {
-        const { sendPaymentFailureEmail } = await import("@/lib/email/resend");
-        await sendPaymentFailureEmail({
-          to: user.email,
-          userName: user.name || "there",
-          daysSinceFailure: 0,
-        });
-        logBillingEvent("Payment failure Day 0 email sent", {
-          userId: user.id,
-          subscriptionId,
-          invoiceId: invoice.id,
-        });
-      } catch (emailError) {
-        logError("Failed to send payment failure email", emailError, {
-          userId: user.id,
-          subscriptionId,
-          invoiceId: invoice.id,
-        });
+    const { error: updateError } = await supabase
+      .from("billing_subscriptions")
+      .update(updateData)
+      .eq("stripe_subscription_id", subscriptionId);
+
+    if (updateError) {
+      logError("Error updating subscription status for payment failure", updateError, {
+        subscriptionId,
+        invoiceId: invoice.id,
+      });
+      throw new Error(`Failed to update subscription: ${updateError.message}`);
+    }
+
+    // Send Day 0 email immediately on first failure
+    if (isFirstFailure) {
+      const user = (existingSubscription.billing_customers as any)?.users;
+      if (user?.email) {
+        try {
+          const { sendPaymentFailureEmail } = await import("@/lib/email/resend");
+          await sendPaymentFailureEmail({
+            to: user.email,
+            userName: user.name || "there",
+            daysSinceFailure: 0,
+          });
+          logBillingEvent("Payment failure Day 0 email sent", {
+            userId: user.id,
+            subscriptionId,
+            invoiceId: invoice.id,
+          });
+        } catch (emailError) {
+          logError("Failed to send payment failure email", emailError, {
+            userId: user.id,
+            subscriptionId,
+            invoiceId: invoice.id,
+          });
+          // Don't throw - email failure shouldn't fail the webhook
+        }
       }
     }
+  } catch (error: any) {
+    logError("Error in handleInvoicePaymentFailed", error, {
+      invoiceId: invoice.id,
+    });
+    // Re-throw so main handler can catch and return 500 for retry
+    throw error;
   }
 }

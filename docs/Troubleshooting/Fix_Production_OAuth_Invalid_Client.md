@@ -90,3 +90,4 @@ If `hasClientSecret: false` or `clientSecretLength: 0`, the secret is missing.
 - [ ] Debug logs show both client ID and secret are present
 - [ ] OAuth flow completes successfully
 
+

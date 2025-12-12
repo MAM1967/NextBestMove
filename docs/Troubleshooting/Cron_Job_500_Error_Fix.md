@@ -163,3 +163,4 @@ If you get `{"error":"Failed to fetch users","details":"Invalid API key"}`, it m
 3. **Check for Typos** - Variable names are case-sensitive: `SUPABASE_SERVICE_ROLE_KEY` (not `SUPABASE_SERVICE_KEY`)
 4. **Redeploy** - Environment variable changes require a new deployment
 
+

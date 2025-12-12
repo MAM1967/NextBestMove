@@ -142,3 +142,4 @@ In Next.js, environment variables are available at runtime for API routes, but l
 
 The error message will tell us exactly what's wrong!
 
+

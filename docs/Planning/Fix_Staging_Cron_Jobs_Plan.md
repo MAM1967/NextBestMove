@@ -89,3 +89,4 @@ Run the script to update all 5 jobs programmatically.
 - The CRON_SECRET value is: `e6720e0c094fd8ba7494b27073d03c6405d9422bdc1e0af0a7e16f678f55ec83`
 - Vercel environment variables are confirmed correct (SUPABASE_SERVICE_ROLE_KEY is set in Preview scope)
 
+

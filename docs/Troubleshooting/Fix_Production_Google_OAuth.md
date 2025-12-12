@@ -162,3 +162,4 @@ redirect_uri=https://nextbestmove.app/api/calendar/callback/google
 4. **Try clearing browser cache:**
    - Sometimes OAuth errors are cached
    - Use incognito/private browsing mode
+

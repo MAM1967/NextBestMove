@@ -153,3 +153,4 @@ curl -X GET \
 2. **Check Vercel logs**: After redeploy, check Functions → `/api/cron/daily-plans` for new error details
 3. **Verify variable name**: Must be exactly `SUPABASE_SERVICE_ROLE_KEY` (case-sensitive)
 4. **Clear browser cache**: Sometimes Vercel UI shows stale values
+
