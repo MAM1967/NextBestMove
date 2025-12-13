@@ -25,7 +25,7 @@ export async function submitEarlyAccessForm(
   }
 
   // Validate role
-  const validRoles = ["fractional_executive", "solopreneur", "other"];
+  const validRoles = ["fractional_executive", "solopreneur", "independent_consultant", "agency", "other"];
   if (!validRoles.includes(role)) {
     return { error: "Please select a valid role." };
   }

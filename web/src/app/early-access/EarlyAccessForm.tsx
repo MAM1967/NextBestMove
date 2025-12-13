@@ -103,6 +103,8 @@ export function EarlyAccessForm() {
           <option value="">Select your role</option>
           <option value="fractional_executive">Fractional Executive</option>
           <option value="solopreneur">Solopreneur</option>
+          <option value="independent_consultant">Independent consultant</option>
+          <option value="agency">Agency</option>
           <option value="other">Other</option>
         </select>
       </div>
