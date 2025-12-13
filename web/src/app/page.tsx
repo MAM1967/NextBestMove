@@ -251,23 +251,25 @@ export default function MarketingHome() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="grid gap-4 border-b border-zinc-100 pb-4 last:border-b-0 last:pb-0 sm:grid-cols-[160px_1fr]"
+                  className="rounded-2xl border border-zinc-200 bg-white p-6 text-left"
                 >
-                  <div className="font-semibold text-zinc-700 text-sm">
+                  <h4 className="text-lg font-semibold text-zinc-900">
                     {item.label}
-                  </div>
-                  <div className="text-sm text-zinc-600 leading-relaxed">
+                  </h4>
+                  <p className="mt-2 text-sm text-zinc-600">
                     {item.text}
-                  </div>
+                  </p>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-base text-zinc-900">
-              NextBestMove sits in between.
-            </p>
-            <p className="mt-2 text-base text-zinc-600">
-              It gives you just enough structure to act consistently, without asking you to manage a system.
-            </p>
+            <div className="mt-6">
+              <p className="text-base text-zinc-900">
+                NextBestMove sits in between.
+              </p>
+              <p className="mt-2 text-base text-zinc-600">
+                It gives you just enough structure to act consistently, without asking you to manage a system.
+              </p>
+            </div>
           </div>
         </section>
 
