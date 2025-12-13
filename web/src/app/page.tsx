@@ -227,23 +227,26 @@ export default function MarketingHome() {
               </div>
             ))}
           </div>
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-8">
-            <h3 className="text-center text-xl font-semibold text-zinc-900">
-              Why not just use...?
+          <div className="mt-8 text-center">
+            <h3 className="text-xl font-semibold text-zinc-900">
+              Designed for a specific kind of work.
             </h3>
-            <div className="mt-6 space-y-4">
+            <p className="mt-2 text-base text-zinc-600">
+              NextBestMove is intentionally opinionated.
+            </p>
+            <div className="mt-8 space-y-4">
               {[
                 {
-                  label: "CRM + Todo",
-                  text: "Built for sales teams, not solo operators. Too much structure, not enough flexibility for relationship-driven work.",
+                  label: "Over-structured systems",
+                  text: "Built for teams and rigid processes. Powerful, but they slow down independent, relationship-driven work.",
                 },
                 {
-                  label: "Notion / Obsidian",
-                  text: "Powerful but overwhelming. You spend more time organizing than acting. No clear daily loop.",
+                  label: "Open-ended workspaces",
+                  text: "Flexible, but easy to over-organize. You spend time shaping the system instead of acting.",
                 },
                 {
-                  label: "Paper journal",
-                  text: "Great for reflection, terrible for tracking context over time. Can't surface timely signals or follow-through.",
+                  label: "Pure reflection tools",
+                  text: "Great for thinking and journaling. Not built to carry context forward or surface timely next steps.",
                 },
               ].map((item) => (
                 <div
@@ -259,6 +262,12 @@ export default function MarketingHome() {
                 </div>
               ))}
             </div>
+            <p className="mt-6 text-base text-zinc-900">
+              NextBestMove sits in between.
+            </p>
+            <p className="mt-2 text-base text-zinc-600">
+              It gives you just enough structure to act consistently, without asking you to manage a system.
+            </p>
           </div>
         </section>
 
