@@ -10,9 +10,13 @@ import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
 export const runtime = "nodejs"; // Use Node.js runtime for better compatibility
 export const maxDuration = 30; // Allow up to 30 seconds for webhook processing (Vercel Pro plan)
 
+// Disable body parsing to get raw body for Stripe signature verification
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   // Wrap everything in try-catch to ensure we always return a response
   try {
+    // Get raw body as text (required for Stripe signature verification)
     const body = await request.text();
     const headersList = await headers();
     const signature = headersList.get("stripe-signature");
@@ -39,13 +43,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Trim whitespace from webhook secret (common issue with env vars)
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET.trim();
+
     let event: Stripe.Event;
 
     try {
       event = stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET
+        webhookSecret
       );
     } catch (err: any) {
       logWebhookEvent("Webhook signature verification failed", {
