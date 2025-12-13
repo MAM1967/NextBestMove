@@ -101,9 +101,8 @@ export function EarlyAccessForm() {
           className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
         >
           <option value="">Select your role</option>
-          <option value="fractional_cmo">Fractional CMO</option>
-          <option value="agency">Agency</option>
-          <option value="consultant">Consultant</option>
+          <option value="fractional_executive">Fractional Executive</option>
+          <option value="solopreneur">Solopreneur</option>
           <option value="other">Other</option>
         </select>
       </div>
