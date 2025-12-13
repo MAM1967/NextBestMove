@@ -232,21 +232,21 @@ export default function MarketingHome() {
               Designed for a specific kind of work.
             </h3>
             <p className="mt-2 text-base text-zinc-600">
-              NextBestMove is intentionally opinionated.
+              It&apos;s built around how independent work actually happens.
             </p>
             <div className="mt-8 space-y-4">
               {[
                 {
                   label: "Over-structured systems",
-                  text: "Built for teams and rigid processes. Powerful, but they slow down independent, relationship-driven work.",
+                  text: "Built for rigid processes and shared workflows. Powerful, but they slow you down when your work depends on judgment and timing.",
                 },
                 {
                   label: "Open-ended workspaces",
-                  text: "Flexible, but easy to over-organize. You spend time shaping the system instead of acting.",
+                  text: "Flexible, but easy to over-organize. You spend more time shaping the system than deciding what to do next.",
                 },
                 {
                   label: "Pure reflection tools",
-                  text: "Great for thinking and journaling. Not built to carry context forward or surface timely next steps.",
+                  text: "Great for thinking and reflection. Not built to carry context forward or surface timely next steps.",
                 },
               ].map((item) => (
                 <div
@@ -267,7 +267,7 @@ export default function MarketingHome() {
                 NextBestMove sits in between.
               </p>
               <p className="mt-2 text-base text-zinc-600">
-                It gives you just enough structure to act consistently, without asking you to manage a system.
+                Just enough structure to help you act consistently, without turning your work into system management.
               </p>
             </div>
           </div>
