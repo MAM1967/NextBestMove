@@ -149,6 +149,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Plan downgrade handling** ✅ (Premium → Standard: lead limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 leads, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
 - [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented: fetches from API, displays in focus card with proper priority hierarchy (adaptive recovery > weekly focus > placeholder), graceful fallbacks. See `docs/Planning/Weekly_Focus_Display_Plan.md` for phased rollout plan.)
 
+- [ ] **UI Language Refactor: From CRM to "Do the Work" Language** 🔴 **CRITICAL - BETA USER FEEDBACK**  
+       _Refactor all user-facing language to align with new navigation labels (Today, Relationships, Daily Plan, Actions, Weekly Review, Signals, Settings) and eliminate CRM terminology. Scope: User-facing strings only (navigation, page headers, buttons, empty states, onboarding, emails, tooltips). No changes to API endpoints, database schema, or internal code. Estimated: 3-5 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md`_
+
 ---
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
@@ -161,19 +164,21 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 4. Other P2 items (order TBD)
 
 - [ ] **Help/FAQ System** 🔴 **TOP PRIORITY - JANUARY 2026**
-   - Help center page with searchable FAQ
-   - Common questions organized by category
-   - Contact support form (integrated with Jira)
-   - In-app contextual help tooltips
-   - Estimated: 2-3 days
-   - Reference: `docs/Planning/Help_FAQ_System_Plan.md`
+
+  - Help center page with searchable FAQ
+  - Common questions organized by category
+  - Contact support form (integrated with Jira)
+  - In-app contextual help tooltips
+  - Estimated: 2-3 days
+  - Reference: `docs/Planning/Help_FAQ_System_Plan.md`
 
 - [ ] **Jira Integration Form** 🔴 **HIGH PRIORITY - JANUARY 2026**
-   - Simple form with attachment capability
-   - Sends bug reports and enhancement requests to Jira
-   - User-facing feedback form
-   - Estimated: 1-2 days
-   - Reference: `docs/Planning/Jira_Integration_Plan.md`
+
+  - Simple form with attachment capability
+  - Sends bug reports and enhancement requests to Jira
+  - User-facing feedback form
+  - Estimated: 1-2 days
+  - Reference: `docs/Planning/Jira_Integration_Plan.md`
 
 - [ ] **Company research & enrichment for pre-call briefs** 🟡 **MEDIUM PRIORITY**  
        _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
@@ -205,6 +210,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 - [ ] **Industry/work type selection & trend-based content generation**  
        _Add onboarding/settings field for users to select their industry/work type (e.g., marketing, finance, recruiting, sales, operations, etc.). Implement weekly scraping of headlines and trends for each industry category. Use this data to enhance content generation, making content prompts more on-trend and industry-relevant. Store user's industry in `users` table, create scraping service/API integration for trend data, update content generation logic to incorporate industry trends. Lowest priority P2 item - nice-to-have enhancement for content personalization._
+
+- [ ] **Merge Insights content into Weekly Review** 🔴 **HIGH PRIORITY P2 - POST-LANGUAGE-REFACTOR**  
+       _Move Insights screen content (stale actions, pattern detection, performance timeline) into Weekly Review page. Remove "Insights" from navigation. Update Insights components to be part of Weekly Review. Focus on reflection, hygiene, and behavior feedback. This completes the Weekly Review section by consolidating all reflection/hygiene content. Estimated: 1-2 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md` (Part 2)._
+
+- [ ] **Code Refactor: Align Internal Code with New Language** 🟡 **LOWER PRIORITY P2 - POST-LANGUAGE-REFACTOR**  
+       _Refactor internal code (API endpoints, TypeScript types, variable names, function names) to align with new UI language. This is a follow-up to the user-facing language refactor. Scope: API endpoint names (e.g., `/api/leads` → `/api/relationships`), TypeScript types, variable names, internal comments. No changes to database schema. Estimated: 2-3 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md` (Part 2). Priority: P2 - can be done after user-facing language is stable._
 
 ---
 

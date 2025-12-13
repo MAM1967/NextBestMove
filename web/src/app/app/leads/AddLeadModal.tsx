@@ -101,7 +101,7 @@ export function AddLeadModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-zinc-900">Add Lead</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">Add Relationship</h2>
           <button
             onClick={onClose}
             className="text-zinc-400 hover:text-zinc-600"

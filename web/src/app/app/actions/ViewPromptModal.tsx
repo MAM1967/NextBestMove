@@ -54,7 +54,7 @@ export function ViewPromptModal({
             </p>
             <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs text-zinc-600 mb-2">
-                <strong>Content Prompts:</strong> Generated content prompts are available in your Weekly Summary and saved to the Content Ideas page.
+                <strong>Content Prompts:</strong> Generated content prompts are available in your Weekly Review and saved to the Content Ideas page.
               </p>
               <p className="text-xs text-zinc-500">
                 Content prompts are generated weekly based on your activity. To view saved prompts, go to the <strong>Content Ideas</strong> page.

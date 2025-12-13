@@ -309,7 +309,7 @@ export default async function SettingsPage({
                   Content prompts
                 </p>
                 <p className="text-xs text-zinc-600">
-                  Include content ideas in weekly summary emails.
+                  Include content ideas in weekly review emails.
                 </p>
               </div>
               <button

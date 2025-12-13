@@ -263,7 +263,7 @@ export async function sendWeeklySummaryEmail({
         <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">Hi ${userName || "there"},</h1>
         
         <p style="margin-bottom: 16px;">
-          Here's your weekly summary:
+          Here's your weekly review:
         </p>
 
         <div style="margin: 24px 0; padding: 16px; background-color: #f3f4f6; border-radius: 6px;">
@@ -300,9 +300,9 @@ export async function sendWeeklySummaryEmail({
         ${contentPromptsSection}
         
         <div style="margin: 32px 0;">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/weekly-summary" 
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/weekly-review" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-            View Full Summary
+            View Full Review
           </a>
         </div>
         

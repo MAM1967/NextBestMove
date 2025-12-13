@@ -53,13 +53,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             href="/app"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
-            Dashboard
+            Today
           </Link>
           <Link
             href="/app/leads"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
-            Leads
+            Relationships
           </Link>
           <Link
             href="/app/plan"
@@ -74,16 +74,22 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Actions
           </Link>
           <Link
-            href="/app/weekly-summary"
+            href="/app/weekly-review"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
-            Weekly Summary
+            Weekly Review
           </Link>
           <Link
             href="/app/content-ideas"
             className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
           >
             Content Ideas
+          </Link>
+          <Link
+            href="/app/signals"
+            className="block rounded-md px-2 py-1.5 hover:bg-zinc-100"
+          >
+            Signals
           </Link>
           <Link
             href="/app/insights"

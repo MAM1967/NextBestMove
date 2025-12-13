@@ -24,7 +24,7 @@ export function LeadList({
     return (
       <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center">
         <p className="text-sm text-zinc-600">
-          No leads yet. Add your first lead to get started.
+          No relationships yet. Add your first relationship to get started.
         </p>
       </div>
     );

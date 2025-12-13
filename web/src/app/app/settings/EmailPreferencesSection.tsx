@@ -130,7 +130,7 @@ export function EmailPreferencesSection({
           disabled={isSaving}
         />
         <EmailPreferenceToggle
-          label="Weekly summary"
+          label="Weekly review"
           description="Sunday night recap."
           enabled={preferences.email_weekly_summary && !isUnsubscribed}
           onToggle={() => handleToggle("email_weekly_summary")}

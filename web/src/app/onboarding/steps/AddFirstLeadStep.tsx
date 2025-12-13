@@ -79,7 +79,7 @@ export function AddFirstLeadStep({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to save lead");
+        throw new Error(error.error || "Failed to save relationship");
       }
 
       router.refresh();
@@ -89,7 +89,7 @@ export function AddFirstLeadStep({
         submit:
           error instanceof Error
             ? error.message
-            : "Failed to save lead. Please try again.",
+            : "Failed to save relationship. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export function AddFirstLeadStep({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-zinc-900">
-          Add your first lead or warm contact
+          Add your first relationship
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
           Start by adding someone you want to network with and see how you can help them. This could be a potential client, a warm referral, or someone you met recently. You can add more later.

@@ -21,10 +21,10 @@ export function GenerateSummaryButton() {
         const errorMsg = error.details 
           ? `${error.error}: ${error.details}` 
           : error.error || "Unknown error";
-        alert(`Failed to generate summary: ${errorMsg}`);
+        alert(`Failed to generate review: ${errorMsg}`);
       }
     } catch (error) {
-      alert("Failed to generate summary. Please try again.");
+      alert("Failed to generate review. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -37,7 +37,7 @@ export function GenerateSummaryButton() {
       disabled={isGenerating}
       className="rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50"
     >
-      {isGenerating ? "Generating..." : "Generate Summary"}
+      {isGenerating ? "Generating..." : "Generate Review"}
     </button>
   );
 }

@@ -7,7 +7,7 @@ import { GracePeriodBanner } from "./components/GracePeriodBanner";
 import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
 
-export default async function AppDashboardPage() {
+export default async function TodayPage() {
   const supabase = await createClient();
 
   // Get current user
@@ -589,7 +589,7 @@ export default async function AppDashboardPage() {
           <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-sm text-zinc-600">
               Your plan has been generated but no actions are available yet. Add
-              some pins to get started.
+              some relationships to get started.
             </p>
           </div>
         )}

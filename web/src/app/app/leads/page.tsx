@@ -255,7 +255,7 @@ export default function LeadsPage() {
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Leads
+          Relationships
         </h1>
         <p className="text-sm text-zinc-600">
           People you don&apos;t want to forget. You&apos;ll see them again when
@@ -266,7 +266,7 @@ export default function LeadsPage() {
       <LeadFilterToggle currentFilter={filter} onFilterChange={setFilter} />
 
       {loading && (
-        <div className="text-center text-sm text-zinc-500">Loading leads...</div>
+        <div className="text-center text-sm text-zinc-500">Loading relationships...</div>
       )}
 
       {error && (
@@ -288,7 +288,7 @@ export default function LeadsPage() {
 
       <FloatingActionButton
         onClick={handleAddLeadClick}
-        label="Add Lead"
+        label="Add Relationship"
       />
 
       <AddLeadModal

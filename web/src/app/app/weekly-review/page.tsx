@@ -39,14 +39,14 @@ function formatWeekRange(weekStartDate: string): string {
   return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
 }
 
-export default async function WeeklySummaryPage() {
+export default async function WeeklyReviewPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/sign-in?redirect=/app/weekly-summary");
+    redirect("/auth/sign-in?redirect=/app/weekly-review");
   }
 
   // Fetch the most recent weekly summary
@@ -58,20 +58,20 @@ export default async function WeeklySummaryPage() {
     .limit(1);
 
   if (fetchError) {
-    console.error("Error fetching weekly summary:", fetchError);
+    console.error("Error fetching weekly review:", fetchError);
     return (
       <div className="space-y-6">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Weekly Summary
+            Weekly Review
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-            Your Weekly Summary
+            Your Weekly Review
           </h1>
         </header>
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center">
           <p className="text-zinc-600">
-            Failed to load weekly summary. Please try again.
+            Failed to load weekly review. Please try again.
           </p>
         </div>
       </div>
@@ -96,10 +96,10 @@ export default async function WeeklySummaryPage() {
       <div className="space-y-6">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Weekly Summary
+            Weekly Review
           </p>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-            Your Weekly Summary
+            Your Weekly Review
           </h1>
           <p className="max-w-2xl text-sm text-zinc-600">
             Here&apos;s what you moved forward this week.
@@ -108,10 +108,10 @@ export default async function WeeklySummaryPage() {
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
           <p className="mb-4 text-lg font-medium text-zinc-900">
-            No summary available yet
+            No review available yet
           </p>
           <p className="mb-6 text-sm text-zinc-600">
-            Your weekly summary will appear here once you&apos;ve completed some
+            Your weekly review will appear here once you&apos;ve completed some
             actions this week.
           </p>
           <GenerateSummaryButton />
@@ -138,10 +138,10 @@ export default async function WeeklySummaryPage() {
     <div className="space-y-6">
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
-          Weekly Summary
+          Weekly Review
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">
-          Your Weekly Summary
+          Your Weekly Review
         </h1>
         <p className="max-w-2xl text-sm text-zinc-600">
           Here&apos;s what you moved forward this week.
