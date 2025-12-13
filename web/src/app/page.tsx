@@ -45,12 +45,7 @@ export default function MarketingHome() {
         {/* Hero */}
         <section className="text-center">
           <div className="mx-auto max-w-3xl">
-            {!launched && (
-              <span className="inline-block rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm">
-                Early Access
-              </span>
-            )}
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
               Stop juggling relationships in your head.
             </h1>
             <p className="mt-4 text-xl leading-relaxed text-zinc-600">
@@ -59,31 +54,6 @@ export default function MarketingHome() {
             <p className="mt-3 text-base text-zinc-600">
               Plan your day. Act with intention. Move relationships forward.
             </p>
-            <div className="mt-6 flex justify-center">
-              {!launched ? (
-                <a
-                  href="/early-access"
-                  className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:bg-zinc-50"
-                >
-                  Get early access
-                </a>
-              ) : (
-                <>
-                  <a
-                    href="/auth/sign-up"
-                    className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:bg-zinc-50"
-                  >
-                    Get started
-                  </a>
-                  <a
-                    href="/auth/sign-in"
-                    className="ml-3 inline-flex items-center text-sm font-medium text-zinc-900"
-                  >
-                    Sign in
-                  </a>
-                </>
-              )}
-            </div>
           </div>
         </section>
 
