@@ -35,14 +35,27 @@ export async function GET(request: Request) {
     const adminClient = createAdminClient();
 
     // Calculate previous week (Monday to Sunday)
+    // Previous week = the week that just ended (Monday-Sunday)
+    // If today is Sunday, previous week's Monday is 6 days ago
+    // If today is Monday-Saturday, previous week's Monday is (dayOfWeek - 1) + 7 days ago
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const daysToLastMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const lastMonday = new Date(today);
-    lastMonday.setDate(today.getDate() - daysToLastMonday - 7); // Go back to previous week's Monday
-    lastMonday.setHours(0, 0, 0, 0);
+    let daysToPreviousMonday: number;
+    
+    if (dayOfWeek === 0) {
+      // Sunday: previous week's Monday is 6 days ago
+      daysToPreviousMonday = 6;
+    } else {
+      // Monday-Saturday: previous week's Monday is (dayOfWeek - 1) + 7 days ago
+      // Example: If today is Tuesday (day 2), previous Monday is 1 + 7 = 8 days ago
+      daysToPreviousMonday = (dayOfWeek - 1) + 7;
+    }
+    
+    const previousMonday = new Date(today);
+    previousMonday.setDate(today.getDate() - daysToPreviousMonday);
+    previousMonday.setHours(0, 0, 0, 0);
 
-    const weekStartStr = lastMonday.toISOString().split("T")[0];
+    const weekStartStr = previousMonday.toISOString().split("T")[0];
 
     // Get all active users with email preferences
     const { data: users, error: usersError } = await adminClient
