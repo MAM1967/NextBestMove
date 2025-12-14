@@ -84,7 +84,7 @@ export function AddLeadModal({
         submit:
           error instanceof Error
             ? error.message
-            : "Failed to save lead. Please try again.",
+            : "Failed to save relationship. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -212,7 +212,7 @@ export function AddLeadModal({
               disabled={loading}
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
             >
-              {loading ? "Saving..." : "Save Lead"}
+              {loading ? "Saving..." : "Save Relationship"}
             </button>
           </div>
         </form>
