@@ -157,7 +157,7 @@ export function PaywallOverlay({
             <h2 className="text-xl font-semibold text-zinc-900">
               {isReadOnly 
                 ? "Payment failed — Account is read-only"
-                : "Payment failed — Update to keep your streak alive"}
+                : "Payment failed — Update to maintain your activity"}
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
               {isReadOnly

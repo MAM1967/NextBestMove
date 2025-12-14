@@ -531,7 +531,7 @@ export default async function TodayPage() {
           )}
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-medium text-zinc-900">Current streak</h2>
+          <h2 className="text-sm font-medium text-zinc-900">Consecutive days</h2>
           <p className="mt-1 text-2xl font-semibold text-zinc-900">
             🔥 {userProfile?.streak_count ?? 0}
           </p>

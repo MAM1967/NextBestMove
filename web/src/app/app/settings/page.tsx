@@ -298,7 +298,7 @@ export default async function SettingsPage({
       </SectionCard>
 
       <SectionCard
-        title="Content prompts & streak"
+        title="Content prompts & activity"
         description="Motivation tools live here. Content prompts require ≥6 completed actions/week."
       >
         <div className="grid gap-4 md:grid-cols-2">
@@ -339,11 +339,11 @@ export default async function SettingsPage({
             <div className="flex items-center gap-2 text-3xl font-semibold text-zinc-900">
               🔥 {profile?.streak_count ?? 0}
               <span className="text-base font-normal text-zinc-500">
-                day streak
+                consecutive days
               </span>
             </div>
             <p className="text-xs text-zinc-500">
-              Best streak & history charts will show here once streak analytics
+              Best period & history charts will show here once activity analytics
               ship.
             </p>
             <button
@@ -351,7 +351,7 @@ export default async function SettingsPage({
               disabled
               className="inline-flex items-center text-xs font-semibold text-purple-700"
             >
-              View streak history (soon)
+              View activity history (soon)
             </button>
           </div>
         </div>

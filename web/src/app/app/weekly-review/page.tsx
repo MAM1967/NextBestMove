@@ -158,7 +158,7 @@ export default async function WeeklyReviewPage() {
         />
         <MetricCard label="Replies" value={summaryWithPrompts.replies} />
         <MetricCard label="Calls booked" value={summaryWithPrompts.calls_booked} />
-        <MetricCard label="Current streak" value={`${currentStreak} days`} />
+        <MetricCard label="Consecutive days" value={`${currentStreak} days`} />
       </div>
 
       {/* Narrative Summary */}
