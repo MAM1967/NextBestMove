@@ -34,7 +34,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             </svg>
           </div>
           <div>
-            <p className="font-medium text-zinc-900">Daily action plans</p>
+            <p className="font-medium text-zinc-900">Daily Plan</p>
             <p className="text-sm text-zinc-600">
               Get a small, realistic list of revenue actions each day, sized to
               your schedule.
@@ -59,10 +59,10 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             </svg>
           </div>
           <div>
-            <p className="font-medium text-zinc-900">Never lose track</p>
+            <p className="font-medium text-zinc-900">Relationships</p>
             <p className="text-sm text-zinc-600">
-              Pin people you want to follow up with. We'll remind you when it's
-              time.
+              Keep context on the people you work with. We'll remind you when it's
+              time to follow up.
             </p>
           </div>
         </div>
@@ -84,9 +84,9 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
             </svg>
           </div>
           <div>
-            <p className="font-medium text-zinc-900">Weekly insights</p>
+            <p className="font-medium text-zinc-900">Weekly Review</p>
             <p className="text-sm text-zinc-600">
-              See your progress, get insights, and set your focus for the week
+              See your progress, reflect on what worked, and set your focus for the week
               ahead.
             </p>
           </div>
