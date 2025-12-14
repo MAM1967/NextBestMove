@@ -165,6 +165,10 @@ export async function signUpAction(
     return { error: "An account with this email already exists. Please sign in instead." };
   }
 
+  // Get base URL for email redirects
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                  (process.env.NODE_ENV === "production" ? "https://nextbestmove.app" : "http://localhost:3000");
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -172,6 +176,11 @@ export async function signUpAction(
       data: {
         name,
       },
+      // Set emailRedirectTo to customize the confirmation link
+      // Note: This doesn't prevent Supabase from sending its default email
+      // To fully disable Supabase emails, disable "Enable email confirmations" 
+      // in Supabase Dashboard > Authentication > Settings
+      emailRedirectTo: `${baseUrl}/auth/sign-in`,
     },
   });
 
@@ -370,10 +379,10 @@ export async function signUpAction(
   }
 
   // Send welcome/activation email via Resend
+  // IMPORTANT: To prevent Supabase from sending its default confirmation email,
+  // disable "Enable email confirmations" in Supabase Dashboard > Authentication > Settings
+  // This ensures only Resend emails are sent
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                    (process.env.NODE_ENV === "production" ? "https://nextbestmove.app" : "http://localhost:3000");
-    
     // Check if email confirmation is required
     const adminClient = createAdminClient();
     const { data: userData } = await adminClient.auth.admin.getUserById(data.user.id);
