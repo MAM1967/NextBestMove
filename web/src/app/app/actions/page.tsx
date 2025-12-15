@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActionCard } from "./ActionCard";
+import { ActionListRow } from "./ActionListRow";
 import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
 import { ViewPromptModal } from "./ViewPromptModal";
 import { Action } from "./types";
 import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
+import { getDaysDifference } from "@/lib/utils/dateUtils";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -316,6 +317,67 @@ export default function ActionsPage() {
     }
   };
 
+  const bucketActions = (allActions: Action[]) => {
+    const needsAttentionNow: Action[] = [];
+    const conversationsInMotion: Action[] = [];
+    const stayTopOfMind: Action[] = [];
+    const optionalBackground: Action[] = [];
+    const assigned = new Set<string>();
+
+    const mark = (bucket: Action[], action: Action) => {
+      bucket.push(action);
+      assigned.add(action.id);
+    };
+
+    // Determine buckets using simple heuristics based on existing fields
+    allActions.forEach((action) => {
+      if (action.state === "ARCHIVED") {
+        return;
+      }
+
+      const daysDiff = getDaysDifference(action.due_date); // >0 overdue, 0 today, <0 future
+      const isCompleted =
+        action.state === "DONE" ||
+        action.state === "REPLIED" ||
+        action.state === "SENT";
+
+      // 1) Needs attention now: overdue or due today and not completed
+      if (!isCompleted && daysDiff >= 0) {
+        mark(needsAttentionNow, action);
+        return;
+      }
+
+      // 2) Conversations in motion: follow-ups and recently replied actions
+      if (
+        action.action_type === "FOLLOW_UP" ||
+        action.state === "REPLIED"
+      ) {
+        mark(conversationsInMotion, action);
+        return;
+      }
+
+      // 3) Stay top of mind: nurture/check-in type actions
+      if (action.action_type === "NURTURE") {
+        mark(stayTopOfMind, action);
+        return;
+      }
+    });
+
+    // 4) Optional / background: everything else not yet assigned
+    allActions.forEach((action) => {
+      if (!assigned.has(action.id) && action.state !== "ARCHIVED") {
+        optionalBackground.push(action);
+      }
+    });
+
+    return {
+      needsAttentionNow,
+      conversationsInMotion,
+      stayTopOfMind,
+      optionalBackground,
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -340,6 +402,13 @@ export default function ActionsPage() {
     );
   }
 
+  const {
+    needsAttentionNow,
+    conversationsInMotion,
+    stayTopOfMind,
+    optionalBackground,
+  } = bucketActions(actions);
+
   return (
     <div className="space-y-6 p-6">
       {/* Toast notifications */}
@@ -349,7 +418,7 @@ export default function ActionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            Manage your action items and follow-ups
+            Focus on the first section. Everything else can wait.
           </p>
         </div>
         <button
@@ -368,18 +437,122 @@ export default function ActionsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {actions.map((action) => (
-            <ActionCard
-              key={action.id}
-              action={action}
-              onComplete={handleComplete}
-              onSnooze={(id) => setSnoozeActionId(id)}
-              onAddNote={handleAddNote}
-              onGotReply={handleGotReply}
-              onViewPrompt={(action) => setViewPromptAction(action)}
-            />
-          ))}
+        <div className="space-y-8">
+          {/* Section 1: Needs attention now */}
+          <section>
+            <h2 className="text-sm font-semibold text-zinc-900">
+              Needs attention now
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Overdue items, due today, and reply-needed actions.
+            </p>
+            {needsAttentionNow.length === 0 ? (
+              <p className="mt-3 text-xs text-zinc-500">
+                Nothing urgent right now.
+              </p>
+            ) : (
+              <div className="mt-2">
+                {needsAttentionNow.map((action) => (
+                  <ActionListRow
+                    key={action.id}
+                    action={action}
+                    onComplete={handleComplete}
+                    onSnooze={(id) => setSnoozeActionId(id)}
+                    onAddNote={handleAddNote}
+                    onGotReply={handleGotReply}
+                    onViewPrompt={(action) => setViewPromptAction(action)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Section 2: Conversations in motion */}
+          <section>
+            <h2 className="text-sm font-semibold text-zinc-900">
+              Conversations in motion
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Follow-ups and active threads that are already moving.
+            </p>
+            {conversationsInMotion.length === 0 ? (
+              <p className="mt-3 text-xs text-zinc-500">
+                No active conversations right now.
+              </p>
+            ) : (
+              <div className="mt-2">
+                {conversationsInMotion.map((action) => (
+                  <ActionListRow
+                    key={action.id}
+                    action={action}
+                    onComplete={handleComplete}
+                    onSnooze={(id) => setSnoozeActionId(id)}
+                    onAddNote={handleAddNote}
+                    onGotReply={handleGotReply}
+                    onViewPrompt={(action) => setViewPromptAction(action)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Section 3: Stay top of mind */}
+          <section>
+            <h2 className="text-sm font-semibold text-zinc-900">
+              Stay top of mind
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Low-frequency touches to keep relationships warm.
+            </p>
+            {stayTopOfMind.length === 0 ? (
+              <p className="mt-3 text-xs text-zinc-500">
+                No nurture actions right now.
+              </p>
+            ) : (
+              <div className="mt-2">
+                {stayTopOfMind.map((action) => (
+                  <ActionListRow
+                    key={action.id}
+                    action={action}
+                    onComplete={handleComplete}
+                    onSnooze={(id) => setSnoozeActionId(id)}
+                    onAddNote={handleAddNote}
+                    onGotReply={handleGotReply}
+                    onViewPrompt={(action) => setViewPromptAction(action)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Section 4: Optional / background */}
+          <section>
+            <h2 className="text-sm font-semibold text-zinc-900">
+              Optional / background
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Content and non-time-sensitive actions that are nice to do.
+            </p>
+            {optionalBackground.length === 0 ? (
+              <p className="mt-3 text-xs text-zinc-500">
+                No optional actions right now.
+              </p>
+            ) : (
+              <div className="mt-2">
+                {optionalBackground.map((action) => (
+                  <ActionListRow
+                    key={action.id}
+                    action={action}
+                    onComplete={handleComplete}
+                    onSnooze={(id) => setSnoozeActionId(id)}
+                    onAddNote={handleAddNote}
+                    onGotReply={handleGotReply}
+                    onViewPrompt={(action) => setViewPromptAction(action)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       )}
 

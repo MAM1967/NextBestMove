@@ -152,6 +152,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **UI Language Refactor: From CRM to "Do the Work" Language** 🔴 **CRITICAL - BETA USER FEEDBACK**  
        _Refactor all user-facing language to align with new navigation labels (Today, Relationships, Daily Plan, Actions, Weekly Review, Signals, Settings) and eliminate CRM terminology. Scope: User-facing strings only (navigation, page headers, buttons, empty states, onboarding, emails, tooltips). No changes to API endpoints, database schema, or internal code. Estimated: 3-5 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md`_
 
+- [ ] **Actions Screen IA Refactor: Reduce Cognitive Load & Clarify Priority** 🔴 **CRITICAL - ICP FEEDBACK**  
+       _Redesign the Actions screen information architecture to remove cognitive overload and make “what to do next” obvious. Replace the 3-across card grid with a single-column list, group actions into four sections (“Needs attention now”, “Conversations in motion”, “Stay top of mind”, “Optional / background”), and collapse each action into a single, verb-led line with clear due/status metadata. No backend changes; reuse existing action data and endpoints. Estimated: 1–2 days. Reference: `docs/Planning/Actions_Screen_IA_Refactor_Plan.md`_
+
 ---
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
