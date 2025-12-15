@@ -39,7 +39,7 @@ created_leads as (
     'Karen – RevOps lead',
     'https://linkedin.com/in/karen-example',
     'ICP who cares a lot about pacing and cognitive load.',
-    'ACTIVE',
+    'ACTIVE'::lead_status,
     null,
     now(),
     now()
@@ -51,7 +51,7 @@ created_leads as (
     'Mike O''Brien – Fractional CMO',
     'https://linkedin.com/in/mike-obrien-example',
     'Met at SaaS dinner. Warm contact.',
-    'ACTIVE',
+    'ACTIVE'::lead_status,
     null,
     now(),
     now()
@@ -63,7 +63,7 @@ created_leads as (
     'Sarah L. – Consultant',
     'https://linkedin.com/in/sarah-l-example',
     'Referral from existing client.',
-    'ACTIVE',
+    'ACTIVE'::lead_status,
     null,
     now(),
     now()
