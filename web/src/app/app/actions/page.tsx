@@ -459,6 +459,7 @@ export default function ActionsPage() {
                       <ActionListRow
                         key={action.id}
                         action={action}
+                        variant="urgent"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
@@ -488,6 +489,7 @@ export default function ActionsPage() {
                       <ActionListRow
                         key={action.id}
                         action={action}
+                        variant="motion"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
@@ -517,6 +519,7 @@ export default function ActionsPage() {
                       <ActionListRow
                         key={action.id}
                         action={action}
+                        variant="nurture"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
@@ -546,6 +549,7 @@ export default function ActionsPage() {
                       <ActionListRow
                         key={action.id}
                         action={action}
+                        variant="optional"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}

@@ -13,6 +13,11 @@ interface ActionListRowProps {
   onAddNote: (actionId: string) => void;
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
+  /**
+   * Visual variant tied to the section/bucket the action is rendered in.
+   * purely presentational – no behavior changes.
+   */
+  variant?: "urgent" | "motion" | "nurture" | "optional";
 }
 
 function getVerbForAction(action: Action): string {
@@ -106,6 +111,7 @@ export function ActionListRow({
   onAddNote,
   onGotReply,
   onViewPrompt,
+  variant,
 }: ActionListRowProps) {
   const verb = getVerbForAction(action);
   const personName = getPersonName(action);
@@ -128,6 +134,35 @@ export function ActionListRow({
     action.state === "REPLIED" ||
     action.state === "SENT";
 
+  // Visual styling per bucket – keeps IA logic in the page, styling here.
+  const baseContainerClasses =
+    "rounded-xl border px-3.5 py-3 shadow-sm transition-colors";
+
+  const variantContainerClass =
+    variant === "urgent"
+      ? "border-rose-100 bg-rose-50/80 hover:bg-rose-50"
+      : variant === "motion"
+      ? "border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50"
+      : variant === "nurture"
+      ? "border-amber-100 bg-amber-50/70 hover:bg-amber-50"
+      : variant === "optional"
+      ? "border-sky-100 bg-sky-50/70 hover:bg-sky-50"
+      : "border-zinc-100 bg-white hover:bg-zinc-50";
+
+  const baseBadgeClasses =
+    "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium";
+
+  const variantBadgeBgClass =
+    variant === "urgent"
+      ? "bg-rose-100/90"
+      : variant === "motion"
+      ? "bg-emerald-100/90"
+      : variant === "nurture"
+      ? "bg-amber-100/90"
+      : variant === "optional"
+      ? "bg-sky-100/90"
+      : "bg-zinc-50";
+
   const handlePrimaryComplete = () => {
     if (action.action_type === "FOLLOW_UP" && onGotReply) {
       // Treat primary action for follow-ups as "Got reply"
@@ -138,7 +173,7 @@ export function ActionListRow({
   };
 
   return (
-    <div className="rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-zinc-200 hover:bg-zinc-50">
+    <div className={`${baseContainerClasses} ${variantContainerClass}`}>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm">
@@ -164,9 +199,7 @@ export function ActionListRow({
             )}
           </p>
         </div>
-        <div
-          className={`shrink-0 rounded-full bg-zinc-50 px-2 py-0.5 text-xs font-medium ${dueClass}`}
-        >
+        <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
           {dueLabel}
         </div>
       </div>
