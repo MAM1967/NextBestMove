@@ -441,7 +441,7 @@ export default function ActionsPage() {
           ) : (
             <div className="space-y-8">
               {/* Section 1: Needs attention now */}
-              <section className="rounded-2xl border border-rose-100 bg-rose-50/80 p-4 shadow-sm">
+              <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
                 <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
                   Needs attention now
                 </h2>

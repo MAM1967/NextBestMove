@@ -8,8 +8,8 @@
 --
 -- This script:
 --   - Looks up the user_id from auth.users by email
---   - Creates 3 sample leads (people)
---   - Creates 8 actions spread across:
+--   - Creates 6 sample leads (people)
+--   - Creates 6 actions, one per person, spread across:
 --       * Needs attention now (overdue + today)
 --       * Conversations in motion (follow-ups / replied)
 --       * Stay top of mind (nurture)
@@ -68,6 +68,30 @@ created_leads as (
     now(),
     now()
   from u
+  union all
+  select
+    gen_random_uuid(),
+    u.user_id,
+    'Luis – Product marketing lead',
+    'https://linkedin.com/in/luis-example',
+    'PMM contact who cares about narrative and positioning.',
+    'ACTIVE'::lead_status,
+    null::date,
+    now(),
+    now()
+  from u
+  union all
+  select
+    gen_random_uuid(),
+    u.user_id,
+    'Amira – CS leader',
+    'https://linkedin.com/in/amira-example',
+    'Customer success leader focused on renewals.',
+    'ACTIVE'::lead_status,
+    null::date,
+    now(),
+    now()
+  from u
   returning *
 ),
 -- Helper CTE to name leads for readability
@@ -94,7 +118,7 @@ insert into public.actions (
   created_at,
   updated_at
 )
--- 1) Needs attention now – overdue follow-up
+-- 1) Needs attention now – follow-up due today (Karen)
 select
   gen_random_uuid(),
   l.user_id,
@@ -114,7 +138,7 @@ where l.idx = 1
 
 union all
 
--- 2) Needs attention now – due today outreach
+-- 2) Needs attention now – due today outreach (Mike)
 select
   gen_random_uuid(),
   l.user_id,
@@ -134,7 +158,7 @@ where l.idx = 2
 
 union all
 
--- 3) Conversations in motion – scheduled follow-up
+-- 3) Conversations in motion – scheduled follow-up (Sarah)
 select
   gen_random_uuid(),
   l.user_id,
@@ -150,11 +174,11 @@ select
   now(),
   now()
 from l
-where l.idx = 1
+where l.idx = 3
 
 union all
 
--- 4) Conversations in motion – recently replied thread
+-- 4) Conversations in motion – recently replied thread (Luis)
 select
   gen_random_uuid(),
   l.user_id,
@@ -170,11 +194,11 @@ select
   now(),
   now()
 from l
-where l.idx = 2
+where l.idx = 4
 
 union all
 
--- 5) Stay top of mind – nurture check-in
+-- 5) Stay top of mind – nurture check-in (Amira)
 select
   gen_random_uuid(),
   l.user_id,
@@ -190,38 +214,18 @@ select
   now(),
   now()
 from l
-where l.idx = 3
+where l.idx = 5
 
 union all
 
--- 6) Stay top of mind – share relevant article
+-- 6) Optional / background – content task (new person)
 select
   gen_random_uuid(),
   l.user_id,
   l.id,
-  'NURTURE'::action_type,
-  'NEW'::action_state,
-  'Share relevant article on revenue operations pacing',
-  (current_date + interval '14 days')::date,
-  null::timestamptz,
-  null::date,
-  'Great example of “add value” nurture touch.',
-  false,
-  now(),
-  now()
-from l
-where l.idx = 1
-
-union all
-
--- 7) Optional / background – content idea from weekly review
-select
-  gen_random_uuid(),
-  l.user_id,
-  null, -- content may not be tied to a single person
   'CONTENT'::action_type,
   'NEW'::action_state,
-  'Draft LinkedIn post: How I structure my weekly review',
+  'Draft LinkedIn post: How I structure my relationship work',
   (current_date + interval '7 days')::date,
   null::timestamptz,
   null::date,
@@ -230,26 +234,6 @@ select
   now(),
   now()
 from l
-where l.idx = 1
-
-union all
-
--- 8) Optional / background – content idea about “needs attention now”
-select
-  gen_random_uuid(),
-  l.user_id,
-  null,
-  'CONTENT'::action_type,
-  'NEW'::action_state,
-  'Draft email mini-lesson: From task lists to “Needs attention now”',
-  (current_date + interval '9 days')::date,
-  null::timestamptz,
-  null::date,
-  'Another background content item to test Optional section.',
-  false,
-  now(),
-  now()
-from l
-where l.idx = 2;
+where l.idx = 6;
 
 
