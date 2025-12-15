@@ -102,7 +102,7 @@ select
   'FOLLOW_UP'::action_type,
   'NEW'::action_state,
   'Follow up on last week''s call with ' || l.name,
-  (current_date - interval '2 days')::date, -- overdue 2 days
+  current_date, -- due today (treat as urgent; CHECK constraint disallows past dates)
   null::timestamptz,
   null::date,
   'Important thread that stalled – good test for “Needs attention now”.',
