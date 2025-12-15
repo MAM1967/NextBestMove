@@ -81,6 +81,24 @@ function getDueStatusLabel(action: Action): string {
   return `Due ${formatDateForDisplay(action.due_date, true)}`;
 }
 
+function getDueStatusClass(action: Action): string {
+  if (action.state === "DONE") return "text-emerald-600";
+  if (action.state === "REPLIED") return "text-blue-600";
+  if (action.state === "SENT") return "text-zinc-500";
+  if (action.state === "SNOOZED") return "text-zinc-500 italic";
+
+  const diff = getDaysDifference(action.due_date);
+  if (diff > 0) {
+    // overdue
+    return "text-red-600";
+  }
+  if (diff === 0) {
+    return "text-amber-600";
+  }
+  // future
+  return "text-zinc-500";
+}
+
 export function ActionListRow({
   action,
   onComplete,
@@ -103,6 +121,7 @@ export function ActionListRow({
 
   const primaryText = primaryTextParts.join("");
   const dueLabel = getDueStatusLabel(action);
+  const dueClass = getDueStatusClass(action);
 
   const isCompleted =
     action.state === "DONE" ||
@@ -119,18 +138,35 @@ export function ActionListRow({
   };
 
   return (
-    <div className="flex flex-col border-b border-zinc-100 py-2">
+    <div className="rounded-lg border border-transparent px-3 py-2 transition-colors hover:border-zinc-200 hover:bg-zinc-50">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p
-            className={`truncate text-sm ${
-              isCompleted ? "text-zinc-500 line-through" : "text-zinc-900"
-            }`}
-          >
-            {primaryText}
+          <p className="truncate text-sm">
+            <span
+              className={`font-semibold ${
+                isCompleted ? "text-zinc-500 line-through" : "text-zinc-900"
+              }`}
+            >
+              {verb}
+            </span>
+            {personName && (
+              <span
+                className={`${
+                  isCompleted ? "text-zinc-400 line-through" : "text-zinc-900"
+                }`}
+              >
+                {" "}
+                · {personName}
+              </span>
+            )}
+            {context && !isCompleted && (
+              <span className="text-zinc-500"> — {context}</span>
+            )}
           </p>
         </div>
-        <div className="shrink-0 text-xs font-medium text-zinc-500">
+        <div
+          className={`shrink-0 rounded-full bg-zinc-50 px-2 py-0.5 text-xs font-medium ${dueClass}`}
+        >
           {dueLabel}
         </div>
       </div>

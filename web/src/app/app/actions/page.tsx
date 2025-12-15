@@ -410,153 +410,154 @@ export default function ActionsPage() {
   } = bucketActions(actions);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Toast notifications */}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl space-y-6">
+        {/* Toast notifications */}
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Focus on the first section. Everything else can wait.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
+            <p className="mt-1 text-sm text-zinc-600">
+              Focus on the first section. Everything else can wait.
+            </p>
+          </div>
+          <button
+            onClick={fetchActions}
+            className="rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50"
+          >
+            Refresh
+          </button>
         </div>
-        <button
-          onClick={fetchActions}
-          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-        >
-          Refresh
-        </button>
-      </div>
 
-      {actions.length === 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center">
-          <p className="text-zinc-600">No actions found.</p>
-          <p className="mt-2 text-sm text-zinc-500">
-            Actions will appear here when you have tasks to complete.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Section 1: Needs attention now */}
-          <section>
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Needs attention now
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Overdue items, due today, and reply-needed actions.
+        {actions.length === 0 ? (
+          <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
+            <p className="text-zinc-600">No actions found.</p>
+            <p className="mt-2 text-sm text-zinc-500">
+              Actions will appear here when you have tasks to complete.
             </p>
-            {needsAttentionNow.length === 0 ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                Nothing urgent right now.
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Section 1: Needs attention now */}
+            <section className="rounded-2xl border border-rose-100 bg-rose-50/80 p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
+                Needs attention now
+              </h2>
+              <p className="mt-1 text-xs text-rose-800">
+                Overdue items, due today, and reply‑needed actions. Start here.
               </p>
-            ) : (
-              <div className="mt-2">
-                {needsAttentionNow.map((action) => (
-                  <ActionListRow
-                    key={action.id}
-                    action={action}
-                    onComplete={handleComplete}
-                    onSnooze={(id) => setSnoozeActionId(id)}
-                    onAddNote={handleAddNote}
-                    onGotReply={handleGotReply}
-                    onViewPrompt={(action) => setViewPromptAction(action)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+              {needsAttentionNow.length === 0 ? (
+                <p className="mt-3 text-xs text-rose-700">
+                  Nothing urgent right now.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-1.5">
+                  {needsAttentionNow.map((action) => (
+                    <ActionListRow
+                      key={action.id}
+                      action={action}
+                      onComplete={handleComplete}
+                      onSnooze={(id) => setSnoozeActionId(id)}
+                      onAddNote={handleAddNote}
+                      onGotReply={handleGotReply}
+                      onViewPrompt={(action) => setViewPromptAction(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
-          {/* Section 2: Conversations in motion */}
-          <section>
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Conversations in motion
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Follow-ups and active threads that are already moving.
-            </p>
-            {conversationsInMotion.length === 0 ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                No active conversations right now.
+            {/* Section 2: Conversations in motion */}
+            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
+                Conversations in motion
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Follow‑ups and active threads that are already moving.
               </p>
-            ) : (
-              <div className="mt-2">
-                {conversationsInMotion.map((action) => (
-                  <ActionListRow
-                    key={action.id}
-                    action={action}
-                    onComplete={handleComplete}
-                    onSnooze={(id) => setSnoozeActionId(id)}
-                    onAddNote={handleAddNote}
-                    onGotReply={handleGotReply}
-                    onViewPrompt={(action) => setViewPromptAction(action)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+              {conversationsInMotion.length === 0 ? (
+                <p className="mt-3 text-xs text-zinc-500">
+                  No active conversations right now.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-1.5">
+                  {conversationsInMotion.map((action) => (
+                    <ActionListRow
+                      key={action.id}
+                      action={action}
+                      onComplete={handleComplete}
+                      onSnooze={(id) => setSnoozeActionId(id)}
+                      onAddNote={handleAddNote}
+                      onGotReply={handleGotReply}
+                      onViewPrompt={(action) => setViewPromptAction(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
-          {/* Section 3: Stay top of mind */}
-          <section>
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Stay top of mind
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Low-frequency touches to keep relationships warm.
-            </p>
-            {stayTopOfMind.length === 0 ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                No nurture actions right now.
+            {/* Section 3: Stay top of mind */}
+            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
+                Stay top of mind
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Low‑frequency touches to keep relationships warm.
               </p>
-            ) : (
-              <div className="mt-2">
-                {stayTopOfMind.map((action) => (
-                  <ActionListRow
-                    key={action.id}
-                    action={action}
-                    onComplete={handleComplete}
-                    onSnooze={(id) => setSnoozeActionId(id)}
-                    onAddNote={handleAddNote}
-                    onGotReply={handleGotReply}
-                    onViewPrompt={(action) => setViewPromptAction(action)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+              {stayTopOfMind.length === 0 ? (
+                <p className="mt-3 text-xs text-zinc-500">
+                  No nurture actions right now.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-1.5">
+                  {stayTopOfMind.map((action) => (
+                    <ActionListRow
+                      key={action.id}
+                      action={action}
+                      onComplete={handleComplete}
+                      onSnooze={(id) => setSnoozeActionId(id)}
+                      onAddNote={handleAddNote}
+                      onGotReply={handleGotReply}
+                      onViewPrompt={(action) => setViewPromptAction(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
-          {/* Section 4: Optional / background */}
-          <section>
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Optional / background
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              Content and non-time-sensitive actions that are nice to do.
-            </p>
-            {optionalBackground.length === 0 ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                No optional actions right now.
+            {/* Section 4: Optional / background */}
+            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
+                Optional / background
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Content and non‑time‑sensitive actions that are nice to do.
               </p>
-            ) : (
-              <div className="mt-2">
-                {optionalBackground.map((action) => (
-                  <ActionListRow
-                    key={action.id}
-                    action={action}
-                    onComplete={handleComplete}
-                    onSnooze={(id) => setSnoozeActionId(id)}
-                    onAddNote={handleAddNote}
-                    onGotReply={handleGotReply}
-                    onViewPrompt={(action) => setViewPromptAction(action)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
+              {optionalBackground.length === 0 ? (
+                <p className="mt-3 text-xs text-zinc-500">
+                  No optional actions right now.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-1.5">
+                  {optionalBackground.map((action) => (
+                    <ActionListRow
+                      key={action.id}
+                      action={action}
+                      onComplete={handleComplete}
+                      onSnooze={(id) => setSnoozeActionId(id)}
+                      onAddNote={handleAddNote}
+                      onGotReply={handleGotReply}
+                      onViewPrompt={(action) => setViewPromptAction(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
 
-      {/* Modals */}
+        {/* Modals */}
       {/* FollowUpFlowModal removed - FOLLOW_UP now auto-creates on "Got a reply" */}
 
       {/* Scheduling modal now used only for editing existing FOLLOW_UP dates */}

@@ -338,6 +338,62 @@ Run `npm run build` locally before pushing to catch TypeScript errors early.
 
 ---
 
+## Supabase / Postgres Schema Gotchas
+
+### Lesson: Always Cast Enum and Date/Timestamp Literals in Raw SQL
+
+**Problem:** Supabase uses Postgres enums and date/timestamp types for several columns.  
+When writing raw SQL (especially in seed scripts or CTEs with `UNION`), string
+or `NULL` literals are inferred as `text`, which causes errors like:
+
+- `column "status" is of type lead_status but expression is of type text`
+- `column "action_type" is of type action_type but expression is of type text`
+- `column "completed_at" is of type timestamp with time zone but expression is of type text`
+
+**Solution:**
+
+1. **Always cast enum literals explicitly:**
+
+```sql
+-- leads.status is lead_status
+'ACTIVE'::lead_status
+
+-- actions.action_type is action_type
+'FOLLOW_UP'::action_type
+
+-- actions.state is action_state
+'NEW'::action_state
+```
+
+2. **Always cast NULLs for DATE / TIMESTAMPTZ in seed scripts:**
+
+```sql
+-- leads.snooze_until is DATE
+null::date
+
+-- actions.completed_at is TIMESTAMPTZ
+null::timestamptz
+```
+
+3. **Pattern to follow in future SQL:**
+
+- If the column is an enum, use `'VALUE'::enum_type_name`.
+- If the column is DATE/TIMESTAMPTZ and you pass `NULL` or a literal, cast it.
+- Check `supabase/migrations/*initial_schema.sql` for the actual type names.
+
+**Validation:**  
+Applied in `scripts/create-staging-actions-for-mcddsl.sql` to:
+
+- `leads.status` (`lead_status`)
+- `leads.snooze_until` (`DATE`)
+- `actions.action_type` (`action_type`)
+- `actions.state` (`action_state`)
+- `actions.completed_at` (`TIMESTAMPTZ`)
+
+This avoids a whole class of “expression is of type text” errors in future SQL.
+
+---
+
 ## Research Validation
 
 ### Stripe Invoice.subscription Property
