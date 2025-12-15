@@ -46,22 +46,9 @@ export async function POST(request: Request) {
     // Trim whitespace from webhook secret (common issue with env vars)
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET.trim();
 
-    // TEMP DEBUG: Log masked secret info + signature presence to diagnose Stripe mismatch
-    console.log("[StripeWebhook] Debug config", {
-      secretPrefix: webhookSecret.slice(0, 6),
-      secretLen: webhookSecret.length,
-      hasSignature: !!signature,
-    });
-
     let event: Stripe.Event;
 
     try {
-      // TEMP DEBUG: Log basic body info (not full payload) to confirm raw body
-      console.log("[StripeWebhook] Debug body", {
-        length: body.length,
-        startsWith: body.slice(0, 80),
-      });
-
       event = stripe.webhooks.constructEvent(
         body,
         signature,
