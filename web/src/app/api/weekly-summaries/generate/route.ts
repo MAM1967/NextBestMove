@@ -49,14 +49,6 @@ export async function POST(request: Request) {
 
       weekStartDate = new Date(today);
       weekStartDate.setDate(today.getDate() - daysToPreviousSunday);
-      
-      // Debug logging
-      console.log("[Weekly Summary Generate] Date calculation:", {
-        today: today.toISOString().split("T")[0],
-        dayOfWeek,
-        daysToPreviousSunday,
-        calculatedWeekStart: weekStartDate.toISOString().split("T")[0],
-      });
     }
     weekStartDate.setHours(0, 0, 0, 0);
 

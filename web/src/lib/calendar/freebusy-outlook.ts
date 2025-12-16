@@ -64,83 +64,92 @@ export async function fetchOutlookFreeBusy(
   const endTime = endOfDay.toISOString();
 
   // Fetch calendar events using getSchedule API
+  let schedule;
   try {
-    const schedule = await client
-      .api("/me/calendar/getSchedule")
-      .post({
-        schedules: ["primary"],
-        startTime: {
-          dateTime: startTime,
-          timeZone: timezone,
-        },
-        endTime: {
-          dateTime: endTime,
-          timeZone: timezone,
-        },
-        availabilityViewInterval: 15, // 15-minute intervals
-      });
-
-    const scheduleInfo = schedule.value?.[0];
-    
-    // Calculate total working minutes
-    const startMinutes = startTimeParsed.hours * 60 + startTimeParsed.minutes;
-    const endMinutes = endTimeParsed.hours * 60 + endTimeParsed.minutes;
-    const totalMinutes = endMinutes - startMinutes;
-    
-    // Format times for response (HH:MM)
-    const startTimeStr = `${startTimeParsed.hours.toString().padStart(2, "0")}:${startTimeParsed.minutes.toString().padStart(2, "0")}`;
-    const endTimeStr = `${endTimeParsed.hours.toString().padStart(2, "0")}:${endTimeParsed.minutes.toString().padStart(2, "0")}`;
-    
-    if (!scheduleInfo || !scheduleInfo.scheduleItems) {
-      return {
-        freeMinutes: totalMinutes,
-        busySlots: [],
-        workingHours: { start: startTimeStr, end: endTimeStr },
-      };
+    schedule = await client.api("/me/calendar/getSchedule").post({
+      schedules: ["primary"],
+      startTime: {
+        dateTime: startTime,
+        timeZone: timezone,
+      },
+      endTime: {
+        dateTime: endTime,
+        timeZone: timezone,
+      },
+      availabilityViewInterval: 15, // 15-minute intervals
+    });
+  } catch (error: unknown) {
+    // Check if this is an authentication error (401/403)
+    const errorObj = error as { statusCode?: number; code?: string };
+    if (
+      errorObj?.statusCode === 401 ||
+      errorObj?.statusCode === 403 ||
+      errorObj?.code === "InvalidAuthenticationToken"
+    ) {
+      const authError = new Error(
+        "Calendar authentication failed - token may be expired"
+      );
+      (
+        authError as { isAuthError?: boolean; originalError?: unknown }
+      ).isAuthError = true;
+      (
+        authError as { isAuthError?: boolean; originalError?: unknown }
+      ).originalError = error;
+      throw authError;
     }
+    // Re-throw other errors
+    throw error;
+  }
 
-    const busySlots: FreeBusySlot[] = [];
-    for (const item of scheduleInfo.scheduleItems) {
-      // Only include items that are busy (not free)
-      if (item.status === "busy" || item.status === "tentative") {
-        busySlots.push({
-          start: item.start?.dateTime || "",
-          end: item.end?.dateTime || "",
-        });
-      }
-    }
+  const scheduleInfo = schedule.value?.[0];
 
-    // Calculate free minutes
-    let busyMinutes = 0;
+  // Calculate total working minutes
+  const startMinutes = startTimeParsed.hours * 60 + startTimeParsed.minutes;
+  const endMinutes = endTimeParsed.hours * 60 + endTimeParsed.minutes;
+  const totalMinutes = endMinutes - startMinutes;
 
-    for (const slot of busySlots) {
-      const start = new Date(slot.start);
-      const end = new Date(slot.end);
-      const duration = (end.getTime() - start.getTime()) / (1000 * 60); // minutes
-      busyMinutes += duration;
-    }
+  // Format times for response (HH:MM)
+  const startTimeStr = `${startTimeParsed.hours
+    .toString()
+    .padStart(2, "0")}:${startTimeParsed.minutes.toString().padStart(2, "0")}`;
+  const endTimeStr = `${endTimeParsed.hours
+    .toString()
+    .padStart(2, "0")}:${endTimeParsed.minutes.toString().padStart(2, "0")}`;
 
-    const freeMinutes = Math.max(0, totalMinutes - busyMinutes);
-
-    return {
-      freeMinutes: Math.round(freeMinutes),
-      busySlots,
-      workingHours: { start: startTimeStr, end: endTimeStr },
-    };
-  } catch (error) {
-    console.error("Failed to fetch Outlook free/busy:", error);
-    // Return default (all free) on error
-    const startMinutes = startTimeParsed.hours * 60 + startTimeParsed.minutes;
-    const endMinutes = endTimeParsed.hours * 60 + endTimeParsed.minutes;
-    const totalMinutes = endMinutes - startMinutes;
-    const startTimeStr = `${startTimeParsed.hours.toString().padStart(2, "0")}:${startTimeParsed.minutes.toString().padStart(2, "0")}`;
-    const endTimeStr = `${endTimeParsed.hours.toString().padStart(2, "0")}:${endTimeParsed.minutes.toString().padStart(2, "0")}`;
+  if (!scheduleInfo || !scheduleInfo.scheduleItems) {
     return {
       freeMinutes: totalMinutes,
       busySlots: [],
       workingHours: { start: startTimeStr, end: endTimeStr },
     };
   }
+
+  const busySlots: FreeBusySlot[] = [];
+  for (const item of scheduleInfo.scheduleItems) {
+    // Only include items that are busy (not free)
+    if (item.status === "busy" || item.status === "tentative") {
+      busySlots.push({
+        start: item.start?.dateTime || "",
+        end: item.end?.dateTime || "",
+      });
+    }
+  }
+
+  // Calculate free minutes
+  let busyMinutes = 0;
+
+  for (const slot of busySlots) {
+    const start = new Date(slot.start);
+    const end = new Date(slot.end);
+    const duration = (end.getTime() - start.getTime()) / (1000 * 60); // minutes
+    busyMinutes += duration;
+  }
+
+  const freeMinutes = Math.max(0, totalMinutes - busyMinutes);
+
+  return {
+    freeMinutes: Math.round(freeMinutes),
+    busySlots,
+    workingHours: { start: startTimeStr, end: endTimeStr },
+  };
 }
-
-

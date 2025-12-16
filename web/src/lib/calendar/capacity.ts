@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedFreeBusy } from "./cache";
-import { getActiveConnection, getValidAccessToken } from "./tokens";
+import {
+  getActiveConnection,
+  getValidAccessToken,
+  refreshAccessToken,
+} from "./tokens";
 import { fetchGoogleFreeBusy } from "./freebusy-google";
 import { fetchOutlookFreeBusy } from "./freebusy-outlook";
 
@@ -109,33 +113,99 @@ export async function getCapacityForDate(
 
   const timezone = userProfile?.timezone || "UTC";
   // Convert TIME to HH:MM string (PostgreSQL TIME format is HH:MM:SS)
-  const workStartTime = userProfile?.work_start_time 
+  const workStartTime = userProfile?.work_start_time
     ? userProfile.work_start_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
     : "09:00";
   const workEndTime = userProfile?.work_end_time
     ? userProfile.work_end_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
     : "17:00";
 
-  // Fetch free/busy data
+  // Fetch free/busy data with retry logic for 401 errors
   try {
     let freeBusyResult;
-    if (connection.provider === "google") {
-      freeBusyResult = await fetchGoogleFreeBusy(
-        accessToken,
-        date,
-        timezone,
-        workStartTime,
-        workEndTime
-      );
-    } else if (connection.provider === "outlook") {
-      freeBusyResult = await fetchOutlookFreeBusy(
-        accessToken,
-        date,
-        timezone,
-        workStartTime,
-        workEndTime
-      );
-    } else {
+    try {
+      if (connection.provider === "google") {
+        freeBusyResult = await fetchGoogleFreeBusy(
+          accessToken,
+          date,
+          timezone,
+          workStartTime,
+          workEndTime
+        );
+      } else if (connection.provider === "outlook") {
+        freeBusyResult = await fetchOutlookFreeBusy(
+          accessToken,
+          date,
+          timezone,
+          workStartTime,
+          workEndTime
+        );
+      } else {
+        return {
+          level: "default",
+          actionsPerDay: 6,
+          source: "fallback",
+        };
+      }
+    } catch (error: unknown) {
+      // If we get an auth error (401/403), try refreshing the token and retrying once
+      const errorObj = error as { isAuthError?: boolean };
+      if (errorObj?.isAuthError) {
+        console.log(
+          `[Capacity] Auth error detected for ${connection.provider}, attempting token refresh and retry`
+        );
+
+        // Refresh the token
+        const refreshedToken = await refreshAccessToken(supabase, connection);
+
+        if (refreshedToken) {
+          // Retry the request with the new token
+          console.log(
+            `[Capacity] Token refreshed, retrying free/busy request for ${connection.provider}`
+          );
+          try {
+            if (connection.provider === "google") {
+              freeBusyResult = await fetchGoogleFreeBusy(
+                refreshedToken,
+                date,
+                timezone,
+                workStartTime,
+                workEndTime
+              );
+            } else if (connection.provider === "outlook") {
+              freeBusyResult = await fetchOutlookFreeBusy(
+                refreshedToken,
+                date,
+                timezone,
+                workStartTime,
+                workEndTime
+              );
+            }
+          } catch (retryError) {
+            console.error(
+              `[Capacity] Retry failed after token refresh for ${connection.provider}:`,
+              retryError
+            );
+            throw retryError;
+          }
+        } else {
+          // Token refresh failed, return fallback
+          console.error(
+            `[Capacity] Token refresh failed for ${connection.provider}, using fallback`
+          );
+          return {
+            level: "default",
+            actionsPerDay: 6,
+            source: "fallback",
+          };
+        }
+      } else {
+        // Not an auth error, re-throw
+        throw error;
+      }
+    }
+
+    if (!freeBusyResult) {
       return {
         level: "default",
         actionsPerDay: 6,

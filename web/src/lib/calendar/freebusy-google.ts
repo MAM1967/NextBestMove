@@ -61,26 +61,57 @@ export async function fetchGoogleFreeBusy(
   const timeMax = endOfDay.toISOString();
 
   // Fetch free/busy data
-  const response = await calendar.freebusy.query({
-    requestBody: {
-      timeMin,
-      timeMax,
-      timeZone: timezone,
-      items: [{ id: "primary" }],
-    },
-  });
+  // Note: We don't handle 401 errors here - that's handled at a higher level
+  // The calendar API client will throw an error if the token is invalid
+  let response;
+  try {
+    response = await calendar.freebusy.query({
+      requestBody: {
+        timeMin,
+        timeMax,
+        timeZone: timezone,
+        items: [{ id: "primary" }],
+      },
+    });
+  } catch (error: unknown) {
+    // Check if this is an authentication error (401/403)
+    const errorObj = error as { code?: number; status?: number };
+    if (
+      errorObj?.code === 401 ||
+      errorObj?.code === 403 ||
+      errorObj?.status === 401 ||
+      errorObj?.status === 403
+    ) {
+      const authError = new Error(
+        "Calendar authentication failed - token may be expired"
+      );
+      (
+        authError as { isAuthError?: boolean; originalError?: unknown }
+      ).isAuthError = true;
+      (
+        authError as { isAuthError?: boolean; originalError?: unknown }
+      ).originalError = error;
+      throw authError;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 
   const calendars = response.data.calendars;
-  
+
   // Calculate total working minutes
   const startMinutes = startTime.hours * 60 + startTime.minutes;
   const endMinutes = endTime.hours * 60 + endTime.minutes;
   const totalMinutes = endMinutes - startMinutes;
-  
+
   // Format times for response (HH:MM)
-  const startTimeStr = `${startTime.hours.toString().padStart(2, "0")}:${startTime.minutes.toString().padStart(2, "0")}`;
-  const endTimeStr = `${endTime.hours.toString().padStart(2, "0")}:${endTime.minutes.toString().padStart(2, "0")}`;
-  
+  const startTimeStr = `${startTime.hours
+    .toString()
+    .padStart(2, "0")}:${startTime.minutes.toString().padStart(2, "0")}`;
+  const endTimeStr = `${endTime.hours
+    .toString()
+    .padStart(2, "0")}:${endTime.minutes.toString().padStart(2, "0")}`;
+
   if (!calendars || !calendars.primary) {
     return {
       freeMinutes: totalMinutes,
@@ -113,5 +144,3 @@ export async function fetchGoogleFreeBusy(
     workingHours: { start: startTimeStr, end: endTimeStr },
   };
 }
-
-

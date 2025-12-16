@@ -159,7 +159,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Investigate and fix why "Consecutive days" value (streak_count) is not displaying correctly in Today page and Settings page. Ensure streak_count is properly fetched from users table and displayed._
 
 - [x] **Fix Weekly Summary date calculation** ✅  
-       _Fixed weekly summary past week calculation bug (was showing 2 weeks behind). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates - users can regenerate using "Generate Review" button._
+       _Fixed weekly summary past week calculation bug (was showing 2 weeks behind, then showing current week instead of previous week). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates. Verified working - now correctly shows "Week of Dec 7-13, 2025" instead of current week._
 
 - [x] **Fix account overview email to use login credentials** ✅  
        _Fixed email display in account overview section to use user.email from auth.users (login credentials) instead of profile.email from users table (which may be from calendar OAuth)._

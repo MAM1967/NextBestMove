@@ -1,10 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import * as client from "openid-client";
 import { decryptSecret, encryptSecret } from "@/lib/security/encryption";
-import {
-  getProviderConfiguration,
-  type CalendarProvider,
-} from "./providers";
+import { getProviderConfiguration, type CalendarProvider } from "./providers";
 
 export type CalendarConnection = {
   id: string;
@@ -46,6 +42,7 @@ export async function getValidAccessToken(
 
 /**
  * Refresh an expired access token using the refresh token.
+ * Handles refresh token rotation (Google and Microsoft can return new refresh tokens).
  */
 export async function refreshAccessToken(
   supabase: SupabaseClient,
@@ -56,7 +53,7 @@ export async function refreshAccessToken(
     const refreshToken = decryptSecret(connection.refresh_token);
 
     if (!refreshToken) {
-      console.error("Failed to decrypt refresh token");
+      console.error("[Token Refresh] Failed to decrypt refresh token");
       return null;
     }
 
@@ -69,16 +66,51 @@ export async function refreshAccessToken(
     }
 
     // Get client credentials from environment (same as in providers.ts)
-    const providerConfig = connection.provider === "google" 
-      ? { clientIdEnv: "GOOGLE_CLIENT_ID", clientSecretEnv: "GOOGLE_CLIENT_SECRET" }
-      : { clientIdEnv: "OUTLOOK_CLIENT_ID", clientSecretEnv: "OUTLOOK_CLIENT_SECRET" };
-    
-    const clientId = process.env[providerConfig.clientIdEnv];
-    const clientSecret = process.env[providerConfig.clientSecretEnv];
-    
+    const providerConfig =
+      connection.provider === "google"
+        ? {
+            clientIdEnv: "GOOGLE_CLIENT_ID",
+            clientSecretEnv: "GOOGLE_CLIENT_SECRET",
+          }
+        : {
+            clientIdEnv: "OUTLOOK_CLIENT_ID",
+            clientSecretEnv: "OUTLOOK_CLIENT_SECRET",
+          };
+
+    const clientId = process.env[providerConfig.clientIdEnv]?.trim();
+    const clientSecret = process.env[providerConfig.clientSecretEnv]?.trim();
+
     if (!clientId || !clientSecret) {
-      throw new Error(`${providerConfig.clientIdEnv}/${providerConfig.clientSecretEnv} env vars are required`);
+      throw new Error(
+        `${providerConfig.clientIdEnv}/${providerConfig.clientSecretEnv} env vars are required`
+      );
     }
+
+    // Build refresh token request body
+    // Microsoft Graph requires different parameters than Google
+    const refreshParams: Record<string, string> = {
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: clientId,
+    };
+
+    // Microsoft Graph requires client_secret in body, Google can use it in Authorization header
+    if (connection.provider === "outlook") {
+      refreshParams.client_secret = clientSecret;
+    } else {
+      // Google: can include client_secret in body or use Basic Auth
+      refreshParams.client_secret = clientSecret;
+    }
+
+    console.log(
+      `[Token Refresh] Attempting to refresh ${connection.provider} token`,
+      {
+        provider: connection.provider,
+        tokenEndpoint: tokenEndpoint.substring(0, 50) + "...",
+        hasRefreshToken: !!refreshToken,
+        clientIdPrefix: clientId.substring(0, 30) + "...",
+      }
+    );
 
     // Make refresh token request
     const response = await fetch(tokenEndpoint, {
@@ -86,18 +118,13 @@ export async function refreshAccessToken(
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-        client_id: clientId,
-        ...(clientSecret && { client_secret: clientSecret }),
-      }),
+      body: new URLSearchParams(refreshParams),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `Token refresh failed: ${errorText}`;
-      
+
       // Parse error for better messaging
       try {
         const errorData = JSON.parse(errorText);
@@ -105,18 +132,31 @@ export async function refreshAccessToken(
           errorMessage = `OAuth client mismatch: The refresh token was issued by a different OAuth client. Please disconnect and reconnect your calendar. Original error: ${errorText}`;
         } else if (errorData.error === "invalid_grant") {
           errorMessage = `Refresh token invalid or expired: Please disconnect and reconnect your calendar. Original error: ${errorText}`;
+        } else if (errorData.error === "invalid_request") {
+          errorMessage = `Invalid refresh token request: ${
+            errorData.error_description || errorText
+          }`;
         }
       } catch {
         // If parsing fails, use original error message
       }
-      
+
+      console.error(
+        `[Token Refresh] Refresh failed for ${connection.provider}:`,
+        {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+        }
+      );
+
       throw new Error(errorMessage);
     }
 
     const tokenSet = await response.json();
 
     if (!tokenSet.access_token) {
-      console.error("No access token in refresh response");
+      console.error("[Token Refresh] No access token in refresh response");
       return null;
     }
 
@@ -127,26 +167,64 @@ export async function refreshAccessToken(
       ? Math.floor(Date.now() / 1000) + tokenSet.expires_in
       : null;
 
+    // Handle refresh token rotation: Google and Microsoft can return new refresh tokens
+    // If a new refresh_token is provided, we should update it
+    const updateData: {
+      access_token: string;
+      expires_at: number | null;
+      last_sync_at: string;
+      status: string;
+      error_message: null;
+      refresh_token?: string;
+    } = {
+      access_token: encryptedAccessToken,
+      expires_at: expiresAt,
+      last_sync_at: new Date().toISOString(),
+      status: "active",
+      error_message: null,
+    };
+
+    // If a new refresh token is provided, encrypt and store it
+    // This is important for token rotation (Google and Microsoft can rotate refresh tokens)
+    if (tokenSet.refresh_token) {
+      console.log(
+        `[Token Refresh] New refresh token provided for ${connection.provider}, rotating token`
+      );
+      updateData.refresh_token = encryptSecret(tokenSet.refresh_token);
+    }
+
     // Update the connection in the database
     const { error } = await supabase
       .from("calendar_connections")
-      .update({
-        access_token: encryptedAccessToken,
-        expires_at: expiresAt,
-        last_sync_at: new Date().toISOString(),
-        status: "active",
-        error_message: null,
-      })
+      .update(updateData)
       .eq("id", connection.id);
 
     if (error) {
-      console.error("Failed to update calendar connection:", error);
+      console.error(
+        "[Token Refresh] Failed to update calendar connection:",
+        error
+      );
       return null;
     }
 
+    console.log(
+      `[Token Refresh] Successfully refreshed ${connection.provider} token`,
+      {
+        provider: connection.provider,
+        expiresAt: expiresAt ? new Date(expiresAt * 1000).toISOString() : null,
+        tokenRotated: !!tokenSet.refresh_token,
+      }
+    );
+
     return tokenSet.access_token;
   } catch (error) {
-    console.error("Failed to refresh access token:", error);
+    console.error(
+      `[Token Refresh] Failed to refresh access token for ${connection.provider}:`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      }
+    );
 
     // Mark connection as expired
     await supabase
@@ -182,4 +260,3 @@ export async function getActiveConnection(
 
   return data as CalendarConnection;
 }
-
