@@ -159,10 +159,14 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Investigate and fix why "Consecutive days" value (streak_count) is not displaying correctly in Today page and Settings page. Ensure streak_count is properly fetched from users table and displayed._
 
 - [x] **Fix Weekly Summary date calculation** ✅  
-       _Fixed weekly summary past week calculation bug (was showing 2 weeks behind). Updated cron job and test endpoint to correctly calculate previous week's Monday. If today is Monday, previous Monday is 7 days ago. If today is Tuesday-Sunday, previous Monday is (dayOfWeek - 1) days ago._
+       _Fixed weekly summary past week calculation bug (was showing 2 weeks behind). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates - users can regenerate using "Generate Review" button._
 
 - [x] **Fix account overview email to use login credentials** ✅  
        _Fixed email display in account overview section to use user.email from auth.users (login credentials) instead of profile.email from users table (which may be from calendar OAuth)._
+
+- [x] **Fix calendar_connected trigger to handle DELETE operations** ✅  
+       _Fixed database trigger `update_user_calendar_status()` to properly handle DELETE operations. The original trigger only used `NEW.user_id` which doesn't exist on DELETE - now correctly uses `OLD.user_id` for DELETE and `NEW.user_id` for INSERT/UPDATE. This ensures the `calendar_connected` flag updates correctly when calendars are disconnected. Migration: `supabase/migrations/202512160001_fix_calendar_connected_trigger.sql`_  
+       ⚠️ **PRODUCTION DEPLOYMENT PENDING:** This migration has been applied to staging only. Must be applied to production database before deploying calendar disconnect fixes to production.
 
 ---
 

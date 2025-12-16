@@ -25,16 +25,38 @@ export async function POST(request: Request) {
     const { searchParams } = new URL(request.url);
     const weekStartParam = searchParams.get("week_start_date");
 
-    // Calculate week start (Monday)
+    // Calculate week start (previous week's Sunday, matching cron job logic)
+    // Previous week = the week that just ended (Sunday-Saturday)
+    // Week structure: Sunday (0) - Saturday (6)
+    // If today is Sunday, previous week's Sunday is 7 days ago
+    // If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago
     let weekStartDate: Date;
     if (weekStartParam) {
       weekStartDate = new Date(weekStartParam);
     } else {
       const today = new Date();
       const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      let daysToPreviousSunday: number;
+
+      if (dayOfWeek === 0) {
+        // Sunday: previous week's Sunday is 7 days ago
+        daysToPreviousSunday = 7;
+      } else {
+        // Monday-Saturday: previous week's Sunday is (dayOfWeek + 7) days ago
+        // This ensures we go back to the previous week's Sunday, not this week's
+        daysToPreviousSunday = dayOfWeek + 7;
+      }
+
       weekStartDate = new Date(today);
-      weekStartDate.setDate(today.getDate() - daysToMonday);
+      weekStartDate.setDate(today.getDate() - daysToPreviousSunday);
+      
+      // Debug logging
+      console.log("[Weekly Summary Generate] Date calculation:", {
+        today: today.toISOString().split("T")[0],
+        dayOfWeek,
+        daysToPreviousSunday,
+        calculatedWeekStart: weekStartDate.toISOString().split("T")[0],
+      });
     }
     weekStartDate.setHours(0, 0, 0, 0);
 
