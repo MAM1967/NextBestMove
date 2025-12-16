@@ -6,10 +6,10 @@ import { sendWeeklySummaryEmail } from "@/lib/email/notifications";
 
 /**
  * Test endpoint to manually trigger weekly review email
- * 
+ *
  * Usage: GET /api/test/send-weekly-review-email?email=your-email@example.com
  * Or: GET /api/test/send-weekly-review-email?userId=user-uuid
- * 
+ *
  * Optional: ?weekStartDate=2025-01-06 (defaults to previous week's Monday)
  */
 export async function GET(request: Request) {
@@ -61,37 +61,37 @@ export async function GET(request: Request) {
     }
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Calculate week start date (defaults to previous week's Monday)
-    // Previous week = the week that just ended (Monday-Sunday)
-    // If today is Sunday, previous week's Monday is 6 days ago
-    // If today is Monday-Saturday, previous week's Monday is (dayOfWeek - 1) + 7 days ago
+    // Calculate week start date (defaults to previous week's Sunday)
+    // Previous week = the week that just ended (Sunday-Saturday)
+    // Week structure: Sunday (0) - Saturday (6)
+    // If today is Sunday, previous week's Sunday is 7 days ago
+    // If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago
+    // Example: If today is Tuesday Dec 16 (day 2), last week's Sunday is Dec 7 (9 days ago = 2 + 7)
     let weekStartStr: string;
     if (weekStartDate) {
       weekStartStr = weekStartDate;
     } else {
       const today = new Date();
       const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      let daysToPreviousMonday: number;
-      
+      let daysToPreviousSunday: number;
+
       if (dayOfWeek === 0) {
-        // Sunday: previous week's Monday is 6 days ago
-        daysToPreviousMonday = 6;
+        // Sunday: previous week's Sunday is 7 days ago
+        daysToPreviousSunday = 7;
       } else {
-        // Monday-Saturday: previous week's Monday is (dayOfWeek - 1) + 7 days ago
-        // Example: If today is Tuesday (day 2), previous Monday is 1 + 7 = 8 days ago
-        daysToPreviousMonday = (dayOfWeek - 1) + 7;
+        // Monday-Saturday: previous week's Sunday is (dayOfWeek + 7) days ago
+        // This ensures we go back to the previous week's Sunday, not this week's
+        // Example: If today is Tuesday (day 2), previous Sunday is 2 + 7 = 9 days ago
+        daysToPreviousSunday = dayOfWeek + 7;
       }
-      
-      const previousMonday = new Date(today);
-      previousMonday.setDate(today.getDate() - daysToPreviousMonday);
-      previousMonday.setHours(0, 0, 0, 0);
-      weekStartStr = previousMonday.toISOString().split("T")[0];
+
+      const previousSunday = new Date(today);
+      previousSunday.setDate(today.getDate() - daysToPreviousSunday);
+      previousSunday.setHours(0, 0, 0, 0);
+      weekStartStr = previousSunday.toISOString().split("T")[0];
     }
 
     // Fetch the weekly summary
@@ -111,10 +111,10 @@ export async function GET(request: Request) {
 
     if (!summary) {
       return NextResponse.json(
-        { 
+        {
           error: `No weekly summary found for week starting ${weekStartStr}. Generate one first using /api/weekly-summaries/generate`,
           weekStartDate: weekStartStr,
-          userId: user.id
+          userId: user.id,
         },
         { status: 404 }
       );
@@ -163,4 +163,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

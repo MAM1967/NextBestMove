@@ -98,7 +98,7 @@ export default async function SettingsPage({
 }) {
   const params = await searchParams;
   const calendarStatusParam = params.calendar; // "success" or "error"
-  
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -108,26 +108,30 @@ export default async function SettingsPage({
     redirect("/auth/sign-in?redirect=/app/settings");
   }
 
-  const [{ data: profile }, calendarStatus, { data: billingCustomer }, { count: contentPromptsCount }] =
-    await Promise.all([
-      supabase
-        .from("users")
-        .select(
-          "email, name, timezone, work_start_time, work_end_time, time_format_preference, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
-        )
-        .eq("id", user.id)
-        .single(),
-      fetchCalendarStatus(supabase, user.id),
-      supabase
-        .from("billing_customers")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("content_prompts")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-    ]);
+  const [
+    { data: profile },
+    calendarStatus,
+    { data: billingCustomer },
+    { count: contentPromptsCount },
+  ] = await Promise.all([
+    supabase
+      .from("users")
+      .select(
+        "email, name, timezone, work_start_time, work_end_time, time_format_preference, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
+      )
+      .eq("id", user.id)
+      .single(),
+    fetchCalendarStatus(supabase, user.id),
+    supabase
+      .from("billing_customers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("content_prompts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+  ]);
 
   const connections: CalendarConnection[] = calendarStatus.connections || [];
 
@@ -201,11 +205,21 @@ export default async function SettingsPage({
         >
           <AccountOverviewSection
             name={profile?.name || null}
-            email={profile?.email || user.email}
+            email={user.email || ""}
             timezone={profile?.timezone || null}
-            workStartTime={profile?.work_start_time ? profile.work_start_time.substring(0, 5) : null}
-            workEndTime={profile?.work_end_time ? profile.work_end_time.substring(0, 5) : null}
-            timeFormatPreference={(profile?.time_format_preference as "12h" | "24h") || null}
+            workStartTime={
+              profile?.work_start_time
+                ? profile.work_start_time.substring(0, 5)
+                : null
+            }
+            workEndTime={
+              profile?.work_end_time
+                ? profile.work_end_time.substring(0, 5)
+                : null
+            }
+            timeFormatPreference={
+              (profile?.time_format_preference as "12h" | "24h") || null
+            }
           />
         </SectionCard>
 
@@ -218,7 +232,8 @@ export default async function SettingsPage({
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
                 <p className="font-medium">Failed to connect calendar</p>
                 <p className="mt-1 text-xs text-red-700">
-                  Please check the error message below and try again. If the problem persists, check the server logs.
+                  Please check the error message below and try again. If the
+                  problem persists, check the server logs.
                 </p>
               </div>
             )}
@@ -325,7 +340,8 @@ export default async function SettingsPage({
             </p>
             {contentPromptsCount !== null && contentPromptsCount > 0 && (
               <p className="text-xs font-medium text-zinc-700">
-                {contentPromptsCount} prompt{contentPromptsCount !== 1 ? "s" : ""} saved
+                {contentPromptsCount} prompt
+                {contentPromptsCount !== 1 ? "s" : ""} saved
               </p>
             )}
             {contentPromptsCount === 0 && (
@@ -343,8 +359,8 @@ export default async function SettingsPage({
               </span>
             </div>
             <p className="text-xs text-zinc-500">
-              Best period & history charts will show here once activity analytics
-              ship.
+              Best period & history charts will show here once activity
+              analytics ship.
             </p>
             <button
               type="button"
@@ -395,7 +411,9 @@ export default async function SettingsPage({
               </Link>
             </div>
           </div>
-          <p className="text-sm text-zinc-500 text-center">This site uses privacy-friendly analytics</p>
+          <p className="text-sm text-zinc-500 text-center">
+            This site uses privacy-friendly analytics
+          </p>
         </div>
       </footer>
     </div>

@@ -149,11 +149,20 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Plan downgrade handling** ✅ (Premium → Standard: lead limit warning, Standard → Cancel: 7-day read-only + 30-day reactivation. Completed and tested - downgrade warning modal appears for users with >10 leads, no warning for users within limit, read-only mode on cancellation. All Group 4.3 tests passed.)
 - [x] **Display weekly focus on Daily Plan page** ✅ (Fetch `next_week_focus` from `weekly_summaries` table and display in focus card. Completed - Phase 1 implemented: fetches from API, displays in focus card with proper priority hierarchy (adaptive recovery > weekly focus > placeholder), graceful fallbacks. See `docs/Planning/Weekly_Focus_Display_Plan.md` for phased rollout plan.)
 
-- [ ] **UI Language Refactor: From CRM to "Do the Work" Language** 🔴 **CRITICAL - BETA USER FEEDBACK**  
-       _Refactor all user-facing language to align with new navigation labels (Today, Relationships, Daily Plan, Actions, Weekly Review, Signals, Settings) and eliminate CRM terminology. Scope: User-facing strings only (navigation, page headers, buttons, empty states, onboarding, emails, tooltips). No changes to API endpoints, database schema, or internal code. Estimated: 3-5 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md`_
+- [x] **UI Language Refactor: From CRM to "Do the Work" Language** ✅  
+       _Refactor all user-facing language to align with new navigation labels (Today, Relationships, Daily Plan, Actions, Weekly Review, Signals, Settings) and eliminate CRM terminology. Scope: User-facing strings only (navigation, page headers, buttons, empty states, onboarding, emails, tooltips). No changes to API endpoints, database schema, or internal code. Completed: Navigation bar updated, all page headers/copy updated, email subject lines updated, onboarding language updated, Settings language updated, Weekly Review rename (from Weekly Summary), "streak" terminology changed to "consecutive days"/"activity", early access form dropdown updated, marketing page copy updated. Test plan created and executed. Reference: `docs/Planning/UI_Language_Refactor_Plan.md`_
 
-- [ ] **Actions Screen IA Refactor: Reduce Cognitive Load & Clarify Priority** 🔴 **CRITICAL - ICP FEEDBACK**  
-       _Redesign the Actions screen information architecture to remove cognitive overload and make “what to do next” obvious. Replace the 3-across card grid with a single-column list, group actions into four sections (“Needs attention now”, “Conversations in motion”, “Stay top of mind”, “Optional / background”), and collapse each action into a single, verb-led line with clear due/status metadata. No backend changes; reuse existing action data and endpoints. Estimated: 1–2 days. Reference: `docs/Planning/Actions_Screen_IA_Refactor_Plan.md`_
+- [x] **Actions Screen IA Refactor: Reduce Cognitive Load & Clarify Priority** ✅  
+       _Redesign the Actions screen information architecture to remove cognitive overload and make "what to do next" obvious. Replace the 3-across card grid with a single-column list, group actions into four sections ("Needs attention now", "Conversations in motion", "Stay top of mind", "Optional / background"), and collapse each action into a single, verb-led line with clear due/status metadata. No backend changes; reuse existing action data and endpoints. Completed: Single-column layout, 4-section grouping, verb-led one-line format, color-coded card rows (rose/green/orange/blue), white section containers, clean demo data. Reference: `docs/Planning/Actions_Screen_IA_Refactor_Plan.md`_
+
+- [ ] **Fix consecutive days display in Today and Settings** 🔴 **BUG FIX**  
+       _Investigate and fix why "Consecutive days" value (streak_count) is not displaying correctly in Today page and Settings page. Ensure streak_count is properly fetched from users table and displayed._
+
+- [x] **Fix Weekly Summary date calculation** ✅  
+       _Fixed weekly summary past week calculation bug (was showing 2 weeks behind). Updated cron job and test endpoint to correctly calculate previous week's Monday. If today is Monday, previous Monday is 7 days ago. If today is Tuesday-Sunday, previous Monday is (dayOfWeek - 1) days ago._
+
+- [x] **Fix account overview email to use login credentials** ✅  
+       _Fixed email display in account overview section to use user.email from auth.users (login credentials) instead of profile.email from users table (which may be from calendar OAuth)._
 
 ---
 
