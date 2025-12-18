@@ -136,7 +136,7 @@ export async function GET(request: Request) {
     // Process each connection
     for (const connection of connections as CalendarConnection[]) {
       try {
-        // Check if token expires within 24 hours
+        // Check if token expires within 24 hours OR has already expired
         const expiresAt = connection.expires_at;
 
         // If no expires_at, we should refresh to get one
@@ -148,9 +148,20 @@ export async function GET(request: Request) {
           // Token expires more than 24 hours from now, skip
           skipped++;
           continue;
+        } else if (expiresAt < nowSeconds) {
+          // Token has already expired, refresh it to restore the connection
+          console.log(
+            `[Calendar Token Maintenance] Connection ${connection.id} token has expired (expired ${Math.floor((nowSeconds - expiresAt) / 60)} minutes ago), refreshing`
+          );
+        } else {
+          // Token expires within 24 hours, refresh proactively
+          const minutesUntilExpiry = Math.floor((expiresAt - nowSeconds) / 60);
+          console.log(
+            `[Calendar Token Maintenance] Connection ${connection.id} token expires in ${minutesUntilExpiry} minutes, refreshing proactively`
+          );
         }
 
-        // Token expires within 24 hours (or has no expiry), refresh it
+        // Token expires within 24 hours, has already expired, or has no expiry - refresh it
         console.log(
           `[Calendar Token Maintenance] Refreshing token for connection ${connection.id} (${connection.provider})`
         );
