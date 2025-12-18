@@ -28,7 +28,10 @@ export async function GET(request: Request) {
     // Verify cron secret - support Authorization header (cron-job.org API key or CRON_SECRET), and query param (cron-job.org fallback)
     const authHeader = request.headers.get("authorization");
     const { searchParams } = new URL(request.url);
-    const querySecret = searchParams.get("secret")?.trim().replace(/\r?\n/g, "");
+    const querySecret = searchParams
+      .get("secret")
+      ?.trim()
+      .replace(/\r?\n/g, "");
     const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, "");
     const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(
       /\r?\n/g,
@@ -37,7 +40,9 @@ export async function GET(request: Request) {
 
     // Debug logging for staging (to diagnose authorization issues)
     const hostname = new URL(request.url).hostname;
-    const isStaging = hostname === "staging.nextbestmove.app" || hostname?.endsWith(".vercel.app");
+    const isStaging =
+      hostname === "staging.nextbestmove.app" ||
+      hostname?.endsWith(".vercel.app");
     if (isStaging) {
       console.log("[Calendar Token Maintenance] Auth Debug:", {
         hasAuthHeader: !!authHeader,
@@ -45,10 +50,13 @@ export async function GET(request: Request) {
         authHeaderPrefix: authHeader?.substring(0, 30) || "none",
         hasQuerySecret: !!querySecret,
         querySecretLength: querySecret?.length || 0,
+        querySecretPrefix: querySecret?.substring(0, 30) || "none",
         hasCronSecret: !!cronSecret,
         cronSecretLength: cronSecret?.length || 0,
+        cronSecretPrefix: cronSecret?.substring(0, 30) || "none",
         hasCronJobOrgApiKey: !!cronJobOrgApiKey,
         cronJobOrgApiKeyLength: cronJobOrgApiKey?.length || 0,
+        cronJobOrgApiKeyPrefix: cronJobOrgApiKey?.substring(0, 30) || "none",
       });
     }
 
@@ -61,11 +69,19 @@ export async function GET(request: Request) {
     if (!isAuthorized) {
       if (isStaging) {
         console.error("[Calendar Token Maintenance] Authorization failed:", {
-          authHeaderMatch: cronSecret ? authHeader === `Bearer ${cronSecret}` : false,
-          apiKeyMatch: cronJobOrgApiKey ? authHeader === `Bearer ${cronJobOrgApiKey}` : false,
+          authHeaderMatch: cronSecret
+            ? authHeader === `Bearer ${cronSecret}`
+            : false,
+          apiKeyMatch: cronJobOrgApiKey
+            ? authHeader === `Bearer ${cronJobOrgApiKey}`
+            : false,
           queryParamMatch: cronSecret ? querySecret === cronSecret : false,
-          querySecretPrefix: querySecret ? `${querySecret.substring(0, 10)}...` : "null",
-          cronSecretPrefix: cronSecret ? `${cronSecret.substring(0, 10)}...` : "null",
+          querySecretPrefix: querySecret
+            ? `${querySecret.substring(0, 10)}...`
+            : "null",
+          cronSecretPrefix: cronSecret
+            ? `${cronSecret.substring(0, 10)}...`
+            : "null",
           querySecretLength: querySecret?.length || 0,
           cronSecretLength: cronSecret?.length || 0,
           secretsMatch: querySecret === cronSecret,
