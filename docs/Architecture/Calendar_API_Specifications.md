@@ -1,4 +1,5 @@
 # Calendar API Endpoint Specifications
+
 ## NextBestMove v0.1 - Direct OAuth Integration
 
 > ⚠️ **NOTE:** This document is partially outdated. The implementation uses direct OAuth 2.0 with `openid-client` library, NOT NextAuth.js. The endpoint specifications are still accurate, but the OAuth flow details need updating to match the actual implementation. See `/web/src/app/api/calendar/` for current implementation.
@@ -51,9 +52,9 @@ MICROSOFT_TENANT_ID=common  # or your tenant ID
 
 ```typescript
 // app/api/auth/[...nextauth]/route.ts
-import NextAuth from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import AzureADProvider from 'next-auth/providers/azure-ad';
+import NextAuth from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import AzureADProvider from "next-auth/providers/azure-ad";
 
 export const authOptions = {
   providers: [
@@ -62,9 +63,10 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
-          access_type: 'offline',
-          prompt: 'consent', // Force consent to get refresh token
+          scope:
+            "openid email profile https://www.googleapis.com/auth/calendar.readonly",
+          access_type: "offline",
+          prompt: "consent", // Force consent to get refresh token
         },
       },
     }),
@@ -74,7 +76,7 @@ export const authOptions = {
       tenantId: process.env.MICROSOFT_TENANT_ID,
       authorization: {
         params: {
-          scope: 'openid email profile Calendars.Read offline_access',
+          scope: "openid email profile Calendars.Read offline_access",
         },
       },
     }),
@@ -149,10 +151,12 @@ Redirect user back to app with success
 ## API Endpoints
 
 ### Base URL
+
 - **Development:** `http://localhost:3000/api`
 - **Production:** `https://your-domain.com/api`
 
 ### Authentication
+
 All endpoints (except OAuth callbacks) require authentication via NextAuth.js session.
 
 ---
@@ -164,12 +168,14 @@ All endpoints (except OAuth callbacks) require authentication via NextAuth.js se
 **Description:** Returns the current calendar connection status for the authenticated user.
 
 **Request:**
+
 ```http
 GET /api/calendar/status
 Authorization: Bearer {session_token}
 ```
 
 **Response Success (200 OK):**
+
 ```json
 {
   "connected": true,
@@ -182,6 +188,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Response Not Connected (200 OK):**
+
 ```json
 {
   "connected": false,
@@ -194,6 +201,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Error Response (500 Internal Server Error):**
+
 ```json
 {
   "error": "Failed to check calendar status",
@@ -204,6 +212,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Implementation Notes:**
+
 - Check `calendar_connections` table for user
 - Validate refresh token is still valid
 - Return graceful error if check fails (don't block user)
@@ -217,22 +226,26 @@ Authorization: Bearer {session_token}
 **Description:** Initiates OAuth flow for Google Calendar connection. Redirects user to Google OAuth consent screen.
 
 **Request:**
+
 ```http
 GET /api/calendar/connect/google?callbackUrl=/settings
 ```
 
 **Query Parameters:**
+
 - `callbackUrl` (optional): URL to redirect to after connection. Default: `/settings`
 
 **Response:** HTTP 302 Redirect to NextAuth.js Google OAuth endpoint
 
 **NextAuth.js Callback Handling:**
 After successful OAuth, NextAuth.js callback will:
+
 1. Receive tokens from Google
 2. Call internal API to store connection
 3. Redirect to `callbackUrl`
 
 **Internal Endpoint (Called by NextAuth callback):**
+
 ```
 POST /api/calendar/connect/google/callback
 Body: {
@@ -244,6 +257,7 @@ Body: {
 ```
 
 **Error Handling:**
+
 - If OAuth fails, redirect to `callbackUrl?error=connection_failed`
 - Log error for debugging
 - Show user-friendly message: "Unable to connect Google Calendar. Please try again."
@@ -257,16 +271,19 @@ Body: {
 **Description:** Initiates OAuth flow for Outlook Calendar connection. Redirects user to Microsoft OAuth consent screen.
 
 **Request:**
+
 ```http
 GET /api/calendar/connect/outlook?callbackUrl=/settings
 ```
 
 **Query Parameters:**
+
 - `callbackUrl` (optional): URL to redirect to after connection. Default: `/settings`
 
 **Response:** HTTP 302 Redirect to NextAuth.js Azure AD OAuth endpoint
 
 **Error Handling:**
+
 - If OAuth fails, redirect to `callbackUrl?error=connection_failed`
 - Log error for debugging
 - Show user-friendly message: "Unable to connect Outlook Calendar. Please try again."
@@ -280,12 +297,14 @@ GET /api/calendar/connect/outlook?callbackUrl=/settings
 **Description:** Disconnects the user's calendar connection and removes stored tokens.
 
 **Request:**
+
 ```http
 DELETE /api/calendar/disconnect
 Authorization: Bearer {session_token}
 ```
 
 **Response Success (200 OK):**
+
 ```json
 {
   "success": true,
@@ -294,6 +313,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Error Response (500 Internal Server Error):**
+
 ```json
 {
   "error": "Failed to disconnect calendar",
@@ -304,6 +324,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Implementation Notes:**
+
 - Delete `calendar_connection` record
 - Optionally revoke tokens with provider (best practice)
 - Always succeed from user perspective (log errors but return success)
@@ -318,15 +339,18 @@ Authorization: Bearer {session_token}
 **Description:** Retrieves free/busy information for a specific date. Used to calculate daily plan capacity.
 
 **Request:**
+
 ```http
 GET /api/calendar/freebusy?date=2025-01-20
 Authorization: Bearer {session_token}
 ```
 
 **Query Parameters:**
+
 - `date` (required): Date in YYYY-MM-DD format
 
 **Response Success (200 OK):**
+
 ```json
 {
   "date": "2025-01-20",
@@ -345,12 +369,13 @@ Authorization: Bearer {session_token}
     "start": "09:00",
     "end": "17:00"
   },
-  "capacity": "standard",  // micro | light | standard | heavy
+  "capacity": "standard", // micro | light | standard | heavy
   "suggestedActionCount": 6
 }
 ```
 
 **Response Not Connected (200 OK - Graceful Fallback):**
+
 ```json
 {
   "date": "2025-01-20",
@@ -365,6 +390,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Error Response (500 Internal Server Error - Graceful Fallback):**
+
 ```json
 {
   "date": "2025-01-20",
@@ -380,6 +406,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Implementation Notes:**
+
 - Always return 200 OK (never fail)
 - Calculate free minutes from 9 AM - 5 PM (user's timezone)
 - Exclude busy slots from free time calculation
@@ -388,6 +415,7 @@ Authorization: Bearer {session_token}
 - Log errors for debugging but never block user
 
 **Capacity Mapping (per PRD Section 11.1):**
+
 ```
 Free Time          Capacity     Actions
 < 30 min          Micro         1-2
@@ -406,12 +434,14 @@ No calendar       Default       5-6
 **Description:** Refreshes expired access tokens using stored refresh tokens. Called internally when tokens expire.
 
 **Request:**
+
 ```http
 POST /api/calendar/refresh
 Authorization: Bearer {session_token}
 ```
 
 **Response Success (200 OK):**
+
 ```json
 {
   "success": true,
@@ -420,6 +450,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Error Response (500 Internal Server Error):**
+
 ```json
 {
   "error": "Failed to refresh calendar connection",
@@ -430,6 +461,7 @@ Authorization: Bearer {session_token}
 ```
 
 **Implementation Notes:**
+
 - Called automatically when free/busy request fails with 401
 - Update `calendar_connection` record with new tokens
 - If refresh fails, mark connection as expired but don't block user
@@ -444,12 +476,14 @@ Authorization: Bearer {session_token}
 **Description:** Background job to proactively refresh calendar tokens expiring within 24 hours. Runs daily via cron-job.org to prevent token expiration for inactive users.
 
 **Request:**
+
 ```http
 GET /api/cron/calendar-token-maintenance
 Authorization: Bearer {CRON_SECRET}
 ```
 
 **Response Success (200 OK):**
+
 ```json
 {
   "success": true,
@@ -463,6 +497,7 @@ Authorization: Bearer {CRON_SECRET}
 ```
 
 **Implementation Notes:**
+
 - Configured in cron-job.org (see Architecture_Summary.md)
 - Finds all active calendar connections
 - Identifies tokens expiring within 24 hours
@@ -478,9 +513,9 @@ Authorization: Bearer {CRON_SECRET}
 ### Calendar Connection
 
 ```typescript
-type CalendarProvider = 'google' | 'outlook';
+type CalendarProvider = "google" | "outlook";
 
-type CalendarConnectionStatus = 'active' | 'expired' | 'error' | 'disconnected';
+type CalendarConnectionStatus = "active" | "expired" | "error" | "disconnected";
 
 interface CalendarConnection {
   id: string;
@@ -506,7 +541,7 @@ interface FreeBusySlot {
   end: string; // ISO 8601
 }
 
-type CapacityLevel = 'micro' | 'light' | 'standard' | 'heavy' | 'default';
+type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
 interface FreeBusyResponse {
   date: string; // YYYY-MM-DD
@@ -531,6 +566,7 @@ interface FreeBusyResponse {
 ### Principle: Fail Gracefully, Keep Users Moving
 
 All calendar endpoints should:
+
 1. **Never block the user** - Always provide a fallback
 2. **Log errors** - Capture detailed error info for debugging
 3. **Show clear messages** - User-friendly error messages when needed
@@ -541,11 +577,13 @@ All calendar endpoints should:
 #### 1. Calendar Not Connected
 
 **User Experience:**
+
 - Show default capacity (5-6 actions)
 - Display subtle message: "Connect your calendar to personalize your daily plan"
 - Don't block or interrupt workflow
 
 **Technical:**
+
 - Return fallback response with `fallback: true`
 - Log info level (not error)
 
@@ -554,11 +592,13 @@ All calendar endpoints should:
 #### 2. Token Expired
 
 **User Experience:**
+
 - Automatically attempt token refresh (background)
 - If refresh succeeds: Continue seamlessly
 - If refresh fails: Show default capacity + prompt to reconnect
 
 **Technical:**
+
 - Try refresh automatically
 - If fails, mark connection as expired
 - Return fallback response
@@ -569,11 +609,13 @@ All calendar endpoints should:
 #### 3. Rate Limit Exceeded
 
 **User Experience:**
+
 - Use cached data if available
 - Fall back to default capacity
 - Show no error (transparent to user)
 
 **Technical:**
+
 - Implement caching (5-10 minute cache for free/busy)
 - Return cached data if available
 - Log warning for monitoring
@@ -584,11 +626,13 @@ All calendar endpoints should:
 #### 4. Network/API Errors
 
 **User Experience:**
+
 - Use default capacity immediately
 - Show no error message (happens in background)
 - Allow user to continue working
 
 **Technical:**
+
 - Catch all errors
 - Log with full context
 - Return fallback response immediately
@@ -599,12 +643,14 @@ All calendar endpoints should:
 #### 5. Permission Revoked
 
 **User Experience:**
+
 - Detect on next sync
 - Mark connection as expired
 - Show message: "Calendar connection expired. Please reconnect."
 - Offer reconnect button
 
 **Technical:**
+
 - Detect 403/401 errors
 - Mark connection as expired in DB
 - Log for monitoring
@@ -631,15 +677,15 @@ interface ErrorResponse {
 
 ```typescript
 const ERROR_CODES = {
-  CALENDAR_NOT_CONNECTED: 'CALENDAR_NOT_CONNECTED',
-  CALENDAR_TOKEN_EXPIRED: 'CALENDAR_TOKEN_EXPIRED',
-  CALENDAR_REFRESH_FAILED: 'CALENDAR_REFRESH_FAILED',
-  CALENDAR_RATE_LIMIT: 'CALENDAR_RATE_LIMIT',
-  CALENDAR_NETWORK_ERROR: 'CALENDAR_NETWORK_ERROR',
-  CALENDAR_PERMISSION_DENIED: 'CALENDAR_PERMISSION_DENIED',
-  CALENDAR_STATUS_ERROR: 'CALENDAR_STATUS_ERROR',
-  CALENDAR_DISCONNECT_ERROR: 'CALENDAR_DISCONNECT_ERROR',
-  CALENDAR_FETCH_ERROR: 'CALENDAR_FETCH_ERROR',
+  CALENDAR_NOT_CONNECTED: "CALENDAR_NOT_CONNECTED",
+  CALENDAR_TOKEN_EXPIRED: "CALENDAR_TOKEN_EXPIRED",
+  CALENDAR_REFRESH_FAILED: "CALENDAR_REFRESH_FAILED",
+  CALENDAR_RATE_LIMIT: "CALENDAR_RATE_LIMIT",
+  CALENDAR_NETWORK_ERROR: "CALENDAR_NETWORK_ERROR",
+  CALENDAR_PERMISSION_DENIED: "CALENDAR_PERMISSION_DENIED",
+  CALENDAR_STATUS_ERROR: "CALENDAR_STATUS_ERROR",
+  CALENDAR_DISCONNECT_ERROR: "CALENDAR_DISCONNECT_ERROR",
+  CALENDAR_FETCH_ERROR: "CALENDAR_FETCH_ERROR",
 } as const;
 ```
 
@@ -650,11 +696,13 @@ const ERROR_CODES = {
 ### Provider Limits
 
 #### Google Calendar API
+
 - **Quota:** 1,000,000 queries/day (free)
 - **Per user:** ~50 queries/day (well within limit)
 - **Caching:** Cache free/busy data for 5-10 minutes
 
 #### Microsoft Graph API
+
 - **Limit:** 10,000 requests per 10 minutes
 - **Per user:** ~50 requests/day (well within limit)
 - **Caching:** Cache free/busy data for 5-10 minutes
@@ -662,11 +710,13 @@ const ERROR_CODES = {
 ### Implementation Strategy
 
 1. **Cache free/busy responses:**
+
    - Cache key: `freebusy:${userId}:${date}`
    - TTL: 10 minutes
    - Store in Redis or in-memory cache
 
 2. **Batch requests:**
+
    - Fetch multiple days at once if needed
    - Reduce API calls
 
@@ -699,6 +749,7 @@ function decryptToken(encryptedToken: string): string {
 ### Working Hours Detection
 
 For free/busy calculation:
+
 - Default: 9 AM - 5 PM (user's timezone)
 - Can be enhanced in v0.2 to detect from calendar settings
 
@@ -711,11 +762,13 @@ For free/busy calculation:
 ### Testing Strategy
 
 1. **Unit Tests:**
+
    - Capacity calculation logic
    - Free/busy parsing
    - Error handling paths
 
 2. **Integration Tests:**
+
    - OAuth flow end-to-end
    - Free/busy fetching
    - Token refresh
@@ -738,5 +791,4 @@ For free/busy calculation:
 
 ---
 
-*Calendar API Specifications v1.0 - Ready for implementation*
-
+_Calendar API Specifications v1.0 - Ready for implementation_

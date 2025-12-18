@@ -93,7 +93,7 @@ export async function GET(request: Request) {
       try {
         // Check if token expires within 24 hours
         const expiresAt = connection.expires_at;
-        
+
         // If no expires_at, we should refresh to get one
         if (!expiresAt) {
           console.log(
@@ -184,4 +184,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

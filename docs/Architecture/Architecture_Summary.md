@@ -22,12 +22,14 @@
 **NextBestMove** is an actions-first workflow app that helps solopreneurs and fractional executives maintain a consistent revenue rhythm.
 
 ### Core Loop (v0.1)
+
 1. Add leads you don't want to lose track of
 2. Get a short, calendar-aware daily plan (3–8 actions)
 3. Mark actions as done / got reply / snooze
 4. Receive a weekly summary with a simple insight and 1–2 content prompts
 
 ### Target Users
+
 - Fractional CMOs, CFOs, CTOs, COOs
 - Solo consultants, expert freelancers
 - Early-stage founders doing their own outbound
@@ -72,6 +74,7 @@
 ## Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
 - **UI**: React 18
@@ -79,17 +82,20 @@
 - **State Management**: React Query for server state
 
 ### Backend
+
 - **Runtime**: Node.js (Vercel Edge/Serverless)
 - **API**: Next.js API Routes
 - **Server Components**: React Server Components
 - **Database Client**: Supabase JS Client
 
 ### Database
+
 - **Provider**: Supabase (PostgreSQL)
 - **Security**: Row Level Security (RLS) policies
 - **Migrations**: SQL migration files in `supabase/migrations/`
 
 ### External Services
+
 - **Hosting**: Vercel (frontend + API)
 - **Database/Auth**: Supabase
 - **Payments**: Stripe
@@ -101,9 +107,10 @@
 - **Analytics**: Umami
 
 ### Environment Management
+
 - **Secrets**: Doppler (source of truth)
 - **Sync**: Doppler → Vercel (via scripts)
-- **Environments**: 
+- **Environments**:
   - Local (`.env.local`)
   - Staging (Doppler `stg` config → Vercel Preview)
   - Production (Doppler `prd` config → Vercel Production)
@@ -119,6 +126,7 @@ All scheduled background jobs are configured via **cron-job.org**, an external c
 ### Authentication Method
 
 Cron jobs authenticate using:
+
 1. **Authorization Header**: `Authorization: Bearer ${CRON_SECRET}` or `Authorization: Bearer ${CRON_JOB_ORG_API_KEY}`
 2. **Query Parameter**: `?secret=${CRON_SECRET}` (fallback for cron-job.org)
 
@@ -127,66 +135,79 @@ Cron jobs authenticate using:
 All cron jobs are configured in cron-job.org and call Next.js API endpoints:
 
 1. **Daily Plans Generation**
+
    - Endpoint: `/api/cron/daily-plans`
    - Schedule: Daily (typically early morning UTC)
    - Purpose: Generate daily plans for all active users
 
 2. **Weekly Summaries**
+
    - Endpoint: `/api/cron/weekly-summaries`
    - Schedule: Weekly (typically Sunday)
    - Purpose: Generate weekly summaries and send emails
 
 3. **Auto-Unsnooze**
+
    - Endpoint: `/api/cron/auto-unsnooze`
    - Schedule: Daily
    - Purpose: Automatically unsnooze items past their snooze date
 
 4. **Auto-Archive**
+
    - Endpoint: `/api/cron/auto-archive`
    - Schedule: Daily
    - Purpose: Archive old completed actions
 
 5. **Morning Plan Emails**
+
    - Endpoint: `/api/notifications/morning-plan`
    - Schedule: Hourly (to catch 8am in user timezones)
    - Purpose: Send morning plan emails at 8am user time
 
 6. **Fast Win Reminders**
+
    - Endpoint: `/api/notifications/fast-win-reminder`
    - Schedule: Hourly (to catch 2pm in user timezones)
    - Purpose: Send fast win reminder emails at 2pm user time
 
 7. **Follow-Up Alerts**
+
    - Endpoint: `/api/notifications/follow-up-alerts`
    - Schedule: Daily
    - Purpose: Alert users about overdue follow-up actions
 
 8. **Streak Recovery**
+
    - Endpoint: `/api/cron/streak-recovery`
    - Schedule: Daily
    - Purpose: Detect streak breaks and send recovery emails
 
 9. **Payment Failure Recovery**
+
    - Endpoint: `/api/cron/payment-failure-recovery`
    - Schedule: Daily
    - Purpose: Handle payment failure recovery flow (Day 0, 3, 7, 14)
 
 10. **Win-Back Campaign**
+
     - Endpoint: `/api/cron/win-back-campaign`
     - Schedule: Daily
     - Purpose: Send win-back emails to canceled users (Day 7, 30, 90, 180)
 
 11. **Trial Reminders**
+
     - Endpoint: `/api/cron/trial-reminders`
     - Schedule: Daily
     - Purpose: Send trial expiration reminders (Day 12, 14)
 
 12. **Performance Timeline Aggregation**
+
     - Endpoint: `/api/cron/aggregate-performance-timeline`
     - Schedule: Daily
     - Purpose: Aggregate daily performance metrics for Premium users
 
 13. **Cleanup Stale Actions**
+
     - Endpoint: `/api/cron/cleanup-stale-actions`
     - Schedule: Daily (2 AM UTC)
     - Purpose: Clean up stale actions
@@ -215,6 +236,7 @@ All cron jobs are configured in cron-job.org and call Next.js API endpoints:
 ### Problem Statement
 
 Solopreneurs and fractional leaders struggle with:
+
 - Inconsistent outreach and follow-up
 - Stalled conversations and ghosted threads
 - No clear answer to "What should I do today to move revenue?"
@@ -224,6 +246,7 @@ Solopreneurs and fractional leaders struggle with:
 ### Solution
 
 A simple, trustworthy daily list of actions that:
+
 - Respects calendar and capacity
 - Focuses on follow-ups and high-leverage outreach
 - Compounds into booked calls and deals
@@ -231,27 +254,32 @@ A simple, trustworthy daily list of actions that:
 ### Core Features (v0.1)
 
 1. **Actions-First Daily Plan**
+
    - Short list of high-impact actions each morning
    - Automatically sized based on calendar availability
    - Includes one Fast Win to build momentum
 
 2. **Leads Management**
+
    - Simple leads (name + URL)
    - No CRM complexity
    - Snooze/archive functionality
 
 3. **Follow-Up System**
+
    - One-tap "Got a reply" handling
    - Smart defaults for snoozing
    - Automatic next steps
 
 4. **Weekly Rhythm**
+
    - Automatic weekly summary
    - AI-assisted narrative
    - Simple insights
    - Content prompts based on real activity
 
 5. **Calendar-Aware Capacity**
+
    - Connect Google/Outlook calendar
    - Daily plans adjust to availability
    - Fallback to fixed lightweight plan if no calendar
@@ -275,42 +303,50 @@ A simple, trustworthy daily list of actions that:
 ### P0 – MVP Must-Haves ✅
 
 **Foundation & Billing**
+
 - ✅ Stripe API routes (checkout & portal)
 - ✅ Stripe webhook + subscription sync
 - ✅ Supabase Auth pages & profile bootstrap
 - ✅ Paywall middleware & base overlay
 
 **Leads & Actions**
+
 - ✅ Lead management UI + API
 - ✅ Action engine core
 
 **Daily Plan**
+
 - ✅ Plan generation service
 - ✅ Daily Plan page UI
 - ✅ Action priority ranking improvements
 - ✅ Stale actions insight & algorithm v2
 
 **Calendar Integration**
+
 - ✅ Google & Outlook OAuth flows
 - ✅ Free/busy API + status indicators
 - ✅ Customizable working hours
 
 **Weekly Summary & Content**
+
 - ✅ Weekly summary metrics job
 - ✅ Weekly Summary page
 - ✅ Content prompt generation
 - ✅ Copy to clipboard for content prompts
 
 **Onboarding**
+
 - ✅ Onboarding flow (8 steps)
 
 **Settings & Export**
+
 - ✅ Settings page framework
 - ✅ Billing section UI
 - ✅ Data export endpoint
 - ✅ Email preferences & account deletion controls
 
 **Background Jobs & Observability**
+
 - ✅ Background jobs (all cron jobs via cron-job.org)
 - ✅ Observability setup (GlitchTip, Umami, structured logging)
 
@@ -349,6 +385,7 @@ A simple, trustworthy daily list of actions that:
 ### P0 – MVP Must-Haves (Remaining)
 
 **Foundation & Tooling**
+
 - [ ] Project initialization & tooling (mostly complete, may need updates)
 - [ ] Supabase schema & migrations (mostly complete, may need updates)
 
@@ -357,6 +394,7 @@ A simple, trustworthy daily list of actions that:
 **Priority Order:**
 
 1. **Company research & enrichment for pre-call briefs** 🔄 **NEXT P2 ITEM**
+
    - Automatically enrich pre-call briefs with company information, news, and SEC filings
    - Extract company domain from email/LinkedIn URL
    - Fetch company details (name, industry, size), recent news/press releases
@@ -365,6 +403,7 @@ A simple, trustworthy daily list of actions that:
    - Gate behind Premium plan
 
 2. **Design token compliance (incremental)** ⏱ **POST-LAUNCH**
+
    - Fix design token violations incrementally over 2-4 weeks
    - Replace hardcoded colors, spacing, and border radius values with design tokens
    - Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover)
@@ -372,42 +411,55 @@ A simple, trustworthy daily list of actions that:
    - Estimated: 8-10 hours total, 2-3 hours/week
 
 3. **Manual "Busy / Light day" capacity override**
+
    - Allow users to manually override capacity for a day
 
 4. **Action detail modal / history view**
+
    - View detailed history of an action
 
 5. **Additional login providers**
+
    - Apple, LinkedIn, etc.
 
 6. **Deeper analytics**
+
    - Deal progression metric, more insights
 
 7. **Notification delivery channels**
+
    - Email/push beyond toggles
 
 8. **Pricing page UI**
+
    - Standard vs Premium comparison, annual savings, clear value props
 
 9. **Billing pause feature**
+
    - 30-day pause for users inactive 7+ days
 
 10. **Cancellation feedback analytics page**
+
     - Admin/internal page to view and analyze cancellation feedback
 
 11. **Enhanced pre-call brief detection**
+
     - Recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call")
 
 12. **POST_CALL auto-generation**
+
     - Automatically create POST_CALL actions when calendar events (calls) end
 
 13. **CALL_PREP auto-generation**
+
     - Automatically create CALL_PREP actions 24 hours before detected calls
 
 14. **NURTURE auto-generation**
+
     - Automatically create NURTURE actions for leads that haven't been contacted in 21+ days
 
 15. **CONTENT action conversion from weekly summaries**
+
     - Convert weekly summary content prompts to CONTENT actions
 
 16. **Industry/work type selection & trend-based content generation**
@@ -445,8 +497,8 @@ A simple, trustworthy daily list of actions that:
 ---
 
 **For detailed implementation guides, see:**
+
 - `docs/Architecture/Implementation_Guide.md`
 - `docs/Architecture/Database_Schema.md`
 - `docs/PRD/NextBestMove_PRD_v1.md`
 - `docs/backlog.md`
-

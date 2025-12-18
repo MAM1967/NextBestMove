@@ -45,6 +45,24 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 
 ## Cron Jobs Configuration
 
+### Creating New Cron Jobs
+
+To create a new cron job via the cron-job.org API, use the provided scripts:
+
+**For Calendar Token Maintenance:**
+```bash
+./scripts/create-calendar-token-maintenance-cron.sh YOUR_CRON_SECRET [staging|production]
+```
+
+The script will:
+- Create the job with proper Authorization header
+- Schedule it for daily at 2 AM UTC
+- Configure it for staging or production environment
+
+**Note:** You'll need:
+- `CRON_SECRET` from your environment variables
+- The cron-job.org API key is hardcoded in the script
+
 ### 1. Daily Plans Generation
 
 **Endpoint:** `GET /api/cron/daily-plans?secret=YOUR_CRON_SECRET`  
@@ -98,6 +116,36 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 **Endpoint:** `GET /api/cron/streak-recovery?secret=YOUR_CRON_SECRET`  
 **Schedule:** Daily at 3:00 AM UTC  
 **Purpose:** Detects users with broken streaks and sends recovery emails
+
+### 10. Calendar Token Maintenance
+
+**Endpoint:** `GET /api/cron/calendar-token-maintenance`  
+**Schedule:** Daily at 2:00 AM UTC  
+**Purpose:** Proactively refreshes calendar tokens expiring within 24 hours to prevent expiration for inactive users
+
+**What it does:**
+- Finds all active calendar connections
+- Identifies tokens expiring within 24 hours
+- Proactively refreshes them
+- Marks connections as expired if refresh fails
+- Updates `last_sync_at` on successful refresh
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Calendar token maintenance completed",
+  "total": 45,
+  "refreshed": 42,
+  "expired": 2,
+  "skipped": 1,
+  "errors": 0
+}
+```
+
+**Note:** This job uses Authorization header (not query parameter). Configure in cron-job.org with:
+- URL: `https://staging.nextbestmove.app/api/cron/calendar-token-maintenance` (or production URL)
+- Authorization Header: `Bearer YOUR_CRON_SECRET`
 
 **What it does:**
 - Finds users with `streak_count = 0` and `last_action_date > 1 day ago`
