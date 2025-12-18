@@ -106,6 +106,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 - [x] **Background jobs** ✅  
        _Daily plan cron, weekly summary cron, auto-unsnooze, auto-archive. Implemented via cron-job.org (4 jobs total). Includes notification cron jobs: morning plan, fast win reminder, follow-up alerts._
+- [x] **Calendar token maintenance job** ✅  
+       _Daily cron job to proactively refresh calendar tokens expiring within 24 hours. Prevents token expiration for inactive users and ensures long-term connection stability. Runs at 2 AM UTC daily. Endpoint: `/api/cron/calendar-token-maintenance`. Reference: `docs/Testing/OAuth_Token_Refresh_Algorithm_Comparison.md`_
 
 - [x] **Observability setup** ✅  
        _GlitchTip for error tracking (Sentry-compatible SDK), Umami for privacy-focused analytics, structured logging utility with GlitchTip integration for billing + webhooks. See `docs/Observability.md` for details._
