@@ -437,32 +437,38 @@ Authorization: Bearer {session_token}
 
 ---
 
-### 7. Sync Calendar Status (Background Job)
+### 7. Calendar Token Maintenance (Background Job)
 
-**Endpoint:** `POST /api/calendar/sync-status`
+**Endpoint:** `GET /api/cron/calendar-token-maintenance`
 
-**Description:** Background job to validate calendar connections and refresh tokens if needed. Runs periodically.
+**Description:** Background job to proactively refresh calendar tokens expiring within 24 hours. Runs daily via cron-job.org to prevent token expiration for inactive users.
 
 **Request:**
 ```http
-POST /api/calendar/sync-status
-Authorization: Bearer {internal_service_token}
+GET /api/cron/calendar-token-maintenance
+Authorization: Bearer {CRON_SECRET}
 ```
 
 **Response Success (200 OK):**
 ```json
 {
-  "synced": 45,
+  "success": true,
+  "message": "Calendar token maintenance completed",
+  "total": 45,
+  "refreshed": 42,
   "expired": 2,
+  "skipped": 1,
   "errors": 0
 }
 ```
 
 **Implementation Notes:**
-- Can be triggered by cron job or scheduled task
-- Validates all active calendar connections
-- Refreshes tokens that are close to expiring
-- Updates connection status in database
+- Configured in cron-job.org (see Architecture_Summary.md)
+- Finds all active calendar connections
+- Identifies tokens expiring within 24 hours
+- Proactively refreshes them
+- Marks connections as expired if refresh fails
+- Updates `last_sync_at` on successful refresh
 - Runs silently (no user-facing errors)
 
 ---

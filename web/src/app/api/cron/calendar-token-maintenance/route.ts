@@ -19,12 +19,13 @@ import type { CalendarConnection } from "@/lib/calendar/tokens";
  * This prevents token expiration for inactive users and ensures
  * calendar connections remain stable long-term.
  *
- * This endpoint is called by Vercel Cron and requires authentication via
- * the Authorization header with a secret token.
+ * This endpoint is called by cron-job.org and requires authentication via
+ * the Authorization header with a secret token (CRON_SECRET or CRON_JOB_ORG_API_KEY).
+ * See docs/Architecture/Architecture_Summary.md for cron job configuration details.
  */
 export async function GET(request: Request) {
   try {
-    // Verify cron secret - support Authorization header (Vercel Cron or cron-job.org API key), and query param (cron-job.org)
+    // Verify cron secret - support Authorization header (cron-job.org API key or CRON_SECRET), and query param (cron-job.org fallback)
     const authHeader = request.headers.get("authorization");
     const { searchParams } = new URL(request.url);
     const querySecret = searchParams.get("secret");

@@ -191,6 +191,11 @@ All cron jobs are configured in cron-job.org and call Next.js API endpoints:
     - Schedule: Daily (2 AM UTC)
     - Purpose: Clean up stale actions
 
+14. **Calendar Token Maintenance**
+    - Endpoint: `/api/cron/calendar-token-maintenance`
+    - Schedule: Daily (2 AM UTC)
+    - Purpose: Proactively refresh calendar tokens expiring within 24 hours to prevent expiration for inactive users
+
 ### Environment Variables
 
 - `CRON_SECRET`: Secret token for cron job authentication (stored in Doppler)
