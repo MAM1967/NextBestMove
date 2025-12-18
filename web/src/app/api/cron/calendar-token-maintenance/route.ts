@@ -64,10 +64,11 @@ export async function GET(request: Request) {
           authHeaderMatch: cronSecret ? authHeader === `Bearer ${cronSecret}` : false,
           apiKeyMatch: cronJobOrgApiKey ? authHeader === `Bearer ${cronJobOrgApiKey}` : false,
           queryParamMatch: cronSecret ? querySecret === cronSecret : false,
-          querySecretValue: querySecret ? `${querySecret.substring(0, 10)}...` : "null",
-          cronSecretValue: cronSecret ? `${cronSecret.substring(0, 10)}...` : "null",
-          querySecretExact: querySecret,
-          cronSecretExact: cronSecret,
+          querySecretPrefix: querySecret ? `${querySecret.substring(0, 10)}...` : "null",
+          cronSecretPrefix: cronSecret ? `${cronSecret.substring(0, 10)}...` : "null",
+          querySecretLength: querySecret?.length || 0,
+          cronSecretLength: cronSecret?.length || 0,
+          secretsMatch: querySecret === cronSecret,
         });
       }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
