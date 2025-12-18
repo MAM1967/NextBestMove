@@ -1,7 +1,9 @@
 # OAuth Token Persistence Test Plan
 
 ## Purpose
+
 Verify that OAuth tokens remain stable and connections persist correctly across:
+
 - OAuth client credential changes
 - Token refresh operations
 - Environment variable updates
@@ -10,9 +12,11 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 ## Test Scenarios
 
 ### Test 1: Token Refresh Persistence
+
 **Goal:** Verify tokens refresh successfully and connections remain active
 
 **Steps:**
+
 1. Connect a Google calendar in staging
 2. Wait for access token to expire (or manually trigger refresh)
 3. Make a calendar API call (free/busy request)
@@ -21,21 +25,25 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 6. Verify `last_sync_at` updates
 
 **Expected Result:**
+
 - Token refreshes without user intervention
 - Connection status stays "active"
 - No error messages shown to user
 - Calendar data continues to work
 
 **Test Data:**
+
 - User: Test account with Google calendar
 - Duration: Monitor for 1 hour (tokens expire after 1 hour)
 
 ---
 
 ### Test 2: OAuth Client Mismatch Detection
+
 **Goal:** Verify system detects when OAuth client changes and handles gracefully
 
 **Steps:**
+
 1. Connect a calendar with OAuth Client A
 2. Change environment variable to OAuth Client B (simulate client deletion/change)
 3. Attempt to refresh token
@@ -44,21 +52,25 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 6. Verify "Reconnect Calendar" button appears
 
 **Expected Result:**
+
 - Connection status changes to "expired" or "error"
 - Error message clearly explains the issue
 - User can easily reconnect
 - No crashes or blocking errors
 
 **Test Data:**
+
 - Simulate by using wrong client ID in environment
 - Or use staging credentials when production token exists
 
 ---
 
 ### Test 3: Deleted Client Error Handling
+
 **Goal:** Verify "deleted_client" error is handled correctly
 
 **Steps:**
+
 1. Connect a calendar
 2. Simulate "deleted_client" error (modify error response or use deleted client)
 3. Attempt token refresh
@@ -67,6 +79,7 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 6. Verify UI shows reconnect option
 
 **Expected Result:**
+
 - Error message: "OAuth client was deleted: The OAuth client used to connect your calendar has been deleted..."
 - Connection status: "expired" or "error"
 - Reconnect button visible and functional
@@ -74,9 +87,11 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 ---
 
 ### Test 4: Token Rotation Persistence
+
 **Goal:** Verify refresh token rotation works correctly
 
 **Steps:**
+
 1. Connect a calendar
 2. Note the refresh token (encrypted in DB)
 3. Trigger multiple token refreshes
@@ -85,6 +100,7 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 6. Verify connection continues working after rotation
 
 **Expected Result:**
+
 - New refresh tokens stored when provided by provider
 - Old refresh token replaced
 - Connection remains active
@@ -93,9 +109,11 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 ---
 
 ### Test 5: Cross-Environment Token Persistence
+
 **Goal:** Verify tokens work across staging/production environments
 
 **Steps:**
+
 1. Connect calendar in staging
 2. Verify connection works
 3. Check that staging uses staging OAuth credentials
@@ -103,6 +121,7 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 5. Verify tokens from one environment don't work in the other
 
 **Expected Result:**
+
 - Staging tokens only work with staging OAuth client
 - Production tokens only work with production OAuth client
 - Clear error messages if mismatch occurs
@@ -110,9 +129,11 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 ---
 
 ### Test 6: Long-Term Token Stability
+
 **Goal:** Verify tokens remain valid over extended period
 
 **Steps:**
+
 1. Connect a calendar
 2. Monitor connection for 7 days
 3. Verify automatic token refresh works
@@ -120,6 +141,7 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 5. Check logs for refresh operations
 
 **Expected Result:**
+
 - Tokens refresh automatically
 - Connection remains active
 - No user intervention required
@@ -143,21 +165,70 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 # - Verify status = 'active'
 # - Note refresh_token (encrypted)
 
-# 3. Trigger token refresh
-# - Make API call: GET /api/calendar/freebusy?date=2025-12-17
+# 3. Test token refresh (without waiting for expiration)
+# - Use test endpoint: POST /api/calendar/test-refresh
+#   curl -X POST https://staging.nextbestmove.app/api/calendar/test-refresh
+# - Verify token refreshes successfully
 # - Check logs for refresh operation
-# - Verify new access_token stored
+# - Verify new access_token and expires_at stored
 
-# 4. Simulate deleted_client error
-# - Temporarily change GOOGLE_CLIENT_ID to invalid value
-# - Trigger token refresh
-# - Verify error handling
+# 4. Test validation endpoint
+# - POST /api/calendar/validate
+#   curl -X POST https://staging.nextbestmove.app/api/calendar/validate
+# - Verify returns valid: true
+# - Verify lastSyncAt updates
+
+# 5. Simulate deleted_client error
+# - Temporarily change GOOGLE_CLIENT_ID to invalid value in Doppler
+# - Trigger token refresh via test endpoint
+# - Verify error handling and connection marked as expired
+# - Verify error message includes "deleted_client" handling
 # - Restore correct client ID
 
-# 5. Verify reconnection
-# - Click "Reconnect Calendar"
+# 6. Verify reconnection
+# - Click "Reconnect Calendar" in UI
 # - Complete OAuth flow
-# - Verify connection restored
+# - Verify connection restored to "active"
+```
+
+### Quick Token Refresh Test (No Waiting Required)
+
+Instead of waiting 1 hour for token expiration, use the test endpoint:
+
+**Option 1: Browser Console (Easiest)**
+```javascript
+// Open browser console on staging.nextbestmove.app
+// While logged in, run:
+fetch('/api/calendar/test-refresh', { method: 'POST' })
+  .then(r => r.json())
+  .then(console.log)
+  .catch(console.error);
+
+// Expected response on success:
+// {
+//   "success": true,
+//   "message": "Token refreshed successfully",
+//   "provider": "google",
+//   "status": "active",
+//   "expiresAt": "2025-12-18T14:51:38.000Z",
+//   "lastSyncAt": "2025-12-18T13:51:38.000Z"
+// }
+```
+
+**Option 2: cURL (Requires Session Cookie)**
+```bash
+# Get session cookie from browser DevTools > Application > Cookies
+# Then:
+curl -X POST https://staging.nextbestmove.app/api/calendar/test-refresh \
+  -H "Cookie: [your-session-cookie]"
+```
+
+**Option 3: Force Expiration in Database (Advanced)**
+```sql
+-- Set expires_at to past to force refresh on next API call
+UPDATE calendar_connections
+SET expires_at = EXTRACT(EPOCH FROM NOW()) - 3600  -- 1 hour ago
+WHERE user_id = '[your-user-id]';
 ```
 
 ---
@@ -167,10 +238,12 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 ### Key Metrics to Monitor
 
 1. **Token Refresh Success Rate**
+
    - Track successful vs failed refresh attempts
    - Alert if success rate drops below 95%
 
 2. **Error Types**
+
    - Count occurrences of:
      - `deleted_client`
      - `invalid_client`
@@ -178,6 +251,7 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
      - `invalid_request`
 
 3. **Connection Status Distribution**
+
    - Track percentage of connections in each status:
      - `active`
      - `expired`
@@ -192,8 +266,8 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 
 ```sql
 -- Check connection status distribution
-SELECT status, COUNT(*) 
-FROM calendar_connections 
+SELECT status, COUNT(*)
+FROM calendar_connections
 GROUP BY status;
 
 -- Check recent errors
@@ -204,7 +278,7 @@ ORDER BY updated_at DESC
 LIMIT 20;
 
 -- Check token refresh frequency
-SELECT 
+SELECT
   user_id,
   provider,
   last_sync_at,
@@ -224,13 +298,14 @@ ORDER BY last_sync_at DESC;
 ✅ **Test 3:** "deleted_client" errors show helpful messages and reconnect option  
 ✅ **Test 4:** Refresh token rotation works correctly  
 ✅ **Test 5:** Environment isolation works (staging vs production)  
-✅ **Test 6:** Connections remain stable for 7+ days  
+✅ **Test 6:** Connections remain stable for 7+ days
 
 ---
 
 ## Rollback Plan
 
 If tests reveal issues:
+
 1. Review error logs to identify root cause
 2. Check OAuth client configuration in Google Cloud Console
 3. Verify environment variables are correct
@@ -244,4 +319,3 @@ If tests reveal issues:
 - **OAuth Client Lifecycle:** Refresh tokens are tied to the OAuth client that issued them. If the client is deleted or changed, all refresh tokens become invalid.
 - **Token Rotation:** Google and Microsoft can return new refresh tokens during refresh. Always store new tokens when provided.
 - **Environment Isolation:** Staging and production must use different OAuth clients to prevent token conflicts.
-

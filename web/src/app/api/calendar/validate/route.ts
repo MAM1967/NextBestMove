@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveConnection, getValidAccessToken } from "@/lib/calendar/tokens";
+import {
+  getActiveConnection,
+  getValidAccessToken,
+} from "@/lib/calendar/tokens";
 import { fetchGoogleFreeBusy } from "@/lib/calendar/freebusy-google";
 import { fetchOutlookFreeBusy } from "@/lib/calendar/freebusy-outlook";
 
 /**
  * POST /api/calendar/validate
- * 
+ *
  * Proactively validates calendar connection by attempting a test API call.
  * Used for testing and monitoring connection health.
  */
@@ -128,4 +131,3 @@ export async function POST() {
     );
   }
 }
-

@@ -117,14 +117,17 @@ export function CalendarConnectionSection({
               </p>
               {conn.error_message && (
                 <div className="mt-2 space-y-2">
-                  <p className="text-red-600 font-medium">Error: {conn.error_message}</p>
-                  {(conn.error_message.includes("OAuth client mismatch") || 
-                   conn.error_message.includes("invalid_client") ||
-                   conn.error_message.includes("deleted_client") ||
-                   conn.error_message.includes("OAuth client was deleted")) ? (
+                  <p className="text-red-600 font-medium">
+                    Error: {conn.error_message}
+                  </p>
+                  {conn.error_message.includes("OAuth client mismatch") ||
+                  conn.error_message.includes("invalid_client") ||
+                  conn.error_message.includes("deleted_client") ||
+                  conn.error_message.includes("OAuth client was deleted") ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
                       <p className="text-xs text-amber-800 mb-2">
-                        {conn.error_message.includes("deleted_client") || conn.error_message.includes("OAuth client was deleted")
+                        {conn.error_message.includes("deleted_client") ||
+                        conn.error_message.includes("OAuth client was deleted")
                           ? "The OAuth client used to connect your calendar has been deleted or changed. Please reconnect with the current OAuth client."
                           : "This error usually means the OAuth client credentials changed. Please disconnect and reconnect your calendar."}
                       </p>
@@ -135,7 +138,9 @@ export function CalendarConnectionSection({
                           await handleDisconnect();
                           // Then reconnect
                           setTimeout(() => {
-                            handleConnect(conn.provider as "google" | "outlook");
+                            handleConnect(
+                              conn.provider as "google" | "outlook"
+                            );
                           }, 500);
                         }}
                         className="text-xs font-medium text-amber-900 hover:text-amber-950 underline"
@@ -196,10 +201,19 @@ export function CalendarConnectionSection({
             {!connected && (
               <button
                 type="button"
-                onClick={() => handleConnect(connections[0]?.provider as "google" | "outlook" || "google")}
+                onClick={() =>
+                  handleConnect(
+                    (connections[0]?.provider as "google" | "outlook") ||
+                      "google"
+                  )
+                }
                 className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
               >
-                Reconnect {connections[0]?.provider ? connections[0].provider.charAt(0).toUpperCase() + connections[0].provider.slice(1) : "Calendar"}
+                Reconnect{" "}
+                {connections[0]?.provider
+                  ? connections[0].provider.charAt(0).toUpperCase() +
+                    connections[0].provider.slice(1)
+                  : "Calendar"}
               </button>
             )}
           </>
@@ -239,4 +253,3 @@ function CalendarStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
