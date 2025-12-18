@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     // Verify cron secret - support Authorization header (cron-job.org API key or CRON_SECRET), and query param (cron-job.org fallback)
     const authHeader = request.headers.get("authorization");
     const { searchParams } = new URL(request.url);
-    const querySecret = searchParams.get("secret");
+    const querySecret = searchParams.get("secret")?.trim().replace(/\r?\n/g, "");
     const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, "");
     const cronJobOrgApiKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(
       /\r?\n/g,
