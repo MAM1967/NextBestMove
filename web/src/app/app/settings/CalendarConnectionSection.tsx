@@ -43,10 +43,10 @@ export function CalendarConnectionSection({
       if (response.ok) {
         router.refresh();
       } else {
-        const error = await response.json();
-        alert(`Failed to disconnect: ${error.error || "Unknown error"}`);
+        const errorData = await response.json();
+        alert(`Failed to disconnect: ${errorData.error || "Unknown error"}`);
       }
-    } catch (error) {
+    } catch {
       alert("Failed to disconnect calendar. Please try again.");
     } finally {
       setIsDisconnecting(false);
@@ -73,7 +73,7 @@ export function CalendarConnectionSection({
       } else {
         alert("Failed to refresh calendar. Please try again.");
       }
-    } catch (error) {
+    } catch {
       alert("Failed to refresh calendar. Please try again.");
     } finally {
       setIsRefreshing(false);
@@ -118,11 +118,15 @@ export function CalendarConnectionSection({
               {conn.error_message && (
                 <div className="mt-2 space-y-2">
                   <p className="text-red-600 font-medium">Error: {conn.error_message}</p>
-                  {conn.error_message.includes("OAuth client mismatch") || 
-                   conn.error_message.includes("invalid_client") ? (
+                  {(conn.error_message.includes("OAuth client mismatch") || 
+                   conn.error_message.includes("invalid_client") ||
+                   conn.error_message.includes("deleted_client") ||
+                   conn.error_message.includes("OAuth client was deleted")) ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
                       <p className="text-xs text-amber-800 mb-2">
-                        This error usually means the OAuth client credentials changed. Please disconnect and reconnect your calendar.
+                        {conn.error_message.includes("deleted_client") || conn.error_message.includes("OAuth client was deleted")
+                          ? "The OAuth client used to connect your calendar has been deleted or changed. Please reconnect with the current OAuth client."
+                          : "This error usually means the OAuth client credentials changed. Please disconnect and reconnect your calendar."}
                       </p>
                       <button
                         type="button"

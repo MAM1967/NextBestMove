@@ -128,7 +128,9 @@ export async function refreshAccessToken(
       // Parse error for better messaging
       try {
         const errorData = JSON.parse(errorText);
-        if (errorData.error === "invalid_client") {
+        if (errorData.error === "deleted_client") {
+          errorMessage = `OAuth client was deleted: The OAuth client used to connect your calendar has been deleted. Please disconnect and reconnect your calendar with the current OAuth client. Original error: ${errorText}`;
+        } else if (errorData.error === "invalid_client") {
           errorMessage = `OAuth client mismatch: The refresh token was issued by a different OAuth client. Please disconnect and reconnect your calendar. Original error: ${errorText}`;
         } else if (errorData.error === "invalid_grant") {
           errorMessage = `Refresh token invalid or expired: Please disconnect and reconnect your calendar. Original error: ${errorText}`;
