@@ -26,7 +26,8 @@ else
 fi
 
 ENDPOINT="/api/cron/calendar-token-maintenance"
-URL="${BASE_URL}${ENDPOINT}"
+# Include query parameter as fallback (cron-job.org may not send custom headers via API)
+URL="${BASE_URL}${ENDPOINT}?secret=${CRON_SECRET}"
 
 echo "🚀 Creating calendar token maintenance cron job..."
 echo "   Environment: $ENVIRONMENT"
