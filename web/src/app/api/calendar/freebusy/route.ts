@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   getActiveConnection,
@@ -68,7 +68,7 @@ function calculateCapacity(freeMinutes: number | null): {
  * Returns free/busy data for a specific date.
  * Always returns 200 OK with data (falls back to default capacity on error).
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
@@ -158,7 +158,8 @@ export async function GET(request: Request) {
     }
 
     // Get valid access token (refresh if needed)
-    const accessToken = await getValidAccessToken(supabase, connection);
+    // Pass hostname to ensure staging workaround is applied during refresh
+    const accessToken = await getValidAccessToken(supabase, connection, request.nextUrl.hostname);
     if (!accessToken) {
       const { level, suggestedActionCount } = calculateCapacity(null);
       return NextResponse.json({
@@ -214,7 +215,7 @@ export async function GET(request: Request) {
           );
 
           // Refresh the token
-          const refreshedToken = await refreshAccessToken(supabase, connection);
+          const refreshedToken = await refreshAccessToken(supabase, connection, request.nextUrl.hostname);
 
           if (refreshedToken) {
             // Retry the request with the new token

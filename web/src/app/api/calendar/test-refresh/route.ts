@@ -10,7 +10,9 @@ import { getActiveConnection, refreshAccessToken } from "@/lib/calendar/tokens";
  *
  * WARNING: This is a test endpoint - should be restricted in production.
  */
-export async function POST() {
+import { NextRequest } from "next/server";
+
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
     const {
@@ -36,7 +38,9 @@ export async function POST() {
     });
 
     // Force refresh by calling refreshAccessToken directly
-    const newAccessToken = await refreshAccessToken(supabase, connection);
+    // Pass hostname from request to ensure staging workaround is applied
+    const hostname = request.headers.get("host") || undefined;
+    const newAccessToken = await refreshAccessToken(supabase, connection, hostname);
 
     if (newAccessToken) {
       // Fetch updated connection to get new expires_at

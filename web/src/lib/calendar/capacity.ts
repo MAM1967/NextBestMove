@@ -156,7 +156,7 @@ export async function getCapacityForDate(
         );
 
         // Refresh the token
-        const refreshedToken = await refreshAccessToken(supabase, connection);
+        const refreshedToken = await refreshAccessToken(supabase, connection, undefined);
 
         if (refreshedToken) {
           // Retry the request with the new token

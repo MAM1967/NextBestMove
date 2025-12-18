@@ -20,11 +20,12 @@ export type CalendarConnection = {
  */
 export async function getValidAccessToken(
   supabase: SupabaseClient,
-  connection: CalendarConnection
+  connection: CalendarConnection,
+  hostname?: string
 ): Promise<string | null> {
   // If no access token, we need to refresh
   if (!connection.access_token) {
-    return await refreshAccessToken(supabase, connection);
+    return await refreshAccessToken(supabase, connection, hostname);
   }
 
   // Check if token expires soon (< 5 minutes)
@@ -33,7 +34,7 @@ export async function getValidAccessToken(
   const nowSeconds = Math.floor(Date.now() / 1000);
   if (expiresAt && expiresAt < nowSeconds + 5 * 60) {
     // Refresh proactively
-    return await refreshAccessToken(supabase, connection);
+    return await refreshAccessToken(supabase, connection, hostname);
   }
 
   // Decrypt and return current token
@@ -46,10 +47,13 @@ export async function getValidAccessToken(
  */
 export async function refreshAccessToken(
   supabase: SupabaseClient,
-  connection: CalendarConnection
+  connection: CalendarConnection,
+  hostname?: string
 ): Promise<string | null> {
   try {
-    const config = await getProviderConfiguration(connection.provider);
+    // CRITICAL: Use getProviderConfiguration which includes staging workaround
+    // This ensures we use the SAME OAuth client that was used during connection
+    const config = await getProviderConfiguration(connection.provider, hostname);
     const refreshToken = decryptSecret(connection.refresh_token);
 
     if (!refreshToken) {
@@ -65,7 +69,13 @@ export async function refreshAccessToken(
       throw new Error("Token endpoint not found in configuration");
     }
 
-    // Get client credentials from environment (same as in providers.ts)
+    // CRITICAL FIX: Get client credentials using the same logic as providers.ts
+    // This ensures we use the SAME OAuth client that was used during connection
+    // Extract client ID from config metadata (which has staging workaround applied)
+    const clientMetadata = config.clientMetadata();
+    let clientId = clientMetadata.client_id;
+    
+    // Get client secret from environment, then apply staging workaround if needed
     const providerConfig =
       connection.provider === "google"
         ? {
@@ -77,14 +87,42 @@ export async function refreshAccessToken(
             clientSecretEnv: "OUTLOOK_CLIENT_SECRET",
           };
 
-    const clientId = process.env[providerConfig.clientIdEnv]?.trim();
-    const clientSecret = process.env[providerConfig.clientSecretEnv]?.trim();
+    let clientSecret = process.env[providerConfig.clientSecretEnv]?.trim();
+
+    // CRITICAL: Apply staging workaround for Google in preview environments
+    // This MUST match the logic in providers.ts to ensure consistency
+    if (connection.provider === "google") {
+      const vercelEnv = process.env.VERCEL_ENV;
+      const isPreview = vercelEnv === "preview" || hostname?.includes("vercel.app") || hostname === "staging.nextbestmove.app";
+      const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname?.startsWith("localhost:") || hostname?.startsWith("127.0.0.1:");
+      
+      if (isPreview && !isLocalhost) {
+        // Use staging credentials (same as in providers.ts)
+        const stagingClientId = "732850218816-kgrhcoagfcibsrrta1qa1k32d3en9maj.apps.googleusercontent.com";
+        const stagingClientSecret = "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";
+        
+        // Override both ID and secret to match staging
+        clientId = stagingClientId;
+        clientSecret = stagingClientSecret;
+        
+        console.log("[Token Refresh] 🔧 RUNTIME WORKAROUND: Overriding Google OAuth credentials for staging");
+        console.log(`   Using staging client ID: ${stagingClientId.substring(0, 30)}...`);
+      }
+    }
 
     if (!clientId || !clientSecret) {
       throw new Error(
-        `${providerConfig.clientIdEnv}/${providerConfig.clientSecretEnv} env vars are required`
+        `OAuth client credentials are required for ${connection.provider} token refresh`
       );
     }
+    
+    console.log(`[Token Refresh] Using OAuth client:`, {
+      provider: connection.provider,
+      hostname: hostname || "NOT_PROVIDED",
+      vercelEnv: process.env.VERCEL_ENV || "NOT_SET",
+      clientIdPrefix: clientId.substring(0, 30) + "...",
+      hasClientSecret: !!clientSecret,
+    });
 
     // Build refresh token request body
     // Microsoft Graph requires different parameters than Google
