@@ -4,10 +4,10 @@ import { getActiveConnection, refreshAccessToken } from "@/lib/calendar/tokens";
 
 /**
  * POST /api/calendar/test-refresh
- * 
+ *
  * Test endpoint to force token refresh without waiting for expiration.
  * Useful for testing token refresh logic and error handling.
- * 
+ *
  * WARNING: This is a test endpoint - should be restricted in production.
  */
 export async function POST() {
@@ -70,7 +70,8 @@ export async function POST() {
         provider: connection.provider,
         status: updatedConnection?.status || connection.status,
         errorMessage: updatedConnection?.error_message || "Unknown error",
-        requiresReconnect: updatedConnection?.error_message?.includes("deleted_client") ||
+        requiresReconnect:
+          updatedConnection?.error_message?.includes("deleted_client") ||
           updatedConnection?.error_message?.includes("invalid_client") ||
           updatedConnection?.error_message?.includes("invalid_grant"),
       });
@@ -86,4 +87,3 @@ export async function POST() {
     );
   }
 }
-

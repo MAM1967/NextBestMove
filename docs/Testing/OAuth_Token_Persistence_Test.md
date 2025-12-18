@@ -196,11 +196,12 @@ Verify that OAuth tokens remain stable and connections persist correctly across:
 Instead of waiting 1 hour for token expiration, use the test endpoint:
 
 **Option 1: Browser Console (Easiest)**
+
 ```javascript
 // Open browser console on staging.nextbestmove.app
 // While logged in, run:
-fetch('/api/calendar/test-refresh', { method: 'POST' })
-  .then(r => r.json())
+fetch("/api/calendar/test-refresh", { method: "POST" })
+  .then((r) => r.json())
   .then(console.log)
   .catch(console.error);
 
@@ -216,6 +217,7 @@ fetch('/api/calendar/test-refresh', { method: 'POST' })
 ```
 
 **Option 2: cURL (Requires Session Cookie)**
+
 ```bash
 # Get session cookie from browser DevTools > Application > Cookies
 # Then:
@@ -224,6 +226,7 @@ curl -X POST https://staging.nextbestmove.app/api/calendar/test-refresh \
 ```
 
 **Option 3: Force Expiration in Database (Advanced)**
+
 ```sql
 -- Set expires_at to past to force refresh on next API call
 UPDATE calendar_connections
