@@ -19,7 +19,7 @@ API_ENDPOINT="https://api.cron-job.org/jobs"
 
 if [ "$ENVIRONMENT" = "production" ]; then
   BASE_URL="https://nextbestmove.app"
-  TITLE="[PROD] Calendar Token Maintenance"
+  TITLE="Calendar Token Maintenance"
 else
   BASE_URL="https://staging.nextbestmove.app"
   TITLE="[STAGING] Calendar Token Maintenance"
