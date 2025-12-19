@@ -18,10 +18,10 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ### Foundation & Billing
 
-- [ ] **Project initialization & tooling**  
+- [x] **Project initialization & tooling** ✅  
        _Next.js 14 + TypeScript, Tailwind tokens, ESLint/Prettier, React Query, Zustand scaffold_
 
-- [ ] **Supabase schema & migrations**  
+- [x] **Supabase schema & migrations** ✅  
        _All core tables (users, leads, actions, plans, summaries, calendar, billing) + enums, RLS, helper functions_
 
 - [x] **Stripe API routes (checkout & portal)** ✅  

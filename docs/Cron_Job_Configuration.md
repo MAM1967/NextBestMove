@@ -29,11 +29,18 @@ All cron endpoints accept authentication in three ways:
 
 Set these in Vercel environment variables:
 
+**⚠️ IMPORTANT: Separate secrets for staging and production**
+
 **CRON_SECRET** (for query param or Vercel Cron):
 
-```
-CRON_SECRET=99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da
-```
+- **Staging (Vercel Preview):** `e6720e0c094fd8ba7494b27073d03c6405d9422bdc1e0af0a7e16f678f55ec83`
+- **Production (Vercel Production):** `99ad993f6bcf96c3523502f028184b248b30d125a0f2964c012afa338334b0da`
+
+**Why separate secrets?**
+
+- Security isolation: staging compromise doesn't affect production
+- Independent rotation: can revoke/rotate staging without affecting production
+- Industry best practice for environment separation
 
 **CRON_JOB_ORG_API_KEY** (for cron-job.org Authorization header):
 
@@ -43,6 +50,13 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 
 **Note:** cron-job.org automatically sends the API key in the Authorization header when configured. You can also use the query parameter method if preferred.
 
+**Setting in Vercel:**
+
+- Go to Vercel Project Settings → Environment Variables
+- Set `CRON_SECRET` for **Preview** environment (staging)
+- Set `CRON_SECRET` for **Production** environment (production)
+- Ensure Doppler sync is configured correctly for both environments
+
 ## Cron Jobs Configuration
 
 ### Creating New Cron Jobs
@@ -50,16 +64,19 @@ CRON_JOB_ORG_API_KEY=tA4auCiGFs4DIVKM01ho5xJhKHyzR2XLgB8SEzaitOk=
 To create a new cron job via the cron-job.org API, use the provided scripts:
 
 **For Calendar Token Maintenance:**
+
 ```bash
 ./scripts/create-calendar-token-maintenance-cron.sh YOUR_CRON_SECRET [staging|production]
 ```
 
 The script will:
+
 - Create the job with proper Authorization header
 - Schedule it for daily at 2 AM UTC
 - Configure it for staging or production environment
 
 **Note:** You'll need:
+
 - `CRON_SECRET` from your environment variables
 - The cron-job.org API key is hardcoded in the script
 
@@ -124,6 +141,7 @@ The script will:
 **Purpose:** Proactively refreshes calendar tokens expiring within 24 hours to prevent expiration for inactive users
 
 **What it does:**
+
 - Finds all active calendar connections
 - Identifies tokens expiring within 24 hours
 - Proactively refreshes them
@@ -131,6 +149,7 @@ The script will:
 - Updates `last_sync_at` on successful refresh
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -144,16 +163,19 @@ The script will:
 ```
 
 **Note:** This job uses Authorization header (not query parameter). Configure in cron-job.org with:
+
 - URL: `https://staging.nextbestmove.app/api/cron/calendar-token-maintenance` (or production URL)
 - Authorization Header: `Bearer YOUR_CRON_SECRET`
 
 **What it does:**
+
 - Finds users with `streak_count = 0` and `last_action_date > 1 day ago`
 - Day 3: Sends streak recovery email via Resend
 - Day 7: Logs billing pause offer (not yet implemented)
 - Day 2: Micro Mode is automatically enabled via adaptive recovery logic in plan generation
 
 **Response:**
+
 ```json
 {
   "success": true,

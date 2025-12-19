@@ -358,17 +358,6 @@ export default async function SettingsPage({
                 consecutive days
               </span>
             </div>
-            <p className="text-xs text-zinc-500">
-              Best period & history charts will show here once activity
-              analytics ship.
-            </p>
-            <button
-              type="button"
-              disabled
-              className="inline-flex items-center text-xs font-semibold text-purple-700"
-            >
-              View activity history (soon)
-            </button>
           </div>
         </div>
       </SectionCard>
