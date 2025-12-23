@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { MAX_PENDING_ACTIONS } from "@/lib/actions/limits";
 import { checkLeadLimit } from "@/lib/billing/subscription";
+import {
+  getCadenceDaysDefault,
+  validateCadenceDays,
+} from "@/lib/leads/relationship-status";
 
 // GET /api/leads - List all leads for the authenticated user
 export async function GET(request: Request) {
@@ -61,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, url, notes } = body;
+    const { name, url, notes, cadence, cadence_days, tier } = body;
 
     // Validation
     if (!name || !url) {
@@ -115,6 +119,24 @@ export async function POST(request: Request) {
       );
     }
 
+    // Compute cadence_days - use provided value or default for cadence
+    let finalCadenceDays: number | null = null;
+    if (cadence) {
+      if (cadence_days !== undefined && cadence_days !== null) {
+        // Validate provided cadence_days
+        if (!validateCadenceDays(cadence, cadence_days)) {
+          return NextResponse.json(
+            { error: `Cadence days must be within the valid range for ${cadence}` },
+            { status: 400 }
+          );
+        }
+        finalCadenceDays = cadence_days;
+      } else if (cadence !== "ad_hoc") {
+        // Use default for cadence if not provided
+        finalCadenceDays = getCadenceDaysDefault(cadence);
+      }
+    }
+
     const { data: lead, error: leadError } = await supabase
       .from("leads")
       .insert({
@@ -123,6 +145,11 @@ export async function POST(request: Request) {
         url: normalizedUrl,
         notes: notes?.trim() || null,
         status: "ACTIVE",
+        cadence: cadence || null,
+        cadence_days: finalCadenceDays,
+        tier: tier || null,
+        // next_touch_due_at will be null initially (no last_interaction_at yet)
+        // It will be computed when the first action is completed
       })
       .select()
       .single();

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import type { Lead } from "@/lib/leads/types";
+import type { Lead, RelationshipCadence, RelationshipTier } from "@/lib/leads/types";
+import {
+  getCadenceRange,
+  getCadenceDaysDefault,
+  validateCadenceDays,
+} from "@/lib/leads/relationship-status";
 
 interface EditLeadModalProps {
   isOpen: boolean;
@@ -9,7 +14,14 @@ interface EditLeadModalProps {
   lead: Lead | null;
   onSave: (
     leadId: string,
-    leadData: { name: string; url: string; notes?: string }
+    leadData: {
+      name: string;
+      url: string;
+      notes?: string;
+      cadence?: RelationshipCadence | null;
+      cadence_days?: number | null;
+      tier?: RelationshipTier | null;
+    }
   ) => Promise<void>;
 }
 
@@ -23,6 +35,9 @@ export function EditLeadModal({
     name: "",
     url: "",
     notes: "",
+    cadence: "" as RelationshipCadence | "",
+    cadence_days: null as number | null,
+    tier: "" as RelationshipTier | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -41,6 +56,9 @@ export function EditLeadModal({
         name: lead.name,
         url: stripMailto(lead.url), // Show email without mailto: prefix
         notes: lead.notes || "",
+        cadence: (lead.cadence || "") as RelationshipCadence | "",
+        cadence_days: lead.cadence_days || null,
+        tier: (lead.tier || "") as RelationshipTier | "",
       });
       setErrors({});
     }
@@ -85,6 +103,19 @@ export function EditLeadModal({
           "Please enter a valid URL (https://...) or email address";
       }
     }
+    
+    // Validate cadence_days if cadence is set (and not ad_hoc)
+    if (formData.cadence && formData.cadence !== "ad_hoc") {
+      if (formData.cadence_days === null || formData.cadence_days === undefined) {
+        newErrors.cadence_days = "Please specify the number of days";
+      } else {
+        const range = getCadenceRange(formData.cadence);
+        if (range && !validateCadenceDays(formData.cadence, formData.cadence_days)) {
+          newErrors.cadence_days = `Must be between ${range.min} and ${range.max} days`;
+        }
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -96,10 +127,19 @@ export function EditLeadModal({
     setLoading(true);
     try {
       const normalizedUrl = normalizeUrl(formData.url);
+      // Get cadence_days - use default if not specified and cadence is not ad_hoc
+      let cadenceDays = formData.cadence_days;
+      if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
+        cadenceDays = getCadenceDaysDefault(formData.cadence);
+      }
+      
       await onSave(lead.id, {
         name: formData.name.trim(),
         url: normalizedUrl,
         notes: formData.notes.trim() || undefined,
+        cadence: formData.cadence || null,
+        cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
+        tier: formData.tier || null,
       });
       setErrors({});
       onClose();
@@ -216,6 +256,101 @@ export function EditLeadModal({
               className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               placeholder="Add context, reminders, or notes about this person..."
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="edit-cadence"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Follow-up Cadence
+              </label>
+              <select
+                id="edit-cadence"
+                value={formData.cadence || ""}
+                onChange={(e) => {
+                  const newCadence = (e.target.value || null) as RelationshipCadence | null;
+                  const defaultDays = newCadence ? getCadenceDaysDefault(newCadence) : null;
+                  setFormData((prev) => ({
+                    ...prev,
+                    cadence: newCadence || "",
+                    cadence_days: defaultDays,
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="frequent">Frequent (7-14 days)</option>
+                <option value="moderate">Moderate (30-90 days)</option>
+                <option value="infrequent">Infrequent (180-365 days)</option>
+                <option value="ad_hoc">Ad-hoc</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                How often to follow up
+              </p>
+              {/* Show days input when cadence is selected (not ad_hoc) */}
+              {formData.cadence && formData.cadence !== "ad_hoc" && (() => {
+                const range = getCadenceRange(formData.cadence);
+                return range ? (
+                  <div className="mt-2">
+                    <label
+                      htmlFor="edit-cadence_days"
+                      className="block text-xs font-medium text-zinc-700"
+                    >
+                      Days within range ({range.min}-{range.max})
+                    </label>
+                    <input
+                      id="edit-cadence_days"
+                      type="number"
+                      min={range.min}
+                      max={range.max}
+                      value={formData.cadence_days || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cadence_days: e.target.value ? parseInt(e.target.value, 10) : null,
+                        }))
+                      }
+                      className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                      placeholder={`Default: ${range.min} days`}
+                    />
+                    {errors.cadence_days && (
+                      <p className="mt-1 text-xs text-red-600">{errors.cadence_days}</p>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-tier"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Relationship Tier (optional)
+              </label>
+              <select
+                id="edit-tier"
+                value={formData.tier || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    tier: (e.target.value || null) as typeof formData.tier | null,
+                  }))
+                }
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="inner">Inner</option>
+                <option value="active">Active</option>
+                <option value="warm">Warm</option>
+                <option value="background">Background</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                Relationship importance
+              </p>
+            </div>
           </div>
 
           {errors.submit && (

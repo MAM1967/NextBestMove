@@ -129,7 +129,7 @@ A Relationship is a lightweight reference:
 	•	name
 	•	primary URL (LinkedIn, website, CRM link, or mailto)
 	•	optional short note
-	•	cadence (Frequent / Moderate / Infrequent / Ad-hoc)
+	•	cadence (Frequent: 7-14 days / Moderate: 30-90 days / Infrequent: 180-365 days / Ad-hoc: null) - user sets specific days within range
 	•	tier (Inner / Active / Warm / Background – optional)
 	•	status: ACTIVE / SNOOZED / ARCHIVED
 
@@ -381,7 +381,7 @@ For each Relationship:
 		•	awaiting_response (derived from EXISTS(action WHERE state = 'SENT' AND person_id = relationship_id AND no reply received))
 		•	earliest_relevant_insight_date (from user-level weekly_summaries.insight_text for v1; future: relationship-level insights)
 		•	momentum_score and momentum_trend (computed from action completion patterns and response rates)
-		•	cadence_days (from relationship cadence enum: Frequent=7, Moderate=14, Infrequent=30, Ad-hoc=null)
+		•	cadence_days (user-specified days within cadence range: Frequent=7-14 days, Moderate=30-90 days, Infrequent=180-365 days, Ad-hoc=null)
 
 Assign a lane:
 	•	Priority:

@@ -1,6 +1,8 @@
 "use client";
 
 import type { Lead } from "@/lib/leads/types";
+import { RelationshipStatusBadge } from "./RelationshipStatusBadge";
+import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 interface LeadRowProps {
   lead: Lead;
@@ -144,7 +146,7 @@ export function LeadRow({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-lg font-semibold text-zinc-900">{lead.name}</h4>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeVariant(
@@ -155,8 +157,18 @@ export function LeadRow({
                 ? `Snoozed until ${formatDate(lead.snooze_until)}`
                 : lead.status}
             </span>
+            {/* Relationship status badge (Needs attention / In rhythm / Intentional low-touch) */}
+            {lead.status === "ACTIVE" && (
+              <RelationshipStatusBadge
+                cadence={lead.cadence || null}
+                tier={lead.tier || null}
+                last_interaction_at={lead.last_interaction_at || null}
+                next_touch_due_at={lead.next_touch_due_at || null}
+                cadence_days={lead.cadence_days || null}
+              />
+            )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-zinc-500">
+          <div className="flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
             <a
               href={lead.url}
               target="_blank"
@@ -167,6 +179,24 @@ export function LeadRow({
             </a>
             <span>•</span>
             <span>Added {formatRelativeDate(lead.created_at)}</span>
+            {/* Show next touch due date if cadence is set */}
+            {lead.next_touch_due_at && lead.status === "ACTIVE" && (
+              <>
+                <span>•</span>
+                <span className="text-zinc-600">
+                  Next touch: {formatDateForDisplay(lead.next_touch_due_at.split("T")[0])}
+                </span>
+              </>
+            )}
+            {/* Show last interaction if available */}
+            {lead.last_interaction_at && (
+              <>
+                <span>•</span>
+                <span className="text-zinc-500">
+                  Last interaction: {formatRelativeDate(lead.last_interaction_at)}
+                </span>
+              </>
+            )}
           </div>
           {lead.notes && (
             <p className="text-sm italic text-zinc-600">{lead.notes}</p>

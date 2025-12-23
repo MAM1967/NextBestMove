@@ -155,7 +155,8 @@ CREATE TRIGGER update_leads_updated_at
 - `notes`: Optional notes/context
 - `status`: Lead status (ACTIVE, SNOOZED, ARCHIVED)
 - `snooze_until`: Date to automatically unsnooze (if SNOOZED)
-- `cadence`: Relationship cadence (frequent=7 days, moderate=14 days, infrequent=30 days, ad_hoc=null)
+- `cadence`: Relationship cadence enum (frequent, moderate, infrequent, ad_hoc)
+- `cadence_days`: User-specified days within cadence range (frequent: 7-14, moderate: 30-90, infrequent: 180-365, ad_hoc: null)
 - `tier`: Relationship importance tier (inner, active, warm, background)
 - `last_interaction_at`: Cached timestamp of last completed action (derived from actions table)
 - `next_touch_due_at`: Computed date when next touch is due (last_interaction_at + cadence_days)

@@ -30,7 +30,7 @@ These can be implemented either as new columns on existing tables or as material
 - `relationships` (existing; called `leads` in some legacy code)
   - New fields:
     - `cadence` (ENUM: frequent | moderate | infrequent | ad_hoc | null) – user-set relationship cadence.
-    - `cadence_days` (INT) – derived from cadence enum (Frequent=7, Moderate=14, Infrequent=30, Ad-hoc=null). Can be computed on-the-fly or cached.
+    - `cadence_days` (INT, nullable) – user-specified days within cadence range (Frequent: 7-14, Moderate: 30-90, Infrequent: 180-365, Ad-hoc: null). Stored in database, defaults to lower bound if not set.
     - `tier` (ENUM: inner | active | warm | background | null) – relationship importance tier.
     - `last_interaction_at` (TIMESTAMPTZ, nullable) – cached from `MAX(actions.completed_at WHERE person_id = id)`. Updated when actions complete.
     - `next_touch_due_at` (TIMESTAMPTZ, nullable) – computed from `last_interaction_at + cadence_days`.
@@ -71,7 +71,7 @@ Per the external decision engine doc, precomputation is required for:
 - `pending_actions_count` and `overdue_actions_count` - Count from `actions WHERE person_id = relationship_id AND state IN ('NEW', 'SENT', 'SNOOZED') AND due_date <= today`
 - `awaiting_response` - Derived from `EXISTS(action WHERE person_id = relationship_id AND state = 'SENT' AND completed_at IS NOT NULL AND no subsequent REPLIED action)`
 - `earliest_relevant_insight_date` - For v1, use user-level insights from `weekly_summaries.insight_text` (relationship-level insights are future work)
-- `cadence_days` - Derived from relationship `cadence` enum: Frequent=7, Moderate=14, Infrequent=30, Ad-hoc=null
+- `cadence_days` - User-specified days within cadence range: Frequent=7-14, Moderate=30-90, Infrequent=180-365, Ad-hoc=null (defaults to lower bound if not set)
 - `momentum_score` and `momentum_trend` - Computed from action completion patterns (recent completion rate, response rate, days between interactions)
 
 **Data Sources:**

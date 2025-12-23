@@ -106,6 +106,9 @@ export default function LeadsPage() {
     name: string;
     url: string;
     notes?: string;
+    cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
+    cadence_days?: number | null;
+    tier?: "inner" | "active" | "warm" | "background" | null;
   }) => {
     try {
       const response = await fetch("/api/leads", {
@@ -134,7 +137,14 @@ export default function LeadsPage() {
   // Handle lead update
   const handleLeadUpdate = async (
     leadId: string,
-    leadData: { name: string; url: string; notes?: string }
+    leadData: {
+      name: string;
+      url: string;
+      notes?: string;
+      cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
+      cadence_days?: number | null;
+      tier?: "inner" | "active" | "warm" | "background" | null;
+    }
   ) => {
     try {
       const response = await fetch(`/api/leads/${leadId}`, {

@@ -6,6 +6,8 @@
  */
 
 export type LeadStatus = "ACTIVE" | "SNOOZED" | "ARCHIVED";
+export type RelationshipCadence = "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
+export type RelationshipTier = "inner" | "active" | "warm" | "background" | null;
 
 export type LeadFilter = "ALL" | LeadStatus;
 
@@ -20,6 +22,12 @@ export interface Lead {
   notes?: string | null;
   status: LeadStatus;
   snooze_until?: string | null;
+  // Relationship cadence and tier fields (NEX-5)
+  cadence?: RelationshipCadence;
+  cadence_days?: number | null;
+  tier?: RelationshipTier;
+  last_interaction_at?: string | null;
+  next_touch_due_at?: string | null;
   created_at: string;
   updated_at: string;
 }
