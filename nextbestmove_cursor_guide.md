@@ -208,17 +208,48 @@ See `docs/Cron_Job_Configuration.md` for details.
 
 ### Deployment Scripts
 
+**⚠️ IMPORTANT: Always use the deployment scripts, never push directly with `git push`**
+
+The deployment scripts run critical checks (TypeScript, design lint) and sync environment variables before pushing. Direct git pushes bypass these safety checks.
+
 **Staging Deployment:**
 
 ```bash
 ./scripts/deploy-staging.sh [optional commit message]
 ```
 
-- Runs type-check
-- Runs design lint (warnings only)
-- Syncs Doppler secrets to Vercel Preview
-- Pushes to `staging` branch
-- Auto-deploys to `staging.nextbestmove.app`
+**Workflow (5 steps):**
+
+1. **TypeScript Type Check** - Runs `npm run type-check` in `web/` directory
+
+   - **Blocks deployment if errors found** - Must fix TypeScript errors before proceeding
+   - Ensures type safety before code reaches staging
+
+2. **Design Lint** - Runs `npm run lint:design` (Lapidist)
+
+   - **Warnings only** - Does not block deployment
+   - Checks for design token violations (hardcoded colors, spacing, etc.)
+
+3. **Doppler Sync** - Syncs environment variables from Doppler to Vercel Preview
+
+   - Uses `scripts/sync-doppler-to-vercel-preview.sh`
+   - Syncs all secrets from Doppler `stg` config to Vercel Preview environment
+   - **Blocks deployment if sync fails**
+
+4. **Git Commit** - Automatically stages and commits uncommitted changes
+
+   - Uses provided commit message or defaults to "Deploy to staging"
+   - Warns if not on `staging` branch (but allows override with confirmation)
+
+5. **Git Push** - Pushes to `origin/staging`
+   - Triggers Vercel automatic deployment
+   - Deploys to `https://staging.nextbestmove.app`
+
+**Example:**
+
+```bash
+./scripts/deploy-staging.sh "NEX-10: Fix TypeScript errors and deploy decision engine"
+```
 
 **Production Deployment:**
 
@@ -226,11 +257,49 @@ See `docs/Cron_Job_Configuration.md` for details.
 ./scripts/deploy-production.sh [optional commit message]
 ```
 
-- Runs type-check
-- Runs design lint (warnings only)
-- Syncs Doppler secrets to Vercel Production
-- Pushes to `main` branch
-- Auto-deploys to `nextbestmove.app`
+**Workflow (4 steps with safety confirmation):**
+
+1. **Safety Confirmation** - Requires typing "yes" to proceed
+
+   - **WARNING prompt** - Reminds you this is production
+   - Prevents accidental production deployments
+
+2. **TypeScript Type Check** - Same as staging
+
+   - **Blocks deployment if errors found**
+
+3. **Design Lint** - Same as staging (warnings only)
+
+4. **Doppler Sync** - Syncs environment variables from Doppler to Vercel Production
+
+   - Uses `scripts/sync-doppler-to-vercel.sh`
+   - Syncs all secrets from Doppler `prd` config to Vercel Production environment
+   - **Blocks deployment if sync fails**
+
+5. **Git Commit** - Automatically stages and commits uncommitted changes
+
+   - Uses provided commit message or defaults to "Deploy to production"
+   - Warns if not on `main` branch (but allows override with confirmation)
+
+6. **Git Push** - Pushes to `origin/main`
+   - Triggers Vercel automatic deployment
+   - Deploys to `https://nextbestmove.app`
+
+**Example:**
+
+```bash
+./scripts/deploy-production.sh "NEX-10: Deploy decision engine to production"
+```
+
+**Best Practices:**
+
+- ✅ **Always test in staging first** - Never deploy to production without staging verification
+- ✅ **Use descriptive commit messages** - Include Linear issue IDs (e.g., "NEX-10: ...")
+- ✅ **Check TypeScript errors locally** - Run `npm run type-check` in `web/` before deploying
+- ✅ **Verify Doppler sync** - Check that environment variables are correctly synced
+- ✅ **Monitor Vercel dashboard** - Watch for build/deployment errors after push
+- ❌ **Never push directly** - Always use the deployment scripts
+- ❌ **Never skip type checks** - Fix TypeScript errors before deploying
 
 **Database Migrations:**
 

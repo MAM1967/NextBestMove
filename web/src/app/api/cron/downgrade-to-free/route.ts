@@ -1,27 +1,25 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { shouldDowngradeToFree, updateUserTier } from "@/lib/billing/tier";
-import { headers } from "next/headers";
 
 /**
- * POST /api/cron/downgrade-to-free
+ * GET /api/cron/downgrade-to-free
  * 
  * Daily cron job to automatically downgrade users to Free tier on Day 15
  * (when their 14-day Standard trial ends and they haven't upgraded).
  * 
  * Authentication: CRON_SECRET or CRON_JOB_ORG_API_KEY
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    // Authenticate cron request
-    const headersList = await headers();
-    const authHeader = headersList.get("authorization");
-    const secretParam = new URL(request.url).searchParams.get("secret");
+    // Authenticate cron request - support Authorization header (Vercel Cron or cron-job.org API key), and query param (cron-job.org)
+    const authHeader = request.headers.get("authorization");
+    const { searchParams } = new URL(request.url);
+    const querySecret = searchParams.get("secret");
+    const cronSecret = process.env.CRON_SECRET?.trim().replace(/\r?\n/g, "");
+    const cronJobOrgKey = process.env.CRON_JOB_ORG_API_KEY?.trim().replace(/\r?\n/g, "");
     
-    const cronSecret = process.env.CRON_SECRET?.trim();
-    const cronJobOrgKey = process.env.CRON_JOB_ORG_API_KEY?.trim();
-    
-    const providedSecret = authHeader?.replace("Bearer ", "").trim() || secretParam?.trim();
+    const providedSecret = authHeader?.replace("Bearer ", "").trim() || querySecret?.trim();
     
     if (!providedSecret || (providedSecret !== cronSecret && providedSecret !== cronJobOrgKey)) {
       console.error("Unauthorized cron request to downgrade-to-free");
