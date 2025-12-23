@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { stripe, getPriceId, getPlanMetadata } from "@/lib/billing/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { updateUserTier } from "@/lib/billing/tier";
 import Stripe from "stripe";
 
 /**
@@ -23,12 +24,14 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { plan = "standard", interval = "month" } = body;
+    // Reverse trial model: all new users start on Standard tier
+    const plan = "standard";
+    const interval = body.interval || "month";
 
-    // Validate plan and interval
-    if (!["standard", "premium"].includes(plan)) {
+    // Validate interval
+    if (!["month", "year"].includes(interval)) {
       return NextResponse.json(
-        { error: "Invalid plan. Must be 'standard' or 'premium'" },
+        { error: "Invalid interval. Must be 'month' or 'year'" },
         { status: 400 }
       );
     }
@@ -176,6 +179,14 @@ export async function POST(request: Request) {
     if (subError) {
       console.error("Error storing subscription:", subError);
       // Don't fail the request - subscription is created in Stripe
+    }
+
+    // Update user tier to Standard (trial is always Standard tier)
+    try {
+      await updateUserTier(adminClient, user.id);
+    } catch (tierError) {
+      console.error("Error updating user tier:", tierError);
+      // Don't fail the request - tier update is not critical
     }
 
     return NextResponse.json({

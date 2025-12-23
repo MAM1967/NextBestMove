@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { generateDailyPlanForUser } from "@/lib/plans/generate-daily-plan";
 import { canGeneratePlans } from "@/lib/billing/subscription-status";
+import { getUserTier } from "@/lib/billing/tier";
 
 /**
  * POST /api/daily-plans/generate - Generate a daily plan
@@ -55,15 +56,25 @@ export async function POST(request: Request) {
         }
       }
 
-      // Block plan generation during grace period (only for users who completed onboarding)
-      if (!canGeneratePlans(subscriptionStatus, trialEndsAt)) {
-        return NextResponse.json(
-          { 
-            error: "Your trial has ended. Subscribe to continue generating daily plans.",
-            gracePeriod: true 
-          },
-          { status: 403 }
-        );
+      // Check tier for Free tier users (manual generation is allowed for Free tier)
+      const userTier = await getUserTier(supabase, user.id);
+      
+      // Free tier: allow manual generation (this endpoint is for manual generation)
+      // But block automatic generation via cron (handled in cron job)
+      if (userTier === "free") {
+        // Free tier users can generate manually, but show upgrade prompt
+        // (We'll allow the generation but could show a banner in UI)
+      } else {
+        // For Standard/Premium, check subscription status
+        if (!await canGeneratePlans(subscriptionStatus, trialEndsAt, userTier)) {
+          return NextResponse.json(
+            { 
+              error: "Your trial has ended. Subscribe to continue generating daily plans.",
+              gracePeriod: true 
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 

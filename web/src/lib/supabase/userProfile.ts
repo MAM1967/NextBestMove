@@ -34,6 +34,7 @@ export async function ensureUserProfile(userId: string) {
     "User";
 
   // Create profile
+  // New users start on Free tier (will be upgraded to Standard when they start trial)
   const { data: profile, error } = await supabase
     .from("users")
     .insert({
@@ -43,6 +44,7 @@ export async function ensureUserProfile(userId: string) {
       timezone: "America/New_York",
       streak_count: 0,
       calendar_connected: false,
+      tier: "free", // Default to Free tier (upgraded to Standard on trial start)
     })
     .select()
     .single();

@@ -3,6 +3,7 @@
 **Purpose:** Copy-paste these prompts at the start of a new Cursor chat to define which agent role you're working as.
 
 **Order of work:** Agents work on each Linear issue in this sequence:
+
 1. **Product/Spec Agent** (clarifies scope, acceptance criteria, PRD updates)
 2. **System/Backend Agent** (implements schema, APIs, logic)
 3. **UI/Integration Agent** (wires into React/Next UI, tests)
@@ -122,6 +123,7 @@ You are the UI/Integration Agent for NextBestMove. Your role is to wire backend 
 4. The agent will fetch the issue, read required context, and work within its role boundaries
 
 **Example workflow for NEX-10 (Decision Engine):**
+
 - Chat 1: Paste Product/Spec prompt → "Work on NEX-10" → Agent clarifies acceptance criteria
 - Chat 2: Paste Backend prompt → "Work on NEX-10" → Agent implements schema + logic
 - Chat 3: Paste UI prompt → "Work on NEX-10" → Agent wires into Today/Daily Plan/Actions
@@ -129,4 +131,3 @@ You are the UI/Integration Agent for NextBestMove. Your role is to wire backend 
 ---
 
 **Last Updated:** December 23, 2025
-

@@ -5,6 +5,8 @@
  * decision engine system as described in Decision_Engine_Implementation_Spec.md
  */
 
+import type { ActionType, ActionState } from "@/app/app/actions/types";
+
 export type ActionLane = "priority" | "in_motion" | "on_deck";
 
 export type MomentumTrend = "increasing" | "stable" | "declining" | "unknown";
@@ -36,8 +38,8 @@ export interface ActionWithLane {
   // Standard action fields (from Action type)
   user_id: string;
   person_id?: string | null;
-  action_type: string;
-  state: string;
+  action_type: ActionType;
+  state: ActionState;
   description?: string | null;
   due_date: string;
   completed_at?: string | null;

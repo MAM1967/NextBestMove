@@ -79,11 +79,11 @@ export async function GET(request: Request) {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Get all active users (users with active subscriptions or in trial)
-    // For MVP, generate for all users (we can filter by subscription later)
+    // Get all users except Free tier (Free tier is manual generation only)
     const { data: users, error: usersError } = await adminClient
       .from("users")
-      .select("id, timezone, exclude_weekends")
+      .select("id, timezone, exclude_weekends, tier")
+      .neq("tier", "free") // Skip Free tier users (manual generation only)
       .order("created_at", { ascending: false });
 
     if (usersError) {

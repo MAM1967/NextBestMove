@@ -751,77 +751,94 @@ Trial Messaging (built-in):
 
 On Day 15, users automatically continue on the **Free** tier unless they upgrade:
 
-	•	Free tier = “Memory Relief”
-		•	Relationship cap
-		•	Manual daily plan generation
-		•	Basic follow-up actions
-		•	Read-only history and basic weekly review
-	•	Standard tier = “Decision Automation”
-		•	Automatic daily plans sized to calendar
-		•	Capacity-based action sizing and Fast Wins
-		•	Weekly Review with simple insights
-	•	Premium tier = “Intelligence & Leverage”
-		•	Pattern detection, pre-call briefs, performance timeline
-		•	Content engine with voice learning
+	•	Free tier = "Memory Relief"
+		•	5 active relationships (unlimited archived)
+		•	Simple daily plan (2–3 actions/day)
+		•	Manual planning only
+		•	Basic weekly summary
+		•	Full access to history
+	•	Standard tier = "Runs your day"
+		•	20 active relationships
+		•	Calendar-aware daily planning (5–6 actions/day)
+		•	Automatic daily plans
+		•	Unlimited follow-ups within limit
+		•	AI-assisted weekly summary
+		•	One practical insight each week
+		•	Call briefs with event context
+	•	Premium tier = "Thinks with you"
+		•	Unlimited relationships
+		•	Deeper weekly insights and patterns
+		•	Higher content generation limits
+		•	Full calendar context
+		•	Call briefs with notes and history
+		•	Momentum and pattern views across time
 
 No data is lost on downgrade. Messaging emphasizes:
-	•	“Upgrade if you want the system to keep deciding your day.”
-	•	“Your data always stays, even on Free.”
+	•	"Upgrade if you want the system to keep deciding your day."
+	•	"Your data always stays, even on Free."
 
-21.2.3 Paid Plans
+21.2.3 Tier Details
 
-STANDARD — $29/mo or $249/year
-(Save $99 — 2 months free)
+FREE — Forever free, no credit card
 
-For fractional executives who need a simple, consistent daily rhythm.
+"Memory Relief" — For getting organized and proving the rhythm works.
 
 Includes:
-	•	Daily plan (Fast Win + 3–8 actions/day)
-	•	Calendar-aware action sizing
-	•	Smart follow-up engine
-	•	Up to 10 active Leads
-	•	Weekly Summary + single actionable insight
-	•	2 content prompts per week
-	•	Consistency score
-	•	Data export
-	•	Email/push reminders
-	•	Read-only access during inactivity
-	•	Light analytic patterns (consistency + action count)
+	•	5 active relationships
+	•	Unlimited archived relationships
+	•	Simple daily plan (2–3 actions/day)
+	•	Manual planning
+	•	Basic weekly summary
+	•	Full access to your history
+
+Free forever. No credit card.
+
+⸻
+
+STANDARD — $29/mo or $290/year
+(Save $58 — 2 months free annually)
+
+"Runs your day" — For professionals who want the system to decide what matters today.
+
+Includes:
+	•	20 active relationships
+	•	Calendar-aware daily planning (5–6 actions/day)
+	•	Automatic daily plans
+	•	Unlimited follow-ups within your limit
+	•	AI-assisted weekly summary
+	•	One practical insight each week
+	•	Call briefs with event context
 
 This is the foundational "habit plan." 80% of users belong here.
 
-PREMIUM — $79/mo or $649/year
-(Save $299 — 4 months free)
+PREMIUM — $89/mo or $890/year
+(Save $178 — 2 months free annually)
 
-Hero Value Proposition: "A smart intelligence layer for complex pipelines."
-
-Fractional CMOs, CFOs, CTOs, and multiproject operators who manage dozens of warm relationships benefit the most.
+"Thinks with you" — For operators managing complexity who want less thinking, not more tools.
 
 Includes everything in Standard plus:
 
-1. Unlimited Leads
+1. Unlimited Relationships
 Never prune relationships again.
 
-2. Pattern Detection
+2. Deeper Weekly Insights and Patterns
 	•	"Your Tuesday outreach converts 2x better than Thursday"
 	•	"Follow-ups after 48 hours have higher reply rates"
 	•	"Most of your booked calls come from warm re-engagements"
 
-3. Pre-Call Briefs
-Auto-generated summaries of:
-	•	last interactions
-	•	follow-up history
-	•	next-step suggestions
-	•	user notes
+3. Higher Content Generation Limits
+	•	More content prompts per week
+	•	Enhanced content quality
 
-10-second prep = 10x better calls.
+4. Full Calendar Context
+	•	Complete calendar integration
+	•	Advanced scheduling insights
 
-4. Content Engine (Your Voice)
-	•	Learns the user's tone
-	•	Provides weekly content drafts
-	•	Curates insights from actual actions ("based on your week…")
+5. Enhanced Call Briefs
+	•	Call briefs with notes and history
+	•	Full interaction context
 
-5. Full Performance Timeline
+6. Momentum and Pattern Views Across Time
 	•	Month-over-month progress
 	•	Consistency arcs
 	•	Pipeline movement

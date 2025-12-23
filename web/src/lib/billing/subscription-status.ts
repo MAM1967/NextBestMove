@@ -105,8 +105,28 @@ export function hasActiveAccess(
 
 /**
  * Check if user can generate new plans (active or trialing only, not grace period)
+ * Free tier users can only generate manually (not automatically via cron)
  */
-export function canGeneratePlans(
+export async function canGeneratePlans(
+  subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null,
+  trialEndsAt: string | null | undefined,
+  userTier?: "free" | "standard" | "premium" | null
+): Promise<boolean> {
+  // Free tier: manual generation only (not automatic)
+  if (userTier === "free") {
+    return false;
+  }
+  
+  const status = getSubscriptionStatus(subscriptionStatus, trialEndsAt);
+  // Grace period is read-only, so only trialing and active can generate
+  return status === "trialing" || status === "active";
+}
+
+/**
+ * Synchronous version for backward compatibility
+ * Note: This doesn't check tier - use async version for tier-aware checks
+ */
+export function canGeneratePlansSync(
   subscriptionStatus: "trialing" | "active" | "past_due" | "canceled" | null,
   trialEndsAt: string | null | undefined
 ): boolean {

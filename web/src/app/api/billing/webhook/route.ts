@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { logWebhookEvent, logError, logBillingEvent } from "@/lib/utils/logger";
 import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
+import { updateUserTier, shouldDowngradeToFree } from "@/lib/billing/tier";
 
 // Configure route for webhook handling
 export const runtime = "nodejs"; // Use Node.js runtime for better compatibility
@@ -438,6 +439,49 @@ export async function handleSubscriptionUpdated(
       databaseId: upsertedData?.[0]?.id,
       billingCustomerId,
     });
+
+    // Update user tier based on subscription status
+    try {
+      const { data: customer } = await supabase
+        .from("billing_customers")
+        .select("user_id")
+        .eq("id", billingCustomerId)
+        .single();
+      
+      if (customer?.user_id) {
+        // Check if trial ended and should downgrade to Free
+        if (status === "trialing" && trialEndsAt) {
+          const trialEnd = new Date(trialEndsAt);
+          const now = new Date();
+          
+          if (now >= trialEnd) {
+            // Trial ended - check if should downgrade
+            const shouldDowngrade = await shouldDowngradeToFree(supabase, customer.user_id);
+            if (shouldDowngrade) {
+              // Update tier to Free
+              await supabase
+                .from("users")
+                .update({ tier: "free" })
+                .eq("id", customer.user_id);
+              
+              logBillingEvent("User downgraded to Free tier (trial ended)", {
+                userId: customer.user_id,
+                subscriptionId: subscription.id,
+              });
+            }
+          }
+        }
+        
+        // Update tier based on current subscription status
+        await updateUserTier(supabase, customer.user_id);
+      }
+    } catch (tierError: any) {
+      // Log but don't fail webhook - tier update is not critical
+      logError("Error updating user tier in webhook", tierError, {
+        subscriptionId: subscription.id,
+        billingCustomerId,
+      });
+    }
 
     // Detect plan downgrade (Premium → Standard)
     if (upsertedData && upsertedData.length > 0) {
