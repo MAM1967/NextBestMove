@@ -286,6 +286,34 @@ export default function DailyPlanPage() {
     }
   };
 
+  const handleSetPromise = async (
+    actionId: string,
+    promisedDueAt: string | null
+  ) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promised_due_at: promisedDueAt }),
+      });
+
+      if (!response.ok) {
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          throw new Error("Failed to update promise");
+        }
+        throw new Error(data.error || "Failed to update promise");
+      }
+
+      // Refresh the plan to update the action
+      await fetchDailyPlan();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update promise");
+    }
+  };
+
   const handleGotReply = (actionId: string) => {
     const allActions = [
       ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
@@ -657,6 +685,7 @@ export default function DailyPlanPage() {
                 onSnooze={(id) => setSnoozeActionId(id)}
                 onAddNote={handleAddNote}
                 onGotReply={handleGotReply}
+                onSetPromise={handleSetPromise}
               />
             </div>
           </div>
@@ -677,6 +706,7 @@ export default function DailyPlanPage() {
                   onSnooze={(id) => setSnoozeActionId(id)}
                   onAddNote={handleAddNote}
                   onGotReply={handleGotReply}
+                  onSetPromise={handleSetPromise}
                 />
               ))}
             </div>

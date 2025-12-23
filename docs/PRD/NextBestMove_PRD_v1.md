@@ -398,10 +398,11 @@ Assign a lane:
 For each Action:
 	•	Assign a lane (Priority / In Motion / On Deck) based on due date, priority, and relationship lane.
 	•	Compute a NextMoveScore from:
-		•	Urgency (overdue / due soon)
+		•	Urgency (overdue / due soon, with boost for promised follow-ups)
 		•	Stall risk (cadence and momentum)
 		•	Value (relationship importance / tier)
 		•	Effort bias (shorter actions favored for fast wins).
+	•	Promised follow-ups (`promised_due_at`) receive maximum urgency boost when overdue, ensuring trust-preserving prioritization.
 
 Guarantees:
 	•	Exactly one “next move” per relationship.
@@ -440,7 +441,36 @@ To support micro-time windows, Today includes an “I have 5 / 10 / 15 minutes�
 	•	When a duration is selected, Today filters to a single recommended action that fits the available time (Fast Win bias).
 	•	This selector never changes the underlying backlog; it only filters and reorders the visible recommendation.
 
-11.5 Snooze Date Defaults
+11.5 Promised Follow-Up Flag
+
+Users can mark actions as "promised" to track explicit commitments made in conversations (e.g., "I'll send that by EOD" or "I'll follow up this week").
+
+**Marking a Promise:**
+	•	UI affordance on action card or detail modal
+	•	Options:
+		•	"By end of today (EOD)" — sets `promised_due_at` to end of user's working day (from Settings → Working Hours, default 5:00 PM)
+		•	"By end of this week" — sets `promised_due_at` to Sunday 11:59 PM in user's timezone
+		•	"By specific date" — date picker for custom deadline
+	•	Visual indicator (badge/icon) shows when action is promised
+	•	**Relationship with `due_date`:** Actions have both `due_date` (system-suggested deadline) and `promised_due_at` (explicit promise). When both exist, `promised_due_at` takes precedence for urgency scoring and visual escalation.
+
+**Overdue Promise Escalation:**
+	•	Actions with `promised_due_at < now()` are visually escalated in Today:
+		•	Stronger color (red/orange tint) or warning icon
+		•	Ordered above non-promised items with similar scores
+		•	"Overdue promise" badge displayed
+	•	Decision engine boosts urgency score for promised actions:
+		•	Overdue promise → maximum urgency boost (+20 to urgency score)
+		•	Due today → high urgency boost (+15)
+		•	Due within 2 days → medium urgency boost (+10)
+	•	Email nudge: Daily reminder for overdue promises until action is completed or archived (user-configurable in Settings → Notification Preferences)
+
+**Clearing Promises:**
+	•	Automatically cleared when action state → DONE or SENT
+	•	User can manually unmark promise (sets `promised_due_at` to NULL)
+	•	Promise persists through snooze (deferred but still tracked)
+
+11.6 Snooze Date Defaults
 
 When user taps Snooze on an action:
 	•	Default suggestions:

@@ -125,12 +125,14 @@ export function assignRelationshipLane(
 
 /**
  * Assign a lane to an action based on its properties and relationship lane.
+ * Prioritizes overdue promises.
  */
 export function assignActionLane(
   action: {
     due_date: string | Date;
     state: string;
     person_id?: string | null;
+    promised_due_at?: string | Date | null;
   },
   relationshipLane: Lane,
   today: Date = new Date()
@@ -143,6 +145,27 @@ export function assignActionLane(
   const daysUntilDue = Math.floor(
     (dueDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24)
   );
+  
+  // Check for overdue promises first (highest priority)
+  if (action.promised_due_at) {
+    const promisedDue = new Date(action.promised_due_at);
+    promisedDue.setHours(0, 0, 0, 0);
+    const promisedDaysDiff = Math.floor(
+      (promisedDue.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    if (promisedDaysDiff < 0) {
+      return {
+        lane: "priority",
+        reason: `Overdue promise (${Math.abs(promisedDaysDiff)} day(s) overdue)`,
+      };
+    } else if (promisedDaysDiff <= 2) {
+      return {
+        lane: "priority",
+        reason: `Promised follow-up due ${promisedDaysDiff === 0 ? "today" : `in ${promisedDaysDiff} day(s)`}`,
+      };
+    }
+  }
   
   // Priority lane for actions
   if (daysUntilDue <= 2) {

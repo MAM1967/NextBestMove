@@ -34,6 +34,7 @@ export async function PATCH(
       state: string;
       completed_at?: string | null;
       snooze_until?: string | null;
+      promised_due_at?: string | null;
     } = {
       state,
     };
@@ -41,6 +42,8 @@ export async function PATCH(
     // Set completed_at when marking as DONE or REPLIED
     if (state === "DONE" || state === "REPLIED") {
       updateData.completed_at = new Date().toISOString();
+      // Clear promised_due_at when action is completed (promise fulfilled)
+      updateData.promised_due_at = null;
     } else {
       updateData.completed_at = null;
     }

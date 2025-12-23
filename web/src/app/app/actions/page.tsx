@@ -29,6 +29,7 @@ export default function ActionsPage() {
   const [schedulingActionId, setSchedulingActionId] = useState<string | null>(
     null
   );
+  const [promiseActionId, setPromiseActionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActions();

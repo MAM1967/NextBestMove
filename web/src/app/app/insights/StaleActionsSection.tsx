@@ -61,6 +61,28 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
     }
   };
 
+  const handleSetPromise = async (
+    actionId: string,
+    promisedDueAt: string | null
+  ) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}/promise`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promised_due_at: promisedDueAt }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update promise");
+      }
+
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update promise");
+    }
+  };
+
   if (staleActions.length === 0) {
     return (
       <div className="rounded-lg border border-green-100 bg-green-50 p-6 text-center">
@@ -145,6 +167,7 @@ export function StaleActionsSection({ staleActions }: StaleActionsSectionProps) 
               onComplete={handleActionComplete}
               onSnooze={setSnoozeActionId}
               onAddNote={handleAddNote}
+              onSetPromise={handleSetPromise}
             />
           </div>
         ))}

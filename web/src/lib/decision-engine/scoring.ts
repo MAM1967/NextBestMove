@@ -46,10 +46,12 @@ function businessDaysBetween(start: Date, end: Date): number {
 
 /**
  * Calculate urgency score (0-40).
+ * Boosted for overdue promises.
  */
 function calculateUrgency(
   dueDate: Date,
-  today: Date = new Date()
+  today: Date = new Date(),
+  promisedDueAt?: Date | null
 ): number {
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
@@ -60,23 +62,46 @@ function calculateUrgency(
     (due.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24)
   );
   
+  let urgency = 0;
+  
   // Overdue → 40
   if (daysDiff < 0) {
-    return 40;
+    urgency = 40;
   }
-  
   // Due ≤ 2 days → 30
-  if (daysDiff <= 2) {
-    return 30;
+  else if (daysDiff <= 2) {
+    urgency = 30;
   }
-  
   // Due ≤ 7 days → 20
-  if (daysDiff <= 7) {
-    return 20;
+  else if (daysDiff <= 7) {
+    urgency = 20;
+  }
+  // No due date or far out → 5
+  else {
+    urgency = 5;
   }
   
-  // No due date or far out → 5
-  return 5;
+  // Boost for overdue promises (extra urgency)
+  if (promisedDueAt) {
+    const promisedDue = new Date(promisedDueAt);
+    promisedDue.setHours(0, 0, 0, 0);
+    const promisedDaysDiff = Math.floor(
+      (promisedDue.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    if (promisedDaysDiff < 0) {
+      // Overdue promise → max urgency (40) + extra boost
+      urgency = 40;
+    } else if (promisedDaysDiff <= 2) {
+      // Promise due soon → boost urgency
+      urgency = Math.max(urgency, 35);
+    } else if (promisedDaysDiff <= 7) {
+      // Promise this week → moderate boost
+      urgency = Math.max(urgency, urgency + 5);
+    }
+  }
+  
+  return Math.min(urgency, 40); // Cap at 40
 }
 
 /**
@@ -172,11 +197,20 @@ export function calculateNextMoveScore(
     due_date: string | Date;
     estimated_minutes?: number | null;
     person_id?: string | null;
+    promised_due_at?: string | Date | null;
   },
   relationshipState: RelationshipState | null,
   today: Date = new Date()
 ): ScoredAction {
-  const urgency = calculateUrgency(new Date(action.due_date), today);
+  const promisedDueAt = action.promised_due_at 
+    ? new Date(action.promised_due_at) 
+    : null;
+  
+  const urgency = calculateUrgency(
+    new Date(action.due_date), 
+    today,
+    promisedDueAt
+  );
   const stallRisk = calculateStallRisk(relationshipState);
   const value = calculateValue(relationshipState);
   const effortBias = calculateEffortBias(action.estimated_minutes || null);
@@ -187,6 +221,16 @@ export function calculateNextMoveScore(
   const reasons: string[] = [];
   if (urgency >= 30) {
     reasons.push("high urgency");
+  }
+  if (promisedDueAt) {
+    const promisedDaysDiff = Math.floor(
+      (promisedDueAt.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (promisedDaysDiff < 0) {
+      reasons.push("overdue promise");
+    } else if (promisedDaysDiff <= 2) {
+      reasons.push("promised soon");
+    }
   }
   if (stallRisk > 0) {
     reasons.push("stall risk");

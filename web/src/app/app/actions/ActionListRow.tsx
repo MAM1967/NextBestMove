@@ -5,6 +5,7 @@ import {
   getDaysDifference,
   formatDateForDisplay,
 } from "@/lib/utils/dateUtils";
+import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
 
 interface ActionListRowProps {
   action: Action;
@@ -133,13 +134,20 @@ export function ActionListRow({
     action.state === "DONE" ||
     action.state === "REPLIED" ||
     action.state === "SENT";
+  
+  // Check if promise exists and is overdue
+  const hasPromise = !!action.promised_due_at;
+  const promiseOverdue = hasPromise && isPromiseOverdue(action.promised_due_at);
 
   // Visual styling per bucket – keeps IA logic in the page, styling here.
+  // Escalate overdue promises visually
   const baseContainerClasses =
     "rounded-xl border px-3.5 py-3 shadow-sm transition-colors";
 
   const variantContainerClass =
-    variant === "urgent"
+    promiseOverdue
+      ? "border-red-300 bg-red-50/90 hover:bg-red-50 border-2" // Overdue promise - stronger visual
+      : variant === "urgent"
       ? "border-rose-100 bg-rose-50/80 hover:bg-rose-50"
       : variant === "motion"
       ? "border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50"
@@ -200,6 +208,19 @@ export function ActionListRow({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Promise indicator - show prominently for overdue promises */}
+          {hasPromise && (
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                promiseOverdue
+                  ? "bg-red-600 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+              title={formatPromiseDate(action.promised_due_at!)}
+            >
+              {promiseOverdue ? "⚠️ Promise" : "✓ Promise"}
+            </span>
+          )}
           {/* Lane badge if decision engine has assigned one */}
           {action.lane && (
             <span

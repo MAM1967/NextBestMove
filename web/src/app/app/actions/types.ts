@@ -39,6 +39,9 @@ export interface Action {
   // Decision engine fields (optional, will be populated once backend is implemented)
   lane?: "priority" | "in_motion" | "on_deck" | null;
   next_move_score?: number | null;
+  
+  // Promised follow-up
+  promised_due_at?: string | null;
 }
 
 

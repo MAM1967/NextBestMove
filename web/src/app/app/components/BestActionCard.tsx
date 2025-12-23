@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ActionWithLane } from "@/lib/decision-engine/types";
+import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
 
 interface BestActionCardProps {
   action: ActionWithLane | null;
@@ -32,6 +33,10 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
 
   const leadName = action.leads?.name || "Unknown";
   const actionDescription = action.description || `${action.action_type} ${leadName}`;
+
+  // Check for promise
+  const hasPromise = !!action.promised_due_at;
+  const promiseOverdue = hasPromise && isPromiseOverdue(action.promised_due_at);
 
   // Format due date
   const dueDate = new Date(action.due_date);
@@ -66,13 +71,31 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
   };
 
   return (
-    <div className="bg-gradient-to-br from-rose-50 to-orange-50 border-2 border-rose-200 rounded-lg p-6 shadow-sm">
+    <div className={`bg-gradient-to-br border-2 rounded-lg p-6 shadow-sm ${
+      promiseOverdue
+        ? "from-red-50 to-red-100 border-red-400"
+        : hasPromise
+        ? "from-blue-50 to-blue-100 border-blue-300"
+        : "from-rose-50 to-orange-50 border-rose-200"
+    }`}>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="text-sm font-semibold text-rose-900 uppercase tracking-wide">
               Best Action
             </span>
+            {hasPromise && (
+              <span
+                className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                  promiseOverdue
+                    ? "bg-red-600 text-white"
+                    : "bg-blue-500 text-white"
+                }`}
+                title={formatPromiseDate(action.promised_due_at!)}
+              >
+                {promiseOverdue ? "⚠️ Overdue Promise" : "✓ Promised"}
+              </span>
+            )}
             {action.lane && (
               <span
                 className={`px-2 py-0.5 text-xs font-medium rounded-full border ${
@@ -103,10 +126,19 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-rose-200">
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span className="font-medium">{action.action_type.replace(/_/g, " ")}</span>
-          <span>•</span>
-          <span>{dueDateLabel}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <span className="font-medium">{action.action_type.replace(/_/g, " ")}</span>
+            <span>•</span>
+            <span>{dueDateLabel}</span>
+          </div>
+          {hasPromise && (
+            <div className={`text-xs font-medium ${
+              promiseOverdue ? "text-red-700" : "text-blue-700"
+            }`}>
+              {formatPromiseDate(action.promised_due_at!)}
+            </div>
+          )}
         </div>
         <Link
           href="/app/plan"

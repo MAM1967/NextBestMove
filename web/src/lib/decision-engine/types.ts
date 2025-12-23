@@ -48,6 +48,7 @@ export interface ActionWithLane {
   auto_created: boolean;
   created_at: string;
   updated_at: string;
+  promised_due_at?: string | null;
   leads?: {
     id: string;
     name: string;

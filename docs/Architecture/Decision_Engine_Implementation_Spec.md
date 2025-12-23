@@ -153,6 +153,28 @@ Persist `actions.lane` whenever plans are generated or state changes.
   - Due ≤ 2 days → 30  
   - Due ≤ 7 days → 20  
   - No due date → 5
+  
+  **Promised Follow-Up Boost:**
+  - If `promised_due_at` exists and is overdue → +20 to urgency (caps at 40)
+  - If `promised_due_at` = today → +15 to urgency
+  - If `promised_due_at` ≤ today + 2 days → +10 to urgency
+  - Promised actions should be prioritized above non-promised with similar base scores
+  
+  **Priority Logic (`due_date` vs `promised_due_at`):**
+  - **Actions have `due_date`** (required) - system-suggested or user-set deadline
+  - **Actions can have `promised_due_at`** (optional) - explicit promise made in conversation
+  - **Both can exist simultaneously:**
+    - Example: Action has `due_date = 2025-12-25` (system suggested)
+    - User marks "Promised by EOD today" → `promised_due_at = 2025-12-23 17:00:00`
+    - Promise takes precedence for urgency scoring
+  - **Scoring:**
+    - If `promised_due_at` exists → use it for urgency calculation (with boost)
+    - If `promised_due_at` is NULL → use `due_date` for urgency calculation
+    - Overdue promise should always outrank overdue non-promised action
+  - **Display:**
+    - Show "Promised by [date]" badge if `promised_due_at` exists
+    - Show "Due [date]" if only `due_date` exists
+    - If both exist and promise is overdue, emphasize the promise
 
 - **Stall Risk (0–25)**  
   - `momentum_trend = declining` → +15  
