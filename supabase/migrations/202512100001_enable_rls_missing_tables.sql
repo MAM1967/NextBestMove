@@ -55,3 +55,6 @@ CREATE POLICY "Service role can manage pre_call_briefs" ON pre_call_briefs
 COMMIT;
 
 
+
+
+

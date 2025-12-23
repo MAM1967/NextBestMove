@@ -6,6 +6,7 @@ import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
 import { GracePeriodBanner } from "./components/GracePeriodBanner";
 import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
+import { BestActionCardClient } from "./components/BestActionCardClient";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -510,6 +511,9 @@ export default async function TodayPage() {
             : "Generate your daily plan to get started"}
         </p>
       </header>
+
+      {/* Best Action - Single clear next move */}
+      <BestActionCardClient />
 
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">

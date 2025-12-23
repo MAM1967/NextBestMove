@@ -99,10 +99,13 @@ CREATE TRIGGER update_users_updated_at
 
 ### 2. leads
 
-Stores leads/contacts.
+Stores leads/contacts (also referred to as "relationships" in decision engine context).
 
 ```sql
 CREATE TYPE lead_status AS ENUM ('ACTIVE', 'SNOOZED', 'ARCHIVED');
+CREATE TYPE relationship_cadence AS ENUM ('frequent', 'moderate', 'infrequent', 'ad_hoc');
+CREATE TYPE relationship_tier AS ENUM ('inner', 'active', 'warm', 'background');
+CREATE TYPE momentum_trend AS ENUM ('increasing', 'stable', 'declining', 'unknown');
 
 CREATE TABLE leads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -112,6 +115,14 @@ CREATE TABLE leads (
   notes TEXT, -- Optional notes
   status lead_status NOT NULL DEFAULT 'ACTIVE',
   snooze_until DATE, -- If SNOOZED, when to unsnooze
+  -- Decision engine fields (added in NEX-10)
+  cadence relationship_cadence, -- User-set relationship cadence
+  tier relationship_tier, -- Relationship importance tier
+  last_interaction_at TIMESTAMPTZ, -- Cached from MAX(actions.completed_at WHERE person_id = id)
+  next_touch_due_at TIMESTAMPTZ, -- Computed from last_interaction_at + cadence_days
+  next_move_action_id UUID REFERENCES actions(id) ON DELETE SET NULL, -- Single best action per relationship
+  momentum_score NUMERIC(5, 2), -- 0-100, computed from action patterns
+  momentum_trend momentum_trend DEFAULT 'unknown', -- Trend indicator
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -144,6 +155,13 @@ CREATE TRIGGER update_leads_updated_at
 - `notes`: Optional notes/context
 - `status`: Lead status (ACTIVE, SNOOZED, ARCHIVED)
 - `snooze_until`: Date to automatically unsnooze (if SNOOZED)
+- `cadence`: Relationship cadence (frequent=7 days, moderate=14 days, infrequent=30 days, ad_hoc=null)
+- `tier`: Relationship importance tier (inner, active, warm, background)
+- `last_interaction_at`: Cached timestamp of last completed action (derived from actions table)
+- `next_touch_due_at`: Computed date when next touch is due (last_interaction_at + cadence_days)
+- `next_move_action_id`: UUID of the single best action for this relationship (from decision engine)
+- `momentum_score`: Numeric score 0-100 indicating relationship momentum
+- `momentum_trend`: Trend indicator (increasing, stable, declining, unknown)
 - `created_at`, `updated_at`: Timestamps
 
 ---
@@ -172,6 +190,8 @@ CREATE TYPE action_state AS ENUM (
   'ARCHIVED'
 );
 
+CREATE TYPE action_lane AS ENUM ('priority', 'in_motion', 'on_deck');
+
 CREATE TABLE actions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -184,6 +204,11 @@ CREATE TABLE actions (
   snooze_until DATE, -- If SNOOZED, when to unsnooze
   notes TEXT, -- Optional user notes (e.g., "asked to talk in March")
   auto_created BOOLEAN NOT NULL DEFAULT false, -- System-generated vs user-created
+  -- Decision engine fields (added in NEX-10)
+  lane action_lane, -- Lane assignment: priority, in_motion, or on_deck
+  next_move_score NUMERIC(5, 2), -- Cached NextMoveScore (0-100)
+  estimated_minutes INTEGER, -- Estimated duration for "I have X minutes" feature
+  promised_due_at TIMESTAMPTZ, -- For promised follow-ups (user committed to specific date)
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 

@@ -199,8 +199,45 @@ export function ActionListRow({
             )}
           </p>
         </div>
-        <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
-          {dueLabel}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Lane badge if decision engine has assigned one */}
+          {action.lane && (
+            <span
+              className={`px-2 py-0.5 text-xs font-medium rounded-full border ${
+                action.lane === "priority"
+                  ? "bg-rose-100 text-rose-800 border-rose-200"
+                  : action.lane === "in_motion"
+                  ? "bg-green-100 text-green-800 border-green-200"
+                  : "bg-blue-100 text-blue-800 border-blue-200"
+              }`}
+              title={
+                action.lane === "priority"
+                  ? "Priority: Requires attention now"
+                  : action.lane === "in_motion"
+                  ? "In Motion: Active, within cadence"
+                  : "On Deck: No pending work, light-touch"
+              }
+            >
+              {action.lane === "priority"
+                ? "Priority"
+                : action.lane === "in_motion"
+                ? "In Motion"
+                : "On Deck"}
+            </span>
+          )}
+          {/* Score indicator (tooltip) */}
+          {action.next_move_score !== null &&
+            action.next_move_score !== undefined && (
+              <span
+                className="text-xs text-zinc-400"
+                title={`NextMoveScore: ${Math.round(action.next_move_score)}`}
+              >
+                {Math.round(action.next_move_score)}
+              </span>
+            )}
+          <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
+            {dueLabel}
+          </div>
         </div>
       </div>
 

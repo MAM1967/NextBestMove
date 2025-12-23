@@ -9,6 +9,8 @@ import { ViewPromptModal } from "./ViewPromptModal";
 import { Action } from "./types";
 import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 import { getDaysDifference } from "@/lib/utils/dateUtils";
+import { useActionsByLane } from "@/lib/decision-engine/hooks";
+import type { ActionWithLane } from "@/lib/decision-engine/types";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -32,10 +34,36 @@ export default function ActionsPage() {
     fetchActions();
   }, []);
 
+  // Fetch actions using decision engine lanes
+  const { actions: actionsByLane, loading: lanesLoading, error: lanesError } = useActionsByLane();
+  
   const fetchActions = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Use decision engine API
+      const laneResponse = await fetch("/api/decision-engine/actions-by-lane");
+      if (laneResponse.ok) {
+        const laneData = await laneResponse.json();
+        // Combine all lanes into a single array for compatibility
+        const allLaneActions: Action[] = [
+          ...(laneData.priority || []),
+          ...(laneData.in_motion || []),
+          ...(laneData.on_deck || []),
+        ];
+        // Map ActionWithLane to Action format
+        const mappedActions: Action[] = allLaneActions.map((a: any) => ({
+          ...a,
+          lane: a.lane || null,
+          next_move_score: a.next_move_score || null,
+        }));
+        setActions(mappedActions);
+        setLoading(false);
+        return;
+      }
+      
+      // Fallback to legacy API if decision engine not ready
       const response = await fetch("/api/actions");
       if (!response.ok) {
         throw new Error("Failed to fetch actions");
@@ -317,7 +345,21 @@ export default function ActionsPage() {
     }
   };
 
+  /**
+   * Bucket actions using decision engine lanes if available, otherwise use legacy heuristics
+   */
   const bucketActions = (allActions: Action[]) => {
+    // If we have lane data from decision engine, use it
+    if (actionsByLane) {
+      return {
+        needsAttentionNow: actionsByLane.priority || [],
+        conversationsInMotion: actionsByLane.in_motion || [],
+        stayTopOfMind: [], // Can be populated from on_deck if needed
+        optionalBackground: actionsByLane.on_deck || [],
+      };
+    }
+
+    // Legacy fallback: use heuristics based on existing fields
     const needsAttentionNow: Action[] = [];
     const conversationsInMotion: Action[] = [];
     const stayTopOfMind: Action[] = [];
@@ -335,6 +377,24 @@ export default function ActionsPage() {
         return;
       }
 
+      // If action has a lane, use it directly
+      if (action.lane === "priority") {
+        mark(needsAttentionNow, action);
+        return;
+      } else if (action.lane === "in_motion") {
+        mark(conversationsInMotion, action);
+        return;
+      } else if (action.lane === "on_deck") {
+        // Split on_deck into "Stay top of mind" (NURTURE) and "Optional/background" (everything else)
+        if (action.action_type === "NURTURE") {
+          mark(stayTopOfMind, action);
+        } else {
+          mark(optionalBackground, action);
+        }
+        return;
+      }
+
+      // Legacy heuristics for actions without lanes
       const daysDiff = getDaysDifference(action.due_date); // >0 overdue, 0 today, <0 future
       const isCompleted =
         action.state === "DONE" ||
@@ -378,7 +438,7 @@ export default function ActionsPage() {
     };
   };
 
-  if (loading) {
+  if (loading || lanesLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-zinc-600">Loading actions...</p>
