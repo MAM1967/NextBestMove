@@ -16,6 +16,10 @@ import {
   selectBestAction,
   type ScoredAction,
 } from "./scoring";
+import {
+  getEmailSignalsForRelationship,
+  type EmailSignalsForDecision,
+} from "@/lib/email/decision-engine";
 
 export interface DecisionEngineResult {
   bestAction: {
@@ -82,6 +86,70 @@ export async function runDecisionEngine(
       scoredActions: [],
     };
   }
+
+  // Step 2.5: Fetch email signals for relationships that have email addresses
+  // Cache email signals to avoid repeated API calls
+  const emailSignalsCache = new Map<string, EmailSignalsForDecision>();
+  const relationshipsNeedingEmailSignals = new Set<string>();
+  
+  // Get unique person_ids from actions
+  const personIds = [
+    ...new Set(
+      candidateActions
+        .map((a) => a.person_id)
+        .filter((id): id is string => id !== null)
+    ),
+  ];
+
+  // Fetch leads for these person_ids to check for email addresses
+  let leadsMap = new Map<string, { id: string; url: string | null }>();
+  if (personIds.length > 0) {
+    const { data: leads } = await supabase
+      .from("leads")
+      .select("id, url")
+      .eq("user_id", userId)
+      .in("id", personIds);
+
+    if (leads) {
+      // Build map and find relationships with email addresses
+      for (const lead of leads) {
+        leadsMap.set(lead.id, lead);
+        if (lead.url?.startsWith("mailto:")) {
+          relationshipsNeedingEmailSignals.add(lead.id);
+        }
+      }
+    }
+  }
+
+  // Fetch email signals for all relationships that need them
+  // Note: This is done in parallel but with error handling for graceful degradation
+  const emailSignalsPromises = Array.from(relationshipsNeedingEmailSignals).map(
+    async (leadId) => {
+      try {
+        const lead = leadsMap.get(leadId);
+        if (!lead) return null;
+        
+        const signals = await getEmailSignalsForRelationship(
+          supabase,
+          userId,
+          leadId,
+          lead.url || null
+        );
+        return { leadId, signals };
+      } catch (error) {
+        console.error(`Error fetching email signals for relationship ${leadId}:`, error);
+        // Graceful degradation: return null if email signals can't be fetched
+        return null;
+      }
+    }
+  );
+
+  const emailSignalsResults = await Promise.all(emailSignalsPromises);
+  for (const result of emailSignalsResults) {
+    if (result) {
+      emailSignalsCache.set(result.leadId, result.signals);
+    }
+  }
   
   // Step 3: Assign lanes and score actions
   const scoredActions: ScoredAction[] = [];
@@ -97,6 +165,11 @@ export async function runDecisionEngine(
       ? relationshipStates.get(action.person_id) || null
       : null;
     
+    // Get email signals if available
+    const emailSignals = action.person_id
+      ? emailSignalsCache.get(action.person_id) || null
+      : null;
+    
     // Assign relationship lane (if relationship exists)
     const relationshipLane = relationshipState
       ? assignRelationshipLane(relationshipState).lane
@@ -109,11 +182,12 @@ export async function runDecisionEngine(
       referenceDate
     );
     
-    // Score the action
+    // Score the action (with email signals if available)
     const scored = calculateNextMoveScore(
       action,
       relationshipState,
-      referenceDate
+      referenceDate,
+      emailSignals
     );
     
     scoredActions.push(scored);

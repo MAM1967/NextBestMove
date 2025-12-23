@@ -1,0 +1,159 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import type { EmailSignals } from "@/lib/email/types";
+import { formatDistanceToNow } from "date-fns";
+
+interface RelationshipSignalsProps {
+  relationshipId: string;
+}
+
+export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps) {
+  const [signals, setSignals] = useState<EmailSignals | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSignals = async () => {
+      try {
+        const response = await fetch(`/api/email/signals/relationship/${relationshipId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            // No signals yet, that's okay
+            setSignals(null);
+            return;
+          }
+          throw new Error("Failed to fetch signals");
+        }
+        const data = await response.json();
+        setSignals(data.signals);
+      } catch (err) {
+        console.error("Error fetching signals:", err);
+        setError(err instanceof Error ? err.message : "Failed to load signals");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSignals();
+  }, [relationshipId]);
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <p className="text-sm text-zinc-600">Loading signals...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <p className="text-sm text-red-800">{error}</p>
+      </div>
+    );
+  }
+
+  if (!signals) {
+    return (
+      <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <h3 className="mb-2 text-lg font-semibold text-zinc-900">Email Signals</h3>
+        <p className="text-sm text-zinc-600">
+          No email signals available. Connect your email account in Settings to see signals from
+          your email conversations.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-4">
+      <h3 className="mb-4 text-lg font-semibold text-zinc-900">Email Signals</h3>
+      
+      <div className="space-y-4">
+        {/* Last Email */}
+        {signals.last_email_received && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Last Email</div>
+            <div className="mt-1 text-sm text-zinc-900">
+              {formatDistanceToNow(new Date(signals.last_email_received), { addSuffix: true })}
+            </div>
+          </div>
+        )}
+
+        {/* Unread Count */}
+        {signals.unread_count > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Unread Emails</div>
+            <div className="mt-1 text-sm font-semibold text-orange-600">
+              {signals.unread_count} unread
+            </div>
+          </div>
+        )}
+
+        {/* Recent Topics */}
+        {signals.recent_topics.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Recent Topics</div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {signals.recent_topics.slice(0, 5).map((topic, index) => (
+                <span
+                  key={index}
+                  className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Asks */}
+        {signals.recent_asks.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Recent Asks</div>
+            <ul className="mt-1 space-y-1">
+              {signals.recent_asks.slice(0, 3).map((ask, index) => (
+                <li key={index} className="text-sm text-zinc-700">
+                  • {ask}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Open Loops */}
+        {signals.recent_open_loops.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-orange-700">Open Loops</div>
+            <ul className="mt-1 space-y-1">
+              {signals.recent_open_loops.slice(0, 3).map((loop, index) => (
+                <li key={index} className="text-sm font-medium text-orange-800">
+                  ⚠️ {loop}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Recent Labels */}
+        {signals.recent_labels.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Labels</div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {signals.recent_labels.slice(0, 5).map((label, index) => (
+                <span
+                  key={index}
+                  className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

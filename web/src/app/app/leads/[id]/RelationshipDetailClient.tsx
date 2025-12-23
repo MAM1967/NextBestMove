@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Lead } from "@/lib/leads/types";
 import type { RelationshipSummary } from "@/lib/leads/summary-types";
 import { NotesSummary } from "./NotesSummary";
+import { RelationshipSignals } from "./RelationshipSignals";
 import { EditLeadModal } from "../EditLeadModal";
 import {
   computeRelationshipStatus,
@@ -191,6 +192,11 @@ export function RelationshipDetailClient({
         ) : summary ? (
           <NotesSummary summary={summary} />
         ) : null}
+
+        {/* Email Signals */}
+        <div className="mt-6">
+          <RelationshipSignals relationshipId={lead.id} />
+        </div>
 
         {/* Relationship Details */}
         <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">

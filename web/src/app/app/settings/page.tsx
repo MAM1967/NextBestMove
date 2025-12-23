@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { fetchCalendarStatus } from "@/lib/calendar/status";
+import { fetchEmailStatus } from "@/lib/email/status";
 import { CalendarConnectionSection } from "./CalendarConnectionSection";
+import { EmailConnectionSection } from "./EmailConnectionSection";
 import { CalendarEventsView } from "./CalendarEventsView";
 import { BillingSection } from "./BillingSection";
 import { WeekendPreferenceToggle } from "./WeekendPreferenceToggle";
@@ -111,6 +113,7 @@ export default async function SettingsPage({
   const [
     { data: profile },
     calendarStatus,
+    emailStatus,
     { data: billingCustomer },
     { count: contentPromptsCount },
   ] = await Promise.all([
@@ -122,6 +125,11 @@ export default async function SettingsPage({
       .eq("id", user.id)
       .single(),
     fetchCalendarStatus(supabase, user.id),
+    fetchEmailStatus(supabase, user.id).catch(() => ({
+      connections: [],
+      connected: false,
+      status: "disconnected" as const,
+    })),
     supabase
       .from("billing_customers")
       .select("id")
@@ -255,6 +263,17 @@ export default async function SettingsPage({
               </div>
             </div>
           </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Email connection"
+          description="Connect your email to see signals and insights from your conversations."
+        >
+          <EmailConnectionSection
+            connections={emailStatus.connections}
+            connected={emailStatus.connected}
+            status={emailStatus.status}
+          />
         </SectionCard>
       </div>
 

@@ -8,6 +8,7 @@ import {
   validateCadenceDays,
 } from "@/lib/leads/relationship-status";
 import { NotesSummary } from "./NotesSummary";
+import { Signals } from "./Signals";
 
 interface EditLeadModalProps {
   isOpen: boolean;
@@ -383,6 +384,13 @@ export function EditLeadModal({
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
             <NotesSummary relationshipId={lead.id} />
+          </div>
+        )}
+
+        {/* Signals Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <Signals leadId={lead.id} />
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@
  */
 
 import type { RelationshipState } from "./state";
+import type { EmailSignalsForDecision } from "@/lib/email/decision-engine";
 
 export interface ScoreBreakdown {
   urgency: number; // 0-40
@@ -106,9 +107,11 @@ function calculateUrgency(
 
 /**
  * Calculate stall risk score (0-25).
+ * Now includes email signals (open loops, unanswered asks).
  */
 function calculateStallRisk(
-  relationshipState: RelationshipState | null
+  relationshipState: RelationshipState | null,
+  emailSignals?: EmailSignalsForDecision | null
 ): number {
   if (!relationshipState) {
     return 0;
@@ -128,6 +131,25 @@ function calculateStallRisk(
     relationshipState.daysSinceLastInteraction > relationshipState.cadenceDays
   ) {
     score += 10;
+  }
+
+  // Email signals: open loops → +8 (unresolved items need attention)
+  if (emailSignals?.hasOpenLoops) {
+    score += 8;
+  }
+
+  // Email signals: unanswered asks → +7 (pending requests need response)
+  if (emailSignals?.hasUnansweredAsks) {
+    score += 7;
+  }
+
+  // Email signals: no recent email activity (last email > 14 days ago) → +5
+  if (
+    emailSignals?.daysSinceLastEmail !== null &&
+    emailSignals?.daysSinceLastEmail !== undefined &&
+    emailSignals.daysSinceLastEmail > 14
+  ) {
+    score += 5;
   }
   
   return Math.min(score, 25); // Cap at 25
@@ -200,7 +222,8 @@ export function calculateNextMoveScore(
     promised_due_at?: string | Date | null;
   },
   relationshipState: RelationshipState | null,
-  today: Date = new Date()
+  today: Date = new Date(),
+  emailSignals?: EmailSignalsForDecision | null
 ): ScoredAction {
   const promisedDueAt = action.promised_due_at 
     ? new Date(action.promised_due_at) 
@@ -211,7 +234,7 @@ export function calculateNextMoveScore(
     today,
     promisedDueAt
   );
-  const stallRisk = calculateStallRisk(relationshipState);
+  const stallRisk = calculateStallRisk(relationshipState, emailSignals);
   const value = calculateValue(relationshipState);
   const effortBias = calculateEffortBias(action.estimated_minutes || null);
   
@@ -233,7 +256,21 @@ export function calculateNextMoveScore(
     }
   }
   if (stallRisk > 0) {
-    reasons.push("stall risk");
+    const stallReasons: string[] = [];
+    if (relationshipState?.momentumTrend === "declining") {
+      stallReasons.push("momentum declining");
+    }
+    if (emailSignals?.hasOpenLoops) {
+      stallReasons.push("open loops");
+    }
+    if (emailSignals?.hasUnansweredAsks) {
+      stallReasons.push("unanswered asks");
+    }
+    if (stallReasons.length > 0) {
+      reasons.push(`stall risk (${stallReasons.join(", ")})`);
+    } else {
+      reasons.push("stall risk");
+    }
   }
   if (value >= 10) {
     reasons.push("high value relationship");
