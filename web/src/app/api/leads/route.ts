@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, url, notes, cadence, cadence_days, tier } = body;
+    const { name, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
 
     // Validation
     if (!name || !url) {
@@ -148,6 +148,7 @@ export async function POST(request: Request) {
         cadence: cadence || null,
         cadence_days: finalCadenceDays,
         tier: tier || null,
+        preferred_channel: preferred_channel || null,
         // next_touch_due_at will be null initially (no last_interaction_at yet)
         // It will be computed when the first action is completed
       })

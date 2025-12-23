@@ -218,6 +218,20 @@ export function RelationshipDetailClient({
                 <span className="text-sm text-zinc-600 capitalize">{lead.tier}</span>
               </div>
             )}
+            {lead.preferred_channel && (
+              <div>
+                <span className="text-sm font-medium text-zinc-700">Preferred Channel: </span>
+                <span className="text-sm text-zinc-600 capitalize">
+                  {lead.preferred_channel === "linkedin"
+                    ? "LinkedIn"
+                    : lead.preferred_channel === "email"
+                    ? "Email"
+                    : lead.preferred_channel === "text"
+                    ? "Text"
+                    : "Other"}
+                </span>
+              </div>
+            )}
             {lead.notes && (
               <div>
                 <span className="text-sm font-medium text-zinc-700">Notes: </span>

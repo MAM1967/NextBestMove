@@ -110,6 +110,7 @@ export default function LeadsPage() {
     cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
     cadence_days?: number | null;
     tier?: "inner" | "active" | "warm" | "background" | null;
+    preferred_channel?: "linkedin" | "email" | "text" | "other" | null;
   }) => {
     try {
       const response = await fetch("/api/leads", {
@@ -145,6 +146,7 @@ export default function LeadsPage() {
       cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
       cadence_days?: number | null;
       tier?: "inner" | "active" | "warm" | "background" | null;
+      preferred_channel?: "linkedin" | "email" | "text" | "other" | null;
     }
   ) => {
     try {

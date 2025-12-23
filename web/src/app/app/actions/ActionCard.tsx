@@ -6,6 +6,7 @@ import { parseLocalDate, getTodayLocal, getDaysDifference, formatDateForDisplay 
 import { useState } from "react";
 import { PromiseModal } from "./PromiseModal";
 import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
+import { ChannelNudge } from "../components/ChannelNudge";
 
 interface ActionCardProps {
   action: Action;
@@ -527,6 +528,21 @@ export function ActionCard({
                 </svg>
                 <span className="italic">{action.notes}</span>
               </div>
+            )}
+            {/* Channel nudge - show if conversation is stalled */}
+            {action.leads && (
+              <ChannelNudge
+                action={action}
+                relationship={action.leads}
+                onDismiss={(actionId, nudgeType) => {
+                  // TODO: Implement nudge dismissal (store in local state or backend)
+                  console.log("Dismiss nudge", actionId, nudgeType);
+                }}
+                onEscalate={(actionId, nudgeType) => {
+                  // TODO: Implement escalation (e.g., create new action or switch channel)
+                  console.log("Escalate", actionId, nudgeType);
+                }}
+              />
             )}
           </div>
         </div>

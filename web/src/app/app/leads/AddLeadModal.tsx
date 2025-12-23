@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 
-import type { RelationshipCadence, RelationshipTier } from "@/lib/leads/types";
+import type { RelationshipCadence, RelationshipTier, PreferredChannel } from "@/lib/leads/types";
 import {
   getCadenceRange,
   getCadenceDaysDefault,
@@ -19,6 +19,7 @@ interface AddLeadModalProps {
     cadence?: RelationshipCadence | null;
     cadence_days?: number | null;
     tier?: RelationshipTier | null;
+    preferred_channel?: PreferredChannel;
   }) => Promise<void>;
 }
 
@@ -34,6 +35,7 @@ export function AddLeadModal({
     cadence: "" as RelationshipCadence | "",
     cadence_days: null as number | null,
     tier: "" as RelationshipTier | "",
+    preferred_channel: "" as PreferredChannel | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -101,6 +103,7 @@ export function AddLeadModal({
         cadence: formData.cadence === "" ? null : (formData.cadence as RelationshipCadence),
         cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
         tier: formData.tier === "" ? null : (formData.tier as RelationshipTier),
+        preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
       setFormData({ 
         name: "", 
@@ -108,7 +111,8 @@ export function AddLeadModal({
         notes: "", 
         cadence: "", 
         cadence_days: null,
-        tier: "" 
+        tier: "",
+        preferred_channel: ""
       });
       setErrors({});
       onClose();
@@ -322,53 +326,30 @@ export function AddLeadModal({
 
           <div>
             <label
-              htmlFor="cadence"
+              htmlFor="preferred_channel"
               className="block text-sm font-medium text-zinc-900"
             >
-              Follow-up Cadence (optional)
+              Preferred Channel (optional)
             </label>
             <select
-              id="cadence"
-              value={formData.cadence || ""}
+              id="preferred_channel"
+              value={formData.preferred_channel || ""}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, cadence: (e.target.value || "") as typeof formData.cadence }))
+                setFormData((prev) => ({
+                  ...prev,
+                  preferred_channel: (e.target.value || null) as PreferredChannel | null,
+                }))
               }
               className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             >
-              <option value="">No cadence (ad-hoc)</option>
-              <option value="frequent">Frequent (weekly)</option>
-              <option value="moderate">Moderate (bi-weekly)</option>
-              <option value="infrequent">Infrequent (monthly)</option>
-              <option value="ad_hoc">Ad-hoc (no schedule)</option>
+              <option value="">Not set</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="email">Email</option>
+              <option value="text">Text</option>
+              <option value="other">Other</option>
             </select>
             <p className="mt-1 text-xs text-zinc-500">
-              How often you want to follow up with this person
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="tier"
-              className="block text-sm font-medium text-zinc-900"
-            >
-              Relationship Tier (optional)
-            </label>
-            <select
-              id="tier"
-              value={formData.tier || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, tier: (e.target.value || "") as typeof formData.tier }))
-              }
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            >
-              <option value="">No tier</option>
-              <option value="inner">Inner circle</option>
-              <option value="active">Active</option>
-              <option value="warm">Warm</option>
-              <option value="background">Background</option>
-            </select>
-            <p className="mt-1 text-xs text-zinc-500">
-              Importance level of this relationship
+              Preferred way to communicate with this person
             </p>
           </div>
 

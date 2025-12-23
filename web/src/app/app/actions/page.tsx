@@ -11,6 +11,7 @@ import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 import { getDaysDifference } from "@/lib/utils/dateUtils";
 import { useActionsByLane } from "@/lib/decision-engine/hooks";
 import type { ActionWithLane } from "@/lib/decision-engine/types";
+import { ChannelNudgesList } from "../components/ChannelNudgeCard";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -491,6 +492,9 @@ export default function ActionsPage() {
               Refresh
             </button>
           </div>
+
+          {/* Channel Nudges - Stalled conversations */}
+          <ChannelNudgesList />
 
           {actions.length === 0 ? (
             <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">

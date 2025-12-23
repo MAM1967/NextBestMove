@@ -67,7 +67,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, url, notes, cadence, cadence_days, tier } = body;
+    const { name, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
 
     // Validation
     if (!name || !url) {
@@ -120,6 +120,7 @@ export async function PUT(
       cadence?: string | null;
       cadence_days?: number | null;
       tier?: string | null;
+      preferred_channel?: string | null;
       next_touch_due_at?: string | null;
     } = {
       name: name.trim(),
@@ -127,13 +128,16 @@ export async function PUT(
       notes: notes?.trim() || null,
     };
 
-    // Add cadence and tier if provided
+    // Add cadence, tier, and preferred_channel if provided
     const newCadence = cadence !== undefined ? (cadence || null) : currentLead?.cadence;
     if (cadence !== undefined) {
       updateData.cadence = cadence || null;
     }
     if (tier !== undefined) {
       updateData.tier = tier || null;
+    }
+    if (preferred_channel !== undefined) {
+      updateData.preferred_channel = preferred_channel || null;
     }
 
     // Handle cadence_days and next_touch_due_at computation

@@ -8,6 +8,7 @@ import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient"
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
 import { BestActionCardClient } from "./components/BestActionCardClient";
 import { GlobalRollup } from "./components/GlobalRollup";
+import { ChannelNudgesList } from "./components/ChannelNudgeCard";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -518,6 +519,8 @@ export default async function TodayPage() {
 
       {/* Global Rollup - Top overdue items across relationships */}
       <GlobalRollup />
+
+      <ChannelNudgesList />
 
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import type { Lead, RelationshipCadence, RelationshipTier } from "@/lib/leads/types";
+import type { Lead, RelationshipCadence, RelationshipTier, PreferredChannel } from "@/lib/leads/types";
 import {
   getCadenceRange,
   getCadenceDaysDefault,
@@ -23,6 +23,7 @@ interface EditLeadModalProps {
       cadence?: RelationshipCadence | null;
       cadence_days?: number | null;
       tier?: RelationshipTier | null;
+      preferred_channel?: PreferredChannel;
     }
   ) => Promise<void>;
 }
@@ -40,6 +41,7 @@ export function EditLeadModal({
     cadence: "" as RelationshipCadence | "",
     cadence_days: null as number | null,
     tier: "" as RelationshipTier | "",
+    preferred_channel: "" as PreferredChannel | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,7 @@ export function EditLeadModal({
         cadence: (lead.cadence || "") as RelationshipCadence | "",
         cadence_days: lead.cadence_days || null,
         tier: (lead.tier || "") as RelationshipTier | "",
+        preferred_channel: (lead.preferred_channel || "") as PreferredChannel | "",
       });
       setErrors({});
     }
@@ -142,6 +145,7 @@ export function EditLeadModal({
         cadence: formData.cadence || null,
         cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
         tier: formData.tier || null,
+        preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
       setErrors({});
       onClose();
@@ -353,6 +357,35 @@ export function EditLeadModal({
                 Relationship importance
               </p>
             </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-preferred_channel"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Preferred Channel (optional)
+            </label>
+            <select
+              id="edit-preferred_channel"
+              value={formData.preferred_channel || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  preferred_channel: (e.target.value || null) as PreferredChannel | null,
+                }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            >
+              <option value="">Not set</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="email">Email</option>
+              <option value="text">Text</option>
+              <option value="other">Other</option>
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Preferred way to communicate with this person
+            </p>
           </div>
 
           {errors.submit && (
