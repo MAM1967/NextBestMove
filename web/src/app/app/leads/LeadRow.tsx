@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Lead } from "@/lib/leads/types";
 import { RelationshipStatusBadge } from "./RelationshipStatusBadge";
 import { formatDateForDisplay } from "@/lib/utils/dateUtils";
@@ -147,7 +148,12 @@ export function LeadRow({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="text-lg font-semibold text-zinc-900">{lead.name}</h4>
+            <Link
+              href={`/app/leads/${lead.id}`}
+              className="text-lg font-semibold text-zinc-900 hover:text-zinc-700 hover:underline"
+            >
+              {lead.name}
+            </Link>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeVariant(
                 lead.status

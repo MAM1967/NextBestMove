@@ -8,6 +8,7 @@ import { EditLeadModal } from "./EditLeadModal";
 import { SnoozeModal } from "./SnoozeModal";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { UpgradeModal } from "../components/UpgradeModal";
+import { GlobalRollup } from "./GlobalRollup";
 import type { Lead, LeadFilter } from "@/lib/leads/types";
 
 export default function LeadsPage() {
@@ -272,6 +273,8 @@ export default function LeadsPage() {
           it&apos;s time to follow up.
         </p>
       </header>
+
+      <GlobalRollup />
 
       <LeadFilterToggle currentFilter={filter} onFilterChange={setFilter} />
 

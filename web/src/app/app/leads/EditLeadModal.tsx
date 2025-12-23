@@ -7,6 +7,7 @@ import {
   getCadenceDaysDefault,
   validateCadenceDays,
 } from "@/lib/leads/relationship-status";
+import { NotesSummary } from "./NotesSummary";
 
 interface EditLeadModalProps {
   isOpen: boolean;
@@ -161,7 +162,7 @@ export function EditLeadModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -377,6 +378,13 @@ export function EditLeadModal({
             </button>
           </div>
         </form>
+
+        {/* Notes Summary Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <NotesSummary relationshipId={lead.id} />
+          </div>
+        )}
       </div>
     </div>
   );
