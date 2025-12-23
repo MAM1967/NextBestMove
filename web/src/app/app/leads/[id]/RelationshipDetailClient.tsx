@@ -6,6 +6,7 @@ import type { Lead } from "@/lib/leads/types";
 import type { RelationshipSummary } from "@/lib/leads/summary-types";
 import { NotesSummary } from "./NotesSummary";
 import { RelationshipSignals } from "./RelationshipSignals";
+import { AddMeetingNotesModal } from "./AddMeetingNotesModal";
 import { EditLeadModal } from "../EditLeadModal";
 import {
   computeRelationshipStatus,
@@ -54,6 +55,7 @@ export function RelationshipDetailClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMeetingNotesModalOpen, setIsMeetingNotesModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -171,12 +173,20 @@ export function RelationshipDetailClient({
                 <span>Added {formatRelativeDate(lead.created_at)}</span>
               </div>
             </div>
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Edit
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsMeetingNotesModalOpen(true)}
+                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                Add Meeting Notes
+              </button>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                Edit
+              </button>
+            </div>
           </div>
         </div>
 
@@ -249,6 +259,28 @@ export function RelationshipDetailClient({
           onClose={() => setIsEditModalOpen(false)}
           lead={lead}
           onSave={handleLeadUpdate}
+        />
+      )}
+
+      {/* Meeting Notes Modal */}
+      {isMeetingNotesModalOpen && (
+        <AddMeetingNotesModal
+          isOpen={isMeetingNotesModalOpen}
+          onClose={() => setIsMeetingNotesModalOpen(false)}
+          relationshipId={lead.id}
+          relationshipName={lead.name}
+          onSuccess={async () => {
+            // Refresh summary after successful extraction
+            try {
+              const response = await fetch(`/api/leads/${leadId}/summary`);
+              if (response.ok) {
+                const data = await response.json();
+                setSummary(data.summary);
+              }
+            } catch (err) {
+              console.error("Error refreshing summary:", err);
+            }
+          }}
         />
       )}
     </div>

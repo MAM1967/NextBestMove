@@ -9,6 +9,7 @@ import {
 } from "@/lib/leads/relationship-status";
 import { NotesSummary } from "./NotesSummary";
 import { Signals } from "./Signals";
+import { MeetingNotes } from "./MeetingNotes";
 
 interface EditLeadModalProps {
   isOpen: boolean;
@@ -417,6 +418,13 @@ export function EditLeadModal({
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
             <NotesSummary relationshipId={lead.id} />
+          </div>
+        )}
+
+        {/* Meeting Notes Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <MeetingNotes leadId={lead.id} />
           </div>
         )}
 
