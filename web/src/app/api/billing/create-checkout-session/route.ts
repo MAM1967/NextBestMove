@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, getPriceId, getPlanMetadata } from "@/lib/billing/stripe";
+import { generateIdempotencyKey, executeWithIdempotency } from "@/lib/billing/idempotency";
 import Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -84,13 +85,21 @@ export async function POST(request: NextRequest) {
           error: error.message,
         });
         
-        // Create new Stripe customer
-        const customer = await stripe.customers.create({
+        // Create new Stripe customer with idempotency key
+        const customerIdempotencyKey = generateIdempotencyKey(user.id, "create_customer", {
           email: user.email,
-          metadata: {
-            user_id: user.id,
-          },
         });
+        const customer = await stripe.customers.create(
+          {
+            email: user.email,
+            metadata: {
+              user_id: user.id,
+            },
+          },
+          {
+            idempotencyKey: customerIdempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+          }
+        );
         customerId = customer.id;
 
         // Update database with new customer ID
@@ -210,42 +219,63 @@ export async function POST(request: NextRequest) {
     
     console.log("Checkout URLs:", { successUrl, cancelUrl, baseUrl });
 
-    // Create checkout session
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      customer: customerId,
-      mode: "subscription",
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        user_id: user.id,
-        plan_name: planMetadata.name,
-        plan_type: plan,
-        interval: interval,
-      },
-    };
+    // Generate idempotency key for this operation
+    const idempotencyKey = generateIdempotencyKey(user.id, "checkout_session", {
+      customerId,
+      priceId,
+      plan,
+      interval,
+      isTrial,
+      successUrl,
+      cancelUrl,
+    });
 
-    // Add trial period if requested (14 days, no payment method required)
-    if (isTrial) {
-      sessionParams.subscription_data = {
-        trial_period_days: 14,
-        metadata: {
-          user_id: user.id,
-          plan_name: planMetadata.name,
-          plan_type: plan,
-          interval: interval,
-        },
-      };
-      // Only collect payment method if required (for trials, this means it won't be required)
-      sessionParams.payment_method_collection = "if_required";
-    }
+    // Create checkout session with idempotency protection
+    const session = await executeWithIdempotency(
+      idempotencyKey,
+      async () => {
+        const sessionParams: Stripe.Checkout.SessionCreateParams = {
+          customer: customerId,
+          mode: "subscription",
+          line_items: [
+            {
+              price: priceId,
+              quantity: 1,
+            },
+          ],
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          metadata: {
+            user_id: user.id,
+            plan_name: planMetadata.name,
+            plan_type: plan,
+            interval: interval,
+          },
+        };
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+        // Add trial period if requested (14 days, no payment method required)
+        if (isTrial) {
+          sessionParams.subscription_data = {
+            trial_period_days: 14,
+            metadata: {
+              user_id: user.id,
+              plan_name: planMetadata.name,
+              plan_type: plan,
+              interval: interval,
+            },
+          };
+          // Only collect payment method if required (for trials, this means it won't be required)
+          sessionParams.payment_method_collection = "if_required";
+        }
+
+        // Use Stripe idempotency key in request
+        const stripeSession = await stripe.checkout.sessions.create(sessionParams, {
+          idempotencyKey: idempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+        });
+
+        return stripeSession;
+      }
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {

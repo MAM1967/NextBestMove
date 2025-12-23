@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { stripe, getPriceId, getPlanMetadata } from "@/lib/billing/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { updateUserTier } from "@/lib/billing/tier";
+import { generateIdempotencyKey, executeWithIdempotency } from "@/lib/billing/idempotency";
+import { logBillingEvent } from "@/lib/utils/logger";
 import Stripe from "stripe";
 
 /**
@@ -74,13 +76,21 @@ export async function POST(request: Request) {
       customerId = existingCustomer.stripe_customer_id;
       billingCustomerId = existingCustomer.id;
     } else {
-      // Create new Stripe customer
-      const customer = await stripe.customers.create({
+      // Create new Stripe customer with idempotency key
+      const customerIdempotencyKey = generateIdempotencyKey(user.id, "create_customer", {
         email: user.email,
-        metadata: {
-          user_id: user.id,
-        },
       });
+      const customer = await stripe.customers.create(
+        {
+          email: user.email,
+          metadata: {
+            user_id: user.id,
+          },
+        },
+        {
+          idempotencyKey: customerIdempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+        }
+      );
       customerId = customer.id;
 
       // Store in database using admin client (bypasses RLS)
@@ -105,23 +115,63 @@ export async function POST(request: Request) {
       billingCustomerId = newCustomer.id;
     }
 
-    // Create subscription with 14-day trial (no payment method required)
-    const subscription: Stripe.Subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: priceId }],
-      trial_period_days: 14,
-      payment_behavior: "default_incomplete",
-      payment_settings: {
-        payment_method_types: ["card"],
-        save_default_payment_method: "off",
-      },
-      metadata: {
-        user_id: user.id,
-        plan_name: planMetadata.name,
-        plan_type: plan,
-        interval: interval,
-      },
+    // Check for existing trial subscription (idempotency check)
+    const { data: existingTrial } = await adminClient
+      .from("billing_subscriptions")
+      .select("stripe_subscription_id, status")
+      .eq("billing_customer_id", billingCustomerId)
+      .eq("status", "trialing")
+      .maybeSingle();
+
+    if (existingTrial) {
+      // Trial already exists - return existing subscription (idempotency)
+      logBillingEvent("Trial already exists (idempotency)", {
+        userId: user.id,
+        subscriptionId: existingTrial.stripe_subscription_id,
+        status: existingTrial.status,
+      });
+      return NextResponse.json({
+        success: true,
+        subscriptionId: existingTrial.stripe_subscription_id,
+        existing: true,
+      });
+    }
+
+    // Generate idempotency key for this operation
+    const idempotencyKey = generateIdempotencyKey(user.id, "start_trial", {
+      customerId,
+      priceId,
+      plan,
+      interval,
     });
+
+    // Create subscription with 14-day trial (no payment method required) with idempotency protection
+    const subscription: Stripe.Subscription = await executeWithIdempotency(
+      idempotencyKey,
+      async () => {
+        return await stripe.subscriptions.create(
+          {
+            customer: customerId,
+            items: [{ price: priceId }],
+            trial_period_days: 14,
+            payment_behavior: "default_incomplete",
+            payment_settings: {
+              payment_method_types: ["card"],
+              save_default_payment_method: "off",
+            },
+            metadata: {
+              user_id: user.id,
+              plan_name: planMetadata.name,
+              plan_type: plan,
+              interval: interval,
+            },
+          },
+          {
+            idempotencyKey: idempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+          }
+        );
+      }
+    );
 
     // Calculate trial end date
     const trialEndsAt = subscription.trial_end
