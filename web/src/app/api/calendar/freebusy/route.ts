@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   getActiveConnection,
+  getActiveConnections,
   getValidAccessToken,
   refreshAccessToken,
+  type CalendarConnection,
 } from "@/lib/calendar/tokens";
 import { fetchGoogleFreeBusy } from "@/lib/calendar/freebusy-google";
 import { fetchOutlookFreeBusy } from "@/lib/calendar/freebusy-outlook";
 import { getCachedFreeBusy, setCachedFreeBusy } from "@/lib/calendar/cache";
+import { aggregateFreeBusyAcrossCalendars, getConfidenceLabel } from "@/lib/calendar/aggregate-freebusy";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
@@ -141,9 +144,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get active calendar connection
-    const connection = await getActiveConnection(supabase, user.id);
-    if (!connection) {
+    // Get all active calendar connections (multi-calendar support)
+    const connections = await getActiveConnections(supabase, user.id);
+    if (connections.length === 0) {
       const { level, suggestedActionCount } = calculateCapacity(null);
       return NextResponse.json({
         date,
@@ -154,23 +157,8 @@ export async function GET(request: NextRequest) {
         suggestedActionCount,
         fallback: true,
         message: "Calendar not connected. Using default capacity.",
-      });
-    }
-
-    // Get valid access token (refresh if needed)
-    // Pass hostname to ensure staging workaround is applied during refresh
-    const accessToken = await getValidAccessToken(supabase, connection, request.nextUrl.hostname);
-    if (!accessToken) {
-      const { level, suggestedActionCount } = calculateCapacity(null);
-      return NextResponse.json({
-        date,
-        freeMinutes: null,
-        busySlots: [],
-        workingHours: null,
-        capacity: level,
-        suggestedActionCount,
-        fallback: true,
-        message: "Unable to access calendar. Using default capacity.",
+        confidenceLabel: "No calendars available",
+        calendarCount: 0,
       });
     }
 
@@ -183,101 +171,31 @@ export async function GET(request: NextRequest) {
       ? userProfile.work_end_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
       : "17:00";
 
-    // Fetch free/busy data from provider with retry logic for 401 errors
-    let freeBusyResult;
+    // Aggregate free/busy from all calendars
+    let aggregatedResult;
     try {
-      try {
-        if (connection.provider === "google") {
-          freeBusyResult = await fetchGoogleFreeBusy(
-            accessToken,
-            date,
-            timezone,
-            workStartTime,
-            workEndTime
-          );
-        } else if (connection.provider === "outlook") {
-          freeBusyResult = await fetchOutlookFreeBusy(
-            accessToken,
-            date,
-            timezone,
-            workStartTime,
-            workEndTime
-          );
-        } else {
-          throw new Error(`Unsupported provider: ${connection.provider}`);
-        }
-      } catch (error: unknown) {
-        // If we get an auth error (401/403), try refreshing the token and retrying once
-        const errorObj = error as { isAuthError?: boolean };
-        if (errorObj?.isAuthError) {
-          console.log(
-            `[FreeBusy API] Auth error detected for ${connection.provider}, attempting token refresh and retry`
-          );
+      aggregatedResult = await aggregateFreeBusyAcrossCalendars(
+        supabase,
+        user.id,
+        date,
+        timezone,
+        workStartTime,
+        workEndTime
+      );
 
-          // Refresh the token
-          const refreshedToken = await refreshAccessToken(supabase, connection, request.nextUrl.hostname);
-
-          if (refreshedToken) {
-            // Retry the request with the new token
-            console.log(
-              `[FreeBusy API] Token refreshed, retrying free/busy request for ${connection.provider}`
-            );
-            try {
-              if (connection.provider === "google") {
-                freeBusyResult = await fetchGoogleFreeBusy(
-                  refreshedToken,
-                  date,
-                  timezone,
-                  workStartTime,
-                  workEndTime
-                );
-              } else if (connection.provider === "outlook") {
-                freeBusyResult = await fetchOutlookFreeBusy(
-                  refreshedToken,
-                  date,
-                  timezone,
-                  workStartTime,
-                  workEndTime
-                );
-              }
-            } catch (retryError) {
-              console.error(
-                `[FreeBusy API] Retry failed after token refresh for ${connection.provider}:`,
-                retryError
-              );
-              throw retryError;
-            }
-          } else {
-            // Token refresh failed, return fallback
-            console.error(
-              `[FreeBusy API] Token refresh failed for ${connection.provider}, using fallback`
-            );
-            const { level, suggestedActionCount } = calculateCapacity(null);
-            return NextResponse.json({
-              date,
-              freeMinutes: null,
-              busySlots: [],
-              workingHours: null,
-              capacity: level,
-              suggestedActionCount,
-              fallback: true,
-              message: "Unable to access calendar. Using default capacity.",
-              error: "CALENDAR_TOKEN_REFRESH_FAILED",
-            });
-          }
-        } else {
-          // Not an auth error, re-throw
-          throw error;
-        }
-      }
-
-      // Update last_sync_at
-      await supabase
-        .from("calendar_connections")
-        .update({ last_sync_at: new Date().toISOString() })
-        .eq("id", connection.id);
+      // Update last_sync_at for all successfully fetched connections
+      // Note: We update all connections, not just successful ones, since we don't track which ones succeeded
+      // This is acceptable - last_sync_at is informational
+      await Promise.all(
+        connections.map((conn) =>
+          supabase
+            .from("calendar_connections")
+            .update({ last_sync_at: new Date().toISOString() })
+            .eq("id", conn.id)
+        )
+      );
     } catch (error) {
-      console.error("Failed to fetch free/busy data:", error);
+      console.error("Failed to aggregate free/busy data:", error);
       const { level, suggestedActionCount } = calculateCapacity(null);
       return NextResponse.json({
         date,
@@ -289,10 +207,12 @@ export async function GET(request: NextRequest) {
         fallback: true,
         message: "Unable to access calendar. Using default capacity.",
         error: "CALENDAR_FETCH_ERROR",
+        confidenceLabel: "No calendars available",
+        calendarCount: 0,
       });
     }
 
-    if (!freeBusyResult) {
+    if (!aggregatedResult) {
       const { level, suggestedActionCount } = calculateCapacity(null);
       return NextResponse.json({
         date,
@@ -304,30 +224,38 @@ export async function GET(request: NextRequest) {
         fallback: true,
         message: "Unable to access calendar. Using default capacity.",
         error: "CALENDAR_FETCH_ERROR",
+        confidenceLabel: "No calendars available",
+        calendarCount: 0,
       });
     }
 
     // Calculate capacity
     const { level, suggestedActionCount } = calculateCapacity(
-      freeBusyResult.freeMinutes
+      aggregatedResult.freeMinutes
     );
 
     // Cache the result
     setCachedFreeBusy(user.id, date, {
-      freeMinutes: freeBusyResult.freeMinutes,
-      busySlots: freeBusyResult.busySlots,
+      freeMinutes: aggregatedResult.freeMinutes,
+      busySlots: aggregatedResult.busySlots,
       capacity: level,
       suggestedActionCount,
     });
 
+    // Generate confidence label
+    const confidenceLabel = getConfidenceLabel(aggregatedResult);
+
     return NextResponse.json({
       date,
-      freeMinutes: freeBusyResult.freeMinutes,
-      busySlots: freeBusyResult.busySlots,
-      workingHours: freeBusyResult.workingHours,
+      freeMinutes: aggregatedResult.freeMinutes,
+      busySlots: aggregatedResult.busySlots,
+      workingHours: aggregatedResult.workingHours,
       capacity: level,
       suggestedActionCount,
-      fallback: false,
+      fallback: aggregatedResult.calendarCount === 0,
+      confidenceLabel,
+      calendarCount: aggregatedResult.calendarCount,
+      confidence: aggregatedResult.confidence,
     });
   } catch (error) {
     console.error("Free/busy API error:", error);

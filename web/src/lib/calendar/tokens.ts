@@ -12,6 +12,7 @@ export type CalendarConnection = {
   calendar_id: string;
   status: string;
   last_sync_at: string | null;
+  display_name?: string | null; // Display name for the connection (e.g., email address)
 };
 
 /**
@@ -282,21 +283,34 @@ export async function refreshAccessToken(
 
 /**
  * Get the active calendar connection for a user.
+ * @deprecated Use getActiveConnections instead for multi-calendar support
  */
 export async function getActiveConnection(
   supabase: SupabaseClient,
   userId: string
 ): Promise<CalendarConnection | null> {
+  const connections = await getActiveConnections(supabase, userId);
+  return connections.length > 0 ? connections[0] : null;
+}
+
+/**
+ * Get all active calendar connections for a user.
+ * Returns empty array if no active connections exist.
+ */
+export async function getActiveConnections(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<CalendarConnection[]> {
   const { data, error } = await supabase
     .from("calendar_connections")
     .select("*")
     .eq("user_id", userId)
     .eq("status", "active")
-    .single();
+    .order("created_at", { ascending: true });
 
   if (error || !data) {
-    return null;
+    return [];
   }
 
-  return data as CalendarConnection;
+  return data as CalendarConnection[];
 }

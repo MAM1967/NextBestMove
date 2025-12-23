@@ -188,8 +188,11 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Meeting notes / transcript ingestion (manual v1)** 🔴 **P1 – PRE-LAUNCH**
       _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording._
 
-- [ ] **Multi-calendar awareness (read-only)** 🔴 **P1 – PRE-LAUNCH**
-      _Support multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels (“based on 3 calendars”). Ensure capacity logic and pre-call briefs use aggregated availability rather than a single calendar._
+- [x] **Multi-calendar awareness (read-only) - Backend** ✅  
+      _Backend support for multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels ("based on 3 calendars"). Capacity logic and pre-call briefs use aggregated availability. SQL migration completed successfully._
+
+- [ ] **Multi-calendar awareness - Settings UI updates** 🔴 **P1 – PRE-LAUNCH**
+      _Update Settings page to show a list of all connected calendars (not just "Calendar Connected"), allow disconnecting individual calendars, allow connecting additional calendars, and display confidence labels (optional, subtle). Backend is complete; this is the UI implementation._
 
 - [ ] **Relationship channel awareness & progression nudges** 🔴 **P1 – PRE-LAUNCH**
       _Track preferred channel per relationship (LinkedIn / email / text / other) and detect stalled conversations. Suggest appropriate escalation (“move to email”, “ask for call”) inside Today and Actions, based on inactivity and cadence._

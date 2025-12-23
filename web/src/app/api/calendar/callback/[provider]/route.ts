@@ -206,22 +206,22 @@ export async function GET(
     // Set last_sync_at to now since we successfully got tokens (connection is working)
     const now = new Date().toISOString();
 
+    // Insert new connection (multi-calendar support - allows multiple connections per provider)
+    // Note: We no longer use upsert with unique constraint since we removed the UNIQUE(user_id, provider) constraint
+    // Users can connect multiple calendars (e.g., multiple Google accounts)
     const { data: savedConnection, error } = await supabase
       .from("calendar_connections")
-      .upsert(
-        {
-          user_id: userId,
-          provider,
-          refresh_token: encryptedRefresh,
-          access_token: encryptedAccess,
-          expires_at: expiresAt,
-          calendar_id: "primary",
-          status: "active",
-          last_sync_at: now, // Set to now since connection is active
-          error_message: null,
-        },
-        { onConflict: "user_id,provider" }
-      )
+      .insert({
+        user_id: userId,
+        provider,
+        refresh_token: encryptedRefresh,
+        access_token: encryptedAccess,
+        expires_at: expiresAt,
+        calendar_id: "primary",
+        status: "active",
+        last_sync_at: now, // Set to now since connection is active
+        error_message: null,
+      })
       .select()
       .single();
 

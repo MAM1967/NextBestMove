@@ -254,6 +254,11 @@ export default async function SettingsPage({
               connections={connections}
               connected={calendarStatus.connected}
               status={calendarStatus.status || "disconnected"}
+              activeConnectionCount={calendarStatus.activeConnectionCount}
+              capacity={{
+                calendarCount: calendarStatus.capacity.calendarCount,
+                confidence: calendarStatus.capacity.confidence,
+              }}
             />
             <div className="border-t border-zinc-200 pt-4">
               <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
