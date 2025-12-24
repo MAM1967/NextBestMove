@@ -20,6 +20,11 @@ export default defineConfig({
   workers: 1, // Run one test at a time to avoid Supabase email rate limits
   reporter: "html",
   
+  // Global timeout for all assertions (helps with CI timing issues)
+  expect: {
+    timeout: process.env.CI ? 30000 : 10000, // 30 seconds in CI, 10 seconds locally
+  },
+  
   use: {
     baseURL: "https://staging.nextbestmove.app",
     trace: "on-first-retry",
