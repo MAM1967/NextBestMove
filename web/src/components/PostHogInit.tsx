@@ -41,9 +41,23 @@ function PostHogInitInner() {
     const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
     const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || "https://us.i.posthog.com";
 
+    // Debug: Log environment variable status
+    console.log("[PostHog] Debug:", {
+      hasKey: !!posthogKey,
+      keyLength: posthogKey?.length || 0,
+      keyPrefix: posthogKey?.substring(0, 10) || "none",
+      host: posthogHost,
+      nodeEnv: process.env.NODE_ENV,
+    });
+
     // Don't initialize if PostHog is not configured
     if (!posthogKey) {
       console.warn("[PostHog] Tracking not configured. Set NEXT_PUBLIC_POSTHOG_KEY");
+      console.warn("[PostHog] Environment variable check:", {
+        raw: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+        trimmed: process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim(),
+        exists: !!process.env.NEXT_PUBLIC_POSTHOG_KEY,
+      });
       return;
     }
 
