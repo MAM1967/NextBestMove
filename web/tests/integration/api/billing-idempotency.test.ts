@@ -45,7 +45,27 @@ describe("Billing Idempotency Integration", () => {
           }, ` +
           `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl ? "set" : "missing"}. ` +
           `These must be configured as GitHub Actions secrets (STAGING credentials, not production!). ` +
-          `Secret names: SUPABASE_STAGING_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_STAGING_URL`
+          `Secret names: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL`
+      );
+    }
+
+    // Verify URL matches staging project
+    const expectedStagingProjectId = "adgiptzbxnzddbgfeuut";
+    if (!supabaseUrl.includes(expectedStagingProjectId)) {
+      throw new Error(
+        `NEXT_PUBLIC_SUPABASE_URL does not match staging project ID. ` +
+          `Expected URL to contain: ${expectedStagingProjectId}, ` +
+          `Got: ${supabaseUrl.substring(0, 50)}... ` +
+          `Make sure you're using STAGING Supabase credentials, not production!`
+      );
+    }
+
+    // Verify service role key format (should start with eyJ for JWT)
+    if (!serviceRoleKey.startsWith("eyJ")) {
+      throw new Error(
+        `SUPABASE_SERVICE_ROLE_KEY appears invalid. Service role keys should start with "eyJ" (JWT format). ` +
+          `Got: ${serviceRoleKey.substring(0, 20)}... ` +
+          `Make sure you're using the SERVICE_ROLE key (not anon key) from staging Supabase project settings.`
       );
     }
 
@@ -68,11 +88,25 @@ describe("Billing Idempotency Integration", () => {
       if (tableError.code === "PGRST116") {
         throw new Error(`idempotency_keys table does not exist in database`);
       }
+      
+      // "Invalid API key" usually means the key doesn't match the project
+      if (tableError.message.includes("Invalid API key") || tableError.message.includes("JWT")) {
+        throw new Error(
+          `Invalid API key error: ${tableError.message}. ` +
+          `This usually means SUPABASE_SERVICE_ROLE_KEY doesn't match the staging Supabase project. ` +
+          `Verify: ` +
+          `1. You're using the SERVICE_ROLE key (not anon key) ` +
+          `2. The key is from the staging project (ID: ${expectedStagingProjectId}) ` +
+          `3. The key hasn't been rotated/changed. ` +
+          `Get the correct key from: Supabase Dashboard → Staging Project → Settings → API → service_role key`
+        );
+      }
+      
       throw new Error(
         `idempotency_keys table not accessible: ${tableError.message} (code: ${tableError.code}). ` +
           `Check that SUPABASE_SERVICE_ROLE_KEY is correct (should be STAGING service role key) ` +
           `and has access to the idempotency_keys table. ` +
-          `Current URL: ${supabaseUrl?.substring(0, 30)}...`
+          `Current URL: ${supabaseUrl?.substring(0, 50)}...`
       );
     }
 
