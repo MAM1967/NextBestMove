@@ -105,7 +105,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://cloud.umami.is https://vercel.live", // 'self' allows Next.js chunks, 'unsafe-inline' required for Next.js hydration, vercel.live for Vercel Live feedback
+              "script-src 'self' 'unsafe-inline' https://cloud.umami.is https://vercel.live https://*.posthog.com https://us-assets.i.posthog.com https://eu-assets.i.posthog.com", // 'self' allows Next.js chunks, 'unsafe-inline' required for Next.js hydration, vercel.live for Vercel Live feedback, PostHog for analytics scripts
               "style-src 'self' 'unsafe-inline'", // Next.js still needs this for CSS
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
