@@ -41,10 +41,15 @@ export async function GET(request: Request) {
         details: emailError.details,
         hint: emailError.hint,
       });
-      // Return empty signals array instead of error if table doesn't exist or has no data
-      // This allows the page to load gracefully
-      if (emailError.code === "42P01" || emailError.message?.includes("does not exist")) {
-        console.warn("email_metadata table may not exist, returning empty signals");
+      // Return empty signals array instead of error if table doesn't exist
+      // This allows the page to load gracefully even if email integration isn't set up
+      if (
+        emailError.code === "PGRST205" || // Table not found in schema cache
+        emailError.code === "42P01" || // Relation does not exist
+        emailError.message?.includes("does not exist") ||
+        emailError.message?.includes("Could not find the table")
+      ) {
+        console.warn("email_metadata table does not exist, returning empty signals");
         return NextResponse.json({
           signals: [],
         });
