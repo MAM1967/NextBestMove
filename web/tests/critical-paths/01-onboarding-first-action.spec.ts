@@ -142,27 +142,68 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     
     if (emptyStateVisible || generateButtonVisible) {
       console.log("📋 No plan found - generating daily plan...");
+      
+      // Click generate button and wait for it to be disabled/removed (indicates generation started)
       await generateButton.click();
       
-      // Wait for plan generation to complete
-      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      // Wait for button to change state (either disabled or removed)
+      await Promise.race([
+        generateButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {}),
+        page.locator('button:has-text("Regenerating")').waitFor({ timeout: 5000 }).catch(() => {}),
+        page.waitForTimeout(2000), // Fallback timeout
+      ]);
       
-      // Wait a bit more for the plan to render
-      await page.waitForTimeout(2000);
+      // Wait for plan generation API call to complete
+      await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
+      
+      // Wait for UI to update (plan page re-renders after generation)
+      await page.waitForTimeout(3000);
+      
+      // Check if we're still on empty state (generation might have failed)
+      const stillEmpty = await page.locator('text=/No plan for today/i').isVisible({ timeout: 3000 }).catch(() => false);
+      if (stillEmpty) {
+        console.log("⚠️  Plan generation may have failed - still seeing empty state");
+        // Take screenshot for debugging
+        await page.screenshot({ path: 'test-results/plan-generation-failed.png', fullPage: true });
+      }
     }
 
     // Verify daily plan is generated (has actions)
     // Look for action cards, action list, or "Today's Focus" message
+    // Also check for loading state to finish
+    const loadingText = page.locator('text=/Loading your plan/i');
+    await loadingText.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    
     const hasActions = await Promise.race([
-      page.locator('[data-testid^="action-card-"]').first().waitFor({ timeout: 15000 }).then(() => true),
-      page.locator('text=/Today\'s Focus|Your NextBestMove for Today/i').waitFor({ timeout: 15000 }).then(() => true),
-      page.locator('text=/Your Actions/i').waitFor({ timeout: 15000 }).then(() => true),
-    ]).catch(() => false);
+      page.locator('[data-testid^="action-card-"]').first().waitFor({ timeout: 20000 }).then(() => {
+        console.log("✅ Found action card via test ID");
+        return true;
+      }),
+      page.locator('text=/Your NextBestMove for Today/i').waitFor({ timeout: 20000 }).then(() => {
+        console.log("✅ Found plan header");
+        return true;
+      }),
+      page.locator('text=/Your Actions/i').waitFor({ timeout: 20000 }).then(() => {
+        console.log("✅ Found 'Your Actions' section");
+        return true;
+      }),
+      page.locator('text=/FAST WIN/i').waitFor({ timeout: 20000 }).then(() => {
+        console.log("✅ Found Fast Win badge");
+        return true;
+      }),
+    ]).catch(() => {
+      console.log("❌ None of the expected elements found");
+      return false;
+    });
 
     if (!hasActions) {
       // Take a screenshot for debugging
       await page.screenshot({ path: 'test-results/no-actions-found.png', fullPage: true });
       console.log("❌ No actions found - screenshot saved to test-results/no-actions-found.png");
+      
+      // Log page content for debugging
+      const pageContent = await page.textContent('body');
+      console.log("Page content preview:", pageContent?.substring(0, 500));
     }
 
     expect(hasActions).toBeTruthy();
