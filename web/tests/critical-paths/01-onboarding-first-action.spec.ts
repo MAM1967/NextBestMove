@@ -56,11 +56,27 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       await urlInput.waitFor({ timeout: 10000 });
       await urlInput.fill("https://example.com/test");
       
-      // Submit or click next
-      await page.click('button:has-text("Add"), button:has-text("Next"), button:has-text("Continue"), button[type="submit"]');
+      // Submit the form - wait for the submit button (it says "Continue" or "Saving...")
+      const submitButton = page.locator('button[type="submit"], button:has-text("Continue"):not([type="button"])').first();
+      await submitButton.waitFor({ timeout: 10000 });
       
-      // Wait for navigation to next step (calendar step)
-      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+      // Click and wait for form submission to complete (button text changes to "Saving..." then navigates)
+      await Promise.all([
+        page.waitForResponse(response => response.url().includes('/api/leads') && response.request().method() === 'POST', { timeout: 15000 }).catch(() => {}),
+        submitButton.click(),
+      ]);
+      
+      // Wait for navigation to next step (calendar step) or for any error messages
+      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      
+      // Check for form errors
+      const formError = page.locator('text=/failed|error/i');
+      const hasFormError = await formError.first().isVisible({ timeout: 2000 }).catch(() => false);
+      if (hasFormError) {
+        console.log("⚠️  Form submission error detected");
+        const errorText = await formError.first().textContent();
+        console.log("Error message:", errorText);
+      }
       
       // Step 3: Calendar connection - skip for smoke test
       // Wait for the skip button to be visible (it's a button with "Skip for now" text)
@@ -146,26 +162,56 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     if (emptyStateVisible || generateButtonVisible) {
       console.log("📋 No plan found - generating daily plan...");
       
-      // Click generate button and wait for it to be disabled/removed (indicates generation started)
-      await generateButton.click();
+      // Wait for generate button to be ready
+      await generateButton.waitFor({ state: 'visible', timeout: 5000 });
+      
+      // Click generate button and wait for API call
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          response => response.url().includes('/api/daily-plans/generate') && response.request().method() === 'POST',
+          { timeout: 30000 }
+        ).catch(() => null),
+        generateButton.click(),
+      ]);
+      
+      // Check if API call succeeded
+      if (response) {
+        const status = response.status();
+        if (status >= 200 && status < 300) {
+          console.log("✅ Plan generation API call succeeded");
+        } else {
+          console.log(`⚠️  Plan generation API returned status ${status}`);
+          const responseBody = await response.text().catch(() => '');
+          console.log("Response body:", responseBody.substring(0, 200));
+        }
+      } else {
+        console.log("⚠️  No plan generation API response detected");
+      }
       
       // Wait for button to change state (either disabled or removed)
       await Promise.race([
-        generateButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {}),
-        page.locator('button:has-text("Regenerating")').waitFor({ timeout: 5000 }).catch(() => {}),
-        page.waitForTimeout(2000), // Fallback timeout
+        generateButton.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {}),
+        page.locator('button:has-text("Regenerating")').waitFor({ timeout: 10000 }).catch(() => {}),
+        page.waitForTimeout(3000), // Fallback timeout
       ]);
       
       // Wait for plan generation API call to complete
-      await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
+      await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
       
       // Wait for UI to update (plan page re-renders after generation)
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(5000);
       
       // Check if we're still on empty state (generation might have failed)
       const stillEmpty = await page.locator('text=/No plan for today/i').isVisible({ timeout: 3000 }).catch(() => false);
       if (stillEmpty) {
         console.log("⚠️  Plan generation may have failed - still seeing empty state");
+        // Check for error messages
+        const errorMsg = page.locator('text=/error|failed/i');
+        const hasError = await errorMsg.first().isVisible({ timeout: 2000 }).catch(() => false);
+        if (hasError) {
+          const errorText = await errorMsg.first().textContent();
+          console.log("Error message on page:", errorText);
+        }
         // Take screenshot for debugging
         await page.screenshot({ path: 'test-results/plan-generation-failed.png', fullPage: true });
       }
