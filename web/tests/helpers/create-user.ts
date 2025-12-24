@@ -104,26 +104,33 @@ export async function createTestUserProgrammatically() {
     if (STAGING_CONFIG.supabaseAnonKey) {
       // Verify anon key matches staging project
       const expectedStagingProjectId = "adgiptzbxnzddbgfeuut";
-      
+
       // Decode JWT to check project reference
       try {
-        const jwtParts = STAGING_CONFIG.supabaseAnonKey.split('.');
+        const jwtParts = STAGING_CONFIG.supabaseAnonKey.split(".");
         if (jwtParts.length === 3) {
-          const payload = JSON.parse(Buffer.from(jwtParts[1], 'base64').toString());
-          const keyProjectRef = payload.ref || payload.project_ref || payload.iss?.split('.')[0];
+          const payload = JSON.parse(
+            Buffer.from(jwtParts[1], "base64").toString()
+          );
+          const keyProjectRef =
+            payload.ref || payload.project_ref || payload.iss?.split(".")[0];
           if (keyProjectRef && keyProjectRef !== expectedStagingProjectId) {
             console.error(
               `❌ Anon key is for project "${keyProjectRef}", but expected "${expectedStagingProjectId}"`
             );
-            console.error(`   The anon key does not match the staging project!`);
+            console.error(
+              `   The anon key does not match the staging project!`
+            );
           } else if (keyProjectRef === expectedStagingProjectId) {
-            console.log(`✅ Anon key matches staging project ID: ${expectedStagingProjectId}`);
+            console.log(
+              `✅ Anon key matches staging project ID: ${expectedStagingProjectId}`
+            );
           }
         }
       } catch (e) {
         console.warn(`⚠️  Could not decode anon key JWT for validation: ${e}`);
       }
-      
+
       if (!STAGING_CONFIG.supabaseUrl.includes(expectedStagingProjectId)) {
         console.error(
           `❌ Supabase URL doesn't match staging project ID. Expected: ${expectedStagingProjectId}`
