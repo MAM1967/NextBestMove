@@ -106,11 +106,11 @@ jobs:
         run: npm run test:integration
         env:
           # Map staging secrets to the env vars the tests expect
-          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_STAGING_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
           # Also provide staging-specific names for clarity
-          NEXT_PUBLIC_SUPABASE_STAGING_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_STAGING_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_STAGING_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_STAGING_URL }}
+          SUPABASE_STAGING_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
 
   e2e-tests:
     name: E2E Tests (Playwright)
