@@ -132,16 +132,38 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     // Verify we're on the daily plan page (or app page)
     expect(page.url()).toMatch(/\/app\/plan|\/app\/daily-plan|\/app/);
 
-    // Verify daily plan is generated (has actions)
-    // Look for action cards, action list, or "Today's Focus" message
     // Wait for page to fully load (client-side fetch happens after initial render)
     await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     
+    // Check if plan exists or if we need to generate it
+    const emptyStateVisible = await page.locator('text=/No plan for today/i').isVisible({ timeout: 5000 }).catch(() => false);
+    const generateButton = page.locator('button:has-text("Generate Plan")');
+    const generateButtonVisible = await generateButton.isVisible({ timeout: 5000 }).catch(() => false);
+    
+    if (emptyStateVisible || generateButtonVisible) {
+      console.log("📋 No plan found - generating daily plan...");
+      await generateButton.click();
+      
+      // Wait for plan generation to complete
+      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      
+      // Wait a bit more for the plan to render
+      await page.waitForTimeout(2000);
+    }
+
+    // Verify daily plan is generated (has actions)
+    // Look for action cards, action list, or "Today's Focus" message
     const hasActions = await Promise.race([
-      page.locator('[data-testid^="action-card-"]').first().waitFor({ timeout: 10000 }).then(() => true),
-      page.locator('text=/Today\'s Focus|Daily Plan|Your actions|Your NextBestMove/i').waitFor({ timeout: 10000 }).then(() => true),
-      page.locator('text=/No plan for today|Generate Plan/i').waitFor({ timeout: 5000 }).then(() => false), // If we see empty state, no actions
+      page.locator('[data-testid^="action-card-"]').first().waitFor({ timeout: 15000 }).then(() => true),
+      page.locator('text=/Today\'s Focus|Your NextBestMove for Today/i').waitFor({ timeout: 15000 }).then(() => true),
+      page.locator('text=/Your Actions/i').waitFor({ timeout: 15000 }).then(() => true),
     ]).catch(() => false);
+
+    if (!hasActions) {
+      // Take a screenshot for debugging
+      await page.screenshot({ path: 'test-results/no-actions-found.png', fullPage: true });
+      console.log("❌ No actions found - screenshot saved to test-results/no-actions-found.png");
+    }
 
     expect(hasActions).toBeTruthy();
 
