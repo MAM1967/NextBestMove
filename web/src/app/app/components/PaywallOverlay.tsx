@@ -204,10 +204,10 @@ export function PaywallOverlay({
     );
   }
 
-  // Grace period - read-only mode (Day 15-21) - only for trial expiration, not payment failure
+  // Grace period - trial expiration (Day 15-21) - downgrade to Free tier, not read-only
   // Note: past_due is already handled above, so this only applies to trial expiration
   // isReadOnly can be true for trial grace period, so check that status is not canceled
-  if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled") || isInGracePeriod) {
+  if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled" && subscriptionStatus !== "past_due") || isInGracePeriod) {
     const daysRemaining = daysUntilGracePeriodEnds ?? 0;
     const tierInfo = tier ? getTierInfo(tier) : null;
     return (
@@ -220,14 +220,14 @@ export function PaywallOverlay({
             <p className="mt-2 text-sm text-zinc-600">
               {tier === "free" ? (
                 <>
-                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to keep automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
+                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
                 </>
               ) : daysRemaining > 0 ? (
                 `You have ${daysRemaining} day${
                   daysRemaining !== 1 ? "s" : ""
-                } left to subscribe and keep your rhythm going. Your data is safe.`
+                } left to upgrade and keep automatic plans. Your data is safe.`
               ) : (
-                "Subscribe to resume your rhythm. Your data is safe and nothing is lost."
+                "You're now on Free - Memory Relief. Upgrade to Standard - Decision Automation to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries."
               )}
             </p>
           </div>
@@ -239,14 +239,14 @@ export function PaywallOverlay({
               disabled={isLoading}
               className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
             >
-              {isLoading ? "Loading..." : "Subscribe Now"}
+              {isLoading ? "Loading..." : "Upgrade to Standard"}
             </button>
             {onDismiss && (
               <button
                 onClick={onDismiss}
                 className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
               >
-                Continue in Read-Only Mode
+                Continue on Free Tier
               </button>
             )}
           </div>
