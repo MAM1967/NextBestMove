@@ -35,8 +35,22 @@ export async function GET(request: Request) {
     // Check for error immediately after query
     if (emailError) {
       console.error("Error fetching email signals:", emailError);
+      console.error("Error details:", {
+        message: emailError.message,
+        code: emailError.code,
+        details: emailError.details,
+        hint: emailError.hint,
+      });
+      // Return empty signals array instead of error if table doesn't exist or has no data
+      // This allows the page to load gracefully
+      if (emailError.code === "42P01" || emailError.message?.includes("does not exist")) {
+        console.warn("email_metadata table may not exist, returning empty signals");
+        return NextResponse.json({
+          signals: [],
+        });
+      }
       return NextResponse.json(
-        { error: "Failed to fetch email signals" },
+        { error: "Failed to fetch email signals", details: emailError.message },
         { status: 500 }
       );
     }
@@ -130,6 +144,20 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error fetching global signals:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
+    // If it's a table not found error or similar, return empty array instead of error
+    if (error instanceof Error && (
+      error.message.includes("does not exist") ||
+      error.message.includes("relation") ||
+      error.message.includes("42P01")
+    )) {
+      console.warn("Table may not exist, returning empty signals");
+      return NextResponse.json({
+        signals: [],
+      });
+    }
+    
     return NextResponse.json(
       {
         error: "Failed to fetch global signals",
