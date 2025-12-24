@@ -70,6 +70,7 @@ export function LeadRow({
   onArchive,
   onRestore,
 }: LeadRowProps) {
+  // Add test ID for the row
   const getActions = () => {
     if (lead.status === "ARCHIVED") {
       return (
@@ -141,6 +142,7 @@ export function LeadRow({
 
   return (
     <div
+      data-testid={`relationship-row-${lead.id}`}
       className={`rounded-xl border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md ${
         lead.status === "ARCHIVED" ? "opacity-60" : ""
       }`}
@@ -155,6 +157,7 @@ export function LeadRow({
               {lead.name}
             </Link>
             <span
+              data-testid={`relationship-status-${lead.id}`}
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeVariant(
                 lead.status
               )}`}

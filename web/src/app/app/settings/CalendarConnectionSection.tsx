@@ -159,7 +159,7 @@ export function CalendarConnectionSection({
       </div>
 
       {connections.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-2" data-testid="calendar-list">
           {connections.map((conn) => {
             const isDisconnecting = conn.id
               ? disconnectingIds.has(conn.id)
@@ -172,6 +172,7 @@ export function CalendarConnectionSection({
               <div
                 key={conn.id || `${conn.provider}-${conn.status}`}
                 className="rounded-lg border border-zinc-200 bg-white px-4 py-3"
+                data-testid={`calendar-item-${conn.id || conn.provider}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 space-y-1">
@@ -242,6 +243,7 @@ export function CalendarConnectionSection({
                   </div>
                   <button
                     type="button"
+                    data-testid={`disconnect-calendar-${conn.id || conn.provider}`}
                     onClick={() => handleDisconnect(conn.id)}
                     disabled={isDisconnecting}
                     className="shrink-0 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -272,6 +274,7 @@ export function CalendarConnectionSection({
         )}
         <button
           type="button"
+          data-testid="connect-google-calendar"
           onClick={() => handleConnect("google")}
           className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
         >
@@ -279,6 +282,7 @@ export function CalendarConnectionSection({
         </button>
         <button
           type="button"
+          data-testid="connect-outlook-calendar"
           onClick={() => handleConnect("outlook")}
           className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
         >
