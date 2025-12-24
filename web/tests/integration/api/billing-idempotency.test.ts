@@ -88,20 +88,23 @@ describe("Billing Idempotency Integration", () => {
       if (tableError.code === "PGRST116") {
         throw new Error(`idempotency_keys table does not exist in database`);
       }
-      
+
       // "Invalid API key" usually means the key doesn't match the project
-      if (tableError.message.includes("Invalid API key") || tableError.message.includes("JWT")) {
+      if (
+        tableError.message.includes("Invalid API key") ||
+        tableError.message.includes("JWT")
+      ) {
         throw new Error(
           `Invalid API key error: ${tableError.message}. ` +
-          `This usually means SUPABASE_SERVICE_ROLE_KEY doesn't match the staging Supabase project. ` +
-          `Verify: ` +
-          `1. You're using the SERVICE_ROLE key (not anon key) ` +
-          `2. The key is from the staging project (ID: ${expectedStagingProjectId}) ` +
-          `3. The key hasn't been rotated/changed. ` +
-          `Get the correct key from: Supabase Dashboard → Staging Project → Settings → API → service_role key`
+            `This usually means SUPABASE_SERVICE_ROLE_KEY doesn't match the staging Supabase project. ` +
+            `Verify: ` +
+            `1. You're using the SERVICE_ROLE key (not anon key) ` +
+            `2. The key is from the staging project (ID: ${expectedStagingProjectId}) ` +
+            `3. The key hasn't been rotated/changed. ` +
+            `Get the correct key from: Supabase Dashboard → Staging Project → Settings → API → service_role key`
         );
       }
-      
+
       throw new Error(
         `idempotency_keys table not accessible: ${tableError.message} (code: ${tableError.code}). ` +
           `Check that SUPABASE_SERVICE_ROLE_KEY is correct (should be STAGING service role key) ` +
