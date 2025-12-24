@@ -10,9 +10,11 @@ import { createTrialTestUser, generateTestUserEmail } from "../../fixtures/test-
  * This is critical to prevent duplicate charges.
  * 
  * NOTE: These tests require:
- * - SUPABASE_SERVICE_ROLE_KEY environment variable
- * - NEXT_PUBLIC_SUPABASE_URL environment variable
- * - Access to staging Supabase database
+ * - SUPABASE_SERVICE_ROLE_KEY environment variable (should be STAGING service role key)
+ * - NEXT_PUBLIC_SUPABASE_URL environment variable (should be STAGING URL)
+ * - Access to staging Supabase database (NOT production)
+ * 
+ * ⚠️ IMPORTANT: These tests write to the database. Always use staging credentials!
  */
 
 describe("Billing Idempotency Integration", () => {
@@ -26,7 +28,11 @@ describe("Billing Idempotency Integration", () => {
   beforeEach(async () => {
     if (!serviceRoleKey || !supabaseUrl) {
       throw new Error(
-        "SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL must be set for integration tests"
+        `SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL must be set for integration tests. ` +
+        `Got: SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey ? "set" : "missing"}, ` +
+        `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl ? "set" : "missing"}. ` +
+        `These must be configured as GitHub Actions secrets (STAGING credentials, not production!). ` +
+        `Secret names: SUPABASE_STAGING_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_STAGING_URL`
       );
     }
 
@@ -43,8 +49,18 @@ describe("Billing Idempotency Integration", () => {
       .select("key")
       .limit(1);
 
-    if (tableError && tableError.code !== "PGRST116") {
-      throw new Error(`idempotency_keys table not accessible: ${tableError.message}`);
+    if (tableError) {
+      // PGRST116 = table not found (expected if table doesn't exist)
+      // Other errors = access/permission issues
+      if (tableError.code === "PGRST116") {
+        throw new Error(`idempotency_keys table does not exist in database`);
+      }
+      throw new Error(
+        `idempotency_keys table not accessible: ${tableError.message} (code: ${tableError.code}). ` +
+        `Check that SUPABASE_SERVICE_ROLE_KEY is correct (should be STAGING service role key) ` +
+        `and has access to the idempotency_keys table. ` +
+        `Current URL: ${supabaseUrl?.substring(0, 30)}...`
+      );
     }
 
     // Generate test user email

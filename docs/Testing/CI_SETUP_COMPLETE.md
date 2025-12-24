@@ -33,20 +33,31 @@ _Date: 2025-12-24_
 
 ## Required GitHub Secrets
 
-The CI workflow requires these secrets to be set in GitHub:
+The CI workflow requires these secrets to be set in GitHub. **Important: These should be STAGING credentials, not production.**
 
-### Required Secrets
-- `SUPABASE_URL` - Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` - Service role key for admin operations
-- `NEXT_PUBLIC_SUPABASE_URL` - Public Supabase URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Anonymous Supabase key
+### Required Secrets (Staging Environment)
+- `SUPABASE_STAGING_URL` - Staging Supabase project URL
+- `SUPABASE_STAGING_SERVICE_ROLE_KEY` - Staging service role key for admin operations (used by integration tests)
+- `NEXT_PUBLIC_SUPABASE_STAGING_URL` - Public staging Supabase URL
+- `NEXT_PUBLIC_SUPABASE_STAGING_ANON_KEY` - Staging anonymous Supabase key
 - `STAGING_USER` - Basic Auth username for staging (default: "staging")
 - `STAGING_PASS` - Basic Auth password for staging
+
+### Why Staging Credentials?
+- Integration tests write to the database and should use staging, not production
+- E2E tests run against the staging environment
+- Prevents accidental data corruption in production
 
 ### How to Set Secrets
 1. Go to GitHub repository → Settings → Secrets and variables → Actions
 2. Click "New repository secret"
-3. Add each secret with the name and value
+3. Add each secret with the exact name listed above
+4. Use values from your **staging** Supabase project (not production)
+
+### Finding Staging Credentials
+- Staging Supabase project ID: `adgiptzbxnzddbgfeuut` (from `web/next.config.ts`)
+- Get credentials from Supabase dashboard → Project Settings → API
+- Service role key is found under "Project API keys" → "service_role" (keep this secret!)
 
 ## Workflow Behavior
 
