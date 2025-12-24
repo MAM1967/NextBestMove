@@ -48,7 +48,10 @@ export async function GET(request: Request) {
     }
 
     // Fetch full action data with relationship
-    const { data: action, error: actionError } = await supabase
+    // Try with leads join first, fallback to without if it fails (RLS might block the join)
+    let action: any | null = null;
+    
+    const { data: actionWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
@@ -64,8 +67,44 @@ export async function GET(request: Request) {
       .eq("id", bestAction.actionId)
       .single();
 
-    if (actionError || !action) {
-      console.error("Error fetching best action:", actionError);
+    if (joinError) {
+      console.warn("Error fetching best action with leads join, trying without join:", joinError);
+      // Fallback: fetch action without leads join
+      const { data: actionOnly, error: actionError } = await supabase
+        .from("actions")
+        .select("*")
+        .eq("id", bestAction.actionId)
+        .single();
+
+      if (actionError || !actionOnly) {
+        console.error("Error fetching best action (both with and without join):", actionError);
+        return NextResponse.json(
+          { error: "Failed to fetch action details" },
+          { status: 500 }
+        );
+      }
+
+      action = actionOnly;
+      
+      // Fetch lead separately if needed
+      if (action.person_id) {
+        const { data: lead } = await supabase
+          .from("leads")
+          .select("id, name, url, notes")
+          .eq("id", action.person_id)
+          .eq("user_id", user.id)
+          .single();
+        
+        if (lead) {
+          action.leads = lead;
+        }
+      }
+    } else {
+      action = actionWithLeads;
+    }
+
+    if (!action) {
+      console.error("Action not found");
       return NextResponse.json(
         { error: "Failed to fetch action details" },
         { status: 500 }
