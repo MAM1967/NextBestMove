@@ -65,8 +65,13 @@ function PostHogInitInner() {
     if (typeof window !== "undefined") {
       posthog.init(posthogKey, {
         api_host: posthogHost,
-        loaded: (posthog) => {
+        loaded: (posthogInstance) => {
+          // Explicitly attach to window for debugging and external access
+          if (typeof window !== "undefined") {
+            (window as any).posthog = posthogInstance;
+          }
           console.log("[PostHog] Initialized successfully");
+          console.log("[PostHog] Available on window.posthog:", typeof (window as any).posthog !== "undefined");
         },
         // Privacy settings
         autocapture: true, // Automatically capture clicks, form submissions, etc.
@@ -75,6 +80,9 @@ function PostHogInitInner() {
         // Disable in development to avoid noise
         disable_session_recording: process.env.NODE_ENV === "development",
       });
+      
+      // Also attach the module export to window for immediate access
+      (window as any).posthog = posthog;
     }
   }, []);
 
