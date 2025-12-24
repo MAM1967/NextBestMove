@@ -110,7 +110,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               // External API connections
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://billing.stripe.com https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://login.microsoftonline.com https://graph.microsoft.com https://api.resend.com https://app.glitchtip.com https://cloud.umami.is https://api-gateway.umami.dev",
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://billing.stripe.com https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://login.microsoftonline.com https://graph.microsoft.com https://api.resend.com https://app.glitchtip.com https://cloud.umami.is https://api-gateway.umami.dev https://*.posthog.com https://us.i.posthog.com https://eu.i.posthog.com",
               // Stripe checkout/billing portal iframes
               "frame-src 'self' https://checkout.stripe.com https://billing.stripe.com https://js.stripe.com",
               "frame-ancestors 'self'",
