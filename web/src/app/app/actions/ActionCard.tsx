@@ -293,6 +293,7 @@ export function ActionCard({
 
   return (
     <div
+      data-testid={`action-card-${action.id}`}
       className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${
         isCompleted ? "opacity-75" : ""
       } ${

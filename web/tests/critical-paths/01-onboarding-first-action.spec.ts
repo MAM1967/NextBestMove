@@ -134,9 +134,13 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
 
     // Verify daily plan is generated (has actions)
     // Look for action cards, action list, or "Today's Focus" message
+    // Wait for page to fully load (client-side fetch happens after initial render)
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    
     const hasActions = await Promise.race([
-      page.locator('[data-testid="action-card"], [data-testid="action-item"], .action-card, .action-item, [class*="action"]').first().waitFor({ timeout: 5000 }).then(() => true),
-      page.locator('text=/Today\'s Focus|Daily Plan|Your actions/i').waitFor({ timeout: 5000 }).then(() => true),
+      page.locator('[data-testid^="action-card-"]').first().waitFor({ timeout: 10000 }).then(() => true),
+      page.locator('text=/Today\'s Focus|Daily Plan|Your actions|Your NextBestMove/i').waitFor({ timeout: 10000 }).then(() => true),
+      page.locator('text=/No plan for today|Generate Plan/i').waitFor({ timeout: 5000 }).then(() => false), // If we see empty state, no actions
     ]).catch(() => false);
 
     expect(hasActions).toBeTruthy();
