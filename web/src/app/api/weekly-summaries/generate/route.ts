@@ -1,12 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { generateWeeklySummaryForUser } from "@/lib/summaries/generate-weekly-summary";
+import { getUserTier } from "@/lib/billing/tier";
 
 /**
  * POST /api/weekly-summaries/generate
  *
  * Generates a weekly summary for a given week.
  * Can be called manually or by a cron job.
+ * 
+ * Premium feature: Only Standard and Premium tier users can generate weekly summaries.
+ * Free tier users are blocked.
  *
  * Query params:
  * - week_start_date (optional): YYYY-MM-DD format, defaults to Monday of current week
@@ -20,6 +24,15 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check user tier - Free tier users cannot generate weekly summaries
+    const userTier = await getUserTier(supabase, user.id);
+    if (userTier === "free") {
+      return NextResponse.json(
+        { error: "Weekly summaries are only available for Standard and Premium tier users. Please upgrade to access this feature." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
