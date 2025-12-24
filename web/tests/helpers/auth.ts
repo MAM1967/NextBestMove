@@ -32,6 +32,19 @@ export async function signUpUser(page: Page, email?: string, password?: string, 
 export async function signInUser(page: Page, email: string, password: string) {
   console.log(`🔐 Signing in programmatically in browser context...`);
   
+  // Verify we have the required credentials
+  if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseAnonKey) {
+    throw new Error(
+      `Missing Supabase credentials for browser sign-in. ` +
+      `supabaseUrl: ${STAGING_CONFIG.supabaseUrl ? 'set' : 'missing'}, ` +
+      `supabaseAnonKey: ${STAGING_CONFIG.supabaseAnonKey ? 'set' : 'missing'}. ` +
+      `Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in CI.`
+    );
+  }
+  
+  console.log(`🔍 Using Supabase URL: ${STAGING_CONFIG.supabaseUrl.substring(0, 50)}...`);
+  console.log(`🔍 Anon key available: ${STAGING_CONFIG.supabaseAnonKey ? 'yes' : 'no'}`);
+  
   // Navigate to any page first to establish browser context
   await page.goto("/auth/sign-in", { waitUntil: "domcontentloaded", timeout: 30000 });
   
@@ -49,6 +62,10 @@ export async function signInUser(page: Page, email: string, password: string) {
     
     // Fallback: Use fetch API to call Supabase auth endpoint directly
     try {
+      if (!supabaseAnonKey) {
+        return { success: false, error: 'Supabase anon key not provided' };
+      }
+      
       const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
@@ -59,8 +76,8 @@ export async function signInUser(page: Page, email: string, password: string) {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        return { success: false, error: error.error_description || error.message };
+        const error = await response.json().catch(() => ({ message: `HTTP ${response.status}: ${response.statusText}` }));
+        return { success: false, error: error.error_description || error.message || `HTTP ${response.status}` };
       }
       
       const data = await response.json();
