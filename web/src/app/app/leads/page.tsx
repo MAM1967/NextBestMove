@@ -129,6 +129,15 @@ export default function LeadsPage() {
         throw new Error(error.error || "Failed to create lead");
       }
 
+      const data = await response.json();
+      
+      // Track lead creation
+      const { trackLeadCreated } = await import("@/lib/analytics/posthog");
+      trackLeadCreated({
+        leadId: data.lead?.id,
+        source: "manual",
+      });
+
       await loadLeads();
       setIsAddModalOpen(false);
     } catch (err) {
