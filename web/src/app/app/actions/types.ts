@@ -42,6 +42,9 @@ export interface Action {
   
   // Promised follow-up
   promised_due_at?: string | null;
+  
+  // Estimated duration for "I have X minutes" feature
+  estimated_minutes?: number | null;
 }
 
 

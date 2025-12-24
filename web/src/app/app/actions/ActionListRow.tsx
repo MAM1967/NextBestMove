@@ -14,6 +14,7 @@ interface ActionListRowProps {
   onAddNote: (actionId: string) => void;
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
+  onSetEstimatedMinutes?: (actionId: string) => void;
   /**
    * Visual variant tied to the section/bucket the action is rendered in.
    * purely presentational – no behavior changes.
@@ -112,6 +113,7 @@ export function ActionListRow({
   onAddNote,
   onGotReply,
   onViewPrompt,
+  onSetEstimatedMinutes,
   variant,
 }: ActionListRowProps) {
   const verb = getVerbForAction(action);
@@ -256,6 +258,15 @@ export function ActionListRow({
                 {Math.round(action.next_move_score)}
               </span>
             )}
+          {/* Estimated minutes indicator */}
+          {action.estimated_minutes && (
+            <span
+              className="text-xs text-zinc-500"
+              title="Estimated duration"
+            >
+              {action.estimated_minutes} min
+            </span>
+          )}
           <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
             {dueLabel}
           </div>
@@ -300,6 +311,16 @@ export function ActionListRow({
         >
           Add note
         </button>
+        {onSetEstimatedMinutes && (
+          <button
+            type="button"
+            onClick={() => onSetEstimatedMinutes(action.id)}
+            className="hover:underline"
+            title={action.estimated_minutes ? `Update time estimate (${action.estimated_minutes} min)` : "Set time estimate"}
+          >
+            {action.estimated_minutes ? `${action.estimated_minutes} min` : "Set time"}
+          </button>
+        )}
       </div>
     </div>
   );

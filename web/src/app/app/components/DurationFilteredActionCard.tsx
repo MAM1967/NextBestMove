@@ -4,19 +4,23 @@ import Link from "next/link";
 import type { ActionWithLane } from "@/lib/decision-engine/types";
 import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
 
-interface BestActionCardProps {
+interface DurationFilteredActionCardProps {
   action: ActionWithLane | null;
+  duration: number;
   loading?: boolean;
-  reason?: string;
 }
 
 /**
- * BestActionCard component
+ * DurationFilteredActionCard component
  * 
- * Displays the single "Best Action" prominently at the top of Today page.
- * This is the highest-scoring action from Priority or In Motion lanes.
+ * Displays a single action filtered by duration when user selects "I have X minutes".
+ * Shows similar information to BestActionCard but with duration context.
  */
-export function BestActionCard({ action, loading, reason }: BestActionCardProps) {
+export function DurationFilteredActionCard({
+  action,
+  duration,
+  loading,
+}: DurationFilteredActionCardProps) {
   if (loading) {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-6 animate-pulse">
@@ -28,7 +32,19 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
   }
 
   if (!action) {
-    return null; // Don't show anything if no best action
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="text-center py-4">
+          <p className="text-sm font-medium text-zinc-900 mb-2">
+            No actions fit in {duration} minutes
+          </p>
+          <p className="text-xs text-zinc-600 mb-4">
+            Try selecting a longer duration (10 or 15 minutes), set time estimates
+            on your actions, or check back later when new actions are added.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const leadName = action.leads?.name || "Unknown";
@@ -70,19 +86,21 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
     on_deck: "On Deck",
   };
 
+  const estimatedMinutes = action.estimated_minutes || null;
+
   return (
     <div className={`bg-gradient-to-br border-2 rounded-lg p-6 shadow-sm ${
       promiseOverdue
         ? "from-red-50 to-red-100 border-red-400"
         : hasPromise
         ? "from-blue-50 to-blue-100 border-blue-300"
-        : "from-rose-50 to-orange-50 border-rose-200"
+        : "from-purple-50 to-purple-100 border-purple-200"
     }`}>
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="text-sm font-semibold text-rose-900 uppercase tracking-wide">
-              Best Action
+            <span className="text-sm font-semibold text-purple-900 uppercase tracking-wide">
+              Best {duration}-Minute Action
             </span>
             {hasPromise && (
               <span
@@ -105,6 +123,11 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
                 {laneLabels[action.lane] || action.lane}
               </span>
             )}
+            {estimatedMinutes !== null && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+                ~{estimatedMinutes} min
+              </span>
+            )}
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-1">
             {actionDescription}
@@ -117,7 +140,7 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
         </div>
         {action.next_move_score !== null && action.next_move_score !== undefined && (
           <div className="text-right">
-            <div className="text-2xl font-bold text-rose-600">
+            <div className="text-2xl font-bold text-purple-600">
               {Math.round(action.next_move_score)}
             </div>
             <div className="text-xs text-gray-500">Score</div>
@@ -125,18 +148,12 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-rose-200">
+      <div className="flex items-center justify-between pt-4 border-t border-purple-200">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span className="font-medium">{action.action_type.replace(/_/g, " ")}</span>
             <span>•</span>
             <span>{dueDateLabel}</span>
-            {action.estimated_minutes && (
-              <>
-                <span>•</span>
-                <span>{action.estimated_minutes} min</span>
-              </>
-            )}
           </div>
           {hasPromise && (
             <div className={`text-xs font-medium ${
@@ -148,15 +165,15 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
         </div>
         <Link
           href="/app/plan"
-          className="px-4 py-2 bg-rose-600 text-white text-sm font-medium rounded-md hover:bg-rose-700 transition-colors"
+          className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
         >
           View Plan →
         </Link>
       </div>
 
-      {reason && (
-        <p className="mt-3 text-xs text-gray-500 italic">{reason}</p>
-      )}
+      <p className="mt-3 text-xs text-gray-500 italic">
+        Best {duration}-minute action from {action.lane === "priority" ? "Priority" : action.lane === "in_motion" ? "In Motion" : "On Deck"} lane
+      </p>
     </div>
   );
 }

@@ -6,9 +6,9 @@ import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
 import { GracePeriodBanner } from "./components/GracePeriodBanner";
 import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
-import { BestActionCardClient } from "./components/BestActionCardClient";
 import { GlobalRollup } from "./components/GlobalRollup";
 import { ChannelNudgesList } from "./components/ChannelNudgeCard";
+import { DurationSelectorClient } from "./components/DurationSelectorClient";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -514,8 +514,8 @@ export default async function TodayPage() {
         </p>
       </header>
 
-      {/* Best Action - Single clear next move */}
-      <BestActionCardClient />
+      {/* Best Action - Single clear next move, with duration selector */}
+      <DurationSelectorClient />
 
       {/* Global Rollup - Top overdue items across relationships */}
       <GlobalRollup />

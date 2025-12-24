@@ -10,8 +10,10 @@ import type { BestActionResponse, ActionWithLane } from "./types";
 
 /**
  * Hook to fetch the best action for Today
+ * 
+ * @param durationMinutes - Optional duration filter (5, 10, or 15 minutes)
  */
-export function useBestAction() {
+export function useBestAction(durationMinutes?: number | null) {
   const [bestAction, setBestAction] = useState<BestActionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,10 @@ export function useBestAction() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/decision-engine/best-action");
+        const url = durationMinutes
+          ? `/api/decision-engine/best-action?duration=${durationMinutes}`
+          : "/api/decision-engine/best-action";
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error("Failed to fetch best action");
         }
@@ -36,7 +41,7 @@ export function useBestAction() {
     }
 
     fetchBestAction();
-  }, []);
+  }, [durationMinutes]);
 
   return { bestAction, loading, error, refetch: () => {
     // Trigger re-fetch by updating a dummy state

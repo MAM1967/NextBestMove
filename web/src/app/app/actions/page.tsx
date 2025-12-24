@@ -6,6 +6,7 @@ import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
 import { ViewPromptModal } from "./ViewPromptModal";
+import { EstimatedMinutesModal } from "./EstimatedMinutesModal";
 import { Action } from "./types";
 import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 import { getDaysDifference } from "@/lib/utils/dateUtils";
@@ -31,6 +32,7 @@ export default function ActionsPage() {
     null
   );
   const [promiseActionId, setPromiseActionId] = useState<string | null>(null);
+  const [estimatedMinutesActionId, setEstimatedMinutesActionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActions();
@@ -347,6 +349,25 @@ export default function ActionsPage() {
     }
   };
 
+  const handleSetEstimatedMinutes = async (actionId: string, minutes: number | null) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}/estimated-minutes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estimated_minutes: minutes }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update time estimate");
+      }
+
+      await fetchActions();
+    } catch (err) {
+      throw err;
+    }
+  };
+
   /**
    * Bucket actions using decision engine lanes if available, otherwise use legacy heuristics
    */
@@ -530,6 +551,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -560,6 +582,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -590,6 +613,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -620,6 +644,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -667,6 +692,21 @@ export default function ActionsPage() {
         onClose={() => setViewPromptAction(null)}
         actionDescription={viewPromptAction?.description || null}
       />
+
+      {/* Estimated minutes modal */}
+      {estimatedMinutesActionId && (
+        <EstimatedMinutesModal
+          actionId={estimatedMinutesActionId}
+          currentMinutes={
+            actions.find((a) => a.id === estimatedMinutesActionId)?.estimated_minutes || null
+          }
+          isOpen={estimatedMinutesActionId !== null}
+          onClose={() => setEstimatedMinutesActionId(null)}
+          onSave={async (minutes) => {
+            await handleSetEstimatedMinutes(estimatedMinutesActionId, minutes);
+          }}
+        />
+      )}
     </>
   );
 }

@@ -49,6 +49,7 @@ export interface ActionWithLane {
   created_at: string;
   updated_at: string;
   promised_due_at?: string | null;
+  estimated_minutes?: number | null;
   leads?: {
     id: string;
     name: string;

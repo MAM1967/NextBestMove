@@ -51,9 +51,10 @@ export async function runDecisionEngine(
   options: {
     persist?: boolean; // Whether to persist lane/score to database
     referenceDate?: Date; // Date to use for calculations (default: today)
+    maxDurationMinutes?: number | null; // Optional maximum duration in minutes to filter actions
   } = {}
 ): Promise<DecisionEngineResult> {
-  const { persist = false, referenceDate = new Date() } = options;
+  const { persist = false, referenceDate = new Date(), maxDurationMinutes } = options;
   
   // Step 1: Compute relationship states
   const relationshipStates = await computeRelationshipStates(
@@ -151,6 +152,25 @@ export async function runDecisionEngine(
     }
   }
   
+  // Step 3.5: Filter actions by estimated_minutes if maxDurationMinutes is provided
+  let actionsToProcess = candidateActions;
+  if (maxDurationMinutes !== null && maxDurationMinutes !== undefined) {
+    actionsToProcess = candidateActions.filter((action) => {
+      const estimatedMinutes = (action as any).estimated_minutes;
+      // Include actions with no estimate (null/undefined) OR actions with estimate <= maxDurationMinutes
+      return estimatedMinutes === null || estimatedMinutes === undefined || estimatedMinutes <= maxDurationMinutes;
+    });
+    
+    if (actionsToProcess.length === 0) {
+      // No actions match the duration filter - return null
+      return {
+        bestAction: null,
+        relationshipStates,
+        scoredActions: [],
+      };
+    }
+  }
+  
   // Step 3: Assign lanes and score actions
   const scoredActions: ScoredAction[] = [];
   const actionUpdates: Array<{
@@ -159,7 +179,7 @@ export async function runDecisionEngine(
     next_move_score: number;
   }> = [];
   
-  for (const action of candidateActions) {
+  for (const action of actionsToProcess) {
     // Get relationship state if action is tied to a relationship
     const relationshipState = action.person_id
       ? relationshipStates.get(action.person_id) || null
@@ -204,7 +224,7 @@ export async function runDecisionEngine(
   
   // Step 4: Select best action (from Priority and In Motion lanes only)
   const priorityAndInMotionActions = scoredActions.filter((scored) => {
-    const action = candidateActions.find((a) => a.id === scored.actionId);
+    const action = actionsToProcess.find((a) => a.id === scored.actionId);
     if (!action) return false;
     
     const relationshipState = action.person_id
@@ -224,7 +244,7 @@ export async function runDecisionEngine(
   let bestAction: DecisionEngineResult["bestAction"] = null;
   
   if (bestScoredAction) {
-    const bestActionData = candidateActions.find(
+    const bestActionData = actionsToProcess.find(
       (a) => a.id === bestScoredAction.actionId
     );
     
@@ -241,17 +261,23 @@ export async function runDecisionEngine(
         referenceDate
       ).lane;
       
+      // Build reason including duration filter info if applicable
+      let reason = bestScoredAction.reason;
+      if (maxDurationMinutes !== null && maxDurationMinutes !== undefined) {
+        reason = `${reason} (fits ${maxDurationMinutes}-minute window)`;
+      }
+      
       bestAction = {
         actionId: bestScoredAction.actionId,
         relationshipId: bestActionData.person_id || null,
         score: bestScoredAction.score,
         lane: actionLane,
-        reason: bestScoredAction.reason,
+        reason,
       };
     }
   }
   
-  // Step 5: Log score breakdowns for debugging
+  // Step 6: Log score breakdowns for debugging
   if (bestAction) {
     const bestScored = scoredActions.find((s) => s.actionId === bestAction!.actionId);
     if (bestScored) {
@@ -277,7 +303,7 @@ export async function runDecisionEngine(
     reason: s.reason,
   })));
   
-  // Step 6: Persist results if requested
+  // Step 7: Persist results if requested
   if (persist && actionUpdates.length > 0) {
     // Update actions with lane and score
     for (const update of actionUpdates) {
@@ -320,12 +346,20 @@ export async function runDecisionEngine(
 
 /**
  * Get the best action for a user (quick helper).
+ * 
+ * @param supabase - Supabase client
+ * @param userId - User ID
+ * @param maxDurationMinutes - Optional maximum duration in minutes to filter actions
  */
 export async function getBestAction(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  maxDurationMinutes?: number | null
 ): Promise<DecisionEngineResult["bestAction"]> {
-  const result = await runDecisionEngine(supabase, userId, { persist: false });
+  const result = await runDecisionEngine(supabase, userId, { 
+    persist: false,
+    maxDurationMinutes,
+  });
   return result.bestAction;
 }
 
