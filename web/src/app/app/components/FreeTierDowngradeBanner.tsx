@@ -14,7 +14,7 @@ export function FreeTierDowngradeBanner() {
   const standardTierInfo = getTierInfo("standard");
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4" data-free-tier-banner data-testid="free-tier-banner">
       <div className="flex items-start gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

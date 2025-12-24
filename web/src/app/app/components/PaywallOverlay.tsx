@@ -211,7 +211,7 @@ export function PaywallOverlay({
     const daysRemaining = daysUntilGracePeriodEnds ?? 0;
     const tierInfo = tier ? getTierInfo(tier) : null;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="paywall-overlay">
         <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-zinc-900">
@@ -234,6 +234,7 @@ export function PaywallOverlay({
 
           <div className="space-y-3">
             <button
+              data-testid="upgrade-button"
               onClick={handleSubscribe}
               disabled={isLoading}
               className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
@@ -280,7 +281,7 @@ export function PaywallOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="paywall-overlay">
       <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-zinc-900">{headline}</h2>
@@ -289,6 +290,7 @@ export function PaywallOverlay({
 
         <div className="space-y-3">
           <button
+            data-testid="upgrade-button"
             onClick={handleSubscribe}
             disabled={isLoading}
             className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"

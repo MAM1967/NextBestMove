@@ -156,7 +156,7 @@ export function BillingSection({
   if (!subscription) {
     const tierInfo = tier ? getTierInfo(tier) : null;
     return (
-      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
+      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center" data-testid="billing-section">
         <div className="space-y-2">
           {tierInfo && (
             <>

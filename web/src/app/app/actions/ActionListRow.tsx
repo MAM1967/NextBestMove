@@ -314,6 +314,7 @@ export function ActionListRow({
         {onSetEstimatedMinutes && (
           <button
             type="button"
+            data-testid={`set-time-estimate-${action.id}`}
             onClick={() => onSetEstimatedMinutes(action.id)}
             className="hover:underline"
             title={action.estimated_minutes ? `Update time estimate (${action.estimated_minutes} min)` : "Set time estimate"}

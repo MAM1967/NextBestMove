@@ -27,7 +27,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Promised follow-up flag** ✅ **NEX-7**
       _Allow users to mark actions as "Promised by EOD / this week / specific date." If overdue, escalate visually in Today and optionally trigger nudges. Trust-preserving: focuses on keeping explicit promises made in interactions._
 
-- [ ] **"I have X minutes" execution selector** 🔴 **P0 – PRE-LAUNCH**
+- [x] **"I have X minutes" execution selector** ✅ **NEX-8**
       _Add a 5 / 10 / 15 minute selector on Today that filters and recommends a single action that fits the selected time window, using estimated durations on actions. Optimizes micro-time gaps without increasing cognitive load._
 
 ### Foundation & Billing
