@@ -11,7 +11,7 @@
     "prebuild": "npm run lint:design || true",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint . --max-warnings=1000",
     "lint:design": "design-lint 'src/**/*.{ts,tsx}'",
     "type-check": "tsc --noEmit",
     "test": "vitest",

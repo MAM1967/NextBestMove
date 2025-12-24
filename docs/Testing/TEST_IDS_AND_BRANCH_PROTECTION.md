@@ -5,6 +5,7 @@
 **Answer: Yes, but strategically.**
 
 ### Current Coverage ✅
+
 - **Today Page**: `best-action-card`, `duration-selector`, `duration-{X}min`
 - **Actions Page**: `set-time-estimate-{id}`
 - **Settings Page**: `billing-section`
@@ -12,7 +13,8 @@
 - **Free Tier Banner**: `free-tier-banner`
 
 ### Just Added ✅
-- **Settings → Calendar**: 
+
+- **Settings → Calendar**:
   - `calendar-list` (container)
   - `calendar-item-{id}` (each calendar)
   - `disconnect-calendar-{id}` (disconnect button)
@@ -34,12 +36,14 @@
 ### When to Add Test IDs
 
 **Add test IDs for:**
+
 - ✅ Interactive elements (buttons, links, inputs)
 - ✅ Dynamic lists (rows, cards that repeat)
 - ✅ Critical UI components (paywall, modals, forms)
 - ✅ Elements that tests need to find reliably
 
 **Don't add test IDs for:**
+
 - ❌ Static text (use text content)
 - ❌ Decorative elements
 - ❌ Elements that won't be tested
@@ -47,6 +51,7 @@
 ### Recommendation
 
 **Current coverage is good for critical paths.** We can add more as needed when writing specific E2E tests. The test IDs we've added cover:
+
 - Billing/trial flows (NEX-9)
 - Calendar management (NEX-14, NEX-17)
 - Relationship management (NEX-5)
@@ -62,25 +67,30 @@ GitHub branch protection rules enforce requirements before code can be merged in
 ### Key Benefits
 
 #### 1. **Prevents Broken Code from Reaching Production**
+
 - **Without protection**: Developer merges PR → tests fail → broken code in production
 - **With protection**: Tests must pass → merge blocked if tests fail → production stays healthy
 
 #### 2. **Enforces Quality Gates**
+
 - All required checks must pass (lint, type-check, tests)
 - No force-push to protected branches
 - Requires PR reviews (optional but recommended)
 
 #### 3. **Reduces Production Bugs**
+
 - Catches issues before they reach users
 - Prevents "it works on my machine" problems
 - Ensures consistent code quality across team
 
 #### 4. **Team Confidence**
+
 - Developers can merge with confidence
 - No need to manually verify tests passed
 - Clear feedback when something fails
 
 #### 5. **Protects Critical Branches**
+
 - `main` branch: Production code
 - `staging` branch: Pre-production testing
 - Prevents accidental direct commits
@@ -92,7 +102,7 @@ Developer creates PR
     ↓
 GitHub runs CI checks (lint, tests, build)
     ↓
-All checks pass? 
+All checks pass?
     ├─ Yes → Merge allowed ✅
     └─ No → Merge blocked ❌
 ```
@@ -102,6 +112,7 @@ All checks pass?
 For `staging` and `main` branches:
 
 1. **Require status checks to pass before merging**
+
    - ✅ `lint-and-typecheck`
    - ✅ `unit-tests`
    - ✅ `integration-tests`
@@ -109,14 +120,17 @@ For `staging` and `main` branches:
    - ✅ `build`
 
 2. **Require branches to be up to date**
+
    - Ensures PR is based on latest code
    - Prevents merge conflicts
 
 3. **Require pull request reviews** (optional)
+
    - At least 1 approval
    - Prevents self-merging
 
 4. **Do not allow force pushes**
+
    - Prevents history rewriting
    - Maintains audit trail
 
@@ -153,10 +167,12 @@ Branch: staging
 ### Cost/Benefit Analysis
 
 **Cost:**
+
 - Slight delay in merging (wait for CI to finish)
 - Can't merge if tests are flaky (but that's a good thing!)
 
 **Benefit:**
+
 - Prevents production bugs
 - Saves debugging time
 - Improves code quality
@@ -165,6 +181,7 @@ Branch: staging
 ### Recommendation
 
 **Enable branch protection for `staging` and `main`** with:
+
 - Required status checks (all test jobs)
 - Require branches to be up to date
 - No force push
@@ -180,4 +197,3 @@ This is a **high-value, low-risk** change that will prevent many future issues.
 2. **Branch Protection**: ✅ **Highly recommended** - prevents broken code from reaching production.
 
 Both are best practices that will save time and prevent bugs in the long run.
-
