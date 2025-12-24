@@ -186,9 +186,61 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+  security-deps:
+    name: Security (Dependencies)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ./web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (Dependency Scanning)
+        run: npm audit --audit-level=high
+        continue-on-error: false
+
+      # Note: GitHub Dependabot runs separately and creates PRs for vulnerabilities
+      # Enable it at: Settings → Code security and analysis → Dependabot alerts
+
+  security-sast:
+    name: Security (SAST)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Semgrep Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security
+            p/owasp-top-ten
+          generateSarif: "1"
+          generateGitHubComments: "true"
+        continue-on-error: false
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
   all-tests:
     name: All Tests
-    needs: [lint-and-typecheck, unit-tests, integration-tests, e2e-tests, build]
+    needs: [lint-and-typecheck, unit-tests, integration-tests, e2e-tests, build, security-deps, security-sast]
     runs-on: ubuntu-latest
     if: always()
 
@@ -199,7 +251,9 @@ jobs:
              [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.integration-tests.result }}" != "success" ] || \
              [ "${{ needs.e2e-tests.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ]; then
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.security-deps.result }}" != "success" ] || \
+             [ "${{ needs.security-sast.result }}" != "success" ]; then
             echo "One or more test jobs failed"
             exit 1
           fi
