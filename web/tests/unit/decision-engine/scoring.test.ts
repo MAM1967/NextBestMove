@@ -101,7 +101,7 @@ describe("Decision Engine Scoring", () => {
       expect(overdueResult.score).toBeGreaterThan(onTimeResult.score);
     });
 
-    it("should boost score for high momentum", () => {
+    it("should boost score for declining momentum (needs attention)", () => {
       const action = createMockAction();
 
       const highMomentum = createMockRelationshipState({
@@ -117,7 +117,9 @@ describe("Decision Engine Scoring", () => {
       const highScore = calculateNextMoveScore(action, highMomentum, new Date(), null);
       const lowScore = calculateNextMoveScore(action, lowMomentum, new Date(), null);
 
-      expect(highScore.score).toBeGreaterThan(lowScore.score);
+      // Declining momentum should score HIGHER (needs attention)
+      // because declining relationships are at risk and need prioritization
+      expect(lowScore.score).toBeGreaterThan(highScore.score);
     });
 
     it("should handle Priority tier relationships", () => {
