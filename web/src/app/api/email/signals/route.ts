@@ -35,8 +35,27 @@ export async function GET(request: Request) {
     // Check for error immediately after query
     if (emailError) {
       console.error("Error fetching email signals:", emailError);
+      console.error("Error details:", {
+        message: emailError.message,
+        code: emailError.code,
+        details: emailError.details,
+        hint: emailError.hint,
+      });
+      // Return empty signals array instead of error if table doesn't exist
+      // This allows the page to load gracefully even if email integration isn't set up
+      if (
+        emailError.code === "PGRST205" || // Table not found in schema cache
+        emailError.code === "42P01" || // Relation does not exist
+        emailError.message?.includes("does not exist") ||
+        emailError.message?.includes("Could not find the table")
+      ) {
+        console.warn("email_metadata table does not exist, returning empty signals");
+        return NextResponse.json({
+          signals: [],
+        });
+      }
       return NextResponse.json(
-        { error: "Failed to fetch email signals" },
+        { error: "Failed to fetch email signals", details: emailError.message },
         { status: 500 }
       );
     }
@@ -130,6 +149,20 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Error fetching global signals:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
+    // If it's a table not found error or similar, return empty array instead of error
+    if (error instanceof Error && (
+      error.message.includes("does not exist") ||
+      error.message.includes("relation") ||
+      error.message.includes("42P01")
+    )) {
+      console.warn("Table may not exist, returning empty signals");
+      return NextResponse.json({
+        signals: [],
+      });
+    }
+    
     return NextResponse.json(
       {
         error: "Failed to fetch global signals",
