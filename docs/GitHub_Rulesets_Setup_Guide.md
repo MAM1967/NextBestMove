@@ -14,15 +14,19 @@ This guide walks you through setting up branch protection using GitHub's **Rules
 ### 2. Configure Ruleset
 
 **Ruleset Name:**
+
 - Enter: `Protect staging branch`
 
 **Enforcement status:**
+
 - Select: **"Active"** (dropdown)
 
 **Bypass list:**
+
 - Leave empty (or add users/teams if needed)
 
 **Target branches:**
+
 - Click **"Add target"** button
 - Select **"Branch name"** from dropdown
 - Enter: `staging`
@@ -32,37 +36,42 @@ This guide walks you through setting up branch protection using GitHub's **Rules
 Scroll down to find the **"Rules"** section with checkboxes. Enable:
 
 ✅ **Block force pushes**
-   - Check this box
+
+- Check this box
 
 ✅ **Restrict deletions**
-   - Check this box
+
+- Check this box
 
 ✅ **Require a pull request before merging**
-   - Check this box
-   - Click to expand the rule
-   - Set **Required approvals:** `1`
-   - ✅ Check "Dismiss stale pull request approvals when new commits are pushed"
-   - ⚠️ "Require review from Code Owners" (optional - only if you have CODEOWNERS file)
+
+- Check this box
+- Click to expand the rule
+- Set **Required approvals:** `1`
+- ✅ Check "Dismiss stale pull request approvals when new commits are pushed"
+- ⚠️ "Require review from Code Owners" (optional - only if you have CODEOWNERS file)
 
 ✅ **Require status checks to pass**
-   - Check this box
-   - Click to expand the rule
-   - **⚠️ IMPORTANT:** Status checks only appear after CI has run at least once
-   - If you don't see checks yet:
-     1. Save this ruleset first (click "Create ruleset")
-     2. Push a commit to trigger CI
-     3. Wait for CI to complete
-     4. Edit the ruleset and add status checks
-   - Once available, search for and select:
-     - `lint-and-typecheck`
-     - `unit-tests`
-     - `integration-tests`
-     - `e2e-tests`
-     - `build`
-   - ✅ Check "Require branches to be up to date before merging"
+
+- Check this box
+- Click to expand the rule
+- **⚠️ IMPORTANT:** Status checks only appear after CI has run at least once
+- If you don't see checks yet:
+  1.  Save this ruleset first (click "Create ruleset")
+  2.  Push a commit to trigger CI
+  3.  Wait for CI to complete
+  4.  Edit the ruleset and add status checks
+- Once available, search for and select:
+  - `lint-and-typecheck`
+  - `unit-tests`
+  - `integration-tests`
+  - `e2e-tests`
+  - `build`
+- ✅ Check "Require branches to be up to date before merging"
 
 ⚠️ **Require linear history** (optional)
-   - Check this box if you want to prevent merge commits
+
+- Check this box if you want to prevent merge commits
 
 **Click "Create ruleset"** at the bottom to save.
 
@@ -78,19 +87,23 @@ Scroll down to find the **"Rules"** section with checkboxes. Enable:
 ### 2. Configure Ruleset
 
 **Ruleset Name:**
+
 - Enter: `Protect main branch`
 
 **Enforcement status:**
+
 - Select: **"Active"**
 
 **Bypass list:**
+
 - Leave empty (recommended for production)
 
 **Target branches:**
+
 - Click **"Add target"**
 - Select **"Branch name"**
 - Enter: `main`
-- Click **"Add"`
+- Click \*\*"Add"`
 
 **Rules section:**
 Enable these checkboxes:
@@ -100,17 +113,19 @@ Enable these checkboxes:
 ✅ **Restrict deletions**
 
 ✅ **Require a pull request before merging**
-   - Required approvals: `1` (recommended for production)
-   - ✅ Dismiss stale approvals
+
+- Required approvals: `1` (recommended for production)
+- ✅ Dismiss stale approvals
 
 ✅ **Require status checks to pass**
-   - Select all:
-     - `lint-and-typecheck`
-     - `unit-tests`
-     - `integration-tests`
-     - `e2e-tests` (highly recommended for production)
-     - `build`
-   - ✅ Require branches to be up to date
+
+- Select all:
+  - `lint-and-typecheck`
+  - `unit-tests`
+  - `integration-tests`
+  - `e2e-tests` (highly recommended for production)
+  - `build`
+- ✅ Require branches to be up to date
 
 ✅ **Require linear history** (recommended for production)
 
@@ -123,6 +138,7 @@ Enable these checkboxes:
 ### Status Checks Timing
 
 **Status checks must exist before you can select them:**
+
 1. First, create and save the ruleset (even without status checks)
 2. Push a commit to trigger your CI workflow
 3. Wait for the workflow to complete
@@ -144,6 +160,7 @@ The Rulesets interface uses these checkboxes (which match what you're seeing):
 ### Alternative: Classic Branch Protection
 
 If you prefer the older interface:
+
 - Click **"Add classic branch protection rule"** instead
 - This uses the older UI but works the same way
 
@@ -167,17 +184,19 @@ If you prefer the older interface:
 ## Troubleshooting
 
 **Status checks don't appear:**
+
 - CI workflow must run at least once first
 - Check that workflow file is in `.github/workflows/`
 - Verify workflow completed successfully
 
 **Can't save ruleset:**
+
 - Make sure "Enforcement status" is set to "Active"
 - Verify target branch name is correct
 - Check that at least one rule is enabled
 
 **Merge still allowed when checks fail:**
+
 - Verify ruleset is "Active" (not "Disabled")
 - Check that status checks are actually selected
 - Ensure "Require branches to be up to date" is checked
-
