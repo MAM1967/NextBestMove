@@ -1,27 +1,34 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { generateIdempotencyKey, executeWithIdempotency } from "@/lib/billing/idempotency";
-import { createTrialTestUser, generateTestUserEmail } from "../../fixtures/test-users";
+import {
+  generateIdempotencyKey,
+  executeWithIdempotency,
+} from "@/lib/billing/idempotency";
+import {
+  createTrialTestUser,
+  generateTestUserEmail,
+} from "../../fixtures/test-users";
 
 /**
  * Integration test for billing idempotency (NEX-16)
- * 
+ *
  * Tests that duplicate Stripe webhook events don't cause duplicate side effects.
  * This is critical to prevent duplicate charges.
- * 
+ *
  * NOTE: These tests require:
  * - SUPABASE_SERVICE_ROLE_KEY environment variable (should be STAGING service role key)
  * - NEXT_PUBLIC_SUPABASE_URL environment variable (should be STAGING URL)
  * - Access to staging Supabase database (NOT production)
- * 
+ *
  * ⚠️ IMPORTANT: These tests write to the database. Always use staging credentials!
  */
 
 describe("Billing Idempotency Integration", () => {
   let supabase: ReturnType<typeof createClient>;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  
+  // Use staging-specific env vars (set by CI workflow)
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_STAGING_URL;
+
   let testUserId: string | null = null;
   let testUserEmail: string;
 
@@ -29,10 +36,12 @@ describe("Billing Idempotency Integration", () => {
     if (!serviceRoleKey || !supabaseUrl) {
       throw new Error(
         `SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL must be set for integration tests. ` +
-        `Got: SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey ? "set" : "missing"}, ` +
-        `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl ? "set" : "missing"}. ` +
-        `These must be configured as GitHub Actions secrets (STAGING credentials, not production!). ` +
-        `Secret names: SUPABASE_STAGING_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_STAGING_URL`
+          `Got: SUPABASE_SERVICE_ROLE_KEY=${
+            serviceRoleKey ? "set" : "missing"
+          }, ` +
+          `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl ? "set" : "missing"}. ` +
+          `These must be configured as GitHub Actions secrets (STAGING credentials, not production!). ` +
+          `Secret names: SUPABASE_STAGING_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_STAGING_URL`
       );
     }
 
@@ -57,9 +66,9 @@ describe("Billing Idempotency Integration", () => {
       }
       throw new Error(
         `idempotency_keys table not accessible: ${tableError.message} (code: ${tableError.code}). ` +
-        `Check that SUPABASE_SERVICE_ROLE_KEY is correct (should be STAGING service role key) ` +
-        `and has access to the idempotency_keys table. ` +
-        `Current URL: ${supabaseUrl?.substring(0, 30)}...`
+          `Check that SUPABASE_SERVICE_ROLE_KEY is correct (should be STAGING service role key) ` +
+          `and has access to the idempotency_keys table. ` +
+          `Current URL: ${supabaseUrl?.substring(0, 30)}...`
       );
     }
 
@@ -80,10 +89,7 @@ describe("Billing Idempotency Integration", () => {
 
       // Delete user (will cascade to related records)
       try {
-        await supabase
-          .from("users")
-          .delete()
-          .eq("id", testUserId);
+        await supabase.from("users").delete().eq("id", testUserId);
       } catch {} // Ignore errors
 
       // Delete auth user
@@ -119,7 +125,9 @@ describe("Billing Idempotency Integration", () => {
   });
 
   it("should store and retrieve idempotency keys", async () => {
-    const testKey = `test_key_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const testKey = `test_key_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
     const testResult = { subscriptionId: "sub_test_123", status: "active" };
 
     // Store idempotency key
@@ -152,7 +160,9 @@ describe("Billing Idempotency Integration", () => {
   });
 
   it("should prevent duplicate idempotency key insertion", async () => {
-    const testKey = `test_key_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const testKey = `test_key_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
     const testResult = { subscriptionId: "sub_test_123" };
 
     // First insert should succeed
@@ -191,11 +201,15 @@ describe("Billing Idempotency Integration", () => {
 
     // If table doesn't exist, skip this test (it's optional per schema)
     if (eventsError && eventsError.code === "42P01") {
-      console.warn("billing_events table doesn't exist - skipping webhook idempotency test");
+      console.warn(
+        "billing_events table doesn't exist - skipping webhook idempotency test"
+      );
       return;
     }
 
-    const testEventId = `evt_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const testEventId = `evt_test_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
 
     // Simulate first webhook event processing
     const { error: firstInsertError } = await supabase
@@ -223,7 +237,10 @@ describe("Billing Idempotency Integration", () => {
     }
 
     // Clean up
-    await supabase.from("billing_events").delete().eq("stripe_event_id", testEventId);
+    await supabase
+      .from("billing_events")
+      .delete()
+      .eq("stripe_event_id", testEventId);
   });
 
   it("should generate stable idempotency keys for same operation", () => {
@@ -246,4 +263,3 @@ describe("Billing Idempotency Integration", () => {
   // 3. More complex test infrastructure
   // These are better suited for E2E tests with Playwright against staging environment
 });
-
