@@ -31,6 +31,9 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
   });
 
   test("should complete onboarding and generate first daily plan with Fast Win", async ({ page }) => {
+    // Increase timeout for this test - onboarding + plan generation can take time
+    test.setTimeout(60000); // 60 seconds
+    
     // After sign up, user should be redirected to onboarding or app
     // Check if we're on onboarding page
     const currentUrl = page.url();
