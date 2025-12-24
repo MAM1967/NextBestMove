@@ -206,10 +206,15 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
 
     // Always navigate to plan page explicitly to ensure we're on the right page
     // The onboarding might redirect to /app instead of /app/plan
-    if (!page.url().includes("/app/plan") && !page.url().includes("/app/daily-plan")) {
+    if (
+      !page.url().includes("/app/plan") &&
+      !page.url().includes("/app/daily-plan")
+    ) {
       console.log("📋 Navigating to plan page...");
       await page.goto("/app/plan");
-      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      await page
+        .waitForLoadState("networkidle", { timeout: 15000 })
+        .catch(() => {});
       await page.waitForTimeout(2000);
     }
 
@@ -227,7 +232,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       .locator("text=/No plan for today|No plan generated/i")
       .isVisible({ timeout: 5000 })
       .catch(() => false);
-    
+
     // Try to find the generate button/link - it could be either
     const generateButton = page.locator(
       'button:has-text("Generate"), a:has-text("Generate"), button:has-text("Generate Daily Plan"), a:has-text("Generate Daily Plan")'
@@ -241,7 +246,9 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       console.log("📋 No plan found - generating daily plan...");
 
       // Wait for generate button/link to be ready
-      await generateButton.first().waitFor({ state: "visible", timeout: 10000 });
+      await generateButton
+        .first()
+        .waitFor({ state: "visible", timeout: 10000 });
 
       // Wait for both the generate API call AND the subsequent fetchDailyPlan() call
       // The plan page calls fetchDailyPlan() after generation completes
@@ -287,12 +294,14 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
 
       // Additional wait for React state updates and re-renders
       await page.waitForTimeout(3000);
-      
+
       // If we're on /app instead of /app/plan, navigate to plan page
       if (page.url().includes("/app") && !page.url().includes("/app/plan")) {
         console.log("📋 Navigating to plan page after generation...");
         await page.goto("/app/plan");
-        await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+        await page
+          .waitForLoadState("networkidle", { timeout: 15000 })
+          .catch(() => {});
         await page.waitForTimeout(2000);
       }
 
@@ -400,7 +409,9 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
                 pageContent?.substring(0, 500)
               );
             } catch (contentError) {
-              console.log("⚠️  Could not get page content (page may be closed)");
+              console.log(
+                "⚠️  Could not get page content (page may be closed)"
+              );
             }
           }
         }

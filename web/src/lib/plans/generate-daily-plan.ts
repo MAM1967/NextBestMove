@@ -280,7 +280,12 @@ export async function generateDailyPlanForUser(
     // Fetch all candidate actions
     // Note: due_date is a DATE column, so .lte("due_date", date) compares DATE to DATE string (YYYY-MM-DD)
     // This should work correctly regardless of timezone since we're comparing date-only values
-    const { data: allCandidateActions, error: actionsError } = await supabase
+    // Try with leads join first, fallback to without if it fails (RLS might block the join)
+    let allCandidateActions: any[] | null = null;
+    let actionsError: any = null;
+    
+    // First try with leads join
+    const { data: actionsWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
@@ -300,6 +305,51 @@ export async function generateDailyPlanForUser(
       .order("due_date", { ascending: true })
       .order("created_at", { ascending: false });
     
+    if (joinError) {
+      console.warn("Error fetching actions with leads join, trying without join:", joinError);
+      // Fallback: fetch actions without leads join
+      const { data: actionsOnly, error: actionsOnlyError } = await supabase
+        .from("actions")
+        .select("*")
+        .eq("user_id", userId)
+        .in("state", ["NEW", "SNOOZED"])
+        .lte("due_date", date)
+        .order("due_date", { ascending: true })
+        .order("created_at", { ascending: false });
+      
+      if (actionsOnlyError) {
+        console.error("Error fetching candidate actions (both with and without join):", actionsOnlyError);
+        actionsError = actionsOnlyError;
+      } else {
+        allCandidateActions = actionsOnly;
+        // Fetch leads separately for each action if needed
+        if (allCandidateActions && allCandidateActions.length > 0) {
+          const leadIds = allCandidateActions
+            .map(a => a.person_id)
+            .filter((id): id is string => id !== null);
+          
+          if (leadIds.length > 0) {
+            const { data: leads } = await supabase
+              .from("leads")
+              .select("id, name, url, notes, created_at")
+              .eq("user_id", userId)
+              .in("id", leadIds);
+            
+            // Attach leads to actions
+            if (leads) {
+              const leadsMap = new Map(leads.map(l => [l.id, l]));
+              allCandidateActions = allCandidateActions.map(action => ({
+                ...action,
+                leads: action.person_id ? leadsMap.get(action.person_id) || null : null,
+              }));
+            }
+          }
+        }
+      }
+    } else {
+      allCandidateActions = actionsWithLeads;
+    }
+    
     // Log for debugging
     console.log("Plan generation query:", {
       userId,
@@ -311,6 +361,7 @@ export async function generateDailyPlanForUser(
         due_date: a.due_date,
         action_type: a.action_type,
       })) || [],
+      hadJoinError: !!joinError,
     });
 
     if (actionsError) {
