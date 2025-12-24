@@ -7,7 +7,7 @@ on:
     branches: [main, staging]
 
 env:
-  NODE_VERSION: '24.x'
+  NODE_VERSION: "24.x"
   # ⚠️ IMPORTANT: These secrets should contain STAGING values, not production!
   # The secret names don't include "STAGING" but the values should be from staging Supabase project
   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./web/package-lock.json
 
       - name: Install dependencies
@@ -62,7 +62,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./web/package-lock.json
 
       - name: Install dependencies
@@ -97,7 +97,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./web/package-lock.json
 
       - name: Install dependencies
@@ -126,7 +126,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./web/package-lock.json
 
       - name: Install dependencies
@@ -174,7 +174,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: ./web/package-lock.json
 
       - name: Install dependencies
@@ -204,4 +204,3 @@ jobs:
             exit 1
           fi
           echo "All tests passed!"
-
