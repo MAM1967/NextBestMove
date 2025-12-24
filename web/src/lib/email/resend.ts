@@ -116,22 +116,22 @@ export async function sendTrialReminder({
   const isDay14 = daysRemaining === 0;
 
   const subject = isDay12
-    ? "2 days left in your trial — Keep your rhythm going"
+    ? "2 days left in your Standard trial — Keep your rhythm going"
     : isDay14
-    ? "Last day of trial — Subscribe to keep your rhythm"
-    : `${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your trial`;
+    ? "Last day of your Standard trial — Upgrade to unlock automatic plans"
+    : `${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your Standard trial`;
 
   const mainMessage = isDay12
-    ? "You have 2 days left in your free trial of NextBestMove. You're building momentum — don't let it stop."
+    ? "You have 2 days left in your Standard trial of NextBestMove. You're building momentum — keep it going."
     : isDay14
-    ? "Today is the last day of your free trial. Subscribe now to keep your rhythm going and avoid losing access."
-    : `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your free trial of NextBestMove.`;
+    ? "Today is the last day of your Standard trial. Upgrade to Standard to keep automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries."
+    : `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left in your Standard trial of NextBestMove.`;
 
   const secondaryMessage = isDay12
-    ? "You'll know in 48 hours if this works. No commitment required."
+    ? "Upgrade to Standard - Decision Automation to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries. No commitment required."
     : isDay14
-    ? "After today, your account will enter read-only mode for 7 days. Subscribe now to keep generating plans and stay on track."
-    : "Subscribe to continue your daily rhythm and keep your streak alive.";
+    ? "After today, you'll be on Free - Memory Relief. You can still use manual planning and basic features, but automatic daily plans and calendar-aware capacity require Standard - Decision Automation."
+    : "Upgrade to Standard to unlock automatic daily plans and keep your rhythm going.";
 
   const html = `
     <!DOCTYPE html>
@@ -154,14 +154,14 @@ export async function sendTrialReminder({
         <div style="margin: 32px 0;">
           <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://nextbestmove.app"}/app/settings" 
              style="display: inline-block; background-color: #111827; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-            ${isDay14 ? "Subscribe Now — Last Chance" : "Subscribe Now"}
+            ${isDay14 ? "Upgrade to Standard" : "Upgrade to Standard"}
           </a>
         </div>
         
         <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
           ${isDay14 
-            ? "Your data is safe and nothing is lost. Subscribe to resume your rhythm and keep your streak alive." 
-            : "Your data is safe and nothing is lost. Subscribe to resume your rhythm."}
+            ? "Your data is safe and nothing is lost. You'll have access to Free tier features, and can upgrade to Standard anytime to unlock automatic plans." 
+            : "Your data is safe and nothing is lost. Upgrade to Standard to unlock automatic daily plans and keep your rhythm going."}
         </p>
       </body>
     </html>
