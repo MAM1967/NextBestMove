@@ -26,8 +26,12 @@ import {
 describe("Billing Idempotency Integration", () => {
   let supabase: ReturnType<typeof createClient>;
   // Use staging-specific env vars (set by CI workflow)
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_STAGING_URL;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY;
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_STAGING_URL;
 
   let testUserId: string | null = null;
   let testUserEmail: string;
