@@ -21,12 +21,13 @@
 
 **NextBestMove** is an actions-first workflow app that helps solopreneurs and fractional executives maintain a consistent revenue rhythm.
 
-### Core Loop (v0.1)
+### Core Loop (v1.0)
 
-1. Add leads you don't want to lose track of
-2. Get a short, calendar-aware daily plan (3–8 actions)
-3. Mark actions as done / got reply / snooze
-4. Receive a weekly summary with a simple insight and 1–2 content prompts
+1. Add relationships you don't want to lose track of (with cadence and optional tier)
+2. Get a short, calendar-aware daily plan (3–8 actions) with one clearly highlighted “Best Action”
+3. Mark actions as done / got reply / snooze, including promised follow-ups
+4. See relationship cadence and “due for touch” status across Today and Relationships
+5. Review weekly progress in Weekly Review, plus Signals and Insights powered by structured email/notes metadata
 
 ### Target Users
 
@@ -50,6 +51,7 @@
          ├─── Stripe (Payments)
          ├─── Google Calendar API (OAuth)
          ├─── Microsoft Graph API (OAuth)
+         ├─── Gmail API / Microsoft Graph Mail (email metadata)
          ├─── OpenAI API (AI features)
          ├─── Resend (Email)
          ├─── cron-job.org (Scheduled Jobs)
@@ -61,7 +63,7 @@
 
 1. **Frontend**: Next.js 14 App Router, React 18, TypeScript, Tailwind CSS
 2. **Backend**: Next.js API Routes + Server Components
-3. **Database**: Supabase PostgreSQL with Row Level Security (RLS)
+3. **Database**: Supabase PostgreSQL with Row Level Security (RLS), including core app tables and `email_metadata` for Signals
 4. **Authentication**: Supabase Auth (email/password) + OAuth for calendar access only
 5. **Payments**: Stripe Checkout + Billing Portal + Webhooks
 6. **Scheduled Jobs**: cron-job.org (external cron service)
@@ -100,6 +102,7 @@
 - **Database/Auth**: Supabase
 - **Payments**: Stripe
 - **Calendar**: Google Calendar API, Microsoft Graph API
+- **Email Metadata (Signals v1)**: Gmail API (`Mail.Read`), Microsoft Graph Mail API (`Mail.Read`) – metadata + snippets only
 - **AI**: OpenAI API (with BYOK support for Premium)
 - **Email**: Resend
 - **Cron Jobs**: cron-job.org (external service)

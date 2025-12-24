@@ -16,6 +16,22 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 ## 🔴 P0 – MVP Must-Haves
 
+### Interview-Validated Core Loop Hardening
+
+- [x] **Relationship cadence & "due for touch" logic** ✅ **NEX-5**
+      _Add cadence (weekly / monthly / quarterly / ad-hoc) and lightweight tiering (Inner / Active / Warm / Background) to Relationships. Compute `next_touch_due_at` from last completed action or last meeting, and surface "Needs attention / In rhythm / Intentional low-touch" status in Today and Relationships. This replaces manual "remember to follow up" and anchors the product around relationship cadences._
+
+- [x] **Single best action on Today** ✅ **NEX-6**
+      _Ensure Today always answers "If I do only one thing, it's this." Integrate the deterministic decision engine's NextMoveScore to select and visually highlight a single "Best Action" above the rest of the daily list._
+
+- [x] **Promised follow-up flag** ✅ **NEX-7**
+      _Allow users to mark actions as "Promised by EOD / this week / specific date." If overdue, escalate visually in Today and optionally trigger nudges. Trust-preserving: focuses on keeping explicit promises made in interactions._
+
+- [x] **"I have X minutes" execution selector** ✅ **NEX-8**
+      _Add a 5 / 10 / 15 minute selector on Today that filters and recommends a single action that fits the selected time window, using estimated durations on actions. Optimizes micro-time gaps without increasing cognitive load._
+
+### Foundation & Billing
+
 ### Foundation & Billing
 
 - [x] **Project initialization & tooling** ✅  
@@ -157,8 +173,32 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Actions Screen IA Refactor: Reduce Cognitive Load & Clarify Priority** ✅  
        _Redesign the Actions screen information architecture to remove cognitive overload and make "what to do next" obvious. Replace the 3-across card grid with a single-column list, group actions into four sections ("Needs attention now", "Conversations in motion", "Stay top of mind", "Optional / background"), and collapse each action into a single, verb-led line with clear due/status metadata. No backend changes; reuse existing action data and endpoints. Completed: Single-column layout, 4-section grouping, verb-led one-line format, color-coded card rows (rose/green/orange/blue), white section containers, clean demo data. Reference: `docs/Planning/Actions_Screen_IA_Refactor_Plan.md`_
 
-- [ ] **Fix consecutive days display in Today and Settings** 🔴 **BUG FIX**  
-       _Investigate and fix why "Consecutive days" value (streak_count) is not displaying correctly in Today page and Settings page. Ensure streak_count is properly fetched from users table and displayed._
+- [x] **Fix consecutive days display in Today and Settings** ✅  
+       _Investigated and fixed why "Consecutive days" value (streak_count) was not displaying correctly in Today page and Settings page. Added database triggers to keep `streak_count` in sync with completed actions and backfilled existing users. Confirmed working in Today and Settings._
+
+- [x] **Deterministic decision engine (Priority / In Motion / On Deck) implementation** ✅ **NEX-10**
+      _Implement the lane-based decision engine described in the Decision Engine PRD amendment. Compute relationship-level state (cadence, momentum, overdue actions, insights), assign Priority / In Motion / On Deck lanes, score candidate actions (urgency, stall risk, value, effort), and persist one "next move" per relationship plus per-action lanes and scores. Wire this into Today, Daily Plan, Actions, and Signals._
+
+- [x] **Signals v1 (email context → next move)** ✅ **NEX-11**
+      _Implement the launch-scoped email integration for Gmail and Outlook using read-only `Mail.Read` scopes. Ingest recent threads per relationship into an `email_metadata` table, extract last topic/ask/open loops, and surface them in the Signals tab and decision engine as structured inputs. Strictly privacy-first and metadata-focused; no full-blown inbox UI._
+
+- [x] **Notes summary / interaction topline feature** ✅ **NEX-12**
+      _Add per-relationship "Notes Summary" that surfaces at-a-glance: last/next interaction dates, pending/post-call action items, research topics, and momentum-directed tasks. Implement as a structured rollup over existing Interaction/Action/Insight entities and surface in Relationship detail and a global dashboard rollup._
+
+- [x] **Meeting notes / transcript ingestion (manual v1)** ✅ **NEX-13**
+      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording._
+
+- [x] **Multi-calendar awareness (read-only) - Backend** ✅ **NEX-14**
+      _Backend support for multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels ("based on 3 calendars"). Capacity logic and pre-call briefs use aggregated availability. SQL migration completed successfully._
+
+- [x] **Multi-calendar awareness - Settings UI updates** ✅ **NEX-17**
+      _Update Settings page to show a list of all connected calendars (not just "Calendar Connected"), allow disconnecting individual calendars, allow connecting additional calendars, and display confidence labels (optional, subtle). Backend is complete; this is the UI implementation._
+
+- [x] **Relationship channel awareness & progression nudges** ✅ **NEX-15**
+      _Track preferred channel per relationship (LinkedIn / email / text / other) and detect stalled conversations. Suggest appropriate escalation ("move to email", "ask for call") inside Today and Actions, based on inactivity and cadence._
+
+- [x] **Adopt idempotency everywhere for Stripe billing flows** ✅ **NEX-16**
+      _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
 
 - [x] **Fix Weekly Summary date calculation** ✅  
        _Fixed weekly summary past week calculation bug (was showing 2 weeks behind, then showing current week instead of previous week). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates. Verified working - now correctly shows "Week of Dec 7-13, 2025" instead of current week._

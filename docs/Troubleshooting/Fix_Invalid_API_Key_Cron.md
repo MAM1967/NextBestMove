@@ -154,3 +154,6 @@ curl -X GET \
 3. **Verify variable name**: Must be exactly `SUPABASE_SERVICE_ROLE_KEY` (case-sensitive)
 4. **Clear browser cache**: Sometimes Vercel UI shows stale values
 
+
+
+

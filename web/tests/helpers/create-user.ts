@@ -9,7 +9,9 @@ import { generateTestUser } from "./staging-config";
  */
 export async function createTestUserProgrammatically() {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
-    throw new Error("Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(
+      "Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+    );
   }
 
   const testUser = generateTestUser();
@@ -21,44 +23,54 @@ export async function createTestUserProgrammatically() {
   try {
     // Create user in auth.users via admin API
     // Log password for debugging (first 3 chars only for security)
-    console.log(`🔐 Creating user with email: ${testUser.email}, password length: ${testUser.password.length}`);
-    
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: testUser.email,
-      password: testUser.password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        name: testUser.name,
-      },
-    });
+    console.log(
+      `🔐 Creating user with email: ${testUser.email}, password length: ${testUser.password.length}`
+    );
+
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email: testUser.email,
+        password: testUser.password,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          name: testUser.name,
+        },
+      });
 
     if (authError || !authData.user) {
-      throw new Error(`Failed to create auth user: ${authError?.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to create auth user: ${authError?.message || "Unknown error"}`
+      );
     }
 
     const userId = authData.user.id;
-    
+
     // Verify user was created and can be retrieved
-    const { data: verifyUser, error: verifyError } = await supabase.auth.admin.getUserById(userId);
+    const { data: verifyUser, error: verifyError } =
+      await supabase.auth.admin.getUserById(userId);
     if (verifyError || !verifyUser.user) {
-      console.warn(`⚠️  Warning: Could not verify created user: ${verifyError?.message}`);
+      console.warn(
+        `⚠️  Warning: Could not verify created user: ${verifyError?.message}`
+      );
     } else {
-      console.log(`✅ User verified: ${verifyUser.user.email} (confirmed: ${verifyUser.user.email_confirmed_at ? 'yes' : 'no'})`);
+      console.log(
+        `✅ User verified: ${verifyUser.user.email} (confirmed: ${
+          verifyUser.user.email_confirmed_at ? "yes" : "no"
+        })`
+      );
     }
 
     // Create user profile in public.users
     // onboarding_completed is false by default, so user will go through onboarding
-    const { error: profileError } = await supabase
-      .from("users")
-      .insert({
-        id: userId,
-        email: testUser.email,
-        name: testUser.name,
-        timezone: "America/New_York",
-        streak_count: 0,
-        calendar_connected: false,
-        onboarding_completed: false, // Explicitly set to false so user goes through onboarding
-      });
+    const { error: profileError } = await supabase.from("users").insert({
+      id: userId,
+      email: testUser.email,
+      name: testUser.name,
+      timezone: "America/New_York",
+      streak_count: 0,
+      calendar_connected: false,
+      onboarding_completed: false, // Explicitly set to false so user goes through onboarding
+    });
 
     if (profileError) {
       // If profile creation fails, try to delete the auth user to clean up
@@ -66,49 +78,113 @@ export async function createTestUserProgrammatically() {
       throw new Error(`Failed to create user profile: ${profileError.message}`);
     }
 
-    console.log(`✅ Created test user programmatically: ${testUser.email} (${userId})`);
-    
+    console.log(
+      `✅ Created test user programmatically: ${testUser.email} (${userId})`
+    );
+
     // Known issue: admin.createUser() sometimes doesn't set the password correctly
     // Workaround: Update the password after creation to ensure it's properly hashed
-    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
-      password: testUser.password, // Re-set the password to ensure it's properly hashed
-    });
-    
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      userId,
+      {
+        password: testUser.password, // Re-set the password to ensure it's properly hashed
+      }
+    );
+
     if (updateError) {
-      console.warn(`⚠️  Warning: Could not update user password: ${updateError.message}`);
+      console.warn(
+        `⚠️  Warning: Could not update user password: ${updateError.message}`
+      );
     } else {
       console.log(`✅ User password updated/verified after creation`);
     }
-    
+
     // Test sign-in programmatically to verify password works
     // This uses the anon key (not service role) to test actual authentication
     if (STAGING_CONFIG.supabaseAnonKey) {
+      // Verify anon key matches staging project
+      const expectedStagingProjectId = "adgiptzbxnzddbgfeuut";
+
+      // Decode JWT to check project reference
+      try {
+        const jwtParts = STAGING_CONFIG.supabaseAnonKey.split(".");
+        if (jwtParts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(jwtParts[1], "base64").toString()
+          );
+          const keyProjectRef =
+            payload.ref || payload.project_ref || payload.iss?.split(".")[0];
+          if (keyProjectRef && keyProjectRef !== expectedStagingProjectId) {
+            console.error(
+              `❌ Anon key is for project "${keyProjectRef}", but expected "${expectedStagingProjectId}"`
+            );
+            console.error(
+              `   The anon key does not match the staging project!`
+            );
+          } else if (keyProjectRef === expectedStagingProjectId) {
+            console.log(
+              `✅ Anon key matches staging project ID: ${expectedStagingProjectId}`
+            );
+          }
+        }
+      } catch (e) {
+        console.warn(`⚠️  Could not decode anon key JWT for validation: ${e}`);
+      }
+
+      if (!STAGING_CONFIG.supabaseUrl.includes(expectedStagingProjectId)) {
+        console.error(
+          `❌ Supabase URL doesn't match staging project ID. Expected: ${expectedStagingProjectId}`
+        );
+        console.error(`   URL: ${STAGING_CONFIG.supabaseUrl}`);
+      }
+
       const testClient = createClient(
         STAGING_CONFIG.supabaseUrl,
         STAGING_CONFIG.supabaseAnonKey
       );
-      
-      const { data: signInData, error: signInError } = await testClient.auth.signInWithPassword({
-        email: testUser.email,
-        password: testUser.password,
-      });
-      
+
+      const { data: signInData, error: signInError } =
+        await testClient.auth.signInWithPassword({
+          email: testUser.email,
+          password: testUser.password,
+        });
+
       if (signInError) {
-        console.error(`❌ Programmatic sign-in test FAILED: ${signInError.message}`);
-        console.error(`   This indicates the password is not set correctly in Supabase`);
+        console.error(
+          `❌ Programmatic sign-in test FAILED: ${signInError.message}`
+        );
+        if (signInError.message.includes("Invalid API key")) {
+          console.error(
+            `   ⚠️  This usually means NEXT_PUBLIC_SUPABASE_ANON_KEY is from production, not staging!`
+          );
+          console.error(
+            `   Verify: The anon key must be from staging project (ID: ${expectedStagingProjectId})`
+          );
+          console.error(
+            `   Get it from: Supabase Dashboard → Staging Project → Settings → API → anon public key`
+          );
+        } else {
+          console.error(
+            `   This indicates the password is not set correctly in Supabase`
+          );
+        }
         // Don't throw - let the UI test try anyway, but log the issue
       } else {
-        console.log(`✅ Programmatic sign-in test PASSED - password works correctly`);
+        console.log(
+          `✅ Programmatic sign-in test PASSED - password works correctly`
+        );
         // Sign out immediately (we don't want to stay signed in)
         await testClient.auth.signOut();
       }
     } else {
-      console.warn(`⚠️  No anon key available - skipping programmatic sign-in test`);
+      console.warn(
+        `⚠️  No anon key available - skipping programmatic sign-in test`
+      );
     }
-    
+
     // Additional delay to ensure Supabase has fully processed everything
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     return testUser;
   } catch (error: any) {
     console.error(`Failed to create test user programmatically:`, error);
@@ -122,7 +198,9 @@ export async function createTestUserProgrammatically() {
  */
 export async function createTestUserWithOnboardingCompleted() {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
-    throw new Error("Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(
+      "Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+    );
   }
 
   const testUser = generateTestUser();
@@ -132,35 +210,38 @@ export async function createTestUserWithOnboardingCompleted() {
   );
 
   try {
-    console.log(`🔐 Creating user with onboarding completed: ${testUser.email}`);
-    
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: testUser.email,
-      password: testUser.password,
-      email_confirm: true,
-      user_metadata: {
-        name: testUser.name,
-      },
-    });
+    console.log(
+      `🔐 Creating user with onboarding completed: ${testUser.email}`
+    );
+
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email: testUser.email,
+        password: testUser.password,
+        email_confirm: true,
+        user_metadata: {
+          name: testUser.name,
+        },
+      });
 
     if (authError || !authData.user) {
-      throw new Error(`Failed to create auth user: ${authError?.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to create auth user: ${authError?.message || "Unknown error"}`
+      );
     }
 
     const userId = authData.user.id;
 
     // Create user profile with onboarding_completed: true
-    const { error: profileError } = await supabase
-      .from("users")
-      .insert({
-        id: userId,
-        email: testUser.email,
-        name: testUser.name,
-        timezone: "America/New_York",
-        streak_count: 0,
-        calendar_connected: false,
-        onboarding_completed: true, // User has completed onboarding
-      });
+    const { error: profileError } = await supabase.from("users").insert({
+      id: userId,
+      email: testUser.email,
+      name: testUser.name,
+      timezone: "America/New_York",
+      streak_count: 0,
+      calendar_connected: false,
+      onboarding_completed: true, // User has completed onboarding
+    });
 
     if (profileError) {
       await supabase.auth.admin.deleteUser(userId).catch(() => {});
@@ -172,13 +253,18 @@ export async function createTestUserWithOnboardingCompleted() {
       password: testUser.password,
     });
 
-    console.log(`✅ Created test user with onboarding completed: ${testUser.email}`);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    console.log(
+      `✅ Created test user with onboarding completed: ${testUser.email}`
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     return testUser;
   } catch (error: any) {
-    console.error(`Failed to create test user with onboarding completed:`, error);
+    console.error(
+      `Failed to create test user with onboarding completed:`,
+      error
+    );
     throw error;
   }
 }
@@ -190,7 +276,9 @@ export async function createTestUserWithOnboardingCompleted() {
  */
 export async function getOrCreatePreSeededUser(email?: string) {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
-    throw new Error("Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(
+      "Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+    );
   }
 
   const supabase = createClient(
@@ -199,7 +287,8 @@ export async function getOrCreatePreSeededUser(email?: string) {
   );
 
   // Use provided email or generate a consistent test email
-  const testEmail = email || `test-preseeded-${Date.now()}@staging.nextbestmove.app`;
+  const testEmail =
+    email || `test-preseeded-${Date.now()}@staging.nextbestmove.app`;
   const testPassword = "TestPassword123!";
   const testName = `Pre-seeded Test User ${Date.now()}`;
 
@@ -227,4 +316,3 @@ export async function getOrCreatePreSeededUser(email?: string) {
     throw error;
   }
 }
-

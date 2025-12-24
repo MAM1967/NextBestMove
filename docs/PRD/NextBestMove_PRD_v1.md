@@ -1,6 +1,6 @@
-NextBestMove — Product Requirements Document (PRD v0.1)
+NextBestMove — Product Requirements Document (PRD v1.0)
 
-Last updated: 11/25/2025
+Last updated: 12/23/2025
 
 ⸻
 
@@ -12,11 +12,12 @@ Instead of being a CRM, NextBestMove does one practical thing:
 
 Every day, it gives you a small set of your next best moves to drive revenue — sized to your real schedule.
 
-Core loop in v0.1:
-	1.	Add leads you don't want to lose track of.
-	2.	Get a short, calendar-aware daily plan (3–8 actions).
-	3.	Mark actions as done / got reply / snooze.
-	4.	Receive a weekly summary with a simple insight and 1–2 content prompts.
+Core loop at launch (v1.0):
+	1.	Add relationships you don't want to lose track of.
+	2.	Get a short, calendar-aware daily plan (3–8 actions) with one clearly highlighted “single best action”.
+	3.	Mark actions as done / got reply / snooze, including promised follow-ups.
+	4.	See relationship cadence and “due for touch” status across Today and Relationships.
+	5.	Receive a weekly review with a simple insight, 1–2 content prompts, and Signals/Insights views powered by structured data.
 
 ⸻
 
@@ -111,15 +112,28 @@ Actions carry:
 	•	due date
 	•	link to a lead
 
-6.2 Leads
+6.2 Relationships (formerly “Leads”)
 
-A Lead is a lightweight reference:
+Navigation and language have been refactored to reflect how users talk about their work:
+	•	Today (formerly Dashboard)
+	•	Relationships (formerly Leads)
+	•	Daily Plan
+	•	Actions
+	•	Weekly Review (formerly Weekly Summary)
+	•	Content Ideas
+	•	Signals
+	•	Insights
+	•	Settings
+
+A Relationship is a lightweight reference:
 	•	name
-	•	single primary URL (LinkedIn, CRM, mailto)
-	•	optional notes
+	•	primary URL (LinkedIn, website, CRM link, or mailto)
+	•	optional short note
+	•	cadence (Frequent: 7-14 days / Moderate: 30-90 days / Infrequent: 180-365 days / Ad-hoc: null) - user sets specific days within range
+	•	tier (Inner / Active / Warm / Background – optional)
 	•	status: ACTIVE / SNOOZED / ARCHIVED
 
-No enrichment, scraping, or full contact record.
+The system never behaves like a traditional CRM: no pipeline stages, lead scores, or heavy data entry. Relationships exist to support the decision engine and “next best move” surfacing.
 
 6.3 Calendar-Aware Capacity
 
@@ -337,7 +351,7 @@ When user taps “Got a reply” on an action:
 
 ⸻
 
-11. Daily Plan & Capacity Logic
+11. Daily Plan, Capacity Logic & Decision Engine
 
 11.1 Calendar-Based Capacity
 
@@ -356,30 +370,55 @@ If no calendar:
 	•	Default: 5–6 actions/day.
 	•	v0.1: fixed; v0.2: plan to add simple “Busy today / Light day” toggle.
 
-11.2 Action Priority & Fast Win Logic
+11.2 Deterministic Decision Engine (Priority / In Motion / On Deck)
 
-When generating a plan:
-	1.	Collect all candidate actions in NEW or SNOOZED due today.
-	2.	Compute a priority score for each based on:
-	•	State/source:
-	•	REPLIED → next action (highest)
-	•	FOLLOW_UP due
-	•	SNOOZED now due
-	•	Recent OUTREACH (>3 days ago, no reply)
-	•	NURTURE opportunities
-	•	Recency of last contact
-	•	Action type (FOLLOW_UP > OUTREACH > NURTURE > CONTENT)
-	3.	Fast Win Selection (first slot):
-Pick one action that:
-	•	Can be done in <5 minutes, and
-	•	Has high probability of impact.
-Priority for Fast Win:
-	1.	Respond to recent reply (<24h).
-	2.	Snoozed FOLLOW_UP now due.
-	3.	FOLLOW_UP on warm thread (last contact 3–7 days ago).
-	4.	Simple nurture touch (like/comment/short DM).
-	5.	Only if none exist: light OUTREACH to a recently pinned person.
-	4.	Remaining slots: fill by priority score (descending), until capacity reached.
+The launch decision engine is deterministic and relationship-centric. LLMs are used only for extraction and drafting, never for ranking or lane assignment.
+
+For each Relationship:
+	•	Compute:
+		•	days_since_last_interaction (derived from MAX(actions.completed_at WHERE person_id = relationship_id))
+		•	pending_actions_count and overdue_actions_count (from actions WHERE state IN ('NEW', 'SENT', 'SNOOZED'))
+		•	awaiting_response (derived from EXISTS(action WHERE state = 'SENT' AND person_id = relationship_id AND no reply received))
+		•	earliest_relevant_insight_date (from user-level weekly_summaries.insight_text for v1; future: relationship-level insights)
+		•	momentum_score and momentum_trend (computed from action completion patterns and response rates)
+		•	cadence_days (user-specified days within cadence range: Frequent=7-14 days, Moderate=30-90 days, Infrequent=180-365 days, Ad-hoc=null)
+
+Assign a lane:
+	•	Priority:
+		•	overdue_actions_count > 0, OR
+		•	earliest_relevant_insight_date within ≤ 5 business days, OR
+		•	momentum_trend is declining AND days_since_last_interaction > cadence_days, OR
+		•	awaiting_response is true AND response is overdue.
+	•	In Motion:
+		•	pending_actions_count > 0, OR
+		•	next_suggested_followup within cadence window.
+	•	On Deck:
+		•	no pending actions, no imminent insights, low-touch cadence or nurture-focused.
+
+For each Action:
+	•	Assign a lane (Priority / In Motion / On Deck) based on due date, priority, and relationship lane.
+	•	Compute a NextMoveScore from:
+		•	Urgency (overdue / due soon, with boost for promised follow-ups)
+		•	Stall risk (cadence and momentum)
+		•	Value (relationship importance / tier)
+		•	Effort bias (shorter actions favored for fast wins).
+	•	Promised follow-ups (`promised_due_at`) receive maximum urgency boost when overdue, ensuring trust-preserving prioritization.
+
+Guarantees:
+	•	Exactly one “next move” per relationship.
+	•	Every surfaced action has a clear lane and score.
+	•	All decisions are explainable via stored score components.
+
+11.3 Single Best Action & Fast Win Logic
+
+When generating Today:
+	1.	Collect candidate actions in Priority and In Motion lanes.
+	2.	Compute NextMoveScore for each candidate.
+	3.	Select a single “Best Action” for Today (highest-scoring candidate) and surface it prominently at the top of Today.
+	4.	Select a Fast Win:
+		•	Estimated duration ≤ 5–10 minutes, AND
+		•	High impact (e.g., overdue follow-up, quick reply, or simple nurture touch).
+	5.	Fill remaining plan slots up to capacity using score-based ordering, respecting lanes and cadences.
 
 11.3 When Actions Exceed Capacity
 
@@ -395,7 +434,43 @@ If pending actions > daily capacity:
 
 Unselected actions stay in backlog for future days.
 
-11.4 Snooze Date Defaults
+11.4 “I Have X Minutes” Selector
+
+To support micro-time windows, Today includes an “I have 5 / 10 / 15 minutes” selector:
+	•	Estimated durations are stored on actions.
+	•	When a duration is selected, Today filters to a single recommended action that fits the available time (Fast Win bias).
+	•	This selector never changes the underlying backlog; it only filters and reorders the visible recommendation.
+
+11.5 Promised Follow-Up Flag
+
+Users can mark actions as "promised" to track explicit commitments made in conversations (e.g., "I'll send that by EOD" or "I'll follow up this week").
+
+**Marking a Promise:**
+	•	UI affordance on action card or detail modal
+	•	Options:
+		•	"By end of today (EOD)" — sets `promised_due_at` to end of user's working day (from Settings → Working Hours, default 5:00 PM)
+		•	"By end of this week" — sets `promised_due_at` to Sunday 11:59 PM in user's timezone
+		•	"By specific date" — date picker for custom deadline
+	•	Visual indicator (badge/icon) shows when action is promised
+	•	**Relationship with `due_date`:** Actions have both `due_date` (system-suggested deadline) and `promised_due_at` (explicit promise). When both exist, `promised_due_at` takes precedence for urgency scoring and visual escalation.
+
+**Overdue Promise Escalation:**
+	•	Actions with `promised_due_at < now()` are visually escalated in Today:
+		•	Stronger color (red/orange tint) or warning icon
+		•	Ordered above non-promised items with similar scores
+		•	"Overdue promise" badge displayed
+	•	Decision engine boosts urgency score for promised actions:
+		•	Overdue promise → maximum urgency boost (+20 to urgency score)
+		•	Due today → high urgency boost (+15)
+		•	Due within 2 days → medium urgency boost (+10)
+	•	Email nudge: Daily reminder for overdue promises until action is completed or archived (user-configurable in Settings → Notification Preferences)
+
+**Clearing Promises:**
+	•	Automatically cleared when action state → DONE or SENT
+	•	User can manually unmark promise (sets `promised_due_at` to NULL)
+	•	Promise persists through snooze (deferred but still tracked)
+
+11.6 Snooze Date Defaults
 
 When user taps Snooze on an action:
 	•	Default suggestions:
@@ -647,11 +722,12 @@ v0.1: No auto-archive. Only explicit user archive. Add "Cleanup mode" later.
 
 ⸻
 
-20. MVP Scope (v0.1)
+20. Launch Scope (v1.0)
 
-Must-have:
-	•	Lead creation + basic management (Active/Snoozed/Archived)
-	•	Action engine: daily plan generation from leads + states
+Must-have (P0):
+	•	Relationship creation + basic management (Active/Snoozed/Archived, cadence, optional tier)
+	•	Deterministic decision engine with Priority / In Motion / On Deck lanes and single “Best Action”
+	•	Action engine: daily plan generation from relationships + states
 	•	Calendar-aware capacity (read-only free/busy)
 	•	Daily plan UI with Fast Win and action list
 	•	Focus Mode with "Got reply / No reply / Snooze"
@@ -661,13 +737,12 @@ Must-have:
 	•	Onboarding: first lead, optional calendar connect, first Fast Win
 	•	Stripe-powered checkout + webhook to activate subscriptions and gate access
 
-Deferred (v0.2+):
+Deferred (P2 / post-launch):
 	•	Manual “Busy today / Light day” override
-	•	“Why this action?” explanations
-	•	Email integration for reply detection
-	•	Browser extension for pinning
+	•	Richer “Why this action?” explanations and visual debugging of the decision engine
+	•	Full email send/reply detection and browser extension for pinning
 	•	More detailed deal/proposal states
-	•	Email summaries, deeper analytics, and reporting
+	•	Deeper analytics, network queries, and advanced relationship outcomes reporting
 
 ⸻
 
@@ -687,11 +762,11 @@ The product's value emerges only after:
 
 So the pricing architecture must move the user toward those moments.
 
-21.2 Subscription Tiers
+21.2 Subscription Tiers & Reverse Trial Model
 
-21.2.1 Free Trial — 14 Days (No credit card)
+21.2.1 Reverse Trial — Start on Standard, Then Continue on Free
 
-Full access. All features. No paywall.
+All new users start with **Standard-tier access** for 14 days (no credit card).
 
 Why 14 days?
 	•	Captures two Weekly Summaries → the strongest "aha" moment
@@ -704,89 +779,96 @@ Trial Messaging (built-in):
 
 21.2.2 What Happens on Day 15 (Critical)
 
-Read-Only Grace Period — 7 Days
+On Day 15, users automatically continue on the **Free** tier unless they upgrade:
 
-Not a hard lock. Not a forced downgrade.
+	•	Free tier = "Memory Relief"
+		•	5 active relationships (unlimited archived)
+		•	Simple daily plan (2–3 actions/day)
+		•	Manual planning only
+		•	Basic weekly summary
+		•	Full access to history
+	•	Standard tier = "Runs your day"
+		•	20 active relationships
+		•	Calendar-aware daily planning (5–6 actions/day)
+		•	Automatic daily plans
+		•	Unlimited follow-ups within limit
+		•	AI-assisted weekly summary
+		•	One practical insight each week
+		•	Call briefs with event context
+	•	Premium tier = "Thinks with you"
+		•	Unlimited relationships
+		•	Deeper weekly insights and patterns
+		•	Higher content generation limits
+		•	Full calendar context
+		•	Call briefs with notes and history
+		•	Momentum and pattern views across time
 
-User can:
-	•	View Leads
-	•	View past actions
-	•	View Weekly Summaries
-	•	Export data
-	•	Browse settings
+No data is lost on downgrade. Messaging emphasizes:
+	•	"Upgrade if you want the system to keep deciding your day."
+	•	"Your data always stays, even on Free."
 
-User cannot:
-	•	Generate a new daily plan
-	•	Add new leads
-	•	Schedule follow-ups
-	•	Access insights
-	•	Use content prompts
+21.2.3 Tier Details
 
-Banner shown everywhere:
+FREE — Forever free, no credit card
 
-"Your trial has ended. Subscribe to resume your rhythm. Your data is safe and nothing is lost."
-
-Why read-only is perfect:
-	•	No loss aversion trauma
-	•	Creates urgency
-	•	Ethical and user-friendly
-	•	Prevents "the app locked me out" anger
-	•	Engineers love it (simple permissions flag)
-
-21.2.3 Paid Plans
-
-STANDARD — $29/mo or $249/year
-(Save $99 — 2 months free)
-
-For fractional executives who need a simple, consistent daily rhythm.
+"Memory Relief" — For getting organized and proving the rhythm works.
 
 Includes:
-	•	Daily plan (Fast Win + 3–8 actions/day)
-	•	Calendar-aware action sizing
-	•	Smart follow-up engine
-	•	Up to 10 active Leads
-	•	Weekly Summary + single actionable insight
-	•	2 content prompts per week
-	•	Consistency score
-	•	Data export
-	•	Email/push reminders
-	•	Read-only access during inactivity
-	•	Light analytic patterns (consistency + action count)
+	•	5 active relationships
+	•	Unlimited archived relationships
+	•	Simple daily plan (2–3 actions/day)
+	•	Manual planning
+	•	Basic weekly summary
+	•	Full access to your history
+
+Free forever. No credit card.
+
+⸻
+
+STANDARD — $29/mo or $290/year
+(Save $58 — 2 months free annually)
+
+"Runs your day" — For professionals who want the system to decide what matters today.
+
+Includes:
+	•	20 active relationships
+	•	Calendar-aware daily planning (5–6 actions/day)
+	•	Automatic daily plans
+	•	Unlimited follow-ups within your limit
+	•	AI-assisted weekly summary
+	•	One practical insight each week
+	•	Call briefs with event context
 
 This is the foundational "habit plan." 80% of users belong here.
 
-PREMIUM — $79/mo or $649/year
-(Save $299 — 4 months free)
+PREMIUM — $89/mo or $890/year
+(Save $178 — 2 months free annually)
 
-Hero Value Proposition: "A smart intelligence layer for complex pipelines."
-
-Fractional CMOs, CFOs, CTOs, and multiproject operators who manage dozens of warm relationships benefit the most.
+"Thinks with you" — For operators managing complexity who want less thinking, not more tools.
 
 Includes everything in Standard plus:
 
-1. Unlimited Leads
+1. Unlimited Relationships
 Never prune relationships again.
 
-2. Pattern Detection
+2. Deeper Weekly Insights and Patterns
 	•	"Your Tuesday outreach converts 2x better than Thursday"
 	•	"Follow-ups after 48 hours have higher reply rates"
 	•	"Most of your booked calls come from warm re-engagements"
 
-3. Pre-Call Briefs
-Auto-generated summaries of:
-	•	last interactions
-	•	follow-up history
-	•	next-step suggestions
-	•	user notes
+3. Higher Content Generation Limits
+	•	More content prompts per week
+	•	Enhanced content quality
 
-10-second prep = 10x better calls.
+4. Full Calendar Context
+	•	Complete calendar integration
+	•	Advanced scheduling insights
 
-4. Content Engine (Your Voice)
-	•	Learns the user's tone
-	•	Provides weekly content drafts
-	•	Curates insights from actual actions ("based on your week…")
+5. Enhanced Call Briefs
+	•	Call briefs with notes and history
+	•	Full interaction context
 
-5. Full Performance Timeline
+6. Momentum and Pattern Views Across Time
 	•	Month-over-month progress
 	•	Consistency arcs
 	•	Pipeline movement

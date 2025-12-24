@@ -5,6 +5,7 @@ import {
   getDaysDifference,
   formatDateForDisplay,
 } from "@/lib/utils/dateUtils";
+import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
 
 interface ActionListRowProps {
   action: Action;
@@ -13,6 +14,7 @@ interface ActionListRowProps {
   onAddNote: (actionId: string) => void;
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
+  onSetEstimatedMinutes?: (actionId: string) => void;
   /**
    * Visual variant tied to the section/bucket the action is rendered in.
    * purely presentational – no behavior changes.
@@ -111,6 +113,7 @@ export function ActionListRow({
   onAddNote,
   onGotReply,
   onViewPrompt,
+  onSetEstimatedMinutes,
   variant,
 }: ActionListRowProps) {
   const verb = getVerbForAction(action);
@@ -133,13 +136,20 @@ export function ActionListRow({
     action.state === "DONE" ||
     action.state === "REPLIED" ||
     action.state === "SENT";
+  
+  // Check if promise exists and is overdue
+  const hasPromise = !!action.promised_due_at;
+  const promiseOverdue = hasPromise && isPromiseOverdue(action.promised_due_at);
 
   // Visual styling per bucket – keeps IA logic in the page, styling here.
+  // Escalate overdue promises visually
   const baseContainerClasses =
     "rounded-xl border px-3.5 py-3 shadow-sm transition-colors";
 
   const variantContainerClass =
-    variant === "urgent"
+    promiseOverdue
+      ? "border-red-300 bg-red-50/90 hover:bg-red-50 border-2" // Overdue promise - stronger visual
+      : variant === "urgent"
       ? "border-rose-100 bg-rose-50/80 hover:bg-rose-50"
       : variant === "motion"
       ? "border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50"
@@ -199,8 +209,67 @@ export function ActionListRow({
             )}
           </p>
         </div>
-        <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
-          {dueLabel}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Promise indicator - show prominently for overdue promises */}
+          {hasPromise && (
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                promiseOverdue
+                  ? "bg-red-600 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+              title={formatPromiseDate(action.promised_due_at!)}
+            >
+              {promiseOverdue ? "⚠️ Promise" : "✓ Promise"}
+            </span>
+          )}
+          {/* Lane badge if decision engine has assigned one */}
+          {action.lane && (
+            <span
+              className={`px-2 py-0.5 text-xs font-medium rounded-full border ${
+                action.lane === "priority"
+                  ? "bg-rose-100 text-rose-800 border-rose-200"
+                  : action.lane === "in_motion"
+                  ? "bg-green-100 text-green-800 border-green-200"
+                  : "bg-blue-100 text-blue-800 border-blue-200"
+              }`}
+              title={
+                action.lane === "priority"
+                  ? "Priority: Requires attention now"
+                  : action.lane === "in_motion"
+                  ? "In Motion: Active, within cadence"
+                  : "On Deck: No pending work, light-touch"
+              }
+            >
+              {action.lane === "priority"
+                ? "Priority"
+                : action.lane === "in_motion"
+                ? "In Motion"
+                : "On Deck"}
+            </span>
+          )}
+          {/* Score indicator (tooltip) */}
+          {action.next_move_score !== null &&
+            action.next_move_score !== undefined && (
+              <span
+                className="text-xs text-zinc-400"
+                title={`NextMoveScore: ${Math.round(action.next_move_score)}`}
+              >
+                {Math.round(action.next_move_score)}
+              </span>
+            )}
+          {/* Estimated minutes indicator */}
+          {action.estimated_minutes && (
+            <span
+              className="text-xs text-zinc-500"
+              title="Estimated duration"
+            >
+              {action.estimated_minutes} min
+            </span>
+          )}
+          <div className={`${baseBadgeClasses} ${variantBadgeBgClass} ${dueClass}`}>
+            {dueLabel}
+          </div>
         </div>
       </div>
 
@@ -242,6 +311,17 @@ export function ActionListRow({
         >
           Add note
         </button>
+        {onSetEstimatedMinutes && (
+          <button
+            type="button"
+            data-testid={`set-time-estimate-${action.id}`}
+            onClick={() => onSetEstimatedMinutes(action.id)}
+            className="hover:underline"
+            title={action.estimated_minutes ? `Update time estimate (${action.estimated_minutes} min)` : "Set time estimate"}
+          >
+            {action.estimated_minutes ? `${action.estimated_minutes} min` : "Set time"}
+          </button>
+        )}
       </div>
     </div>
   );

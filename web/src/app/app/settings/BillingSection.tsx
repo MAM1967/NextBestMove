@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { PlanSelectionModal } from "./PlanSelectionModal";
 import type { PlanType, IntervalType } from "@/lib/billing/stripe";
+import { useUserTier } from "@/lib/billing/use-user-tier";
+import { getTierInfo } from "@/lib/billing/tier-labels";
 
 type Subscription = {
   id: string;
@@ -53,6 +55,7 @@ export function BillingSection({
 }: BillingSectionProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const { tier, loading: tierLoading } = useUserTier();
 
   // Reset loading state when component mounts or subscription changes
   // This handles the case where user hits back from Stripe checkout
@@ -151,16 +154,29 @@ export function BillingSection({
   // Button visibility is based on subscription status, NOT modal state or customer existence
   // This ensures the button always reappears after canceling the modal or hitting back from Stripe
   if (!subscription) {
+    const tierInfo = tier ? getTierInfo(tier) : null;
     return (
-      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
-        <p className="text-sm font-medium text-zinc-900">No active subscription</p>
+      <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center" data-testid="billing-section">
+        <div className="space-y-2">
+          {tierInfo && (
+            <>
+              <p className="text-sm font-medium text-zinc-900">
+                {tierInfo.name} - {tierInfo.tagline}
+              </p>
+              <p className="text-xs text-zinc-600">{tierInfo.description}</p>
+            </>
+          )}
+          {!tierInfo && (
+            <p className="text-sm font-medium text-zinc-900">No active subscription</p>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setShowPlanSelection(true)}
-          disabled={isLoading}
+          disabled={isLoading || tierLoading}
           className="mt-4 inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
         >
-          {isLoading ? "Loading..." : "Start Free Trial"}
+          {isLoading ? "Loading..." : tier === "free" ? "Upgrade to Standard" : "Start Standard Trial"}
         </button>
         <PlanSelectionModal
           isOpen={showPlanSelection}
@@ -179,8 +195,12 @@ export function BillingSection({
     : new Date(subscription.current_period_end);
   const isCanceled = subscription.status === "canceled";
   const isCanceling = subscription.cancel_at_period_end && !isCanceled;
-  const planName =
-    subscription.metadata?.plan_name || "Solo Plan"; // Default fallback
+  
+  // Get tier information for display
+  const tierInfo = tier ? getTierInfo(tier) : null;
+  const planName = tierInfo
+    ? `${tierInfo.name} - ${tierInfo.tagline}`
+    : subscription.metadata?.plan_name || "Standard Plan";
 
   return (
     <div className="space-y-4">
@@ -190,6 +210,11 @@ export function BillingSection({
             <div>
               <p className="text-sm font-medium text-zinc-900">Plan</p>
               <p className="mt-0.5 text-xs text-zinc-600">{planName}</p>
+              {tierInfo && subscription.status === "trialing" && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  After trial: Continue on {tierInfo.name === "Standard" ? "Free tier" : tierInfo.name} unless you upgrade
+                </p>
+              )}
             </div>
             <StatusBadge status={subscription.status} />
           </div>

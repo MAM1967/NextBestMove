@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { SignalsClient } from "./SignalsClient";
 
 export default async function SignalsPage() {
   const supabase = await createClient();
@@ -21,18 +22,11 @@ export default async function SignalsPage() {
           Signals
         </h1>
         <p className="max-w-2xl text-sm text-zinc-600">
-          External events and contextual triggers that may warrant new actions.
+          Email signals and contextual triggers from your conversations that may warrant new actions.
         </p>
       </header>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
-        <p className="mb-2 text-lg font-medium text-zinc-900">
-          Signals coming soon
-        </p>
-        <p className="text-sm text-zinc-600">
-          This section will show external events and contextual triggers that create opportunities for action.
-        </p>
-      </div>
+      <SignalsClient />
     </div>
   );
 }

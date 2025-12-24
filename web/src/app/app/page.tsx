@@ -6,6 +6,9 @@ import { getSubscriptionInfo } from "@/lib/billing/subscription-status";
 import { GracePeriodBanner } from "./components/GracePeriodBanner";
 import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient";
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
+import { GlobalRollup } from "./components/GlobalRollup";
+import { ChannelNudgesList } from "./components/ChannelNudgeCard";
+import { DurationSelectorClient } from "./components/DurationSelectorClient";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -510,6 +513,14 @@ export default async function TodayPage() {
             : "Generate your daily plan to get started"}
         </p>
       </header>
+
+      {/* Best Action - Single clear next move, with duration selector */}
+      <DurationSelectorClient />
+
+      {/* Global Rollup - Top overdue items across relationships */}
+      <GlobalRollup />
+
+      <ChannelNudgesList />
 
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">

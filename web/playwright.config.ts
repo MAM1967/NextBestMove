@@ -6,11 +6,24 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
+  // Only run Playwright E2E tests (.spec.ts), ignore Vitest tests (.test.ts)
+  testMatch: /.*\.spec\.ts$/,
+  // Explicitly ignore Vitest test directories
+  testIgnore: [
+    "**/node_modules/**",
+    "**/tests/unit/**",
+    "**/tests/integration/**",
+  ],
   fullyParallel: false, // Run sequentially to avoid email rate limits
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Run one test at a time to avoid Supabase email rate limits
   reporter: "html",
+  
+  // Global timeout for all assertions (helps with CI timing issues)
+  expect: {
+    timeout: process.env.CI ? 30000 : 10000, // 30 seconds in CI, 10 seconds locally
+  },
   
   use: {
     baseURL: "https://staging.nextbestmove.app",

@@ -69,10 +69,10 @@ export function StartFreeTrialStep({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-zinc-900">
-          Start your 14-day free trial
+          Start your 14-day Standard trial
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
-          No credit card required. No payment due during your 14-day trial period.
+          Try Decision Automation—automatic daily plans sized to your calendar. No credit card required.
         </p>
       </div>
 
@@ -93,10 +93,10 @@ export function StartFreeTrialStep({
           </svg>
           <div>
             <p className="text-sm font-medium text-zinc-900">
-              Full access to all features
+              Decision Automation
             </p>
             <p className="mt-0.5 text-xs text-zinc-600">
-              Daily plans, pins, actions, weekly summaries, and more
+              Automatic daily plans, calendar-aware capacity, AI-assisted weekly summaries, and up to 20 active relationships
             </p>
           </div>
         </div>
@@ -172,7 +172,7 @@ export function StartFreeTrialStep({
           disabled={isStarting}
           className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
         >
-          {isStarting ? "Starting trial..." : "Start Free Trial"}
+          {isStarting ? "Starting trial..." : "Start Standard Trial"}
         </button>
       </div>
     </div>

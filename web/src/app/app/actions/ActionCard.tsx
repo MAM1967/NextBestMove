@@ -3,6 +3,10 @@
 import { Action } from "./types";
 import { PriorityIndicator } from "./PriorityIndicator";
 import { parseLocalDate, getTodayLocal, getDaysDifference, formatDateForDisplay } from "@/lib/utils/dateUtils";
+import { useState } from "react";
+import { PromiseModal } from "./PromiseModal";
+import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
+import { ChannelNudge } from "../components/ChannelNudge";
 
 interface ActionCardProps {
   action: Action;
@@ -12,6 +16,9 @@ interface ActionCardProps {
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
   onClick?: (action: Action) => void;
+  onSetPromise?: (actionId: string, promisedDueAt: string | null) => Promise<void>;
+  userTimeZone?: string;
+  workEndTime?: string | null;
 }
 
 function getActionTypeBadgeVariant(actionType: Action["action_type"]): string {
@@ -76,11 +83,38 @@ export function ActionCard({
   onGotReply,
   onViewPrompt,
   onClick,
+  onSetPromise,
+  userTimeZone = "America/New_York",
+  workEndTime = null,
 }: ActionCardProps) {
+  const [showPromiseModal, setShowPromiseModal] = useState(false);
+  
   const isCompleted =
     action.state === "DONE" ||
     action.state === "REPLIED" ||
     action.state === "SENT";
+  
+  // Check if promise is overdue
+  const promiseOverdue = action.promised_due_at ? isPromiseOverdue(action.promised_due_at) : false;
+  
+  // Check if promise is due soon (within 2 days)
+  const isPromiseDueSoon = action.promised_due_at
+    ? (() => {
+        const promisedDate = new Date(action.promised_due_at);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        promisedDate.setHours(0, 0, 0, 0);
+        const daysDiff = Math.floor(
+          (promisedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return daysDiff >= 0 && daysDiff <= 2;
+      })()
+    : false;
+  
+  const handleSetPromise = async (actionId: string, promisedDueAt: string | null) => {
+    if (!onSetPromise) return;
+    await onSetPromise(actionId, promisedDueAt);
+  };
 
   const getActionButtons = () => {
     // If action is completed, only show "Add note" button
@@ -143,6 +177,21 @@ export function ActionCard({
             >
               Add note
             </button>
+            {onSetPromise && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPromiseModal(true);
+                }}
+                className={`rounded-md px-4 py-2 text-sm font-medium ${
+                  action.promised_due_at
+                    ? "text-purple-600 hover:bg-purple-50"
+                    : "text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                {action.promised_due_at ? "Update promise" : "Mark as promised"}
+              </button>
+            )}
           </>
         );
       case "CONTENT":
@@ -175,6 +224,21 @@ export function ActionCard({
             >
               View prompt
             </button>
+            {onSetPromise && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPromiseModal(true);
+                }}
+                className={`rounded-md px-4 py-2 text-sm font-medium ${
+                  action.promised_due_at
+                    ? "text-purple-600 hover:bg-purple-50"
+                    : "text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                {action.promised_due_at ? "Update promise" : "Mark as promised"}
+              </button>
+            )}
           </>
         );
       default:
@@ -207,6 +271,21 @@ export function ActionCard({
             >
               Add note
             </button>
+            {onSetPromise && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPromiseModal(true);
+                }}
+                className={`rounded-md px-4 py-2 text-sm font-medium ${
+                  action.promised_due_at
+                    ? "text-purple-600 hover:bg-purple-50"
+                    : "text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                {action.promised_due_at ? "Update promise" : "Mark as promised"}
+              </button>
+            )}
           </>
         );
     }
@@ -214,8 +293,17 @@ export function ActionCard({
 
   return (
     <div
-      className={`rounded-xl border border-zinc-200 bg-white p-4 transition-shadow hover:shadow-md ${
+      data-testid={`action-card-${action.id}`}
+      className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${
         isCompleted ? "opacity-75" : ""
+      } ${
+        promiseOverdue
+          ? "border-red-500 bg-red-50"
+          : isPromiseDueSoon
+          ? "border-orange-400 bg-orange-50"
+          : action.promised_due_at
+          ? "border-blue-300 bg-blue-50"
+          : "border-zinc-200 bg-white"
       }`}
       onClick={() => onClick?.(action)}
     >
@@ -316,9 +404,26 @@ export function ActionCard({
                 return null;
               })()}
             </div>
-            <h4 className="text-lg font-semibold text-zinc-900">
-              {getActionTitle(action)}
-            </h4>
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="text-lg font-semibold text-zinc-900">
+                {getActionTitle(action)}
+              </h4>
+              {/* Promise indicator badge */}
+              {action.promised_due_at && (
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                    promiseOverdue
+                      ? "bg-red-600 text-white"
+                      : isPromiseDueSoon
+                      ? "bg-orange-500 text-white"
+                      : "bg-blue-500 text-white"
+                  }`}
+                  title={formatPromiseDate(action.promised_due_at)}
+                >
+                  {promiseOverdue ? "⚠️ Overdue Promise" : "✓ Promised"}
+                </span>
+              )}
+            </div>
             <div className="mt-1 flex items-center gap-4 text-sm">
               {(() => {
                 // Use date-fns for reliable date comparison
@@ -380,6 +485,33 @@ export function ActionCard({
                 </a>
               )}
             </div>
+            {/* Promised follow-up indicator */}
+            {action.promised_due_at && (
+              <div
+                className={`mt-2 flex items-start gap-2 text-sm ${
+                  promiseOverdue
+                    ? "text-red-700 font-medium"
+                    : isPromiseDueSoon
+                    ? "text-orange-700"
+                    : "text-blue-700"
+                }`}
+              >
+                <svg
+                  className="h-4 w-4 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{formatPromiseDate(action.promised_due_at)}</span>
+              </div>
+            )}
             {action.notes && (
               <div className="mt-2 flex items-start gap-2 text-sm text-zinc-600">
                 <svg
@@ -398,12 +530,39 @@ export function ActionCard({
                 <span className="italic">{action.notes}</span>
               </div>
             )}
+            {/* Channel nudge - show if conversation is stalled */}
+            {action.leads && (
+              <ChannelNudge
+                action={action}
+                relationship={action.leads}
+                onDismiss={(actionId, nudgeType) => {
+                  // TODO: Implement nudge dismissal (store in local state or backend)
+                  console.log("Dismiss nudge", actionId, nudgeType);
+                }}
+                onEscalate={(actionId, nudgeType) => {
+                  // TODO: Implement escalation (e.g., create new action or switch channel)
+                  console.log("Escalate", actionId, nudgeType);
+                }}
+              />
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {getActionButtons()}
         </div>
       </div>
+      
+      {onSetPromise && (
+        <PromiseModal
+          isOpen={showPromiseModal}
+          onClose={() => setShowPromiseModal(false)}
+          actionId={action.id}
+          currentPromise={action.promised_due_at || undefined}
+          userTimeZone={userTimeZone}
+          workEndTime={workEndTime}
+          onSetPromise={handleSetPromise}
+        />
+      )}
     </div>
   );
 }

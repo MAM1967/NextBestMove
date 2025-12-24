@@ -18,13 +18,14 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { due_date, notes, description } = body;
+    const { due_date, notes, description, promised_due_at } = body;
 
     // Build update object (only include fields that are provided)
     const updateData: {
       due_date?: string;
       notes?: string | null;
       description?: string | null;
+      promised_due_at?: string | null;
     } = {};
 
     if (due_date) {
@@ -39,10 +40,14 @@ export async function PUT(
       updateData.description = description || null;
     }
 
+    if (promised_due_at !== undefined) {
+      updateData.promised_due_at = promised_due_at || null;
+    }
+
     // Validate that at least one field is being updated
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "At least one field (due_date, notes, description) must be provided" },
+        { error: "At least one field (due_date, notes, description, promised_due_at) must be provided" },
         { status: 400 }
       );
     }

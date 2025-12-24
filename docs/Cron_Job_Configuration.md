@@ -140,6 +140,36 @@ The script will:
 **Schedule:** Daily at 2:00 AM UTC  
 **Purpose:** Proactively refreshes calendar tokens expiring within 24 hours to prevent expiration for inactive users
 
+### 11. Downgrade to Free Tier (Day 15)
+
+**Endpoint:** `GET /api/cron/downgrade-to-free`  
+**Schedule:** Daily at 2:00 AM UTC  
+**Purpose:** Automatically downgrades users to Free tier on Day 15 when their 14-day Standard trial ends and they haven't upgraded
+
+**What it does:**
+
+- Finds all users with ended trials (trial_ends_at < now)
+- Checks if they have an active paid subscription
+- If no active subscription exists, downgrades user tier to Free
+- Updates `users.tier` field to `free`
+- Logs downgrade actions for debugging
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Processed 10 users",
+  "downgraded": 3,
+  "errors": 0
+}
+```
+
+**Note:** This job uses Authorization header (not query parameter). Configure in cron-job.org with:
+
+- URL: `https://staging.nextbestmove.app/api/cron/downgrade-to-free` (or production URL)
+- Authorization Header: `Bearer YOUR_CRON_SECRET`
+
 **What it does:**
 
 - Finds all active calendar connections

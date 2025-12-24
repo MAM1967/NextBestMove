@@ -6,9 +6,13 @@ import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
 import { ViewPromptModal } from "./ViewPromptModal";
+import { EstimatedMinutesModal } from "./EstimatedMinutesModal";
 import { Action } from "./types";
 import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 import { getDaysDifference } from "@/lib/utils/dateUtils";
+import { useActionsByLane } from "@/lib/decision-engine/hooks";
+import type { ActionWithLane } from "@/lib/decision-engine/types";
+import { ChannelNudgesList } from "../components/ChannelNudgeCard";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -27,15 +31,43 @@ export default function ActionsPage() {
   const [schedulingActionId, setSchedulingActionId] = useState<string | null>(
     null
   );
+  const [promiseActionId, setPromiseActionId] = useState<string | null>(null);
+  const [estimatedMinutesActionId, setEstimatedMinutesActionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActions();
   }, []);
 
+  // Fetch actions using decision engine lanes
+  const { actions: actionsByLane, loading: lanesLoading, error: lanesError } = useActionsByLane();
+  
   const fetchActions = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Use decision engine API
+      const laneResponse = await fetch("/api/decision-engine/actions-by-lane");
+      if (laneResponse.ok) {
+        const laneData = await laneResponse.json();
+        // Combine all lanes into a single array for compatibility
+        const allLaneActions: Action[] = [
+          ...(laneData.priority || []),
+          ...(laneData.in_motion || []),
+          ...(laneData.on_deck || []),
+        ];
+        // Map ActionWithLane to Action format
+        const mappedActions: Action[] = allLaneActions.map((a: any) => ({
+          ...a,
+          lane: a.lane || null,
+          next_move_score: a.next_move_score || null,
+        }));
+        setActions(mappedActions);
+        setLoading(false);
+        return;
+      }
+      
+      // Fallback to legacy API if decision engine not ready
       const response = await fetch("/api/actions");
       if (!response.ok) {
         throw new Error("Failed to fetch actions");
@@ -317,7 +349,40 @@ export default function ActionsPage() {
     }
   };
 
+  const handleSetEstimatedMinutes = async (actionId: string, minutes: number | null) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}/estimated-minutes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estimated_minutes: minutes }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update time estimate");
+      }
+
+      await fetchActions();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  /**
+   * Bucket actions using decision engine lanes if available, otherwise use legacy heuristics
+   */
   const bucketActions = (allActions: Action[]) => {
+    // If we have lane data from decision engine, use it
+    if (actionsByLane) {
+      return {
+        needsAttentionNow: actionsByLane.priority || [],
+        conversationsInMotion: actionsByLane.in_motion || [],
+        stayTopOfMind: [], // Can be populated from on_deck if needed
+        optionalBackground: actionsByLane.on_deck || [],
+      };
+    }
+
+    // Legacy fallback: use heuristics based on existing fields
     const needsAttentionNow: Action[] = [];
     const conversationsInMotion: Action[] = [];
     const stayTopOfMind: Action[] = [];
@@ -335,6 +400,24 @@ export default function ActionsPage() {
         return;
       }
 
+      // If action has a lane, use it directly
+      if (action.lane === "priority") {
+        mark(needsAttentionNow, action);
+        return;
+      } else if (action.lane === "in_motion") {
+        mark(conversationsInMotion, action);
+        return;
+      } else if (action.lane === "on_deck") {
+        // Split on_deck into "Stay top of mind" (NURTURE) and "Optional/background" (everything else)
+        if (action.action_type === "NURTURE") {
+          mark(stayTopOfMind, action);
+        } else {
+          mark(optionalBackground, action);
+        }
+        return;
+      }
+
+      // Legacy heuristics for actions without lanes
       const daysDiff = getDaysDifference(action.due_date); // >0 overdue, 0 today, <0 future
       const isCompleted =
         action.state === "DONE" ||
@@ -378,7 +461,7 @@ export default function ActionsPage() {
     };
   };
 
-  if (loading) {
+  if (loading || lanesLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-zinc-600">Loading actions...</p>
@@ -431,6 +514,9 @@ export default function ActionsPage() {
             </button>
           </div>
 
+          {/* Channel Nudges - Stalled conversations */}
+          <ChannelNudgesList />
+
           {actions.length === 0 ? (
             <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
               <p className="text-zinc-600">No actions found.</p>
@@ -465,6 +551,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -495,6 +582,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -525,6 +613,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -555,6 +644,7 @@ export default function ActionsPage() {
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
+                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
                       />
                     ))}
                   </div>
@@ -602,6 +692,21 @@ export default function ActionsPage() {
         onClose={() => setViewPromptAction(null)}
         actionDescription={viewPromptAction?.description || null}
       />
+
+      {/* Estimated minutes modal */}
+      {estimatedMinutesActionId && (
+        <EstimatedMinutesModal
+          actionId={estimatedMinutesActionId}
+          currentMinutes={
+            actions.find((a) => a.id === estimatedMinutesActionId)?.estimated_minutes || null
+          }
+          isOpen={estimatedMinutesActionId !== null}
+          onClose={() => setEstimatedMinutesActionId(null)}
+          onSave={async (minutes) => {
+            await handleSetEstimatedMinutes(estimatedMinutesActionId, minutes);
+          }}
+        />
+      )}
     </>
   );
 }

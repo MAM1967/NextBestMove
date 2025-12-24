@@ -6,6 +6,9 @@ import {
   isInactive7PlusDays,
   hasHighCompletionStreak,
 } from "./completion-tracking";
+import { runDecisionEngine } from "@/lib/decision-engine";
+import { assignActionLane } from "@/lib/decision-engine/lanes";
+import { computeRelationshipStates } from "@/lib/decision-engine/state";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
@@ -13,6 +16,7 @@ interface ActionWithScore {
   action: any;
   score: number;
   isFastWinCandidate: boolean;
+  lane?: string;
 }
 
 // Calculate capacity based on free minutes (defaults to standard if no calendar)
@@ -276,7 +280,12 @@ export async function generateDailyPlanForUser(
     // Fetch all candidate actions
     // Note: due_date is a DATE column, so .lte("due_date", date) compares DATE to DATE string (YYYY-MM-DD)
     // This should work correctly regardless of timezone since we're comparing date-only values
-    const { data: allCandidateActions, error: actionsError } = await supabase
+    // Try with leads join first, fallback to without if it fails (RLS might block the join)
+    let allCandidateActions: any[] | null = null;
+    let actionsError: any = null;
+    
+    // First try with leads join
+    const { data: actionsWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
@@ -296,6 +305,51 @@ export async function generateDailyPlanForUser(
       .order("due_date", { ascending: true })
       .order("created_at", { ascending: false });
     
+    if (joinError) {
+      console.warn("Error fetching actions with leads join, trying without join:", joinError);
+      // Fallback: fetch actions without leads join
+      const { data: actionsOnly, error: actionsOnlyError } = await supabase
+        .from("actions")
+        .select("*")
+        .eq("user_id", userId)
+        .in("state", ["NEW", "SNOOZED"])
+        .lte("due_date", date)
+        .order("due_date", { ascending: true })
+        .order("created_at", { ascending: false });
+      
+      if (actionsOnlyError) {
+        console.error("Error fetching candidate actions (both with and without join):", actionsOnlyError);
+        actionsError = actionsOnlyError;
+      } else {
+        allCandidateActions = actionsOnly;
+        // Fetch leads separately for each action if needed
+        if (allCandidateActions && allCandidateActions.length > 0) {
+          const leadIds = allCandidateActions
+            .map(a => a.person_id)
+            .filter((id): id is string => id !== null);
+          
+          if (leadIds.length > 0) {
+            const { data: leads } = await supabase
+              .from("leads")
+              .select("id, name, url, notes, created_at")
+              .eq("user_id", userId)
+              .in("id", leadIds);
+            
+            // Attach leads to actions
+            if (leads) {
+              const leadsMap = new Map(leads.map(l => [l.id, l]));
+              allCandidateActions = allCandidateActions.map(action => ({
+                ...action,
+                leads: action.person_id ? leadsMap.get(action.person_id) || null : null,
+              }));
+            }
+          }
+        }
+      }
+    } else {
+      allCandidateActions = actionsWithLeads;
+    }
+    
     // Log for debugging
     console.log("Plan generation query:", {
       userId,
@@ -307,6 +361,7 @@ export async function generateDailyPlanForUser(
         due_date: a.due_date,
         action_type: a.action_type,
       })) || [],
+      hadJoinError: !!joinError,
     });
 
     if (actionsError) {
@@ -444,19 +499,75 @@ export async function generateDailyPlanForUser(
       }
     }
 
-    // Score and sort actions
-    const actionsWithScores: ActionWithScore[] = candidateActions.map(
-      (action) => ({
-        action,
-        score: calculatePriorityScore(action),
-        isFastWinCandidate: isFastWinCandidate(action),
-      })
+    // Run decision engine to compute lanes and scores
+    const planDate = new Date(date);
+    planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+    
+    const decisionResult = await runDecisionEngine(supabase, userId, {
+      persist: true, // Persist lane and score to database
+      referenceDate: planDate,
+    });
+
+    // Compute relationship states for lane assignment
+    const relationshipStates = await computeRelationshipStates(
+      supabase,
+      userId,
+      planDate
     );
 
-    // Sort by score (descending)
-    actionsWithScores.sort((a, b) => b.score - a.score);
+    // Score and sort actions using decision engine
+    const { assignRelationshipLane } = await import("@/lib/decision-engine/lanes");
+    
+    const actionsWithScores: ActionWithScore[] = [];
+    for (const action of candidateActions) {
+      // Get relationship state if action is tied to a relationship
+      const relationshipState = action.person_id
+        ? relationshipStates.get(action.person_id) || null
+        : null;
+      
+      // Get relationship lane
+      const relationshipLane = relationshipState
+        ? assignRelationshipLane(relationshipState).lane
+        : "on_deck";
+      
+      // Get action lane
+      const actionLane = assignActionLane(action, relationshipLane, planDate).lane;
+      
+      // Get score from decision engine result
+      const scoredAction = decisionResult.scoredActions.find(
+        (s) => s.actionId === action.id
+      );
+      
+      const score = scoredAction?.score || 0;
+      
+      // Fast Win criteria: Priority lane, high score, estimated ≤ 30 minutes
+      const isFastWinCandidate = 
+        actionLane === "priority" &&
+        score >= 50 &&
+        (action.estimated_minutes === null || action.estimated_minutes <= 30);
+      
+      actionsWithScores.push({
+        action,
+        score,
+        isFastWinCandidate,
+        lane: actionLane,
+      });
+    }
 
-    // Select Fast Win (first fast win candidate)
+    // Sort by lane (priority first), then by score (descending)
+    actionsWithScores.sort((a, b) => {
+      const laneOrder = { priority: 0, in_motion: 1, on_deck: 2 };
+      const aLaneOrder = laneOrder[a.lane as keyof typeof laneOrder] ?? 3;
+      const bLaneOrder = laneOrder[b.lane as keyof typeof laneOrder] ?? 3;
+      
+      if (aLaneOrder !== bLaneOrder) {
+        return aLaneOrder - bLaneOrder;
+      }
+      
+      return b.score - a.score;
+    });
+
+    // Select Fast Win (first fast win candidate in Priority lane)
     let fastWin: ActionWithScore | null = null;
     const fastWinIndex = actionsWithScores.findIndex(
       (a) => a.isFastWinCandidate
@@ -466,7 +577,7 @@ export async function generateDailyPlanForUser(
       actionsWithScores.splice(fastWinIndex, 1);
     }
 
-    // Select remaining actions up to capacity
+    // Select remaining actions up to capacity (prioritize Priority and In Motion lanes)
     const selectedActions = actionsWithScores.slice(0, actionCount - 1); // -1 because fast win counts
 
     // Get weekly focus statement (if available)

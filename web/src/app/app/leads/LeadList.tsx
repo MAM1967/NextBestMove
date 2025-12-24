@@ -31,7 +31,7 @@ export function LeadList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="relationship-list">
       {leads.map((lead) => (
         <LeadRow
           key={lead.id}

@@ -6,6 +6,8 @@ import {
   getSubscriptionStatus,
   checkGracePeriod,
 } from "@/lib/billing/subscription-status";
+import { useUserTier } from "@/lib/billing/use-user-tier";
+import { getTierInfo } from "@/lib/billing/tier-labels";
 
 type PaywallOverlayProps = {
   subscriptionStatus: "none" | "trialing" | "active" | "past_due" | "canceled";
@@ -22,6 +24,7 @@ export function PaywallOverlay({
 }: PaywallOverlayProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { tier } = useUserTier();
 
   // Convert "none" to null for getSubscriptionStatus
   const normalizedStatus =
@@ -206,24 +209,32 @@ export function PaywallOverlay({
   // isReadOnly can be true for trial grace period, so check that status is not canceled
   if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled") || isInGracePeriod) {
     const daysRemaining = daysUntilGracePeriodEnds ?? 0;
+    const tierInfo = tier ? getTierInfo(tier) : null;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="paywall-overlay">
         <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
           <div className="mb-4">
             <h2 className="text-xl font-semibold text-zinc-900">
-              Your trial has ended
+              Your Standard trial has ended
             </h2>
             <p className="mt-2 text-sm text-zinc-600">
-              {daysRemaining > 0
-                ? `You have ${daysRemaining} day${
-                    daysRemaining !== 1 ? "s" : ""
-                  } left to subscribe and keep your rhythm going. Your data is safe.`
-                : "Subscribe to resume your rhythm. Your data is safe and nothing is lost."}
+              {tier === "free" ? (
+                <>
+                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to keep automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
+                </>
+              ) : daysRemaining > 0 ? (
+                `You have ${daysRemaining} day${
+                  daysRemaining !== 1 ? "s" : ""
+                } left to subscribe and keep your rhythm going. Your data is safe.`
+              ) : (
+                "Subscribe to resume your rhythm. Your data is safe and nothing is lost."
+              )}
             </p>
           </div>
 
           <div className="space-y-3">
             <button
+              data-testid="upgrade-button"
               onClick={handleSubscribe}
               disabled={isLoading}
               className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
@@ -246,9 +257,16 @@ export function PaywallOverlay({
 
 
   // Canceled or no subscription - variant messaging
-  let headline = "Subscribe to unlock this feature";
-  let description = "Start your 14-day free trial. No credit card required.";
-  let ctaText = "Start Free Trial";
+  const tierInfo = tier ? getTierInfo(tier) : null;
+  let headline = tier === "free" 
+    ? "Upgrade to unlock this feature"
+    : "Subscribe to unlock this feature";
+  let description = tier === "free"
+    ? `You're on Free - Memory Relief. Upgrade to Standard - Decision Automation for automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.`
+    : "Start your 14-day Standard trial. No credit card required.";
+  let ctaText = tier === "free"
+    ? "Upgrade to Standard"
+    : "Start Standard Trial";
 
   if (effectiveStatus === "canceled") {
     headline = "Your plan is paused";
@@ -263,7 +281,7 @@ export function PaywallOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-testid="paywall-overlay">
       <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl">
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-zinc-900">{headline}</h2>
@@ -272,6 +290,7 @@ export function PaywallOverlay({
 
         <div className="space-y-3">
           <button
+            data-testid="upgrade-button"
             onClick={handleSubscribe}
             disabled={isLoading}
             className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUserTier, type UserTier } from "@/lib/billing/tier";
 
 export type SubscriptionStatus =
   | "trialing"
@@ -219,9 +220,11 @@ export async function checkLeadLimit(userId: string): Promise<{
   currentCount: number;
   limit: number;
   plan: PlanType;
+  tier: UserTier;
 }> {
-  const subscription = await getSubscriptionInfo(userId);
   const supabase = await createClient();
+  const tier = await getUserTier(supabase, userId);
+  const subscription = await getSubscriptionInfo(userId);
 
   // Count active leads
   const { count } = await supabase
@@ -231,7 +234,20 @@ export async function checkLeadLimit(userId: string): Promise<{
     .eq("status", "ACTIVE");
 
   const currentCount = count || 0;
-  const limit = subscription.plan === "premium" ? Infinity : 10;
+  
+  // Tier-based limits:
+  // Free: 5 active relationships
+  // Standard: 20 active relationships
+  // Premium: Unlimited
+  let limit: number;
+  if (tier === "premium") {
+    limit = Infinity;
+  } else if (tier === "standard") {
+    limit = 20;
+  } else {
+    limit = 5; // Free tier
+  }
+  
   const canAdd = currentCount < limit;
 
   return {
@@ -239,6 +255,7 @@ export async function checkLeadLimit(userId: string): Promise<{
     currentCount,
     limit,
     plan: subscription.plan,
+    tier,
   };
 }
 

@@ -8,6 +8,7 @@ import { EditLeadModal } from "./EditLeadModal";
 import { SnoozeModal } from "./SnoozeModal";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { UpgradeModal } from "../components/UpgradeModal";
+import { GlobalRollup } from "./GlobalRollup";
 import type { Lead, LeadFilter } from "@/lib/leads/types";
 
 export default function LeadsPage() {
@@ -106,6 +107,10 @@ export default function LeadsPage() {
     name: string;
     url: string;
     notes?: string;
+    cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
+    cadence_days?: number | null;
+    tier?: "inner" | "active" | "warm" | "background" | null;
+    preferred_channel?: "linkedin" | "email" | "text" | "other" | null;
   }) => {
     try {
       const response = await fetch("/api/leads", {
@@ -134,7 +139,15 @@ export default function LeadsPage() {
   // Handle lead update
   const handleLeadUpdate = async (
     leadId: string,
-    leadData: { name: string; url: string; notes?: string }
+    leadData: {
+      name: string;
+      url: string;
+      notes?: string;
+      cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
+      cadence_days?: number | null;
+      tier?: "inner" | "active" | "warm" | "background" | null;
+      preferred_channel?: "linkedin" | "email" | "text" | "other" | null;
+    }
   ) => {
     try {
       const response = await fetch(`/api/leads/${leadId}`, {
@@ -262,6 +275,8 @@ export default function LeadsPage() {
           it&apos;s time to follow up.
         </p>
       </header>
+
+      <GlobalRollup />
 
       <LeadFilterToggle currentFilter={filter} onFilterChange={setFilter} />
 

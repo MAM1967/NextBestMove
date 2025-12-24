@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import type { Lead } from "@/lib/leads/types";
+import type { Lead, RelationshipCadence, RelationshipTier, PreferredChannel } from "@/lib/leads/types";
+import {
+  getCadenceRange,
+  getCadenceDaysDefault,
+  validateCadenceDays,
+} from "@/lib/leads/relationship-status";
+import { NotesSummary } from "./NotesSummary";
+import { Signals } from "./Signals";
+import { MeetingNotes } from "./MeetingNotes";
 
 interface EditLeadModalProps {
   isOpen: boolean;
@@ -9,7 +17,15 @@ interface EditLeadModalProps {
   lead: Lead | null;
   onSave: (
     leadId: string,
-    leadData: { name: string; url: string; notes?: string }
+    leadData: {
+      name: string;
+      url: string;
+      notes?: string;
+      cadence?: RelationshipCadence | null;
+      cadence_days?: number | null;
+      tier?: RelationshipTier | null;
+      preferred_channel?: PreferredChannel;
+    }
   ) => Promise<void>;
 }
 
@@ -23,6 +39,10 @@ export function EditLeadModal({
     name: "",
     url: "",
     notes: "",
+    cadence: "" as RelationshipCadence | "",
+    cadence_days: null as number | null,
+    tier: "" as RelationshipTier | "",
+    preferred_channel: "" as PreferredChannel | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -41,6 +61,10 @@ export function EditLeadModal({
         name: lead.name,
         url: stripMailto(lead.url), // Show email without mailto: prefix
         notes: lead.notes || "",
+        cadence: (lead.cadence || "") as RelationshipCadence | "",
+        cadence_days: lead.cadence_days || null,
+        tier: (lead.tier || "") as RelationshipTier | "",
+        preferred_channel: (lead.preferred_channel || "") as PreferredChannel | "",
       });
       setErrors({});
     }
@@ -85,6 +109,19 @@ export function EditLeadModal({
           "Please enter a valid URL (https://...) or email address";
       }
     }
+    
+    // Validate cadence_days if cadence is set (and not ad_hoc)
+    if (formData.cadence && formData.cadence !== "ad_hoc") {
+      if (formData.cadence_days === null || formData.cadence_days === undefined) {
+        newErrors.cadence_days = "Please specify the number of days";
+      } else {
+        const range = getCadenceRange(formData.cadence);
+        if (range && !validateCadenceDays(formData.cadence, formData.cadence_days)) {
+          newErrors.cadence_days = `Must be between ${range.min} and ${range.max} days`;
+        }
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -96,10 +133,20 @@ export function EditLeadModal({
     setLoading(true);
     try {
       const normalizedUrl = normalizeUrl(formData.url);
+      // Get cadence_days - use default if not specified and cadence is not ad_hoc
+      let cadenceDays = formData.cadence_days;
+      if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
+        cadenceDays = getCadenceDaysDefault(formData.cadence);
+      }
+      
       await onSave(lead.id, {
         name: formData.name.trim(),
         url: normalizedUrl,
         notes: formData.notes.trim() || undefined,
+        cadence: formData.cadence || null,
+        cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
+        tier: formData.tier || null,
+        preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
       setErrors({});
       onClose();
@@ -121,7 +168,7 @@ export function EditLeadModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
+        className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl border border-zinc-200 bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -218,6 +265,130 @@ export function EditLeadModal({
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="edit-cadence"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Follow-up Cadence
+              </label>
+              <select
+                id="edit-cadence"
+                value={formData.cadence || ""}
+                onChange={(e) => {
+                  const newCadence = (e.target.value || null) as RelationshipCadence | null;
+                  const defaultDays = newCadence ? getCadenceDaysDefault(newCadence) : null;
+                  setFormData((prev) => ({
+                    ...prev,
+                    cadence: newCadence || "",
+                    cadence_days: defaultDays,
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="frequent">Frequent (7-14 days)</option>
+                <option value="moderate">Moderate (30-90 days)</option>
+                <option value="infrequent">Infrequent (180-365 days)</option>
+                <option value="ad_hoc">Ad-hoc</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                How often to follow up
+              </p>
+              {/* Show days input when cadence is selected (not ad_hoc) */}
+              {formData.cadence && formData.cadence !== "ad_hoc" && (() => {
+                const range = getCadenceRange(formData.cadence);
+                return range ? (
+                  <div className="mt-2">
+                    <label
+                      htmlFor="edit-cadence_days"
+                      className="block text-xs font-medium text-zinc-700"
+                    >
+                      Days within range ({range.min}-{range.max})
+                    </label>
+                    <input
+                      id="edit-cadence_days"
+                      type="number"
+                      min={range.min}
+                      max={range.max}
+                      value={formData.cadence_days || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cadence_days: e.target.value ? parseInt(e.target.value, 10) : null,
+                        }))
+                      }
+                      className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                      placeholder={`Default: ${range.min} days`}
+                    />
+                    {errors.cadence_days && (
+                      <p className="mt-1 text-xs text-red-600">{errors.cadence_days}</p>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-tier"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Relationship Tier (optional)
+              </label>
+              <select
+                id="edit-tier"
+                value={formData.tier || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    tier: (e.target.value || null) as typeof formData.tier | null,
+                  }))
+                }
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="inner">Inner</option>
+                <option value="active">Active</option>
+                <option value="warm">Warm</option>
+                <option value="background">Background</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                Relationship importance
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-preferred_channel"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Preferred Channel (optional)
+            </label>
+            <select
+              id="edit-preferred_channel"
+              value={formData.preferred_channel || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  preferred_channel: (e.target.value || null) as PreferredChannel | null,
+                }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            >
+              <option value="">Not set</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="email">Email</option>
+              <option value="text">Text</option>
+              <option value="other">Other</option>
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Preferred way to communicate with this person
+            </p>
+          </div>
+
           {errors.submit && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
               {errors.submit}
@@ -242,6 +413,27 @@ export function EditLeadModal({
             </button>
           </div>
         </form>
+
+        {/* Notes Summary Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <NotesSummary relationshipId={lead.id} />
+          </div>
+        )}
+
+        {/* Meeting Notes Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <MeetingNotes leadId={lead.id} />
+          </div>
+        )}
+
+        {/* Signals Section */}
+        {lead && (
+          <div className="mt-6 border-t border-zinc-200 pt-6">
+            <Signals leadId={lead.id} />
+          </div>
+        )}
       </div>
     </div>
   );

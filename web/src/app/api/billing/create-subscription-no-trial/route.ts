@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { stripe, getPriceId, getPlanMetadata } from "@/lib/billing/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { generateIdempotencyKey, executeWithIdempotency } from "@/lib/billing/idempotency";
 import Stripe from "stripe";
 
 /**
@@ -81,13 +82,21 @@ export async function POST(request: Request) {
       customerId = existingCustomer.stripe_customer_id;
       billingCustomerId = existingCustomer.id;
     } else {
-      // Create new Stripe customer
-      const customer = await stripe.customers.create({
+      // Create new Stripe customer with idempotency key
+      const customerIdempotencyKey = generateIdempotencyKey(user.id, "create_customer", {
         email: user.email,
-        metadata: {
-          user_id: user.id,
-        },
       });
+      const customer = await stripe.customers.create(
+        {
+          email: user.email,
+          metadata: {
+            user_id: user.id,
+          },
+        },
+        {
+          idempotencyKey: customerIdempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+        }
+      );
       customerId = customer.id;
 
       // Store in database
@@ -124,22 +133,41 @@ export async function POST(request: Request) {
       },
     });
 
-    // Create subscription WITHOUT trial period
-    const subscription: Stripe.Subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: priceId }],
-      payment_behavior: "default_incomplete",
-      payment_settings: {
-        payment_method_types: ["card"],
-        save_default_payment_method: "on_subscription",
-      },
-      metadata: {
-        user_id: user.id,
-        plan_name: planMetadata.name,
-        plan_type: plan,
-        interval: interval,
-      },
+    // Generate idempotency key for this operation
+    const idempotencyKey = generateIdempotencyKey(user.id, "create_subscription_no_trial", {
+      customerId,
+      priceId,
+      plan,
+      interval,
+      paymentMethodId,
     });
+
+    // Create subscription WITHOUT trial period with idempotency protection
+    const subscription: Stripe.Subscription = await executeWithIdempotency(
+      idempotencyKey,
+      async () => {
+        return await stripe.subscriptions.create(
+          {
+            customer: customerId,
+            items: [{ price: priceId }],
+            payment_behavior: "default_incomplete",
+            payment_settings: {
+              payment_method_types: ["card"],
+              save_default_payment_method: "on_subscription",
+            },
+            metadata: {
+              user_id: user.id,
+              plan_name: planMetadata.name,
+              plan_type: plan,
+              interval: interval,
+            },
+          },
+          {
+            idempotencyKey: idempotencyKey.substring(0, 255), // Stripe limit is 255 chars
+          }
+        );
+      }
+    );
 
     // Use type guards to safely access Stripe.Subscription properties
     const currentPeriodEnd = 'current_period_end' in subscription && 

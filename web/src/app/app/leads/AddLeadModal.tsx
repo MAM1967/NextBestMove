@@ -2,10 +2,25 @@
 
 import { useState, FormEvent } from "react";
 
+import type { RelationshipCadence, RelationshipTier, PreferredChannel } from "@/lib/leads/types";
+import {
+  getCadenceRange,
+  getCadenceDaysDefault,
+  validateCadenceDays,
+} from "@/lib/leads/relationship-status";
+
 interface AddLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (leadData: { name: string; url: string; notes?: string }) => Promise<void>;
+  onSave: (leadData: {
+    name: string;
+    url: string;
+    notes?: string;
+    cadence?: RelationshipCadence | null;
+    cadence_days?: number | null;
+    tier?: RelationshipTier | null;
+    preferred_channel?: PreferredChannel;
+  }) => Promise<void>;
 }
 
 export function AddLeadModal({
@@ -17,6 +32,10 @@ export function AddLeadModal({
     name: "",
     url: "",
     notes: "",
+    cadence: "" as RelationshipCadence | "",
+    cadence_days: null as number | null,
+    tier: "" as RelationshipTier | "",
+    preferred_channel: "" as PreferredChannel | "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -71,12 +90,30 @@ export function AddLeadModal({
     setLoading(true);
     try {
       const normalizedUrl = normalizeUrl(formData.url);
+      // Get cadence_days - use default if not specified and cadence is not ad_hoc
+      let cadenceDays = formData.cadence_days;
+      if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
+        cadenceDays = getCadenceDaysDefault(formData.cadence);
+      }
+      
       await onSave({
         name: formData.name.trim(),
         url: normalizedUrl,
         notes: formData.notes.trim() || undefined,
+        cadence: formData.cadence === "" ? null : (formData.cadence as RelationshipCadence),
+        cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
+        tier: formData.tier === "" ? null : (formData.tier as RelationshipTier),
+        preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
-      setFormData({ name: "", url: "", notes: "" });
+      setFormData({ 
+        name: "", 
+        url: "", 
+        notes: "", 
+        cadence: "", 
+        cadence_days: null,
+        tier: "",
+        preferred_channel: ""
+      });
       setErrors({});
       onClose();
     } catch (error) {
@@ -190,6 +227,130 @@ export function AddLeadModal({
               className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               placeholder="Add context, reminders, or notes about this person..."
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="cadence"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Follow-up Cadence
+              </label>
+              <select
+                id="cadence"
+                value={formData.cadence || ""}
+                onChange={(e) => {
+                  const newCadence = (e.target.value || null) as RelationshipCadence | null;
+                  const defaultDays = newCadence ? getCadenceDaysDefault(newCadence) : null;
+                  setFormData((prev) => ({
+                    ...prev,
+                    cadence: newCadence || "",
+                    cadence_days: defaultDays,
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="frequent">Frequent (7-14 days)</option>
+                <option value="moderate">Moderate (30-90 days)</option>
+                <option value="infrequent">Infrequent (180-365 days)</option>
+                <option value="ad_hoc">Ad-hoc</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                How often to follow up
+              </p>
+              {/* Show days input when cadence is selected (not ad_hoc) */}
+              {formData.cadence && formData.cadence !== "ad_hoc" && (() => {
+                const range = getCadenceRange(formData.cadence);
+                return range ? (
+                  <div className="mt-2">
+                    <label
+                      htmlFor="cadence_days"
+                      className="block text-xs font-medium text-zinc-700"
+                    >
+                      Days within range ({range.min}-{range.max})
+                    </label>
+                    <input
+                      id="cadence_days"
+                      type="number"
+                      min={range.min}
+                      max={range.max}
+                      value={formData.cadence_days || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cadence_days: e.target.value ? parseInt(e.target.value, 10) : null,
+                        }))
+                      }
+                      className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                      placeholder={`Default: ${range.min} days`}
+                    />
+                    {errors.cadence_days && (
+                      <p className="mt-1 text-xs text-red-600">{errors.cadence_days}</p>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            <div>
+              <label
+                htmlFor="tier"
+                className="block text-sm font-medium text-zinc-900"
+              >
+                Relationship Tier (optional)
+              </label>
+              <select
+                id="tier"
+                value={formData.tier || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    tier: (e.target.value || null) as RelationshipTier | null,
+                  }))
+                }
+                className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                <option value="">Not set</option>
+                <option value="inner">Inner</option>
+                <option value="active">Active</option>
+                <option value="warm">Warm</option>
+                <option value="background">Background</option>
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                Relationship importance
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="preferred_channel"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Preferred Channel (optional)
+            </label>
+            <select
+              id="preferred_channel"
+              value={formData.preferred_channel || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  preferred_channel: (e.target.value || null) as PreferredChannel | null,
+                }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+            >
+              <option value="">Not set</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="email">Email</option>
+              <option value="text">Text</option>
+              <option value="other">Other</option>
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Preferred way to communicate with this person
+            </p>
           </div>
 
           {errors.submit && (

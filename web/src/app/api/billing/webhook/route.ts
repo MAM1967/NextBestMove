@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/billing/stripe";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { logWebhookEvent, logError, logBillingEvent } from "@/lib/utils/logger";
+import { logWebhookEvent, logError, logBillingEvent, logWarn } from "@/lib/utils/logger";
 import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
+import { updateUserTier, shouldDowngradeToFree } from "@/lib/billing/tier";
 
 // Configure route for webhook handling
 export const runtime = "nodejs"; // Use Node.js runtime for better compatibility
@@ -83,24 +84,68 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store event for auditing
+    // Check if event has already been processed (idempotency check)
+    const { data: existingEvent } = await supabase
+      .from("billing_events")
+      .select("stripe_event_id, processed_at")
+      .eq("stripe_event_id", event.id)
+      .maybeSingle();
+
+    if (existingEvent) {
+      // Event already processed - return success without processing again
+      // Log as warning to make duplicates visible in monitoring
+      logWarn("Duplicate webhook event detected and skipped (idempotency)", {
+        eventId: event.id,
+        webhookType: "stripe",
+        eventType: event.type,
+        status: "duplicate",
+        originallyProcessedAt: existingEvent.processed_at,
+        message: "This event was already processed. Safe to ignore.",
+      });
+      logWebhookEvent("Webhook event already processed (idempotency)", {
+        eventId: event.id,
+        webhookType: "stripe",
+        eventType: event.type,
+        status: "duplicate",
+        originallyProcessedAt: existingEvent.processed_at,
+      });
+      return NextResponse.json(
+        { received: true, duplicate: true },
+        { status: 200 }
+      );
+    }
+
+    // Store event for auditing (with processed_at set to now)
     try {
+      const processedAt = new Date().toISOString();
       const { error: insertError } = await supabase.from("billing_events").insert({
         stripe_event_id: event.id,
         type: event.type,
         payload: event.data.object as any,
-        processed_at: new Date().toISOString(),
+        processed_at: processedAt,
       });
       
       if (insertError) {
-        // Check if it's a duplicate (idempotency) - that's okay
+        // Check if it's a duplicate (race condition - another request processed it)
         if (insertError.code === "23505") {
-          logWebhookEvent("Billing event already exists (idempotency)", {
+          logWarn("Duplicate webhook event detected (race condition)", {
             eventId: event.id,
             webhookType: "stripe",
             eventType: event.type,
-            status: "warning",
+            status: "duplicate",
+            message: "Event was processed by another concurrent request. Safe to ignore.",
           });
+          logWebhookEvent("Billing event already exists (race condition)", {
+            eventId: event.id,
+            webhookType: "stripe",
+            eventType: event.type,
+            status: "duplicate",
+          });
+          // Return success - event was already processed by another request
+          return NextResponse.json(
+            { received: true, duplicate: true },
+            { status: 200 }
+          );
         } else {
           logError("Error storing billing event", insertError, {
             eventId: event.id,
@@ -173,6 +218,13 @@ export async function POST(request: Request) {
             status: "warning",
           });
       }
+
+      // Mark event as processed (in case it wasn't marked earlier)
+      await supabase
+        .from("billing_events")
+        .update({ processed_at: new Date().toISOString() })
+        .eq("stripe_event_id", event.id)
+        .is("processed_at", null); // Only update if not already processed
 
       logWebhookEvent("Webhook processed successfully", {
         eventId: event.id,
@@ -295,6 +347,25 @@ export async function handleSubscriptionUpdated(
   billingCustomerId?: string
 ) {
   try {
+    // Check if subscription was recently updated (within last minute) - idempotency guard
+    if (billingCustomerId) {
+      const { data: recentUpdate } = await supabase
+        .from("billing_subscriptions")
+        .select("updated_at")
+        .eq("stripe_subscription_id", subscription.id)
+        .gte("updated_at", new Date(Date.now() - 60 * 1000).toISOString())
+        .maybeSingle();
+
+      if (recentUpdate) {
+        // Recently updated - skip to avoid race conditions (idempotency)
+        logBillingEvent("Subscription recently updated, skipping (idempotency)", {
+          subscriptionId: subscription.id,
+          updatedAt: recentUpdate.updated_at,
+        });
+        return;
+      }
+    }
+
     // Get customer ID if not provided
     if (!billingCustomerId) {
       const { data: customer, error: customerError } = await supabase
@@ -438,6 +509,49 @@ export async function handleSubscriptionUpdated(
       databaseId: upsertedData?.[0]?.id,
       billingCustomerId,
     });
+
+    // Update user tier based on subscription status
+    try {
+      const { data: customer } = await supabase
+        .from("billing_customers")
+        .select("user_id")
+        .eq("id", billingCustomerId)
+        .single();
+      
+      if (customer?.user_id) {
+        // Check if trial ended and should downgrade to Free
+        if (status === "trialing" && trialEndsAt) {
+          const trialEnd = new Date(trialEndsAt);
+          const now = new Date();
+          
+          if (now >= trialEnd) {
+            // Trial ended - check if should downgrade
+            const shouldDowngrade = await shouldDowngradeToFree(supabase, customer.user_id);
+            if (shouldDowngrade) {
+              // Update tier to Free
+              await supabase
+                .from("users")
+                .update({ tier: "free" })
+                .eq("id", customer.user_id);
+              
+              logBillingEvent("User downgraded to Free tier (trial ended)", {
+                userId: customer.user_id,
+                subscriptionId: subscription.id,
+              });
+            }
+          }
+        }
+        
+        // Update tier based on current subscription status
+        await updateUserTier(supabase, customer.user_id);
+      }
+    } catch (tierError: any) {
+      // Log but don't fail webhook - tier update is not critical
+      logError("Error updating user tier in webhook", tierError, {
+        subscriptionId: subscription.id,
+        billingCustomerId,
+      });
+    }
 
     // Detect plan downgrade (Premium → Standard)
     if (upsertedData && upsertedData.length > 0) {

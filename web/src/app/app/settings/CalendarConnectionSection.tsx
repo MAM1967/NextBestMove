@@ -4,39 +4,78 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type CalendarConnection = {
+  id?: string; // Calendar connection ID (for individual disconnect)
   provider: string;
   status: string;
   last_sync_at: string | null;
   error_message: string | null;
+  display_name?: string | null;
 };
 
 type CalendarConnectionSectionProps = {
   connections: CalendarConnection[];
   connected: boolean;
   status: string;
+  activeConnectionCount?: number; // Number of active connections (for multi-calendar)
+  capacity?: {
+    calendarCount?: number;
+    confidence?: "high" | "medium" | "low";
+  };
 };
 
 export function CalendarConnectionSection({
   connections,
   connected,
   status,
+  activeConnectionCount,
+  capacity,
 }: CalendarConnectionSectionProps) {
   const router = useRouter();
-  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [disconnectingIds, setDisconnectingIds] = useState<Set<string>>(
+    new Set()
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleConnect = (provider: "google" | "outlook") => {
     window.location.href = `/api/calendar/connect/${provider}`;
   };
 
-  const handleDisconnect = async () => {
-    if (!confirm("Are you sure you want to disconnect your calendar?")) {
+  const handleDisconnect = async (connectionId?: string) => {
+    const connection = connections.find((c) => c.id === connectionId);
+    const connectionLabel = connection
+      ? `${connection.provider}${connection.display_name ? ` (${connection.display_name})` : ""}`
+      : "this calendar";
+
+    if (
+      !confirm(`Are you sure you want to disconnect ${connectionLabel}?`)
+    ) {
       return;
     }
 
-    setIsDisconnecting(true);
+    // If no connectionId provided, disconnect all (backward compatibility)
+    if (!connectionId) {
+      // Disconnect all calendars
+      try {
+        const response = await fetch("/api/calendar/disconnect", {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          router.refresh();
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to disconnect: ${errorData.error || "Unknown error"}`);
+        }
+      } catch {
+        alert("Failed to disconnect calendar. Please try again.");
+      }
+      return;
+    }
+
+    // Disconnect specific calendar
+    setDisconnectingIds((prev) => new Set(prev).add(connectionId));
     try {
-      const response = await fetch("/api/calendar/disconnect", {
+      const response = await fetch(`/api/calendar/disconnect/${connectionId}`, {
         method: "DELETE",
       });
 
@@ -44,12 +83,18 @@ export function CalendarConnectionSection({
         router.refresh();
       } else {
         const errorData = await response.json();
-        alert(`Failed to disconnect: ${errorData.error || "Unknown error"}`);
+        alert(
+          `Failed to disconnect ${connectionLabel}: ${errorData.error || "Unknown error"}`
+        );
       }
     } catch {
-      alert("Failed to disconnect calendar. Please try again.");
+      alert(`Failed to disconnect ${connectionLabel}. Please try again.`);
     } finally {
-      setIsDisconnecting(false);
+      setDisconnectingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(connectionId);
+        return next;
+      });
     }
   };
 
@@ -80,8 +125,21 @@ export function CalendarConnectionSection({
     }
   };
 
+  const activeConnections = connections.filter((c) => c.status === "active");
+  const connectionCount = activeConnectionCount ?? activeConnections.length;
+
+  // Generate confidence label
+  const confidenceLabel =
+    capacity?.calendarCount && capacity.calendarCount > 1
+      ? `Based on ${capacity.calendarCount} calendars`
+      : capacity?.calendarCount === 1
+      ? "Based on 1 calendar"
+      : null;
+
   const connectionLabel = connected
-    ? `Connected to ${connections[0]?.provider || "calendar"}`
+    ? connectionCount > 1
+      ? `Connected to ${connectionCount} calendars`
+      : `Connected to ${connections[0]?.provider || "calendar"}`
     : "Not connected";
 
   return (
@@ -91,7 +149,9 @@ export function CalendarConnectionSection({
           <p className="text-sm font-medium text-zinc-900">{connectionLabel}</p>
           <p className="text-xs text-zinc-500">
             {connected
-              ? "Capacity adapts to your calendar schedule automatically."
+              ? confidenceLabel
+                ? `Capacity adapts to your calendar schedule (${confidenceLabel}${capacity?.confidence === "high" ? " - high confidence" : capacity?.confidence === "medium" ? " - medium confidence" : ""}).`
+                : "Capacity adapts to your calendar schedule automatically."
               : "We'll default to 6 actions/day until a calendar is connected."}
           </p>
         </div>
@@ -99,60 +159,101 @@ export function CalendarConnectionSection({
       </div>
 
       {connections.length > 0 ? (
-        <div className="space-y-2 text-xs text-zinc-600">
-          {connections.map((conn) => (
-            <div
-              key={`${conn.provider}-${conn.status}`}
-              className="rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2"
-            >
-              <p className="font-medium capitalize text-zinc-900">
-                {conn.provider}
-              </p>
-              <p>Status: {conn.status}</p>
-              <p>
-                Last sync:{" "}
-                {conn.last_sync_at
-                  ? new Date(conn.last_sync_at).toLocaleString()
-                  : "never"}
-              </p>
-              {conn.error_message && (
-                <div className="mt-2 space-y-2">
-                  <p className="text-red-600 font-medium">
-                    Error: {conn.error_message}
-                  </p>
-                  {conn.error_message.includes("OAuth client mismatch") ||
-                  conn.error_message.includes("invalid_client") ||
-                  conn.error_message.includes("deleted_client") ||
-                  conn.error_message.includes("OAuth client was deleted") ? (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
-                      <p className="text-xs text-amber-800 mb-2">
-                        {conn.error_message.includes("deleted_client") ||
-                        conn.error_message.includes("OAuth client was deleted")
-                          ? "The OAuth client used to connect your calendar has been deleted or changed. Please reconnect with the current OAuth client."
-                          : "This error usually means the OAuth client credentials changed. Please disconnect and reconnect your calendar."}
+        <div className="space-y-2" data-testid="calendar-list">
+          {connections.map((conn) => {
+            const isDisconnecting = conn.id
+              ? disconnectingIds.has(conn.id)
+              : false;
+            const providerLabel =
+              conn.provider === "google" ? "Google Calendar" : "Outlook Calendar";
+            const displayName = conn.display_name || providerLabel;
+
+            return (
+              <div
+                key={conn.id || `${conn.provider}-${conn.status}`}
+                className="rounded-lg border border-zinc-200 bg-white px-4 py-3"
+                data-testid={`calendar-item-${conn.id || conn.provider}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-zinc-900">
+                        {displayName}
                       </p>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          // Disconnect first
-                          await handleDisconnect();
-                          // Then reconnect
-                          setTimeout(() => {
-                            handleConnect(
-                              conn.provider as "google" | "outlook"
-                            );
-                          }, 500);
-                        }}
-                        className="text-xs font-medium text-amber-900 hover:text-amber-950 underline"
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          conn.status === "active"
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : conn.status === "expired"
+                            ? "bg-amber-100 text-amber-700 border border-amber-200"
+                            : conn.status === "error"
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                        }`}
                       >
-                        Reconnect Calendar →
-                      </button>
+                        {conn.status}
+                      </span>
                     </div>
-                  ) : null}
+                    {conn.last_sync_at && (
+                      <p className="text-xs text-zinc-500">
+                        Last sync:{" "}
+                        {new Date(conn.last_sync_at).toLocaleString()}
+                      </p>
+                    )}
+                    {conn.error_message && (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs font-medium text-red-600">
+                          Error: {conn.error_message}
+                        </p>
+                        {(conn.error_message.includes("OAuth client mismatch") ||
+                          conn.error_message.includes("invalid_client") ||
+                          conn.error_message.includes("deleted_client") ||
+                          conn.error_message.includes("OAuth client was deleted")) && (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
+                            <p className="text-xs text-amber-800 mb-2">
+                              {conn.error_message.includes("deleted_client") ||
+                              conn.error_message.includes("OAuth client was deleted")
+                                ? "The OAuth client used to connect this calendar has been deleted or changed. Please reconnect with the current OAuth client."
+                                : "This error usually means the OAuth client credentials changed. Please disconnect and reconnect this calendar."}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                // Disconnect first
+                                if (conn.id) {
+                                  await handleDisconnect(conn.id);
+                                } else {
+                                  await handleDisconnect();
+                                }
+                                // Then reconnect
+                                setTimeout(() => {
+                                  handleConnect(
+                                    conn.provider as "google" | "outlook"
+                                  );
+                                }, 500);
+                              }}
+                              className="text-xs font-medium text-amber-900 hover:text-amber-950 underline"
+                            >
+                              Reconnect Calendar →
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    data-testid={`disconnect-calendar-${conn.id || conn.provider}`}
+                    onClick={() => handleDisconnect(conn.id)}
+                    disabled={isDisconnecting}
+                    className="shrink-0 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-3 text-xs text-zinc-600">
@@ -161,63 +262,32 @@ export function CalendarConnectionSection({
       )}
 
       <div className="flex flex-wrap gap-2">
-        {connections.length === 0 ? (
-          <>
-            <button
-              type="button"
-              onClick={() => handleConnect("google")}
-              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
-            >
-              Connect Google
-            </button>
-            <button
-              type="button"
-              onClick={() => handleConnect("outlook")}
-              className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
-            >
-              Connect Outlook
-            </button>
-          </>
-        ) : (
-          <>
-            {connected && (
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
-              >
-                {isRefreshing ? "Refreshing..." : "Refresh Calendar"}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handleDisconnect}
-              disabled={isDisconnecting}
-              className="inline-flex items-center rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-            >
-              {isDisconnecting ? "Disconnecting..." : "Disconnect"}
-            </button>
-            {!connected && (
-              <button
-                type="button"
-                onClick={() =>
-                  handleConnect(
-                    (connections[0]?.provider as "google" | "outlook") ||
-                      "google"
-                  )
-                }
-                className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
-              >
-                Reconnect{" "}
-                {connections[0]?.provider
-                  ? connections[0].provider.charAt(0).toUpperCase() +
-                    connections[0].provider.slice(1)
-                  : "Calendar"}
-              </button>
-            )}
-          </>
+        {connected && (
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+          >
+            {isRefreshing ? "Refreshing..." : "Refresh All Calendars"}
+          </button>
         )}
+        <button
+          type="button"
+          data-testid="connect-google-calendar"
+          onClick={() => handleConnect("google")}
+          className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
+        >
+          Connect Google Calendar
+        </button>
+        <button
+          type="button"
+          data-testid="connect-outlook-calendar"
+          onClick={() => handleConnect("outlook")}
+          className="inline-flex items-center rounded-full border border-zinc-300 bg-white px-4 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
+        >
+          Connect Outlook Calendar
+        </button>
       </div>
     </div>
   );

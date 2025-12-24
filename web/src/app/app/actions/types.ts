@@ -35,6 +35,16 @@ export interface Action {
   created_at: string;
   updated_at: string;
   leads?: LeadBasic | null; // Supabase relation to leads table
+  
+  // Decision engine fields (optional, will be populated once backend is implemented)
+  lane?: "priority" | "in_motion" | "on_deck" | null;
+  next_move_score?: number | null;
+  
+  // Promised follow-up
+  promised_due_at?: string | null;
+  
+  // Estimated duration for "I have X minutes" feature
+  estimated_minutes?: number | null;
 }
 
 

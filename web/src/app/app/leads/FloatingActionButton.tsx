@@ -11,6 +11,7 @@ export function FloatingActionButton({
 }: FloatingActionButtonProps) {
   return (
     <button
+      data-testid="add-relationship-button"
       onClick={onClick}
       className="fixed bottom-8 right-8 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 md:bottom-8 md:right-8"
       aria-label={label}

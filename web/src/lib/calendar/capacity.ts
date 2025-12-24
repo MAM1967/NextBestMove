@@ -2,16 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getCachedFreeBusy } from "./cache";
 import {
   getActiveConnection,
+  getActiveConnections,
   getValidAccessToken,
   refreshAccessToken,
+  type CalendarConnection,
 } from "./tokens";
 import { fetchGoogleFreeBusy } from "./freebusy-google";
 import { fetchOutlookFreeBusy } from "./freebusy-outlook";
+import { aggregateFreeBusyAcrossCalendars } from "./aggregate-freebusy";
 
 export type CapacityInfo = {
   level: "micro" | "light" | "standard" | "heavy" | "default";
   actionsPerDay: number;
   source: "fallback" | "calendar";
+  calendarCount?: number; // Number of calendars used (for multi-calendar support)
+  confidence?: "high" | "medium" | "low"; // Confidence level based on calendar count
 };
 
 /**
@@ -84,7 +89,53 @@ export async function getCapacityForDate(
     };
   }
 
-  // Get active connection
+  // Get user timezone and working hours
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("timezone, work_start_time, work_end_time")
+    .eq("id", userId)
+    .single();
+
+  const timezone = userProfile?.timezone || "UTC";
+  // Convert TIME to HH:MM string (PostgreSQL TIME format is HH:MM:SS)
+  const workStartTime = userProfile?.work_start_time
+    ? userProfile.work_start_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
+    : "09:00";
+  const workEndTime = userProfile?.work_end_time
+    ? userProfile.work_end_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
+    : "17:00";
+
+  // Try to aggregate free/busy across all calendars (multi-calendar support)
+  try {
+    const aggregatedResult = await aggregateFreeBusyAcrossCalendars(
+      supabase,
+      userId,
+      date,
+      timezone,
+      workStartTime,
+      workEndTime
+    );
+
+    if (aggregatedResult) {
+      const { level, suggestedActionCount } = calculateCapacityFromFreeMinutes(
+        aggregatedResult.freeMinutes
+      );
+
+      return {
+        level,
+        actionsPerDay: suggestedActionCount,
+        source: "calendar",
+        calendarCount: aggregatedResult.calendarCount,
+        confidence: aggregatedResult.confidence,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to aggregate free/busy across calendars:", error);
+    // Fall through to single-calendar fallback for backward compatibility
+  }
+
+  // Fallback to single calendar for backward compatibility
+  // (This handles cases where aggregation fails or for legacy code)
   const connection = await getActiveConnection(supabase, userId);
   if (!connection) {
     return {
@@ -103,22 +154,6 @@ export async function getCapacityForDate(
       source: "fallback",
     };
   }
-
-  // Get user timezone and working hours
-  const { data: userProfile } = await supabase
-    .from("users")
-    .select("timezone, work_start_time, work_end_time")
-    .eq("id", userId)
-    .single();
-
-  const timezone = userProfile?.timezone || "UTC";
-  // Convert TIME to HH:MM string (PostgreSQL TIME format is HH:MM:SS)
-  const workStartTime = userProfile?.work_start_time
-    ? userProfile.work_start_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
-    : "09:00";
-  const workEndTime = userProfile?.work_end_time
-    ? userProfile.work_end_time.substring(0, 5) // Extract HH:MM from HH:MM:SS
-    : "17:00";
 
   // Fetch free/busy data with retry logic for 401 errors
   try {
@@ -221,6 +256,8 @@ export async function getCapacityForDate(
       level,
       actionsPerDay: suggestedActionCount,
       source: "calendar",
+      calendarCount: 1,
+      confidence: "low",
     };
   } catch (error) {
     console.error("Failed to fetch free/busy:", error);

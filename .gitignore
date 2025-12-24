@@ -49,6 +49,9 @@ next-env.d.ts
 *.swo
 *~
 
+# OAuth Credentials (contains sensitive information)
+docs/Architecture/Email_OAuth_Credentials.md
+
 # OS
 .DS_Store
 Thumbs.db
