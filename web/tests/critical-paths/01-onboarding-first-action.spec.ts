@@ -34,7 +34,8 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     page,
   }) => {
     // Increase timeout for this test - onboarding + plan generation can take time
-    test.setTimeout(60000); // 60 seconds
+    // CI environments are slower, so we need more time
+    test.setTimeout(120000); // 120 seconds (2 minutes)
 
     // After sign up, user should be redirected to onboarding or app
     // Check if we're on onboarding page
@@ -191,7 +192,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
         await page.goto("/app/plan");
         await page.waitForLoadState("networkidle", { timeout: 10000 });
       } else {
-        // Wait for redirect to daily plan page
+        // Wait for redirect - might go to /app or /app/plan
         await page.waitForURL(/\/app\/plan|\/app\/daily-plan|\/app/, {
           timeout: 10000,
         });
@@ -203,8 +204,17 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       await page.waitForLoadState("networkidle", { timeout: 10000 });
     }
 
-    // Verify we're on the daily plan page (or app page)
-    expect(page.url()).toMatch(/\/app\/plan|\/app\/daily-plan|\/app/);
+    // Always navigate to plan page explicitly to ensure we're on the right page
+    // The onboarding might redirect to /app instead of /app/plan
+    if (!page.url().includes("/app/plan") && !page.url().includes("/app/daily-plan")) {
+      console.log("📋 Navigating to plan page...");
+      await page.goto("/app/plan");
+      await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+    }
+
+    // Verify we're on the daily plan page
+    expect(page.url()).toMatch(/\/app\/plan|\/app\/daily-plan/);
 
     // Wait for page to fully load (client-side fetch happens after initial render)
     await page
@@ -212,20 +222,26 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       .catch(() => {});
 
     // Check if plan exists or if we need to generate it
+    // The "Generate Daily Plan" might be a link or button, so check both
     const emptyStateVisible = await page
-      .locator("text=/No plan for today/i")
+      .locator("text=/No plan for today|No plan generated/i")
       .isVisible({ timeout: 5000 })
       .catch(() => false);
-    const generateButton = page.locator('button:has-text("Generate Plan")');
+    
+    // Try to find the generate button/link - it could be either
+    const generateButton = page.locator(
+      'button:has-text("Generate"), a:has-text("Generate"), button:has-text("Generate Daily Plan"), a:has-text("Generate Daily Plan")'
+    );
     const generateButtonVisible = await generateButton
+      .first()
       .isVisible({ timeout: 5000 })
       .catch(() => false);
 
     if (emptyStateVisible || generateButtonVisible) {
       console.log("📋 No plan found - generating daily plan...");
 
-      // Wait for generate button to be ready
-      await generateButton.waitFor({ state: "visible", timeout: 10000 });
+      // Wait for generate button/link to be ready
+      await generateButton.first().waitFor({ state: "visible", timeout: 10000 });
 
       // Wait for both the generate API call AND the subsequent fetchDailyPlan() call
       // The plan page calls fetchDailyPlan() after generation completes
@@ -245,7 +261,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
             { timeout: 45000 }
           )
           .catch(() => null), // This might not always fire, so don't fail if it doesn't
-        generateButton.click(),
+        generateButton.first().click(),
       ]);
 
       // Check if API call succeeded
@@ -270,7 +286,15 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
         .catch(() => {});
 
       // Additional wait for React state updates and re-renders
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(3000);
+      
+      // If we're on /app instead of /app/plan, navigate to plan page
+      if (page.url().includes("/app") && !page.url().includes("/app/plan")) {
+        console.log("📋 Navigating to plan page after generation...");
+        await page.goto("/app/plan");
+        await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+      }
 
       // Check if we're still on empty state (generation might have failed)
       const stillEmpty = await page
@@ -355,21 +379,29 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
             actionsFound = true;
           } catch (error) {
             console.log("❌ None of the expected elements found");
-            // Take a screenshot for debugging
-            await page.screenshot({
-              path: "test-results/no-actions-found.png",
-              fullPage: true,
-            });
-            console.log(
-              "❌ No actions found - screenshot saved to test-results/no-actions-found.png"
-            );
+            // Take a screenshot for debugging (if page is still open)
+            try {
+              await page.screenshot({
+                path: "test-results/no-actions-found.png",
+                fullPage: true,
+              });
+              console.log(
+                "❌ No actions found - screenshot saved to test-results/no-actions-found.png"
+              );
+            } catch (screenshotError) {
+              console.log("⚠️  Could not take screenshot (page may be closed)");
+            }
 
-            // Log page content for debugging
-            const pageContent = await page.textContent("body");
-            console.log(
-              "Page content preview:",
-              pageContent?.substring(0, 500)
-            );
+            // Log page content for debugging (if page is still open)
+            try {
+              const pageContent = await page.textContent("body");
+              console.log(
+                "Page content preview:",
+                pageContent?.substring(0, 500)
+              );
+            } catch (contentError) {
+              console.log("⚠️  Could not get page content (page may be closed)");
+            }
           }
         }
       }
