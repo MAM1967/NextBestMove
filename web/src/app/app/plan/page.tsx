@@ -249,6 +249,17 @@ export default function DailyPlanPage() {
         throw new Error(data.error || "Failed to generate plan");
       }
 
+      const data = await response.json();
+      
+      // Track daily plan generation
+      const { trackDailyPlanGenerated } = await import("@/lib/analytics/posthog");
+      trackDailyPlanGenerated({
+        planId: data.plan?.id,
+        actionCount: data.plan?.action_count || 0,
+        fastWinIncluded: !!data.plan?.fast_win,
+        capacityLevel: data.plan?.capacity || "default",
+      });
+
       // Refresh to show the new plan
       await fetchDailyPlan();
     } catch (err) {
@@ -263,6 +274,15 @@ export default function DailyPlanPage() {
   ) => {
     try {
       const state = completionType === "sent" ? "SENT" : "DONE";
+      
+      // Find the action to get its type and check if it's a Fast Win
+      const allActions = [
+        ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
+        ...(dailyPlan?.actions || []),
+      ];
+      const action = allActions.find((a) => a.id === actionId);
+      const isFastWin = action?.action_type === "FAST_WIN";
+      
       const response = await fetch(`/api/actions/${actionId}/state`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -277,6 +297,21 @@ export default function DailyPlanPage() {
           throw new Error("Failed to complete action");
         }
         throw new Error(data.error || "Failed to complete action");
+      }
+
+      // Track action completion
+      const { trackActionCompleted, trackFastWinCompleted } = await import("@/lib/analytics/posthog");
+      if (isFastWin) {
+        trackFastWinCompleted({
+          actionId,
+          actionType: action?.action_type,
+        });
+      } else {
+        trackActionCompleted({
+          actionId,
+          actionType: action?.action_type,
+          actionState: state,
+        });
       }
 
       // Refresh the plan to update progress
@@ -314,13 +349,19 @@ export default function DailyPlanPage() {
     }
   };
 
-  const handleGotReply = (actionId: string) => {
+  const handleGotReply = async (actionId: string) => {
     const allActions = [
       ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
       ...(dailyPlan?.actions || []),
     ];
     const action = allActions.find((a) => a.id === actionId);
     if (action) {
+      // Track "Got Reply" event
+      const { trackGotReply } = await import("@/lib/analytics/posthog");
+      trackGotReply({
+        actionId,
+        actionType: action.action_type,
+      });
       setFollowUpFlowAction(action);
     }
   };

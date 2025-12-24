@@ -4,12 +4,13 @@ This document provides an overview of the observability tools used in NextBestMo
 
 ## Current Setup
 
-NextBestMove uses two open-source observability tools:
+NextBestMove uses three observability tools:
 
 1. **GlitchTip** - Error tracking and monitoring
-2. **Umami** - Privacy-focused analytics
+2. **Umami** - Privacy-focused page view analytics
+3. **PostHog** - Product analytics and event tracking
 
-Both tools are free, open-source, and privacy-compliant.
+GlitchTip and Umami are free, open-source, and privacy-compliant. PostHog offers a generous free tier (1M events/month).
 
 ## Documentation
 
@@ -26,23 +27,44 @@ Both tools are free, open-source, and privacy-compliant.
 NEXT_PUBLIC_GLITCHTIP_DSN=https://your-project@glitchtip.com/project-id
 ```
 
-**Umami (Analytics):**
+**Umami (Page View Analytics):**
 ```bash
 NEXT_PUBLIC_UMAMI_URL=https://your-umami-instance.com
 NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id-here
 ```
 
+**PostHog (Product Analytics):**
+```bash
+NEXT_PUBLIC_POSTHOG_KEY=phc_your_posthog_key_here
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com  # Optional, defaults to this
+```
+
 ### Implementation
 
 - **Error Tracking**: Uses `@sentry/nextjs` SDK (Sentry-compatible) with GlitchTip DSN
-- **Analytics**: Uses Umami tracking script embedded in `layout.tsx`
+- **Page View Analytics**: Uses Umami tracking script embedded in `layout.tsx`
+- **Product Analytics**: Uses PostHog JS SDK for custom event tracking
 - **Logging**: Centralized logger utility in `web/src/lib/utils/logger.ts`
 
 ## Status
 
 ✅ **GlitchTip**: Configured and active  
 ✅ **Umami**: Configured and active  
+✅ **PostHog**: Configured and active  
 ✅ **Logger**: Integrated with GlitchTip for automatic error reporting
+
+## Event Tracking
+
+PostHog tracks the following critical events:
+
+- **Onboarding**: `onboarding_completed` - When user completes onboarding
+- **Actions**: `action_completed`, `fast_win_completed`, `got_reply` - Action interactions
+- **Leads**: `lead_created` - When a new lead/relationship is added
+- **Plans**: `daily_plan_generated` - When a daily plan is generated
+- **Paywall**: `paywall_viewed`, `paywall_cta_clicked` - Paywall interactions
+- **Subscriptions**: `subscription_started`, `subscription_upgraded` - Billing events
+
+See `web/src/lib/analytics/posthog.ts` for the complete list of tracked events.
 
 ---
 

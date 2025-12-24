@@ -8,6 +8,7 @@ import {
 } from "@/lib/billing/subscription-status";
 import { useUserTier } from "@/lib/billing/use-user-tier";
 import { getTierInfo } from "@/lib/billing/tier-labels";
+import { trackPaywallViewed, trackPaywallCTAClicked } from "@/lib/analytics/posthog";
 
 type PaywallOverlayProps = {
   subscriptionStatus: "none" | "trialing" | "active" | "past_due" | "canceled";
@@ -36,12 +37,10 @@ export function PaywallOverlay({
       normalizedStatus,
       trialEndsAt
     );
-    console.log("[Paywall Analytics] Paywall viewed", {
-      status: effectiveStatus,
-      subscriptionStatus,
-      trialEndsAt,
+    trackPaywallViewed({
+      subscriptionStatus: effectiveStatus,
+      trialEndsAt: trialEndsAt || undefined,
       isReadOnly,
-      timestamp: new Date().toISOString(),
     });
   }, [subscriptionStatus, trialEndsAt, isReadOnly, normalizedStatus]);
 
@@ -50,11 +49,9 @@ export function PaywallOverlay({
       normalizedStatus,
       trialEndsAt
     );
-    console.log("[Paywall Analytics] Subscribe CTA clicked", {
-      status: effectiveStatus,
-      subscriptionStatus,
-      trialEndsAt,
-      timestamp: new Date().toISOString(),
+    trackPaywallCTAClicked({
+      subscriptionStatus: effectiveStatus,
+      ctaType: "subscribe",
     });
 
     setIsLoading(true);
@@ -72,23 +69,10 @@ export function PaywallOverlay({
         throw new Error("Failed to create checkout session");
       }
 
-      console.log("[Paywall Analytics] Checkout session created", {
-        status: effectiveStatus,
-        timestamp: new Date().toISOString(),
-      });
-
       const { url } = await response.json();
       window.location.href = url;
     } catch (error) {
-      const effectiveStatus = getSubscriptionStatus(
-        normalizedStatus,
-        trialEndsAt
-      );
-      console.error("[Paywall Analytics] Checkout error", {
-        error,
-        status: effectiveStatus,
-        timestamp: new Date().toISOString(),
-      });
+      console.error("[Paywall] Checkout error:", error);
       alert("Unable to start checkout. Please try again later.");
       setIsLoading(false);
     }
@@ -172,10 +156,9 @@ export function PaywallOverlay({
           <div className="space-y-3">
             <button
               onClick={() => {
-                console.log("[Paywall Analytics] Update payment CTA clicked", {
-                  status: "past_due",
-                  isReadOnly,
-                  timestamp: new Date().toISOString(),
+                trackPaywallCTAClicked({
+                  subscriptionStatus: "past_due",
+                  ctaType: "update_payment",
                 });
                 handleManageBilling();
               }}
@@ -187,10 +170,7 @@ export function PaywallOverlay({
             {onDismiss && !isReadOnly && (
               <button
                 onClick={() => {
-                  console.log("[Paywall Analytics] Paywall dismissed", {
-                    status: "past_due",
-                    timestamp: new Date().toISOString(),
-                  });
+                  // Dismiss tracking is optional - user is just closing the modal
                   onDismiss();
                 }}
                 className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
@@ -300,10 +280,7 @@ export function PaywallOverlay({
           {onDismiss && (
             <button
               onClick={() => {
-                console.log("[Paywall Analytics] Paywall dismissed", {
-                  status: effectiveStatus,
-                  timestamp: new Date().toISOString(),
-                });
+                // Dismiss tracking is optional - user is just closing the modal
                 onDismiss();
               }}
               className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
