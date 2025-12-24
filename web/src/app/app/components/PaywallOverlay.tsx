@@ -207,7 +207,7 @@ export function PaywallOverlay({
   // Grace period - trial expiration (Day 15-21) - downgrade to Free tier, not read-only
   // Note: past_due is already handled above, so this only applies to trial expiration
   // isReadOnly can be true for trial grace period, so check that status is not canceled
-  if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled" && subscriptionStatus !== "past_due") || isInGracePeriod) {
+  if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled") || isInGracePeriod) {
     const daysRemaining = daysUntilGracePeriodEnds ?? 0;
     const tierInfo = tier ? getTierInfo(tier) : null;
     return (
