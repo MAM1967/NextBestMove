@@ -8,12 +8,12 @@ on:
 
 env:
   NODE_VERSION: "24.x"
-  # ⚠️ IMPORTANT: These secrets should contain STAGING values, not production!
-  # The secret names don't include "STAGING" but the values should be from staging Supabase project
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  # Conditionally select secrets based on branch
+  # For main branch: use PRODUCTION secrets
+  # For staging branch or PRs: use STAGING secrets (safer default)
+  NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_URL_PRODUCTION || secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_PRODUCTION || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_SERVICE_ROLE_KEY_PRODUCTION || secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
 
 jobs:
   lint-and-typecheck:
@@ -106,10 +106,9 @@ jobs:
       - name: Run integration tests
         run: npm run test:integration
         env:
-          # ⚠️ These secrets should contain STAGING values (not production)
-          # Secret names: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Uses environment-specific secrets selected in env section above
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
   e2e-tests:
     name: E2E Tests (Playwright)
