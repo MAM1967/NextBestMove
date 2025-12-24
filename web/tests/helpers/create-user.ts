@@ -83,6 +83,12 @@ export async function createTestUserProgrammatically() {
     // Test sign-in programmatically to verify password works
     // This uses the anon key (not service role) to test actual authentication
     if (STAGING_CONFIG.supabaseAnonKey) {
+      // Verify anon key matches staging project
+      const expectedStagingProjectId = "adgiptzbxnzddbgfeuut";
+      if (!STAGING_CONFIG.supabaseUrl.includes(expectedStagingProjectId)) {
+        console.error(`❌ Supabase URL doesn't match staging project ID. Expected: ${expectedStagingProjectId}`);
+      }
+      
       const testClient = createClient(
         STAGING_CONFIG.supabaseUrl,
         STAGING_CONFIG.supabaseAnonKey
@@ -95,7 +101,13 @@ export async function createTestUserProgrammatically() {
       
       if (signInError) {
         console.error(`❌ Programmatic sign-in test FAILED: ${signInError.message}`);
-        console.error(`   This indicates the password is not set correctly in Supabase`);
+        if (signInError.message.includes("Invalid API key")) {
+          console.error(`   ⚠️  This usually means NEXT_PUBLIC_SUPABASE_ANON_KEY is from production, not staging!`);
+          console.error(`   Verify: The anon key must be from staging project (ID: ${expectedStagingProjectId})`);
+          console.error(`   Get it from: Supabase Dashboard → Staging Project → Settings → API → anon public key`);
+        } else {
+          console.error(`   This indicates the password is not set correctly in Supabase`);
+        }
         // Don't throw - let the UI test try anyway, but log the issue
       } else {
         console.log(`✅ Programmatic sign-in test PASSED - password works correctly`);
