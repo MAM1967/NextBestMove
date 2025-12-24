@@ -33,15 +33,20 @@ _Date: 2025-12-24_
 
 ## Required GitHub Secrets
 
-The CI workflow requires these secrets to be set in GitHub. **Important: These should be STAGING credentials, not production.**
+The CI workflow requires these secrets to be set in GitHub. **⚠️ CRITICAL: These secrets must contain STAGING values, not production values!**
 
-### Required Secrets (Staging Environment)
-- `SUPABASE_STAGING_URL` - Staging Supabase project URL
-- `SUPABASE_STAGING_SERVICE_ROLE_KEY` - Staging service role key for admin operations (used by integration tests)
-- `NEXT_PUBLIC_SUPABASE_STAGING_URL` - Public staging Supabase URL
-- `NEXT_PUBLIC_SUPABASE_STAGING_ANON_KEY` - Staging anonymous Supabase key
+### Required Secrets
+- `SUPABASE_URL` - **Should contain staging** Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - **Should contain staging** service role key for admin operations (used by integration tests)
+- `NEXT_PUBLIC_SUPABASE_URL` - **Should contain staging** public Supabase URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - **Should contain staging** anonymous Supabase key
 - `STAGING_USER` - Basic Auth username for staging (default: "staging")
 - `STAGING_PASS` - Basic Auth password for staging
+
+### ⚠️ Important: Secret Names vs Values
+- **Secret names** don't include "STAGING" (e.g., `SUPABASE_SERVICE_ROLE_KEY`)
+- **Secret values** must be from your **staging** Supabase project, not production
+- This prevents accidental use of production credentials in CI
 
 ### Why Staging Credentials?
 - Integration tests write to the database and should use staging, not production
@@ -50,14 +55,16 @@ The CI workflow requires these secrets to be set in GitHub. **Important: These s
 
 ### How to Set Secrets
 1. Go to GitHub repository → Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Add each secret with the exact name listed above
-4. Use values from your **staging** Supabase project (not production)
+2. Click "New repository secret" or edit existing secrets
+3. Add/update each secret with the names listed above
+4. **Use values from your STAGING Supabase project** (not production)
+5. Verify you're using staging by checking the project ID matches: `adgiptzbxnzddbgfeuut`
 
 ### Finding Staging Credentials
 - Staging Supabase project ID: `adgiptzbxnzddbgfeuut` (from `web/next.config.ts`)
-- Get credentials from Supabase dashboard → Project Settings → API
+- Get credentials from Supabase dashboard → **Staging Project** → Project Settings → API
 - Service role key is found under "Project API keys" → "service_role" (keep this secret!)
+- **Double-check** you're copying from the staging project, not production!
 
 ## Workflow Behavior
 
