@@ -32,10 +32,26 @@ export async function GET(request: Request) {
       .order("received_at", { ascending: false })
       .limit(100);
 
+    // Check for error immediately after query
+    if (emailError) {
+      console.error("Error fetching email signals:", emailError);
+      return NextResponse.json(
+        { error: "Failed to fetch email signals" },
+        { status: 500 }
+      );
+    }
+
+    // If no emails, return empty result
+    if (!recentEmails || recentEmails.length === 0) {
+      return NextResponse.json({
+        signals: [],
+      });
+    }
+
     // Fetch relationship names for emails that have person_id
     const personIds = [
       ...new Set(
-        (recentEmails || [])
+        recentEmails
           .map((e) => e.person_id)
           .filter((id): id is string => id !== null)
       ),
@@ -56,48 +72,61 @@ export async function GET(request: Request) {
       }
     }
 
-    if (emailError) {
-      console.error("Error fetching email signals:", emailError);
-      return NextResponse.json(
-        { error: "Failed to fetch email signals" },
-        { status: 500 }
-      );
+    // Group emails by relationship_id for signals format
+    const signalsByRelationship = new Map<string, any>();
+
+    for (const email of recentEmails) {
+      const relationshipId = email.person_id || "unknown";
+      
+      if (!signalsByRelationship.has(relationshipId)) {
+        signalsByRelationship.set(relationshipId, {
+          relationship_id: email.person_id || null,
+          relationship_name: email.person_id ? relationshipNames[email.person_id] || "Unknown" : "Unknown",
+          last_email_received: email.received_at,
+          unread_count: 0, // TODO: Calculate from email_metadata if we track read status
+          recent_topics: [] as string[],
+          recent_asks: [] as string[],
+          recent_open_loops: [] as string[],
+          recent_labels: [] as string[],
+        });
+      }
+
+      const signal = signalsByRelationship.get(relationshipId)!;
+      
+      // Update last email received if this is more recent
+      if (new Date(email.received_at) > new Date(signal.last_email_received || 0)) {
+        signal.last_email_received = email.received_at;
+      }
+
+      // Add topic if present
+      if (email.last_topic && !signal.recent_topics.includes(email.last_topic)) {
+        signal.recent_topics.push(email.last_topic);
+      }
+
+      // Add ask if present
+      if (email.ask && !signal.recent_asks.includes(email.ask)) {
+        signal.recent_asks.push(email.ask);
+      }
+
+      // Add open loops if present
+      if (email.open_loops && Array.isArray(email.open_loops)) {
+        for (const loop of email.open_loops) {
+          if (typeof loop === "string" && !signal.recent_open_loops.includes(loop)) {
+            signal.recent_open_loops.push(loop);
+          }
+        }
+      }
     }
 
-    // Extract signals
-    const emailsWithAsks = (recentEmails || []).filter((e) => e.ask);
-    const emailsWithOpenLoops = (recentEmails || []).filter(
-      (e) => e.open_loops && e.open_loops.length > 0
-    );
-
-    // Get most recent high-priority emails
-    const highPriorityEmails = (recentEmails || [])
-      .filter((e) => e.priority === "high")
-      .slice(0, 10);
+    // Convert map to array and sort by last_email_received
+    const signals = Array.from(signalsByRelationship.values()).sort((a, b) => {
+      const dateA = new Date(a.last_email_received || 0).getTime();
+      const dateB = new Date(b.last_email_received || 0).getTime();
+      return dateB - dateA; // Most recent first
+    });
 
     return NextResponse.json({
-      totalEmails: recentEmails?.length || 0,
-      emailsWithAsks: emailsWithAsks.length,
-      emailsWithOpenLoops: emailsWithOpenLoops.length,
-      recentHighPriority: highPriorityEmails.map((e) => ({
-        id: e.id,
-        subject: e.subject,
-        snippet: e.snippet,
-        receivedAt: e.received_at,
-        topic: e.last_topic,
-        ask: e.ask,
-        relationshipName: e.person_id ? relationshipNames[e.person_id] || "Unknown" : "Unknown",
-        relationshipId: e.person_id,
-      })),
-      recentOpenLoops: emailsWithOpenLoops.slice(0, 10).map((e) => ({
-        id: e.id,
-        subject: e.subject,
-        snippet: e.snippet,
-        receivedAt: e.received_at,
-        openLoops: e.open_loops,
-        relationshipName: e.person_id ? relationshipNames[e.person_id] || "Unknown" : "Unknown",
-        relationshipId: e.person_id,
-      })),
+      signals,
     });
   } catch (error) {
     console.error("Error fetching global signals:", error);
