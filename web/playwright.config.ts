@@ -6,6 +6,14 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests",
+  // Only run Playwright E2E tests (.spec.ts), ignore Vitest tests (.test.ts)
+  testMatch: /.*\.spec\.ts$/,
+  // Explicitly ignore Vitest test directories
+  testIgnore: [
+    "**/node_modules/**",
+    "**/tests/unit/**",
+    "**/tests/integration/**",
+  ],
   fullyParallel: false, // Run sequentially to avoid email rate limits
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
