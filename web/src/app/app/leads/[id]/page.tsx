@@ -34,3 +34,6 @@ export default async function RelationshipDetailPage({
   return <RelationshipDetailClient leadId={id} initialLead={lead} />;
 }
 
+
+
+

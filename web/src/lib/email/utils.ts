@@ -29,3 +29,6 @@ export function extractEmailDomain(email: string): string {
   return parts.length > 1 ? parts[1].toLowerCase() : "";
 }
 
+
+
+
