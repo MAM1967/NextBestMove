@@ -19,3 +19,6 @@ WHERE status = 'active';
 -- Update existing connections to have display_name (can be backfilled later)
 -- For now, we'll set it to a default value if it's null
 
+
+
+
