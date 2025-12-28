@@ -25,7 +25,7 @@ test.describe("Critical Path 4: Weekly Summary Generation", () => {
     
     // Navigate to app
     await page.goto("/app");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
   });
 
   test.afterEach(async () => {
@@ -38,7 +38,7 @@ test.describe("Critical Path 4: Weekly Summary Generation", () => {
   test("should display weekly summary with metrics and insights", async ({ page }) => {
     // Navigate to weekly summary page
     await page.goto("/app/weekly-summary");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
 
     // Verify weekly summary page loads
     expect(page.url()).toMatch(/\/app\/weekly-summary/);
@@ -135,7 +135,7 @@ test.describe("Critical Path 4: Weekly Summary Generation", () => {
 
     // Navigate to weekly summary page
     await page.goto("/app/weekly-summary");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
 
     // Verify summary now exists
     const summaryContent = page.locator('[data-testid="weekly-summary"], [class*="weekly-summary"]');

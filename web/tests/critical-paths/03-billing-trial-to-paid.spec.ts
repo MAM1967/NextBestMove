@@ -26,7 +26,7 @@ test.describe("Critical Path 3: Billing (Trial → Paid)", () => {
     
     // Navigate to app
     await page.goto("/app");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
   });
 
   test.afterEach(async () => {
@@ -39,7 +39,7 @@ test.describe("Critical Path 3: Billing (Trial → Paid)", () => {
   test("should complete Stripe checkout and activate subscription", async ({ page }) => {
     // Navigate to settings or billing section
     await page.goto("/app/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
 
     // Look for billing section or upgrade button
     const upgradeButton = page.locator(
@@ -131,7 +131,7 @@ test.describe("Critical Path 3: Billing (Trial → Paid)", () => {
     // Verify subscription status is "active" (not "trialing")
     // Navigate back to settings to check status
     await page.goto("/app/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
 
     // Look for subscription status indicator
     const activeStatus = page.locator('text=/active|subscribed|paid/i, [data-testid="subscription-status"]');

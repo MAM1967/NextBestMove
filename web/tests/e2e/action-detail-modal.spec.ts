@@ -24,10 +24,16 @@ test.describe("Action Detail Modal", () => {
     await signInUser(page, testUser.email, testUser.password);
     
     // Navigate to actions page
-    await page.goto("/app/actions");
+    await page.goto("/app/actions", { waitUntil: "domcontentloaded" });
     
-    // Wait for page to load - actions may take a moment to appear
-    await page.waitForLoadState("networkidle");
+    // Wait for actions to load with explicit timeout - don't wait for network idle
+    // Network idle can hang if there's continuous polling/websockets
+    try {
+      await page.waitForSelector('[data-testid="action-row"]', { timeout: 10000 });
+    } catch (error) {
+      // Actions may not exist yet, that's okay - tests will handle it
+      console.log("No actions found on page, tests will skip if needed");
+    }
   });
 
   test.afterEach(async () => {

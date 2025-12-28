@@ -29,7 +29,7 @@ test.describe("Critical Path 2: Daily Habit Loop", () => {
     
     // Navigate to app to ensure user is set up
     await page.goto("/app");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
   });
 
   test.afterEach(async () => {
@@ -42,7 +42,7 @@ test.describe("Critical Path 2: Daily Habit Loop", () => {
   test("should display daily plan and allow action completion", async ({ page }) => {
     // Navigate to daily plan page
     await page.goto("/app/plan");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
 
     // Check if user has leads/pins - if not, daily plan might be empty
     // Look for either "Today's Focus" message OR empty state message

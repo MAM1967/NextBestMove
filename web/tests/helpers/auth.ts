@@ -128,11 +128,14 @@ export async function signInUser(page: Page, email: string, password: string) {
   const currentUrl = page.url();
   console.log(`✅ Successfully authenticated and navigated to: ${currentUrl}`);
   
-  // Wait for page to stabilize
+  // Wait for page to stabilize - use domcontentloaded instead of networkidle
+  // Network idle can hang indefinitely if there's continuous polling/websockets
   try {
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
+    await page.waitForLoadState("domcontentloaded", { timeout: 10000 });
+    // Small additional wait for any initial API calls to complete
+    await page.waitForTimeout(1000);
   } catch (error) {
-    console.warn("⚠️  Network idle timeout, continuing...");
+    console.warn("⚠️  Page load timeout, continuing...");
   }
 }
 
