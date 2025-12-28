@@ -243,23 +243,24 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Design token compliance (incremental)** ⏱ **POST-LAUNCH**  
        _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
 - [ ] Manual "Busy / Light day" capacity override
-- [ ] Action detail modal / history view
+- [x] **Action detail modal / history view** ✅ **NEX-23**
+       _Create a detailed view for actions showing full history, notes, and related interactions. Modal or page showing action details, display action history (state changes, dates), show related notes and interactions, link to related relationship/lead._
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
 - [ ] Deeper analytics (deal progression metric, more insights)
 - [ ] Notification delivery channels (email/push) beyond toggles
 - [ ] Pricing page UI (Standard vs Premium comparison, annual savings, clear value props)
 - [ ] **Cancellation feedback analytics page**  
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
-- [ ] **Enhanced pre-call brief detection for video conferencing**  
+- [x] **Enhanced pre-call brief detection for video conferencing** ✅ **NEX-30**
        _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
 
-- [ ] **POST_CALL auto-generation**  
+- [x] **POST_CALL auto-generation** ✅ **NEX-31**
        _Automatically create POST_CALL actions when calendar events (calls) end. Real-time creation when call ends, detect ended calls from calendar events, match to leads, create action immediately. Requires calendar event detection and real-time processing. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
-- [ ] **CALL_PREP auto-generation**  
+- [x] **CALL_PREP auto-generation** ✅ **NEX-32**
        _Automatically create CALL_PREP actions 24 hours before detected calls. Hourly cron with timezone filtering, detect calls 24 hours in advance, match calendar events to leads, create action day before call. Requires hourly cron with timezone awareness. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
-- [ ] **NURTURE auto-generation**  
+- [x] **NURTURE auto-generation** ✅ **NEX-33**
        _Automatically create NURTURE actions for leads that haven't been contacted in 21+ days. Daily cron to detect stale leads, create actions (max 3 per day), prioritize by engagement history, handle returning users gracefully. Estimated: 3-4 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
 - [ ] **CONTENT action conversion from weekly summaries**  

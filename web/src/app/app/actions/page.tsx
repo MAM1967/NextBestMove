@@ -7,6 +7,7 @@ import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
 import { ViewPromptModal } from "./ViewPromptModal";
 import { EstimatedMinutesModal } from "./EstimatedMinutesModal";
+import { ActionDetailModal } from "./ActionDetailModal";
 import { Action } from "./types";
 import { ToastContainer, useToast, type Toast } from "@/components/ui/Toast";
 import { getDaysDifference } from "@/lib/utils/dateUtils";
@@ -33,6 +34,7 @@ export default function ActionsPage() {
   );
   const [promiseActionId, setPromiseActionId] = useState<string | null>(null);
   const [estimatedMinutesActionId, setEstimatedMinutesActionId] = useState<string | null>(null);
+  const [detailActionId, setDetailActionId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActions();
@@ -552,6 +554,7 @@ export default function ActionsPage() {
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
+                        onClick={(id) => setDetailActionId(id)}
                       />
                     ))}
                   </div>
@@ -583,6 +586,7 @@ export default function ActionsPage() {
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
+                        onClick={(id) => setDetailActionId(id)}
                       />
                     ))}
                   </div>
@@ -614,6 +618,7 @@ export default function ActionsPage() {
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
+                        onClick={(id) => setDetailActionId(id)}
                       />
                     ))}
                   </div>
@@ -645,6 +650,7 @@ export default function ActionsPage() {
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
+                        onClick={(id) => setDetailActionId(id)}
                       />
                     ))}
                   </div>
@@ -707,6 +713,16 @@ export default function ActionsPage() {
           }}
         />
       )}
+
+      {/* Action detail modal */}
+      <ActionDetailModal
+        isOpen={detailActionId !== null}
+        onClose={() => setDetailActionId(null)}
+        actionId={detailActionId}
+        onActionClick={(id) => {
+          setDetailActionId(id);
+        }}
+      />
     </>
   );
 }
