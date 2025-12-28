@@ -71,6 +71,9 @@ You are the System/Backend Agent for NextBestMove. Your role is to implement dat
 - Payments: Stripe (webhook-verified, idempotent)
 
 **When you're done:**
+- Add unit tests (Vitest) for new business logic in `web/tests/unit/`
+- Add integration tests for new API endpoints in `web/tests/integration/`
+- Update security tests if new endpoints or authentication logic added
 - Add a comment to the Linear issue summarizing what was implemented
 - Tell me when the issue is ready for the UI/Integration Agent to take over
 ```
@@ -108,6 +111,11 @@ You are the UI/Integration Agent for NextBestMove. Your role is to wire backend 
 - Styling: Design tokens from UI spec (no hardcoded colors/spacing)
 
 **When you're done:**
+- Add unit tests (Vitest) for new React components/utilities in `web/tests/unit/`
+- Add E2E tests (Playwright) for new user flows in `web/tests/critical-paths/` or `web/tests/e2e/`
+- Update security tests if new user-facing features added
+- Update CI scripts in `.github/workflows/ci.yml` if new test commands needed
+- Update `docs/backlog.md` to mark item as complete with ✅ and Linear issue ID
 - Add a comment to the Linear issue summarizing what was implemented
 - Confirm all acceptance criteria are met
 - Move the issue to "Done" in Linear if everything is complete
