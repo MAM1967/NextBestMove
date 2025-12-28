@@ -248,7 +248,8 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
 - [ ] Deeper analytics (deal progression metric, more insights)
 - [ ] Notification delivery channels (email/push) beyond toggles
-- [ ] Pricing page UI (Standard vs Premium comparison, annual savings, clear value props)
+- [x] **Pricing page UI (Free vs Standard vs Premium comparison, annual savings, clear value props)** ✅ **NEX-27**
+       _Create a dedicated pricing page that clearly communicates value propositions and pricing options for all three tiers: Free, Standard, and Premium. Includes three-tier comparison table, annual savings display, clear value propositions, pricing display, feature comparison matrix, reverse trial messaging, upgrade CTAs, and mobile-responsive design. Reference: `docs/PRD/NextBestMove_PRD_v1.md`_
 - [ ] **Cancellation feedback analytics page**  
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
 - [x] **Enhanced pre-call brief detection for video conferencing** ✅ **NEX-30**
