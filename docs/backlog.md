@@ -270,6 +270,30 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Industry/work type selection & trend-based content generation**  
        _Add onboarding/settings field for users to select their industry/work type (e.g., marketing, finance, recruiting, sales, operations, etc.). Implement weekly scraping of headlines and trends for each industry category. Use this data to enhance content generation, making content prompts more on-trend and industry-relevant. Store user's industry in `users` table, create scraping service/API integration for trend data, update content generation logic to incorporate industry trends. Lowest priority P2 item - nice-to-have enhancement for content personalization._
 
+- [ ] **Tier-based AI for weekly summaries** 🔴 **HIGH PRIORITY**  
+       _Implement tier-based AI differentiation for weekly summaries. Free: Basic (placeholder functions only, no AI). Standard: AI-assisted (use AI for narrative/insight generation). Premium: Advanced AI (enhanced prompts, multiple insights). Currently all tiers use placeholder functions. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Differentiate call briefs by tier** 🔴 **HIGH PRIORITY**  
+       _Verify and implement tier differentiation for pre-call briefs. Standard: Pre-call briefs without AI-generated notes. Premium: Pre-call briefs with AI-generated notes and full interaction context. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Implement data export tiers** 🔴 **HIGH PRIORITY**  
+       _Implement tier-based data export formats. Free: Basic JSON (current). Standard: CSV export format. Premium: Advanced export (CSV + JSON + additional metadata). Currently only JSON exists. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Clarify "Limited" follow-up scheduling for Free tier** 🟡 **MEDIUM PRIORITY**  
+       _Define and implement "Limited" follow-up scheduling for Free tier. Define what "Limited" means (e.g., max 3 follow-ups per week) and implement enforcement if needed. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Explicit actions per day limits by tier** 🟡 **MEDIUM PRIORITY**  
+       _Implement explicit tier-based action limits. Free: Cap at 2-3 actions. Standard: Cap at 5-6 actions. Premium: Cap at 8-10 actions (or remove cap). Currently capacity calculation exists but not explicitly tier-limited. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Weekly insights frequency differentiation** 🟡 **MEDIUM PRIORITY**  
+       _Implement tier-based weekly insights frequency. Standard: Limit to 1 insight per week. Premium: Allow multiple insights. Currently frequency not differentiated. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Content generation differentiation** 🟡 **MEDIUM PRIORITY**  
+       _Implement tier-based content generation limits. Standard: "Limited" (e.g., 1 prompt per week). Premium: "High" (e.g., 2 prompts per week, enhanced quality). Currently "Limited" vs "High" differentiation not implemented. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
+- [ ] **Support level implementation** 🟡 **MEDIUM PRIORITY**  
+       _Implement tier-based support level differentiation. Standard: Standard support (email response within 48h). Premium: Priority support (email response within 24h, dedicated channel). Currently support level is operational but not feature-gated. Reference: `docs/Planning/Tier_Feature_Implementation_Checklist.md`_
+
 - [ ] **Merge Insights content into Weekly Review** 🔴 **HIGH PRIORITY P2 - POST-LANGUAGE-REFACTOR**  
        _Move Insights screen content (stale actions, pattern detection, performance timeline) into Weekly Review page. Remove "Insights" from navigation. Update Insights components to be part of Weekly Review. Focus on reflection, hygiene, and behavior feedback. This completes the Weekly Review section by consolidating all reflection/hygiene content. Estimated: 1-2 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md` (Part 2)._
 

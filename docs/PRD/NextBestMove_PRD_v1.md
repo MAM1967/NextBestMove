@@ -814,65 +814,86 @@ FREE — Forever free, no credit card
 "Memory Relief" — For getting organized and proving the rhythm works.
 
 Includes:
-	•	5 active relationships
-	•	Unlimited archived relationships
-	•	Simple daily plan (2–3 actions/day)
-	•	Manual planning
-	•	Basic weekly summary
-	•	Full access to your history
+	•	5 active relationships (unlimited archived)
+	•	Manual daily plan only
+	•	2–3 actions per day (recommended)
+	•	Fast Win
+	•	Limited follow-up scheduling
+	•	Relationship history
+	•	Basic weekly summary (no AI)
+	•	Basic data export (JSON)
+	•	Standard support
 
 Free forever. No credit card.
 
 ⸻
 
-STANDARD — $29/mo or $290/year
-(Save $58 — 2 months free annually)
+STANDARD — $29/mo or $249/year
+(Save $99 — annual savings)
 
-"Runs your day" — For professionals who want the system to decide what matters today.
+"Decision Automation" — Runs your day with automatic daily plans sized to your calendar.
 
 Includes:
-	•	20 active relationships
-	•	Calendar-aware daily planning (5–6 actions/day)
-	•	Automatic daily plans
-	•	Unlimited follow-ups within your limit
+	•	20 active relationships (unlimited archived)
+	•	Manual daily plan
+	•	Automatic daily plan (calendar-aware)
+	•	5–6 actions per day (recommended)
+	•	Fast Win
+	•	Unlimited follow-up scheduling
+	•	Relationship history
 	•	AI-assisted weekly summary
-	•	One practical insight each week
-	•	Call briefs with event context
+	•	1 insight per week
+	•	Limited content generation (max 2 prompts/week)
+	•	Calendar free/busy sizing
+	•	Calendar event details
+	•	Call briefs (no AI-generated notes)
+	•	CSV data export
+	•	Standard support
 
 This is the foundational "habit plan." 80% of users belong here.
 
-PREMIUM — $89/mo or $890/year
-(Save $178 — 2 months free annually)
+PREMIUM — $79/mo or $649/year
+(Save $299 — annual savings)
 
-"Thinks with you" — For operators managing complexity who want less thinking, not more tools.
+"Intelligence & Leverage" — Thinks with you. Pattern detection, pre-call briefs, content engine, unlimited relationships.
 
 Includes everything in Standard plus:
 
 1. Unlimited Relationships
 Never prune relationships again.
 
-2. Deeper Weekly Insights and Patterns
+2. Advanced AI Weekly Summary
+	•	Enhanced AI prompts for narrative and insights
+	•	Multiple insights per week (not limited to 1)
+
+3. High Content Generation
+	•	Enhanced content quality
+	•	More sophisticated prompts
+
+4. Pre-Call Notes
+	•	AI-generated notes and context before calls
+	•	Full interaction history in briefs
+
+5. Pattern Views & Trends
 	•	"Your Tuesday outreach converts 2x better than Thursday"
 	•	"Follow-ups after 48 hours have higher reply rates"
 	•	"Most of your booked calls come from warm re-engagements"
+	•	Visual pattern detection
 
-3. Higher Content Generation Limits
-	•	More content prompts per week
-	•	Enhanced content quality
-
-4. Full Calendar Context
-	•	Complete calendar integration
-	•	Advanced scheduling insights
-
-5. Enhanced Call Briefs
-	•	Call briefs with notes and history
-	•	Full interaction context
-
-6. Momentum and Pattern Views Across Time
+6. Momentum & Timeline Views
 	•	Month-over-month progress
 	•	Consistency arcs
 	•	Pipeline movement
 	•	Warm contact revival patterns
+	•	Performance timeline visualization
+
+7. Advanced Data Export
+	•	CSV + JSON + additional metadata
+	•	Enhanced export formats
+
+8. Priority Support
+	•	Faster response times
+	•	Dedicated support channel
 
 This is "fractional revops" for one person.
 
@@ -880,8 +901,8 @@ This is "fractional revops" for one person.
 
 Upsells must appear ONLY when the user is succeeding.
 
-1. Lead Limit (Standard hits 10)
-Modal: "You've built a strong network of 10 relationships. Add unlimited Leads with Premium."
+1. Lead Limit (Standard hits 20)
+Modal: "You've built a strong network of 20 relationships. Add unlimited relationships with Premium."
 
 2. Weekly Summary Insight (Standard)
 "Want deeper insights next week? Try the Intelligence Layer."
@@ -935,7 +956,7 @@ This can recover 20–40% of lost subscribers.
 21.4.3 Downgrade Policy (Clarity to Reduce Anxiety)
 
 Premium → Standard:
-Effective next billing cycle. Warning: "You have 87 active Leads. Standard supports 10. Archive 77 or stay on Premium."
+Effective next billing cycle. Warning: "You have 87 active relationships. Standard supports 20. Archive 67 or stay on Premium."
 
 Standard → Cancel:
 	•	7-day read-only
@@ -998,8 +1019,9 @@ Trial:
 	•	Strong Day 12 + Day 14 reminders
 
 Plans:
-	•	Standard: $29/mo | $249/year
-	•	Premium: $79/mo | $649/year
+	•	Free: $0 (forever free)
+	•	Standard: $29/mo | $249/year (save $99/year)
+	•	Premium: $79/mo | $649/year (save $299/year)
 
 Highlights:
 	•	Standard = Habit Layer
