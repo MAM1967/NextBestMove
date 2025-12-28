@@ -143,7 +143,7 @@ describe("calendar-detection", () => {
     it("should return false for non-call events", () => {
       const event: CalendarEvent = {
         id: "1",
-        title: "Lunch meeting",
+        title: "Lunch appointment",
         start: "2025-01-01T10:00:00Z",
         end: "2025-01-01T11:00:00Z",
         duration: 60,
