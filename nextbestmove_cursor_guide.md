@@ -585,6 +585,7 @@ NextBestMove/
 - **Calendar Integration:** `docs/Architecture/Calendar_API_Specifications.md`
 - **API Documentation:** `docs/Architecture/API_Documentation.md`
 - **Component Specs:** `docs/Architecture/Component_Specifications.md`
+- **Coding Best Practices:** `docs/Development/CODING_LESSONS_LEARNED.md` - Lessons learned, best practices, and solutions to common problems
 
 ### Deployment & Operations
 

@@ -646,6 +646,110 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 
 ---
 
+### Lesson: Always Trim Secrets When Comparing for Authentication
+
+**Problem:** When comparing secrets for authentication (e.g., `CRON_SECRET`, `TEST_ENDPOINT_SECRET`), environment variables may contain trailing whitespace, newlines, or carriage returns. This causes authentication failures even when the secret is correct.
+
+**Example Issue:**
+- Secret stored in Vercel: `"my-secret-key\n"` (with trailing newline)
+- Secret provided in request: `"my-secret-key"` (without newline)
+- Comparison: `providedSecret !== testSecret` → `true` (fails even though secret is correct)
+
+**Solution:** Always trim and normalize both the stored secret and the provided secret before comparison.
+
+**Example:**
+
+```typescript
+// ❌ Wrong - direct comparison without trimming
+const testSecret = process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET;
+const providedSecret = authHeader?.replace("Bearer ", "") || 
+                      new URL(request.url).searchParams.get("secret");
+
+if (providedSecret !== testSecret) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+// Fails if testSecret has trailing newline: "secret\n" !== "secret"
+
+// ✅ Correct - trim and normalize both values
+const testSecret = (process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET)
+  ?.trim()
+  .replace(/\r?\n/g, ''); // Remove all newlines and carriage returns
+
+const providedSecret = (authHeader?.replace("Bearer ", "") || 
+                       new URL(request.url).searchParams.get("secret"))
+  ?.trim();
+
+if (providedSecret !== testSecret) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+// Works correctly: "secret" === "secret"
+```
+
+**Best Practice Pattern:**
+
+```typescript
+// Normalize secret from environment variable
+function getSecret(): string | undefined {
+  const secret = process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET;
+  if (!secret) return undefined;
+  // Trim whitespace and remove all newlines/carriage returns
+  return secret.trim().replace(/\r?\n/g, '');
+}
+
+// Normalize provided secret
+function normalizeProvidedSecret(
+  authHeader: string | null,
+  queryParam: string | null
+): string | null {
+  const secret = authHeader?.replace("Bearer ", "") || queryParam;
+  if (!secret) return null;
+  return secret.trim();
+}
+
+// Compare normalized values
+const testSecret = getSecret();
+const providedSecret = normalizeProvidedSecret(
+  request.headers.get("authorization"),
+  new URL(request.url).searchParams.get("secret")
+);
+
+if (!testSecret || providedSecret !== testSecret) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+```
+
+**Key Principles:**
+
+1. **Always trim** both the stored secret and provided secret
+2. **Remove newlines and carriage returns** with `.replace(/\r?\n/g, '')`
+3. **Normalize before comparison** - don't compare raw environment variables
+4. **Apply consistently** - use the same normalization pattern across all auth checks
+5. **Handle undefined/null** - check for existence before trimming
+
+**Common Issues:**
+
+- Vercel environment variables can have trailing newlines when copied/pasted
+- Environment files (`.env.local`) can have trailing spaces or newlines
+- CI/CD platforms may add whitespace when setting variables
+- Multi-line secrets can introduce hidden characters
+
+**Validation:** Fixed in:
+
+- `web/src/app/api/test/send-payment-failure-email/route.ts` - Added secret trimming for auth comparison
+- `web/src/app/api/test/send-win-back-email/route.ts` - Already had trimming (reference implementation)
+- Prevents 401 Unauthorized errors when secrets are correct but have whitespace differences
+
+**When to Apply:**
+
+- ✅ Secret comparison in authentication middleware
+- ✅ API key validation
+- ✅ Webhook signature verification
+- ✅ Cron job secret validation
+- ✅ Test endpoint authentication
+- ✅ Any string comparison where one value comes from environment variables
+
+---
+
 ## Future Considerations
 
 - Consider creating a shared types file for commonly used extended types (e.g., `StripeInvoiceWithSubscription`)

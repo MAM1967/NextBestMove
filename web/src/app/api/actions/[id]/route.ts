@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getActionDetails } from "@/lib/actions/get-action-details";
 
 /**
  * GET /api/actions/[id]
@@ -26,99 +27,17 @@ export async function GET(
 
     const { id: actionId } = await params;
 
-    // Fetch action with lead relationship
-    const { data: action, error: actionError } = await supabase
-      .from("actions")
-      .select(
-        `
-        *,
-        leads (
-          id,
-          name,
-          url,
-          notes,
-          status
-        )
-      `
-      )
-      .eq("id", actionId)
-      .eq("user_id", user.id)
-      .single();
+    // Use extracted business logic function
+    const result = await getActionDetails(supabase, user.id, actionId);
 
-    if (actionError || !action) {
+    if (!result) {
       return NextResponse.json(
         { error: "Action not found" },
         { status: 404 }
       );
     }
 
-    // Derive action history from timestamps
-    const history: Array<{
-      event: string;
-      timestamp: string;
-      state?: string;
-    }> = [];
-
-    // Created event
-    if (action.created_at) {
-      history.push({
-        event: "Created",
-        timestamp: action.created_at,
-        state: action.state,
-      });
-    }
-
-    // State changes (we infer from updated_at and completed_at)
-    if (action.updated_at && action.updated_at !== action.created_at) {
-      // If state is not NEW and updated_at differs from created_at, there was a state change
-      if (action.state !== "NEW") {
-        history.push({
-          event: `State changed to ${action.state}`,
-          timestamp: action.updated_at,
-          state: action.state,
-        });
-      }
-    }
-
-    // Completed event
-    if (action.completed_at) {
-      history.push({
-        event: "Completed",
-        timestamp: action.completed_at,
-        state: action.state,
-      });
-    }
-
-    // Sort history by timestamp
-    history.sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-
-    // Fetch related actions for same lead (if action has a person_id)
-    let relatedActions: any[] = [];
-    if (action.person_id) {
-      const { data: related, error: relatedError } = await supabase
-        .from("actions")
-        .select("id, action_type, state, due_date, description, created_at, completed_at")
-        .eq("user_id", user.id)
-        .eq("person_id", action.person_id)
-        .neq("id", actionId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (!relatedError && related) {
-        relatedActions = related;
-      }
-    }
-
-    return NextResponse.json({
-      action: {
-        ...action,
-        history,
-        relatedActions,
-      },
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching action details:", error);
     return NextResponse.json(

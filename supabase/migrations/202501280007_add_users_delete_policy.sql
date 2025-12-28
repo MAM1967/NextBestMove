@@ -17,3 +17,5 @@ CREATE POLICY "Users can delete own profile" ON users
 
 
 
+
+
