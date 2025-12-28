@@ -169,6 +169,184 @@
 
 ---
 
+## Implementation Plans
+
+### NEX-34: Tier-Based AI for Weekly Summaries
+
+**Status**: Backlog  
+**Priority**: High  
+**Linear Ticket**: [NEX-34](https://linear.app/nextbestmove/issue/NEX-34)
+
+**File to modify**: `web/src/lib/summaries/generate-weekly-summary.ts`
+
+**Current state**: All tiers use placeholder functions (`generateNarrativeSummary`, `generateInsight`, `generateNextWeekFocus`)
+
+**Implementation steps**:
+1. Import `getUserTier` from `@/lib/billing/tier` in `generate-weekly-summary.ts`
+2. In `generateWeeklySummaryForUser`, fetch user tier before generating summary:
+   ```typescript
+   const tier = await getUserTier(supabase, userId);
+   ```
+3. **Free tier**: Keep existing placeholder functions (no changes)
+4. **Standard tier**: 
+   - Replace `generateNarrativeSummary` call with AI call using existing AI helper functions
+   - Replace `generateInsight` call with AI call
+   - Keep `generateNextWeekFocus` as placeholder (or add basic AI)
+5. **Premium tier**:
+   - Use enhanced AI prompts for narrative (more context, better prompts)
+   - Use enhanced AI prompts for insights (allow multiple insights)
+   - Use AI for next week focus with enhanced prompts
+6. Add tier check before AI calls:
+   ```typescript
+   if (tier === "free") {
+     // Use placeholder functions
+   } else if (tier === "standard") {
+     // Use basic AI
+   } else if (tier === "premium") {
+     // Use enhanced AI
+   }
+   ```
+
+**AI Integration**: Use existing AI helper functions from `@/lib/ai/content-prompts` or create new helpers in `@/lib/ai/weekly-summary`
+
+**Testing**: 
+- Verify Free tier gets placeholders
+- Verify Standard gets basic AI-generated narrative and insight
+- Verify Premium gets enhanced AI with multiple insights
+
+---
+
+### NEX-35: Differentiate Call Briefs by Tier
+
+**Status**: Backlog  
+**Priority**: High  
+**Linear Ticket**: [NEX-35](https://linear.app/nextbestmove/issue/NEX-35)
+
+**File to modify**: `web/src/app/api/pre-call-briefs/route.ts` and `web/src/lib/pre-call-briefs/generation.ts`
+
+**Current state**: Line 29-35 checks if user is Premium, but all users get same brief generation via `generatePreCallBrief()`
+
+**Implementation steps**:
+1. Verify current implementation: Check if `generatePreCallBrief()` in `web/src/lib/pre-call-briefs/generation.ts` generates AI notes
+2. **Standard tier**: 
+   - Modify `generatePreCallBrief()` to accept a `includeAINotes: boolean` parameter
+   - For Standard: Pass `includeAINotes: false` - only include event context, lead info, action history
+   - Skip AI-generated notes and suggestions
+3. **Premium tier**:
+   - Pass `includeAINotes: true` - include full AI-generated notes, suggestions, context
+   - Keep existing full brief generation
+4. Update API route to pass tier-based flag to `generatePreCallBrief()`:
+   ```typescript
+   const includeAINotes = isPremium;
+   const brief = await generatePreCallBrief(adminSupabase, user.id, call, includeAINotes);
+   ```
+5. Update brief content structure to clearly separate "event context" (Standard) from "AI notes" (Premium)
+
+**Testing**: 
+- Verify Standard users see basic briefs with event context only
+- Verify Premium users see enhanced briefs with AI-generated notes and suggestions
+
+---
+
+### NEX-36: Tier-Based Data Export Formats
+
+**Status**: Backlog  
+**Priority**: High  
+**Linear Ticket**: [NEX-36](https://linear.app/nextbestmove/issue/NEX-36)
+
+**File to modify**: `web/src/app/api/export/route.ts`
+
+**Current state**: Only returns JSON format for all tiers
+
+**Implementation steps**:
+1. Import `getUserTier` from `@/lib/billing/tier`
+2. Add query parameter or Accept header support for format selection (optional enhancement)
+3. **Free tier**: 
+   - Return JSON only (current implementation)
+   - Keep existing response format
+4. **Standard tier**:
+   - Add CSV export functionality
+   - Create helper function `generateCSVExport(data)` to convert JSON to CSV
+   - Export main tables: leads, actions, daily_plans, weekly_summaries as separate CSV files or combined
+   - Return CSV with proper headers: `Content-Type: text/csv`
+5. **Premium tier**:
+   - Return both CSV and JSON formats
+   - Add enhanced metadata: export statistics, tier info, export version
+   - Create ZIP file containing: `data.json`, `data.csv`, `metadata.json`
+   - Use a library like `jszip` or `archiver` for ZIP creation
+   - Return ZIP with headers: `Content-Type: application/zip`
+6. Add tier check: `const tier = await getUserTier(supabase, user.id)`
+7. Route to appropriate export format based on tier:
+   ```typescript
+   if (tier === "free") {
+     return NextResponse.json(exportData, { headers: {...} });
+   } else if (tier === "standard") {
+     return new NextResponse(csvData, { headers: { "Content-Type": "text/csv", ...} });
+   } else if (tier === "premium") {
+     return new NextResponse(zipBuffer, { headers: { "Content-Type": "application/zip", ...} });
+   }
+   ```
+
+**Dependencies**: May need to add `jszip` or similar for Premium tier ZIP export
+
+**Testing**: 
+- Verify Free tier gets JSON only
+- Verify Standard tier gets CSV format
+- Verify Premium tier gets ZIP containing JSON, CSV, and metadata files
+
+---
+
+### NEX-37: Limited Follow-Up Scheduling for Free Tier
+
+**Status**: Backlog  
+**Priority**: Medium  
+**Linear Ticket**: [NEX-37](https://linear.app/nextbestmove/issue/NEX-37)
+
+**Files to modify**: 
+- `web/src/app/app/actions/page.tsx` (handleGotReply function)
+- `web/src/app/api/actions/route.ts` (POST endpoint for creating actions)
+
+**Current state**: Follow-up creation is unlimited for all tiers
+
+**Implementation steps**:
+1. **Define limit**: Decide on limit (suggest: 3 follow-ups per week for Free tier)
+2. **Backend enforcement**:
+   - In `POST /api/actions`, check user tier before creating FOLLOW_UP actions
+   - For Free tier: Count existing FOLLOW_UP actions created this week (Monday 00:00 to Sunday 23:59 in user timezone)
+   - If limit reached, return 403 with message: "Free tier allows 3 follow-ups per week. Upgrade to Standard for unlimited follow-ups."
+3. **Frontend enforcement**:
+   - In `handleGotReply` in `page.tsx`, check limit before creating follow-up
+   - Show warning toast if approaching limit (e.g., "2 of 3 follow-ups used this week")
+   - Show error toast if limit reached with upgrade CTA
+4. **UI indicator**:
+   - Add limit indicator in actions page header for Free tier users
+   - Show: "Follow-ups: 2/3 this week" or similar
+   - Make it clickable to show upgrade modal
+5. **Weekly reset**: Limit resets weekly (Monday 00:00 user timezone)
+
+**Implementation details**:
+- Create helper function `checkFollowUpLimit(userId, tier)` that:
+  - Returns `{ canCreate: boolean, currentCount: number, limit: number }`
+  - Calculates week start (Monday) based on user timezone
+  - Counts FOLLOW_UP actions created this week
+- In API route, check limit before creating action:
+  ```typescript
+  if (action_type === "FOLLOW_UP") {
+    const limitCheck = await checkFollowUpLimit(user.id, tier);
+    if (!limitCheck.canCreate) {
+      return NextResponse.json({ error: "Follow-up limit reached" }, { status: 403 });
+    }
+  }
+  ```
+
+**Testing**: 
+- Verify Free tier users can't create more than 3 follow-ups per week
+- Verify Standard/Premium users have unlimited follow-ups
+- Verify limit resets weekly on Monday
+- Verify UI shows limit indicator for Free tier users
+
+---
+
 ## Verification Commands
 
 To verify feature gates are working:
