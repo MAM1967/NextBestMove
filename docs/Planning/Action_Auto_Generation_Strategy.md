@@ -76,14 +76,15 @@ This document outlines a comprehensive strategy for **automatic action generatio
    - **Due Date:** Same day as lead creation
    - **Fallback:** Daily plan generator creates OUTREACH actions for active leads when no candidate actions exist
 
-### ⚠️ Partially Implemented
+### ✅ Implemented (Auto-Generation)
 
-2. **FOLLOW_UP Actions**
-   - **Trigger:** User marks action as "Got a reply" → chooses "Schedule a follow-up"
-   - **Implementation:** ⚠️ Modal-based (not auto-create). Still requires user to click "Schedule follow-up" button.
-   - **Due Date:** Should be 2-3 days out (per PRD 10.4)
-   - **Status:** Needs zero-friction auto-creation (per strategy document)
-   - **Note:** Strategy calls for auto-creation with toast notification, but current implementation uses modal
+2. **FOLLOW_UP Actions** ✅
+
+   - **Trigger:** User marks action as "Got a reply"
+   - **Implementation:** ✅ Active in `/app/actions/page.tsx` - `handleGotReply()` function
+   - **Due Date:** 2-3 days out (smart default calculated automatically)
+   - **Status:** ✅ Fully implemented - Auto-creates FOLLOW_UP with toast notification
+   - **Note:** Modal (`FollowUpSchedulingModal`) is only used for editing/adjusting the date if user clicks "Adjust" in toast
 
 ### ✅ Implemented (Auto-Generation)
 
@@ -113,13 +114,14 @@ This document outlines a comprehensive strategy for **automatic action generatio
    - **Implementation:** ✅ Enhanced `isLikelyCall()` in `calendar-detection.ts`
    - **Status:** ✅ Implemented - Detects Zoom, Google Meet, Teams, etc.
 
-### ⚠️ Not Fully Implemented
+### ✅ Implemented (Auto-Generation)
 
-7. **CONTENT Actions**
+7. **CONTENT Actions** ✅
+
    - **Trigger:** Weekly summary generates content prompts (if user completed ≥6 actions)
-   - **Implementation:** ⚠️ Content prompts are saved to `content_prompts` table but not converted to CONTENT actions
-   - **Due Date:** Day after weekly summary (Monday/Wednesday spread)
-   - **Status:** Needs action conversion logic (P2 - lower priority)
+   - **Implementation:** ✅ Active in `/lib/summaries/generate-weekly-summary.ts` - Converts prompts to CONTENT actions
+   - **Due Date:** Spread across week (WIN_POST → Monday, INSIGHT_POST → Wednesday, or Monday if only one prompt)
+   - **Status:** ✅ Fully implemented - Auto-converts content prompts to CONTENT actions when weekly summary is generated
 
 ---
 
@@ -469,17 +471,15 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ## Implementation Priority
 
-### Phase 1: Critical Revenue Path (P0) 🚨
+### Phase 1: Critical Revenue Path (P0) 🚨 ✅ COMPLETE
 
 **Goal:** Complete the core revenue-generating action flow
 
 1. ✅ **OUTREACH** - Already implemented
-2. ⚠️ **FOLLOW_UP** - Needs zero-friction auto-creation (2-3 hours)
-   - **Current:** Modal-based scheduling
-   - **Needed:** Auto-create with toast notification (per strategy)
+2. ✅ **FOLLOW_UP** - ✅ Fully implemented (auto-creates with toast)
 3. ✅ **POST_CALL** - ✅ Implemented (NEX-31)
 
-**Impact:** These three action types drive 90% of revenue. FOLLOW_UP still needs zero-friction implementation.
+**Impact:** ✅ All Phase 1 features complete. These three action types drive 90% of revenue.
 
 ### Phase 2: Enhanced Revenue Path (P1) 📈
 
@@ -491,15 +491,15 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 **Impact:** ✅ All Phase 2 features complete. Increases conversion rates and prevents lead decay.
 
-### Phase 3: Engagement & Thought Leadership (P2) 💡
+### Phase 3: Engagement & Thought Leadership (P2) 💡 ✅ COMPLETE
 
 **Goal:** Keep users engaged and build brand
 
-7. ⚠️ **CONTENT** - Convert prompts to actions (2-3 hours)
-   - **Current:** Content prompts saved to `content_prompts` table
-   - **Needed:** Auto-convert to CONTENT actions on Monday/Wednesday
+7. ✅ **CONTENT** - ✅ Fully implemented
+   - **Implementation:** Auto-converts content prompts to CONTENT actions when weekly summary is generated
+   - **Due Dates:** WIN_POST → Monday, INSIGHT_POST → Wednesday (or Monday if only one prompt)
 
-**Impact:** Improves user engagement and retention. Lower priority.
+**Impact:** ✅ Complete. Improves user engagement and retention.
 
 ---
 

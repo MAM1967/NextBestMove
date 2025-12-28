@@ -148,15 +148,85 @@ async function generateContentPrompts(
   // Insert prompts (max 2 per PRD Section 15.1)
   if (prompts.length > 0) {
     const promptsToInsert = prompts.slice(0, 2); // Ensure max 2 prompts
-    await supabase.from("content_prompts").insert(
-      promptsToInsert.map((prompt) => ({
-        user_id: userId,
-        weekly_summary_id: weeklySummaryId,
-        type: prompt.type,
-        content: prompt.content,
-        status: "DRAFT",
-      }))
-    );
+    const { data: insertedPrompts, error: insertError } = await supabase
+      .from("content_prompts")
+      .insert(
+        promptsToInsert.map((prompt) => ({
+          user_id: userId,
+          weekly_summary_id: weeklySummaryId,
+          type: prompt.type,
+          content: prompt.content,
+          status: "DRAFT",
+        }))
+      )
+      .select();
+
+    if (insertError) {
+      console.error("Error inserting content prompts:", insertError);
+      return; // Don't create actions if prompts failed
+    }
+
+    // Convert content prompts to CONTENT actions
+    // Spread across week: WIN_POST → Monday, INSIGHT_POST → Wednesday
+    // If only one prompt → Monday
+    if (insertedPrompts && insertedPrompts.length > 0) {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      
+      // Calculate Monday (if today is Sunday, Monday is tomorrow; otherwise, find this week's Monday)
+      const monday = new Date(today);
+      if (dayOfWeek === 0) {
+        // Sunday: Monday is tomorrow
+        monday.setDate(today.getDate() + 1);
+      } else {
+        // Monday-Saturday: Go back to this week's Monday
+        monday.setDate(today.getDate() - (dayOfWeek - 1));
+      }
+      monday.setHours(0, 0, 0, 0);
+
+      // Calculate Wednesday (3 days after Monday)
+      const wednesday = new Date(monday);
+      wednesday.setDate(monday.getDate() + 2);
+      wednesday.setHours(0, 0, 0, 0);
+
+      for (let i = 0; i < insertedPrompts.length; i++) {
+        const prompt = insertedPrompts[i];
+        let dueDate: Date;
+
+        if (insertedPrompts.length === 1) {
+          // Only one prompt → Monday
+          dueDate = monday;
+        } else {
+          // Two prompts: WIN_POST → Monday, INSIGHT_POST → Wednesday
+          dueDate = prompt.type === "WIN_POST" ? monday : wednesday;
+        }
+
+        // Check if CONTENT action already exists for this prompt
+        const { data: existingAction } = await supabase
+          .from("actions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("action_type", "CONTENT")
+          .eq("state", "NEW")
+          .eq("due_date", dueDate.toISOString().split("T")[0])
+          .maybeSingle();
+
+        if (!existingAction) {
+          // Create CONTENT action
+          await supabase.from("actions").insert({
+            user_id: userId,
+            action_type: "CONTENT",
+            state: "NEW",
+            due_date: dueDate.toISOString().split("T")[0],
+            description: prompt.type === "WIN_POST" 
+              ? "Create a win post from this week's summary"
+              : "Create an insight post from this week's summary",
+            notes: `Auto-created from weekly summary content prompt. Draft: ${prompt.content.substring(0, 200)}${prompt.content.length > 200 ? "..." : ""}`,
+            auto_created: true,
+          });
+        }
+      }
+    }
   }
 }
 
