@@ -12,7 +12,7 @@ import { NextResponse } from "next/server";
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const actionId = params.id;
+    const { id: actionId } = await params;
 
     // Fetch action with lead relationship
     const { data: action, error: actionError } = await supabase

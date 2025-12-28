@@ -188,7 +188,7 @@ export async function GET(request: Request) {
           // We'll use notes to match (contains event info)
           const { data: existingActions } = await adminClient
             .from("actions")
-            .select("id")
+            .select("id, notes")
             .eq("user_id", userId)
             .eq("person_id", matchedLead.id)
             .eq("action_type", "POST_CALL")

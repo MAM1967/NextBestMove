@@ -150,7 +150,7 @@ export async function GET(request: Request) {
               leadId: lead.id,
               leadName: lead.name,
               daysSinceContact: daysSinceContact === Infinity ? 999 : daysSinceContact,
-              lastActionDate,
+              lastActionDate: lastActionDate || null,
               replyRate,
             });
           }
