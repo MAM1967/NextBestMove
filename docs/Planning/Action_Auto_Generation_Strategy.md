@@ -80,38 +80,46 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 2. **FOLLOW_UP Actions**
    - **Trigger:** User marks action as "Got a reply" → chooses "Schedule a follow-up"
-   - **Implementation:** ❌ Marked as TODO in `/app/actions/page.tsx` (line 135-139)
+   - **Implementation:** ⚠️ Modal-based (not auto-create). Still requires user to click "Schedule follow-up" button.
    - **Due Date:** Should be 2-3 days out (per PRD 10.4)
-   - **Status:** Needs implementation
+   - **Status:** Needs zero-friction auto-creation (per strategy document)
+   - **Note:** Strategy calls for auto-creation with toast notification, but current implementation uses modal
 
-### ❌ Not Implemented (Missing Auto-Generation)
+### ✅ Implemented (Auto-Generation)
 
-3. **CALL_PREP Actions**
+3. **CALL_PREP Actions** ✅ **NEX-32**
 
    - **Trigger:** Calendar event detected 24 hours before call
-   - **Implementation:** ❌ Calendar detection exists (`calendar-detection.ts`) but doesn't create actions
+   - **Implementation:** ✅ Active in `/api/cron/create-call-prep-actions/route.ts`
    - **Due Date:** Day before the call
-   - **Status:** Needs implementation
+   - **Status:** ✅ Implemented - Hourly cron with timezone filtering
 
-4. **POST_CALL Actions**
+4. **POST_CALL Actions** ✅ **NEX-31**
 
    - **Trigger:** Calendar event passes (call ended) + no POST_CALL action exists for that event
-   - **Implementation:** ❌ Not implemented
+   - **Implementation:** ✅ Active in `/api/cron/create-post-call-actions/route.ts`
    - **Due Date:** Same day as call (or next day if call is late in day)
-   - **Status:** Needs implementation
+   - **Status:** ✅ Implemented - Hourly cron detects ended calls
 
-5. **NURTURE Actions**
+5. **NURTURE Actions** ✅ **NEX-33**
 
-   - **Trigger:** Lead hasn't been contacted in X days (suggested: 14-21 days)
-   - **Implementation:** ❌ Not implemented
+   - **Trigger:** Lead hasn't been contacted in X days (default: 21 days)
+   - **Implementation:** ✅ Active in `/api/cron/create-nurture-actions/route.ts`
    - **Due Date:** When trigger fires
-   - **Status:** Needs implementation
+   - **Status:** ✅ Implemented - Daily cron with flood protection (max 3 per day)
 
-6. **CONTENT Actions**
+6. **Enhanced Call Detection** ✅ **NEX-30**
+   - **Trigger:** Calendar event detection for video conferencing platforms
+   - **Implementation:** ✅ Enhanced `isLikelyCall()` in `calendar-detection.ts`
+   - **Status:** ✅ Implemented - Detects Zoom, Google Meet, Teams, etc.
+
+### ⚠️ Not Fully Implemented
+
+7. **CONTENT Actions**
    - **Trigger:** Weekly summary generates content prompts (if user completed ≥6 actions)
    - **Implementation:** ⚠️ Content prompts are saved to `content_prompts` table but not converted to CONTENT actions
-   - **Due Date:** Day after weekly summary (Monday)
-   - **Status:** Needs action conversion logic
+   - **Due Date:** Day after weekly summary (Monday/Wednesday spread)
+   - **Status:** Needs action conversion logic (P2 - lower priority)
 
 ---
 
@@ -150,7 +158,7 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ---
 
-### 2. FOLLOW_UP Actions ⚠️ (Needs Implementation)
+### 2. FOLLOW_UP Actions ⚠️ (Partially Implemented - Needs Zero-Friction)
 
 **When Created:**
 
@@ -187,7 +195,7 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ---
 
-### 3. CALL_PREP Actions ❌ (Needs Implementation)
+### 3. CALL_PREP Actions ✅ (Implemented - NEX-32)
 
 **When Created:**
 
@@ -225,7 +233,7 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ---
 
-### 4. POST_CALL Actions ❌ (Needs Implementation)
+### 4. POST_CALL Actions ✅ (Implemented - NEX-31)
 
 **When Created:**
 
@@ -267,7 +275,7 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ---
 
-### 5. NURTURE Actions ❌ (Needs Implementation)
+### 5. NURTURE Actions ✅ (Implemented - NEX-33)
 
 **When Created:**
 
@@ -318,7 +326,7 @@ This document outlines a comprehensive strategy for **automatic action generatio
 
 ---
 
-### 6. CONTENT Actions ⚠️ (Needs Action Conversion)
+### 6. CONTENT Actions ⚠️ (Needs Action Conversion - P2 Priority)
 
 **When Created:**
 
@@ -466,27 +474,32 @@ This document outlines a comprehensive strategy for **automatic action generatio
 **Goal:** Complete the core revenue-generating action flow
 
 1. ✅ **OUTREACH** - Already implemented
-2. ⚠️ **FOLLOW_UP** - Complete the TODO (2-3 hours)
-3. ❌ **POST_CALL** - Implement calendar-based detection (4-6 hours)
+2. ⚠️ **FOLLOW_UP** - Needs zero-friction auto-creation (2-3 hours)
+   - **Current:** Modal-based scheduling
+   - **Needed:** Auto-create with toast notification (per strategy)
+3. ✅ **POST_CALL** - ✅ Implemented (NEX-31)
 
-**Impact:** These three action types drive 90% of revenue. Complete these first.
+**Impact:** These three action types drive 90% of revenue. FOLLOW_UP still needs zero-friction implementation.
 
 ### Phase 2: Enhanced Revenue Path (P1) 📈
 
 **Goal:** Improve call outcomes and maintain relationships
 
-4. ❌ **CALL_PREP** - Implement 24h pre-call detection (4-6 hours)
-5. ❌ **NURTURE** - Implement 21-day nurture cycle (3-4 hours)
+4. ✅ **CALL_PREP** - ✅ Implemented (NEX-32)
+5. ✅ **NURTURE** - ✅ Implemented (NEX-33)
+6. ✅ **Enhanced Call Detection** - ✅ Implemented (NEX-30)
 
-**Impact:** Increases conversion rates and prevents lead decay.
+**Impact:** ✅ All Phase 2 features complete. Increases conversion rates and prevents lead decay.
 
 ### Phase 3: Engagement & Thought Leadership (P2) 💡
 
 **Goal:** Keep users engaged and build brand
 
-6. ⚠️ **CONTENT** - Convert prompts to actions (2-3 hours)
+7. ⚠️ **CONTENT** - Convert prompts to actions (2-3 hours)
+   - **Current:** Content prompts saved to `content_prompts` table
+   - **Needed:** Auto-convert to CONTENT actions on Monday/Wednesday
 
-**Impact:** Improves user engagement and retention.
+**Impact:** Improves user engagement and retention. Lower priority.
 
 ---
 
