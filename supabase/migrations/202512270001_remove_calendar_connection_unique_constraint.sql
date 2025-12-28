@@ -22,5 +22,3 @@ WHERE status = 'active';
 
 
 
-
-

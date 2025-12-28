@@ -48,5 +48,3 @@ You can remove the `.vercel.app` domain later if you want, but it's not urgent a
 
 
 
-
-

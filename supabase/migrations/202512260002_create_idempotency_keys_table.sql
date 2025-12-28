@@ -36,5 +36,3 @@ CREATE POLICY "Service role full access to idempotency_keys"
 
 
 
-
-

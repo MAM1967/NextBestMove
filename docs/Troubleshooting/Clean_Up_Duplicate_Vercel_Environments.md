@@ -69,5 +69,3 @@ It's safe to delete as long as:
 
 
 
-
-

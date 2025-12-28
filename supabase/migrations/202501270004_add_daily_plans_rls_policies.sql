@@ -59,5 +59,3 @@ CREATE POLICY "Users can delete own daily plan actions" ON daily_plan_actions
 
 
 
-
-

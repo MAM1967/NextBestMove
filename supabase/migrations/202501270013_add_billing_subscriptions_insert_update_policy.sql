@@ -31,5 +31,3 @@ CREATE POLICY "Users can update own subscriptions" ON billing_subscriptions
 
 
 
-
-
