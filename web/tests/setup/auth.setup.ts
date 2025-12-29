@@ -1,6 +1,5 @@
 import { test as setup, expect } from "@playwright/test";
 import { signInUser } from "../helpers/auth";
-import { STAGING_CONFIG } from "../helpers/staging-config";
 
 /**
  * Playwright Setup Project: Authentication State

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { PRICING_FEATURES, PRICING_TIERS } from "@/lib/billing/pricing-features";
-import type { FeatureValue } from "@/lib/billing/pricing-features";
 
 describe("pricing-features", () => {
   describe("PRICING_FEATURES", () => {

@@ -111,7 +111,7 @@ describe("Billing Idempotency", () => {
       };
       mockSupabase.from.mockReturnValue({
         select: vi.fn().mockReturnValue(selectChain),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const result = await checkIdempotency("test-key-123");
 
@@ -133,7 +133,7 @@ describe("Billing Idempotency", () => {
       };
       mockSupabase.from.mockReturnValue({
         select: vi.fn().mockReturnValue(selectChain),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const result = await checkIdempotency("test-key-123");
 
@@ -153,7 +153,7 @@ describe("Billing Idempotency", () => {
       };
       mockSupabase.from.mockReturnValue({
         select: vi.fn().mockReturnValue(selectChain),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const result = await checkIdempotency("test-key-123");
 
@@ -173,7 +173,7 @@ describe("Billing Idempotency", () => {
       };
       mockSupabase.from.mockReturnValue({
         select: vi.fn().mockReturnValue(selectChain),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const result = await checkIdempotency("test-key-123");
 
@@ -189,7 +189,7 @@ describe("Billing Idempotency", () => {
       // Mock: successful insert
       mockSupabase.from.mockReturnValue({
         insert: vi.fn().mockResolvedValue({ error: null }),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const success = await storeIdempotencyResult(idempotencyKey, result);
 
@@ -206,7 +206,7 @@ describe("Billing Idempotency", () => {
         insert: vi.fn().mockResolvedValue({
           error: { code: "23505", message: "Duplicate key" },
         }),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const success = await storeIdempotencyResult(idempotencyKey, result);
 
@@ -223,7 +223,7 @@ describe("Billing Idempotency", () => {
         insert: vi.fn().mockResolvedValue({
           error: { code: "PGRST301", message: "Database error" },
         }),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const success = await storeIdempotencyResult(idempotencyKey, result);
 
@@ -249,12 +249,12 @@ describe("Billing Idempotency", () => {
                 maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
               })),
             })),
-          } as any;
+          } as unknown as ReturnType<typeof mockSupabase.from>;
         } else {
           // Second call: storeIdempotencyResult
           return {
             insert: vi.fn().mockResolvedValue({ error: null }),
-          } as any;
+          } as unknown as ReturnType<typeof mockSupabase.from>;
         }
       });
 
@@ -279,7 +279,7 @@ describe("Billing Idempotency", () => {
             }),
           })),
         })),
-      } as any);
+      } as unknown as ReturnType<typeof mockSupabase.from>);
 
       const result = await executeWithIdempotency(idempotencyKey, operation);
 
@@ -303,11 +303,11 @@ describe("Billing Idempotency", () => {
                 maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
               })),
             })),
-          } as any;
+          } as unknown as ReturnType<typeof mockSupabase.from>;
         } else {
           return {
             insert: vi.fn().mockRejectedValue(new Error("Storage failed")),
-          } as any;
+          } as unknown as ReturnType<typeof mockSupabase.from>;
         }
       });
 
