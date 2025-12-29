@@ -5,6 +5,8 @@ import { cleanupTestUser } from "../helpers/test-data";
 
 /**
  * E2E tests for Analytics pages
+ * 
+ * Strategy: Test APIs directly first, then verify page renders correctly
  */
 test.describe("Analytics Pages", () => {
   let testUser: { email: string; password: string; name: string };
@@ -31,116 +33,67 @@ test.describe("Analytics Pages", () => {
   test("should render Analytics page with basic elements", async ({ page }) => {
     test.setTimeout(60000);
 
+    // First, verify APIs work by calling them directly
+    const apiResponses: Array<{ url: string; status: number; body: unknown }> = [];
+    page.on('response', async (response) => {
+      if (response.url().includes('/api/analytics')) {
+        try {
+          const body = await response.json().catch(() => null);
+          apiResponses.push({
+            url: response.url(),
+            status: response.status(),
+            body: body,
+          });
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    });
+
     // Navigate to analytics page
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
-    
-    // Verify we're on analytics page
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // Wait for page to be interactive
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Wait for any network requests to complete
+    // Wait for network requests
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
     
-    // Wait for React to hydrate and render
+    // Wait for React to render
     await page.waitForTimeout(5000);
 
-    // DEBUG: Get what's actually on the page
-    const bodyText = await page.locator('body').textContent().catch(() => '');
-    const pageTitle = await page.title().catch(() => '');
-    const currentUrl = page.url();
+    // Check API responses
+    const dealProgressionResponse = apiResponses.find(r => r.url.includes('deal-progression'));
+    const insightsResponse = apiResponses.find(r => r.url.includes('insights'));
     
-    console.log('=== DEBUG INFO ===');
-    console.log('Page URL:', currentUrl);
-    console.log('Page title:', pageTitle);
-    console.log('Body text (first 1000 chars):', bodyText?.substring(0, 1000));
+    console.log('Deal progression API status:', dealProgressionResponse?.status);
+    console.log('Insights API status:', insightsResponse?.status);
     
-    // Check for console errors
-    const consoleErrors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
-    
-    // Check for failed network requests
-    const failedRequests: string[] = [];
-    page.on('response', response => {
-      if (response.status() >= 400) {
-        failedRequests.push(`${response.url()}: ${response.status()}`);
-      }
-    });
-    
-    // Wait a bit more to capture errors
-    await page.waitForTimeout(2000);
-    
-    if (consoleErrors.length > 0) {
-      console.log('Console errors:', consoleErrors);
-    }
-    if (failedRequests.length > 0) {
-      console.log('Failed requests:', failedRequests);
-    }
-    
-    // Take screenshot for debugging
-    await page.screenshot({ path: 'test-results/debug-analytics-page.png', fullPage: true });
-    
-    // The page should show ONE of these states after loading:
-    // 1. Loading: "Loading analytics..."
-    // 2. Error: Red box with error message
-    // 3. Success: Heading "Analytics" + filters
-    
-    // Check for loading state
-    const loadingText = page.locator('text="Loading analytics..."');
-    const isLoading = await loadingText.isVisible({ timeout: 2000 }).catch(() => false);
-    
-    if (isLoading) {
-      // Wait for loading to complete
-      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
-      await page.waitForTimeout(2000);
-    }
-    
-    // After loading completes, check what's visible
-    // Check for error state
-    const errorBox = page.locator('.bg-red-50').first();
-    const errorText = page.locator('.text-red-800').first();
-    const hasError = await errorBox.isVisible({ timeout: 3000 }).catch(() => false);
-    
-    if (hasError) {
-      const errorMessage = await errorText.textContent().catch(() => 'unknown');
-      console.log('Page is in error state:', errorMessage);
-      // Error state is valid - verify it's visible
-      await expect(errorText).toBeVisible({ timeout: 2000 });
+    // If APIs failed, page should show error
+    if (dealProgressionResponse && dealProgressionResponse.status >= 400) {
+      const errorBox = page.locator('.bg-red-50').first();
+      await expect(errorBox).toBeVisible({ timeout: 10000 });
       return; // Test passes - error handling works
     }
     
-    // Not in error state - should show success content
-    // Success state ALWAYS includes heading and filters
-    const heading = page.locator('h1:has-text("Analytics")');
-    const headingVisible = await heading.isVisible({ timeout: 10000 }).catch(() => false);
-    
-    if (!headingVisible) {
-      // Heading not visible - something is wrong
-      console.log('ERROR: Heading not visible');
-      console.log('Body contains:', bodyText?.substring(0, 500));
-      
-      // Check if page has ANY content at all
-      const hasAnyContent = bodyText && bodyText.length > 100;
-      if (!hasAnyContent) {
-        throw new Error('Page appears to be empty. Check if route exists and page component is exported correctly.');
-      }
-      
-      // Check if we're still on the right URL
-      if (!currentUrl.includes('/analytics')) {
-        throw new Error(`Page redirected away from /analytics. Current URL: ${currentUrl}`);
-      }
-      
-      throw new Error('Analytics heading not visible. Page may not be rendering correctly. Check screenshot and logs.');
+    if (insightsResponse && insightsResponse.status >= 400) {
+      const errorBox = page.locator('.bg-red-50').first();
+      await expect(errorBox).toBeVisible({ timeout: 10000 });
+      return; // Test passes - error handling works
     }
+
+    // APIs succeeded - page should render content
+    // Wait for loading to complete
+    const loadingText = page.locator('text="Loading analytics..."');
+    const isLoading = await loadingText.isVisible({ timeout: 3000 }).catch(() => false);
+    if (isLoading) {
+      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+      await page.waitForTimeout(2000);
+    }
+
+    // After loading, page should show heading (always rendered in success state)
+    const heading = page.locator('h1:has-text("Analytics")');
+    await expect(heading).toBeVisible({ timeout: 15000 });
     
-    // Heading is visible - verify filters
-    await expect(heading).toBeVisible({ timeout: 5000 });
-    
+    // Verify filters are present
     const filtersSection = page.locator('text=/Start Date/i').or(page.locator('text=/End Date/i'));
     await expect(filtersSection.first()).toBeVisible({ timeout: 5000 });
     
@@ -148,13 +101,12 @@ test.describe("Analytics Pages", () => {
     const dateInputCount = await dateInputs.count();
     expect(dateInputCount).toBeGreaterThanOrEqual(2);
     
-    // Check for content sections (optional)
+    // Page should show either empty state or content
     const emptyState = page.locator('text=/No analytics data available/i');
     const dealMetricsSection = page.locator('text=/Deal Progression/i').or(page.locator('text=/Total Deals/i'));
     const hasEmptyState = await emptyState.isVisible({ timeout: 2000 }).catch(() => false);
     const hasDealMetrics = await dealMetricsSection.isVisible({ timeout: 2000 }).catch(() => false);
     
-    // At least one should be visible
     expect(hasEmptyState || hasDealMetrics).toBe(true);
   });
 
