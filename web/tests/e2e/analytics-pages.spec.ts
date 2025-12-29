@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { signUpUser } from "../helpers/auth";
+import { signInUser } from "../helpers/auth";
+import { createTestUserWithOnboardingCompleted } from "../helpers/create-user";
 import { cleanupTestUser } from "../helpers/test-data";
 
 /**
  * E2E tests for Analytics pages
  *
  * These tests verify:
- * - Analytics page renders correctly (or shows appropriate state)
+ * - Analytics page renders correctly for users with completed onboarding
  * - Cancellation Analytics page shows access denied for non-admins (expected)
  * - Pages handle loading and error states
  * - Basic UI elements are present when content loads
@@ -15,8 +16,21 @@ test.describe("Analytics Pages", () => {
   let testUser: { email: string; password: string; name: string };
 
   test.beforeEach(async ({ page }) => {
-    // Sign up a new user
-    testUser = await signUpUser(page);
+    // Create user WITH onboarding completed (so they can access /app routes)
+    testUser = await createTestUserWithOnboardingCompleted();
+    
+    // Sign in the user
+    await signInUser(page, testUser.email, testUser.password);
+    
+    // Verify we can access app routes (should NOT redirect to onboarding)
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/\/app/, { timeout: 10000 });
+    
+    // Verify we're not redirected to onboarding
+    const currentUrl = page.url();
+    if (currentUrl.includes("/onboarding")) {
+      throw new Error(`User with onboarding_completed=true was redirected to onboarding. URL: ${currentUrl}`);
+    }
   });
 
   test.afterEach(async () => {
@@ -32,59 +46,64 @@ test.describe("Analytics Pages", () => {
     // Navigate to analytics page
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     
-    // Wait for page to stabilize
-    await page.waitForTimeout(3000);
-
-    // Check current URL - might have been redirected
-    const currentUrl = page.url();
+    // CRITICAL: Verify we're on the analytics page (not redirected)
+    await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // If redirected away from analytics, that's okay - verify we're still in app
-    if (!currentUrl.includes("/analytics")) {
-      // Check if we're in onboarding or another app page
-      if (currentUrl.includes("/onboarding")) {
-        // User needs to complete onboarding - that's expected
-        expect(currentUrl).toContain("/onboarding");
-        return; // Test passes - page exists and redirected appropriately
-      }
-      if (currentUrl.includes("/app")) {
-        // Redirected to another app page - that's fine
-        expect(currentUrl).toContain("/app");
-        return; // Test passes
-      }
-    }
-
-    // Page should be at /app/analytics - check for content
-    // The page shows: loading -> error/content/empty state
+    // Wait for page to stabilize and network requests to complete
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {
+      // Network idle might timeout if there are long-polling requests, that's okay
+    });
+    
+    // Wait for loading state to complete
     const loadingText = page.locator('text="Loading analytics..."');
-    const heading = page.locator('h1:has-text("Analytics")');
-    const errorText = page.locator('text=/error/i').or(page.locator('text=/failed/i'));
-    const emptyStateText = page.locator('text=/no analytics data/i').or(page.locator('text=/start tracking/i'));
-    const errorBox = page.locator('.bg-red-50').or(page.locator('.text-red-800'));
-
-    // Wait for loading to complete (or skip if already loaded)
-    const isLoading = await loadingText.isVisible({ timeout: 2000 }).catch(() => false);
+    const isLoading = await loadingText.isVisible({ timeout: 3000 }).catch(() => false);
     if (isLoading) {
       // Wait for loading to disappear
       await expect(loadingText).not.toBeVisible({ timeout: 30000 });
-      await page.waitForTimeout(1000); // Brief wait after loading completes
+      // Additional wait for React to re-render after loading completes
+      await page.waitForTimeout(1000);
     }
 
-    // After loading, one of these should be visible:
-    // 1. Heading (page loaded successfully)
+    // After loading, the page should show one of these states:
+    // 1. Heading "Analytics" (page loaded successfully)
     // 2. Error message (API failed)
     // 3. Empty state (no data)
-    const hasHeading = await heading.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasError = await errorText.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasErrorBox = await errorBox.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasEmptyState = await emptyStateText.isVisible({ timeout: 5000 }).catch(() => false);
+    
+    // Use more specific selectors based on actual page structure
+    const heading = page.locator('h1:has-text("Analytics")');
+    const errorBox = page.locator('.bg-red-50').first();
+    const errorText = page.locator('.text-red-800').first();
+    const emptyState = page.locator('text=/No analytics data available/i');
+    
+    // Wait for at least one of these to be visible
+    // Use Playwright's built-in waiting with locator.or()
+    const anyContent = heading.or(errorBox).or(errorText).or(emptyState);
+    await expect(anyContent.first()).toBeVisible({ timeout: 15000 });
 
-    // At least one should be visible
-    expect(hasHeading || hasError || hasErrorBox || hasEmptyState).toBe(true);
+    // Verify which state we're in
+    const hasHeading = await heading.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasError = await errorBox.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasEmptyState = await emptyState.isVisible({ timeout: 2000 }).catch(() => false);
 
-    // If heading is visible, check for date inputs (filters section)
+    // If heading is visible, verify filters are present
     if (hasHeading) {
       const dateInputs = page.locator('input[type="date"]');
-      await expect(dateInputs.first()).toBeVisible({ timeout: 10000 });
+      const count = await dateInputs.count();
+      expect(count).toBeGreaterThanOrEqual(2); // Should have start and end date inputs
+      
+      // Verify filters section is visible
+      const filtersSection = page.locator('text=/Start Date/i').or(page.locator('text=/End Date/i'));
+      await expect(filtersSection.first()).toBeVisible({ timeout: 5000 });
+    }
+    
+    // If error, verify error message is visible
+    if (hasError) {
+      await expect(errorText).toBeVisible({ timeout: 2000 });
+    }
+    
+    // If empty state, verify message is visible
+    if (hasEmptyState) {
+      await expect(emptyState).toBeVisible({ timeout: 2000 });
     }
   });
 
@@ -102,17 +121,30 @@ test.describe("Analytics Pages", () => {
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     
-    // Wait for loading to complete and error to appear
-    await page.waitForTimeout(5000);
-
-    // Check for error message - can be in multiple forms
-    const errorText = page.locator('text=/error/i').or(page.locator('text=/failed/i'));
-    const errorBox = page.locator('.bg-red-50');
-    const errorTextInBox = page.locator('.text-red-800');
+    // Verify we're on analytics page
+    await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // One of these should be visible
-    const errorIndicator = errorText.or(errorBox).or(errorTextInBox);
-    await expect(errorIndicator.first()).toBeVisible({ timeout: 20000 });
+    // Wait for loading to complete
+    const loadingText = page.locator('text="Loading analytics..."');
+    const isLoading = await loadingText.isVisible({ timeout: 3000 }).catch(() => false);
+    if (isLoading) {
+      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+      await page.waitForTimeout(1000); // Wait for React to re-render
+    }
+
+    // Check for error message - should be in red box
+    const errorBox = page.locator('.bg-red-50').first();
+    const errorText = page.locator('.text-red-800').first();
+    
+    // Error box should be visible
+    await expect(errorBox).toBeVisible({ timeout: 15000 });
+    
+    // Error text should contain error message
+    await expect(errorText).toBeVisible({ timeout: 5000 });
+    
+    // Verify error text contains error-related words
+    const errorContent = await errorText.textContent();
+    expect(errorContent).toMatch(/error|failed/i);
   });
 
   test("should render Cancellation Analytics page (admin access required)", async ({
@@ -122,11 +154,13 @@ test.describe("Analytics Pages", () => {
 
     // Navigate to cancellation analytics page
     await page.goto("/app/admin/cancellation-analytics", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(5000); // Wait for API calls
-
+    
+    // Wait for page to load
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
+    
     // Check for loading state first
     const loadingText = page.locator('text="Loading analytics..."');
-    const isLoading = await loadingText.isVisible({ timeout: 2000 }).catch(() => false);
+    const isLoading = await loadingText.isVisible({ timeout: 3000 }).catch(() => false);
     if (isLoading) {
       // Wait for loading to complete
       await expect(loadingText).not.toBeVisible({ timeout: 30000 });
@@ -137,9 +171,13 @@ test.describe("Analytics Pages", () => {
     // 1. Access denied message (expected for non-admin users)
     // 2. Analytics content (if admin - unlikely for test user)
     const accessDeniedText = page.locator('text=/access denied/i').or(page.locator('text=/forbidden/i'));
-    const accessDeniedBox = page.locator('.bg-red-50');
-    const goBackButton = page.locator('button:has-text("Go back")').or(page.locator('text=/go back/i'));
+    const accessDeniedBox = page.locator('.bg-red-50').first();
+    const goBackButton = page.locator('button:has-text("Go back")');
     const analyticsHeading = page.locator('h1:has-text("Cancellation Feedback Analytics")');
+
+    // Wait for one of these to be visible
+    const anyContent = accessDeniedText.or(accessDeniedBox).or(goBackButton).or(analyticsHeading);
+    await expect(anyContent.first()).toBeVisible({ timeout: 15000 });
 
     // Check what's visible
     const hasAccessDeniedText = await accessDeniedText.isVisible({ timeout: 3000 }).catch(() => false);
@@ -156,6 +194,11 @@ test.describe("Analytics Pages", () => {
 
     // If access denied, that's expected for non-admin users - test passes
     if (hasAccessDenied) {
+      // Verify "Go back" button works if present
+      if (hasGoBack) {
+        await goBackButton.click();
+        await expect(page).toHaveURL(/\/app/, { timeout: 5000 });
+      }
       return;
     }
 
@@ -178,45 +221,45 @@ test.describe("Analytics Pages", () => {
     test.setTimeout(30000);
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(5000); // Wait for page to load
-
-    // Check if we're actually on the analytics page
-    const currentUrl = page.url();
-    if (!currentUrl.includes("/analytics")) {
-      // Redirected away - skip this test
-      return;
-    }
+    
+    // CRITICAL: Verify we're on analytics page
+    await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
+    
+    // Wait for page to load
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
 
     // Wait for loading to complete
     const loadingText = page.locator('text="Loading analytics..."');
-    const isLoading = await loadingText.isVisible({ timeout: 2000 }).catch(() => false);
+    const isLoading = await loadingText.isVisible({ timeout: 3000 }).catch(() => false);
     if (isLoading) {
       await expect(loadingText).not.toBeVisible({ timeout: 30000 });
       await page.waitForTimeout(1000);
     }
 
-    // Find date inputs
+    // Verify heading is visible (page loaded)
+    const heading = page.locator('h1:has-text("Analytics")');
+    await expect(heading).toBeVisible({ timeout: 10000 });
+
+    // Find date inputs - they should exist if page loaded successfully
     const dateInputs = page.locator('input[type="date"]');
     const count = await dateInputs.count();
+    
+    // Fail test if date inputs don't exist (page might be in error state)
+    expect(count).toBeGreaterThanOrEqual(2); // Should have start and end date inputs
 
-    if (count >= 2) {
-      // Set start date
-      const startDate = page.locator('input[type="date"]').first();
-      await startDate.fill("2025-01-01");
+    // Set start date
+    const startDate = dateInputs.first();
+    await startDate.fill("2025-01-01");
 
-      // Set end date
-      const endDate = page.locator('input[type="date"]').last();
-      await endDate.fill("2025-01-31");
+    // Set end date
+    const endDate = dateInputs.nth(1);
+    await endDate.fill("2025-01-31");
 
-      // Wait for filters to apply (API call should be triggered)
-      await page.waitForTimeout(2000);
+    // Wait for filters to apply (API call should be triggered by useEffect)
+    await page.waitForTimeout(2000);
 
-      // Verify dates are set
-      await expect(startDate).toHaveValue("2025-01-01");
-      await expect(endDate).toHaveValue("2025-01-31");
-    } else {
-      // No date inputs found - page might be in error or empty state
-      // That's okay, test still passes
-    }
+    // Verify dates are set
+    await expect(startDate).toHaveValue("2025-01-01");
+    await expect(endDate).toHaveValue("2025-01-31");
   });
 });
