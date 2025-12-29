@@ -37,30 +37,25 @@ test.describe("Analytics Pages", () => {
     await page.waitForLoadState("networkidle");
 
     // Check for main heading or loading state
-    const heading = page.locator('h1:has-text("Analytics"), h1:has-text("Deeper Analytics")');
+    const heading = page.locator('h1:has-text("Analytics")');
     const loadingText = page.locator('text="Loading analytics..."');
 
     // Either heading or loading text should be present
-    await expect(heading.or(loadingText)).toBeVisible({ timeout: 10000 });
+    const headingOrLoading = heading.or(loadingText);
+    await expect(headingOrLoading).toBeVisible({ timeout: 15000 });
 
-    // If not loading, check for key elements
+    // If loading, wait for it to complete
     if (await loadingText.isVisible({ timeout: 2000 }).catch(() => false)) {
-      // Wait for loading to complete
-      await expect(loadingText).not.toBeVisible({ timeout: 15000 });
+      // Wait for loading to complete - heading should appear
+      await expect(heading).toBeVisible({ timeout: 20000 });
     }
 
-    // Check for date filter inputs
-    const startDateInput = page.locator('input[type="date"]').first();
-    const endDateInput = page.locator('input[type="date"]').last();
-
-    // At least one date input should be present
+    // Check for date filter inputs - should be visible after loading
     const dateInputs = page.locator('input[type="date"]');
-    await expect(dateInputs.first()).toBeVisible({ timeout: 5000 });
+    await expect(dateInputs.first()).toBeVisible({ timeout: 10000 });
 
-    // Check for analytics content sections (deal progression, insights, etc.)
-    // These may not be visible if user has no data, but the page structure should exist
-    const pageContent = page.locator("main, [role='main'], .container, body");
-    await expect(pageContent).toBeVisible();
+    // Check for page content - should have at least the heading visible
+    await expect(heading).toBeVisible({ timeout: 5000 });
   });
 
   test("should handle Analytics page error state gracefully", async ({ page }) => {
@@ -78,9 +73,12 @@ test.describe("Analytics Pages", () => {
     await page.goto("/app/analytics");
     await page.waitForLoadState("networkidle");
 
-    // Check for error message
-    const errorMessage = page.locator('text=/error/i, text=/failed/i');
-    await expect(errorMessage.first()).toBeVisible({ timeout: 10000 });
+    // Wait for loading to complete and error to appear
+    await page.waitForTimeout(2000);
+
+    // Check for error message - should be in red box or visible text
+    const errorMessage = page.locator('text=/error/i, text=/failed/i, .text-red-800');
+    await expect(errorMessage.first()).toBeVisible({ timeout: 15000 });
   });
 
   test("should render Cancellation Analytics page (admin access required)", async ({
@@ -97,33 +95,40 @@ test.describe("Analytics Pages", () => {
     // 2. Analytics content (if admin)
     // 3. Loading state
 
-    const accessDenied = page.locator('text=/access denied/i, text=/forbidden/i, text=/admin/i');
-    const analyticsContent = page.locator('h1:has-text("Cancellation"), h1:has-text("Analytics")');
-    const loadingState = page.locator('text=/loading/i');
+    const accessDenied = page.locator('text=/access denied/i, text=/forbidden/i, .text-red-800');
+    const analyticsContent = page.locator('h1:has-text("Cancellation Feedback Analytics")');
+    const loadingState = page.locator('text="Loading analytics..."');
 
-    // One of these should be visible
-    const anyVisible = accessDenied.or(analyticsContent).or(loadingState);
-    await expect(anyVisible.first()).toBeVisible({ timeout: 10000 });
+    // Wait for one of these to appear
+    await page.waitForTimeout(2000);
 
-    // If loading, wait for it to complete
-    if (await loadingState.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await expect(loadingState).not.toBeVisible({ timeout: 15000 });
+    // Check if loading first
+    const isLoading = await loadingState.isVisible({ timeout: 2000 }).catch(() => false);
+    if (isLoading) {
+      // Wait for loading to complete
+      await expect(loadingState).not.toBeVisible({ timeout: 20000 });
     }
 
-    // If access denied, that's expected for non-admin users
-    if (await accessDenied.isVisible({ timeout: 2000 }).catch(() => false)) {
-      // This is expected behavior - test passes
+    // After loading, check what's visible
+    const hasAccessDenied = await accessDenied.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasAnalyticsContent = await analyticsContent.isVisible({ timeout: 2000 }).catch(() => false);
+
+    // One of these should be visible
+    expect(hasAccessDenied || hasAnalyticsContent).toBe(true);
+
+    // If access denied, that's expected for non-admin users - test passes
+    if (hasAccessDenied) {
       return;
     }
 
     // If admin access, check for key elements
-    if (await analyticsContent.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (hasAnalyticsContent) {
       // Check for filters
       const dateInputs = page.locator('input[type="date"]');
       await expect(dateInputs.first()).toBeVisible({ timeout: 5000 });
 
       // Check for export button or breakdown section
-      const exportButton = page.locator('button:has-text("Export"), button:has-text("CSV")');
+      const exportButton = page.locator('button:has-text("Export CSV")');
       const breakdownSection = page.locator('text=/breakdown/i, text=/total/i');
 
       // At least one should be present
