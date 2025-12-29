@@ -195,8 +195,9 @@ export async function createTestUserProgrammatically() {
 /**
  * Create a test user with onboarding already completed
  * Useful for tests that need to skip the onboarding flow
+ * @param tier - Optional tier to set for the user (default: "free")
  */
-export async function createTestUserWithOnboardingCompleted() {
+export async function createTestUserWithOnboardingCompleted(tier: "free" | "standard" | "premium" = "free") {
   if (!STAGING_CONFIG.supabaseUrl || !STAGING_CONFIG.supabaseServiceRoleKey) {
     throw new Error(
       "Supabase credentials not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
@@ -241,6 +242,7 @@ export async function createTestUserWithOnboardingCompleted() {
       streak_count: 0,
       calendar_connected: false,
       onboarding_completed: true, // User has completed onboarding
+      tier: tier, // Set user tier
     });
 
     if (profileError) {

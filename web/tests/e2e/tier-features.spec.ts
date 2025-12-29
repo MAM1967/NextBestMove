@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { signInUser, createTestUserWithOnboardingCompleted } from "../helpers/auth";
+import { signInUser } from "../helpers/auth";
+import { createTestUserWithOnboardingCompleted } from "../helpers/create-user";
 
 /**
  * E2E tests for tier-based features (NEX-34, NEX-35, NEX-36, NEX-37)

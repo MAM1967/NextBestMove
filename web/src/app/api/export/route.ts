@@ -275,7 +275,10 @@ export async function GET() {
         // Generate ZIP buffer
         const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
-        return new NextResponse(zipBuffer, {
+        // Convert Buffer to Uint8Array for NextResponse
+        const uint8Array = new Uint8Array(zipBuffer);
+
+        return new NextResponse(uint8Array, {
           headers: {
             "Content-Type": "application/zip",
             "Content-Disposition": `attachment; filename="nextbestmove-export-${new Date().toISOString().split("T")[0]}.zip"`,

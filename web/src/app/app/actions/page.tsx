@@ -196,7 +196,7 @@ export default function ActionsPage() {
       } else if (followUpLimit.current >= followUpLimit.limit - 1) {
         // Warning when approaching limit
         addToast({
-          type: "warning",
+          type: "info",
           message: `You've used ${followUpLimit.current} of ${followUpLimit.limit} follow-ups this week.`,
         });
       }
