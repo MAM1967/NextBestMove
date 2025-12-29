@@ -10,8 +10,10 @@ import { PaywallOverlay } from "../components/PaywallOverlay";
 import { CelebrationBanner } from "../components/CelebrationBanner";
 import { PreCallBriefCarousel } from "../components/PreCallBriefCarousel";
 import { PreCallBriefModal } from "../components/PreCallBriefModal";
+import { CapacityOverrideControl } from "../components/CapacityOverrideControl";
 import { Action } from "../actions/types";
 import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
+import type { CapacityLevel } from "@/lib/plan/capacity";
 
 interface DailyPlan {
   id: string;
@@ -52,12 +54,15 @@ export default function DailyPlanPage() {
   const [selectedBrief, setSelectedBrief] = useState<PreCallBrief | null>(null);
   const [showBriefModal, setShowBriefModal] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [capacityOverride, setCapacityOverride] = useState<CapacityLevel | null>(null);
+  const [capacityOverrideReason, setCapacityOverrideReason] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSubscriptionStatus();
     fetchDailyPlan();
     fetchWeeklyFocus();
     fetchPreCallBriefs();
+    fetchCapacityOverride();
     // Set formatted date on client side only to avoid hydration mismatch
     setFormattedDate(
       new Date().toLocaleDateString("en-US", {
@@ -68,6 +73,23 @@ export default function DailyPlanPage() {
       })
     );
   }, []);
+
+  const fetchCapacityOverride = async () => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const response = await fetch(`/api/plan/capacity-override?date=${today}`);
+      if (response.ok) {
+        const data = (await response.json()) as {
+          dailyOverride?: CapacityLevel | null;
+          dailyOverrideReason?: string | null;
+        };
+        setCapacityOverride(data.dailyOverride || null);
+        setCapacityOverrideReason(data.dailyOverrideReason || null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch capacity override:", err);
+    }
+  };
 
   const fetchSubscriptionStatus = async () => {
     try {
@@ -548,6 +570,24 @@ export default function DailyPlanPage() {
             </button>
           )}
         </div>
+
+        {/* Capacity Override Control */}
+        {dailyPlan && (
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <CapacityOverrideControl
+              date={new Date().toISOString().split("T")[0]}
+              currentOverride={capacityOverride}
+              currentOverrideReason={capacityOverrideReason}
+              onOverrideChange={() => {
+                fetchCapacityOverride();
+                // Optionally regenerate plan when override changes
+                // handleGeneratePlan();
+              }}
+              showLabel={true}
+              compact={false}
+            />
+          </div>
+        )}
 
         {/* Error Message (Inline) */}
         {error && (

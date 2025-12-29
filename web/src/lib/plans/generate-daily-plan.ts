@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCapacityForDate } from "@/lib/calendar/capacity";
+import { getCapacityWithOverrides } from "@/lib/plan/capacity";
 import {
   hasLowCompletionPattern,
   isInactive2To6Days,
@@ -153,13 +153,24 @@ export async function generateDailyPlanForUser(
     // Check if plan already exists for this date
     const { data: existingPlan } = await supabase
       .from("daily_plans")
-      .select("id")
+      .select("id, capacity_override, override_reason")
       .eq("user_id", userId)
       .eq("date", date)
       .maybeSingle();
 
+    // If plan exists and has actions (full plan), don't regenerate
     if (existingPlan) {
-      return { success: false, error: "Plan already exists for this date" };
+      const { data: planActions } = await supabase
+        .from("daily_plan_actions")
+        .select("id")
+        .eq("daily_plan_id", existingPlan.id)
+        .limit(1);
+      
+      // If plan has actions, it's a complete plan - don't regenerate
+      if (planActions && planActions.length > 0) {
+        return { success: false, error: "Plan already exists for this date" };
+      }
+      // If plan exists but has no actions, it might just have an override - we'll regenerate
     }
 
     // Get user preference for weekends and timezone
@@ -217,59 +228,61 @@ export async function generateDailyPlanForUser(
       };
     }
 
-    // Calculate capacity from calendar (or use default)
-    let capacityInfo = await getCapacityForDate(supabase, userId, date);
+    // Calculate capacity with overrides (checks manual override > user default > calendar)
+    let capacityInfo = await getCapacityWithOverrides(supabase, userId, date);
     let capacityLevel = capacityInfo.level;
-    let actionCount = capacityInfo.actionsPerDay;
+    let actionCount = capacityInfo.actionCount;
 
-    // Adaptive Recovery Logic: Override capacity based on user patterns
-    const [lowCompletion, inactive2To6, inactive7Plus, highStreak] = await Promise.all([
-      hasLowCompletionPattern(supabase, userId),
-      isInactive2To6Days(supabase, userId),
-      isInactive7PlusDays(supabase, userId),
-      hasHighCompletionStreak(supabase, userId),
-    ]);
-
+    // Declare adaptiveReason at function scope so it's accessible later
     let adaptiveReason: string | null = null;
 
-    // Case 1: 7+ days inactive → Micro plan (1-2 actions)
-    if (inactive7Plus) {
-      capacityLevel = "micro";
-      actionCount = 2;
-      adaptiveReason = "comeback";
-    }
-    // Case 1b: 2-6 days inactive (Day 2-6 streak break) → Micro plan (2 actions)
-    else if (inactive2To6) {
-      capacityLevel = "micro";
-      actionCount = 2;
-      adaptiveReason = "streak_break";
-    }
-    // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
-    else if (lowCompletion) {
-      capacityLevel = "light";
-      actionCount = 3;
-      adaptiveReason = "low_completion";
-    }
-    // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
-    else if (highStreak) {
-      // Boost to heavy if they're consistently completing (from any base capacity)
-      // If already heavy, keep it; otherwise boost from standard/light to heavy
-      if (capacityLevel !== "heavy") {
-        capacityLevel = "heavy";
-        actionCount = 8;
-        adaptiveReason = "high_streak";
+    // Adaptive Recovery Logic: Override capacity based on user patterns
+    // BUT: Only apply if there's no manual override (manual override takes precedence)
+    if (capacityInfo.source !== "override") {
+      const [lowCompletion, inactive2To6, inactive7Plus, highStreak] = await Promise.all([
+        hasLowCompletionPattern(supabase, userId),
+        isInactive2To6Days(supabase, userId),
+        isInactive7PlusDays(supabase, userId),
+        hasHighCompletionStreak(supabase, userId),
+      ]);
+
+      // Case 1: 7+ days inactive → Micro plan (1-2 actions)
+      if (inactive7Plus) {
+        capacityLevel = "micro";
+        actionCount = 2;
+        adaptiveReason = "comeback";
+      }
+      // Case 1b: 2-6 days inactive (Day 2-6 streak break) → Micro plan (2 actions)
+      else if (inactive2To6) {
+        capacityLevel = "micro";
+        actionCount = 2;
+        adaptiveReason = "streak_break";
+      }
+      // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
+      else if (lowCompletion) {
+        capacityLevel = "light";
+        actionCount = 3;
+        adaptiveReason = "low_completion";
+      }
+      // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
+      else if (highStreak) {
+        // Boost to heavy if they're consistently completing (from any base capacity)
+        // If already heavy, keep it; otherwise boost from standard/light to heavy
+        if (capacityLevel !== "heavy") {
+          capacityLevel = "heavy";
+          actionCount = 8;
+          adaptiveReason = "high_streak";
+        }
       }
     }
 
     // For backward compatibility, calculate freeMinutes (approximate)
     let freeMinutes: number | null = null;
-    if (capacityInfo.source === "calendar") {
-      // Approximate: capacity levels map to free minutes ranges
-      if (capacityLevel === "micro") freeMinutes = 15;
-      else if (capacityLevel === "light") freeMinutes = 45;
-      else if (capacityLevel === "standard") freeMinutes = 90;
-      else if (capacityLevel === "heavy") freeMinutes = 240;
-    }
+    // Approximate: capacity levels map to free minutes ranges
+    if (capacityLevel === "micro") freeMinutes = 15;
+    else if (capacityLevel === "light") freeMinutes = 45;
+    else if (capacityLevel === "standard") freeMinutes = 90;
+    else if (capacityLevel === "heavy") freeMinutes = 240;
 
     // Fetch candidate actions (NEW or SNOOZED due today or in past)
     // Parse date string to avoid timezone issues (same fix as client-side)
@@ -595,22 +608,49 @@ export async function generateDailyPlanForUser(
       focusStatement = "You're on a roll! Here's your plan for today.";
     }
 
-    // Create daily_plan record
-    const { data: dailyPlan, error: planError } = await supabase
-      .from("daily_plans")
-      .insert({
-        user_id: userId,
-        date,
-        focus_statement: focusStatement,
-        capacity: capacityLevel,
-        free_minutes: freeMinutes,
-      })
-      .select()
-      .single();
+    // Create or update daily_plan record
+    // If plan exists (with just override), update it; otherwise create new
+    let dailyPlan;
+    if (existingPlan) {
+      // Update existing plan (preserve override if it exists)
+      const { data: updatedPlan, error: updateError } = await supabase
+        .from("daily_plans")
+        .update({
+          focus_statement: focusStatement,
+          capacity: capacityLevel,
+          free_minutes: freeMinutes,
+          // Preserve existing override if it exists
+          capacity_override: existingPlan.capacity_override || null,
+          override_reason: existingPlan.override_reason || null,
+        })
+        .eq("id", existingPlan.id)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error("Error updating daily plan:", updateError);
+        return { success: false, error: "Failed to update daily plan" };
+      }
+      dailyPlan = updatedPlan;
+    } else {
+      // Create new plan
+      const { data: newPlan, error: planError } = await supabase
+        .from("daily_plans")
+        .insert({
+          user_id: userId,
+          date,
+          focus_statement: focusStatement,
+          capacity: capacityLevel,
+          free_minutes: freeMinutes,
+        })
+        .select()
+        .single();
 
-    if (planError) {
-      console.error("Error creating daily plan:", planError);
-      return { success: false, error: "Failed to create daily plan" };
+      if (planError) {
+        console.error("Error creating daily plan:", planError);
+        return { success: false, error: "Failed to create daily plan" };
+      }
+      dailyPlan = newPlan;
     }
 
     // Create daily_plan_actions records

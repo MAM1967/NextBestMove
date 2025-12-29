@@ -45,6 +45,10 @@ export interface Action {
   
   // Estimated duration for "I have X minutes" feature
   estimated_minutes?: number | null;
+  
+  // Deal progression tracking
+  deal_stage?: "prospecting" | "qualifying" | "proposal" | "negotiation" | "closed_won" | "closed_lost" | null;
+  deal_value?: number | null;
 }
 
 

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { GenerateSummaryButton } from "./GenerateSummaryButton";
 import { CopyPromptButton } from "./CopyPromptButton";
 
@@ -237,6 +238,23 @@ export default async function WeeklyReviewPage() {
           </div>
         </div>
       )}
+
+      {/* Deeper Insights */}
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-2 text-base font-semibold text-zinc-900">
+          Deeper Insights
+        </h2>
+        <p className="mb-4 text-sm text-zinc-600">
+          View deal progression metrics, response time trends, and channel
+          effectiveness analytics.
+        </p>
+        <Link
+          href="/app/analytics"
+          className="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-purple-700"
+        >
+          View Analytics →
+        </Link>
+      </div>
 
       {/* Footer */}
       <div className="border-t border-zinc-200 pt-6 text-center">

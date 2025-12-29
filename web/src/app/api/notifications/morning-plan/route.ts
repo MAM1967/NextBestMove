@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { sendMorningPlanEmail } from "@/lib/email/notifications";
+import { getNotificationChannels } from "@/lib/notifications/channels";
+import { sendPushNotification } from "@/lib/notifications/push";
 
 /**
  * GET /api/notifications/morning-plan
@@ -61,12 +63,10 @@ export async function GET(request: Request) {
     const currentHour = now.getUTCHours();
     const currentMinute = now.getUTCMinutes();
 
-    // Get all users with morning plan emails enabled and not unsubscribed
+    // Get all users (we'll check notification preferences per user)
     const { data: users, error: usersError } = await supabase
       .from("users")
-      .select("id, email, name, timezone, email_morning_plan, email_unsubscribed")
-      .eq("email_morning_plan", true)
-      .eq("email_unsubscribed", false);
+      .select("id, email, name, timezone, email_unsubscribed");
 
     if (usersError) {
       console.error("Error fetching users:", usersError);
@@ -92,6 +92,27 @@ export async function GET(request: Request) {
 
     for (const user of users) {
       try {
+        // Check if user is unsubscribed globally
+        if (user.email_unsubscribed) {
+          skipReasons.push(`${user.email}: Globally unsubscribed`);
+          skipped++;
+          continue;
+        }
+
+        // Get notification channels for this user
+        const channels = await getNotificationChannels(
+          supabase,
+          user.id,
+          "morning_plan"
+        );
+
+        // Skip if no channels enabled
+        if (!channels.email && !channels.push) {
+          skipReasons.push(`${user.email}: No notification channels enabled`);
+          skipped++;
+          continue;
+        }
+
         // Calculate 8am in user's timezone
         const userTime = new Date(
           new Date().toLocaleString("en-US", { timeZone: user.timezone })
@@ -164,7 +185,11 @@ export async function GET(request: Request) {
 
         if (dailyPlan.daily_plan_actions) {
           for (const planAction of dailyPlan.daily_plan_actions) {
-            const action = planAction.actions as any;
+            const action = planAction.actions as {
+              description?: string;
+              action_type: string;
+              leads?: Array<{ name?: string; url?: string }>;
+            } | null;
             if (!action) continue;
 
             const actionData = {
@@ -182,15 +207,44 @@ export async function GET(request: Request) {
           }
         }
 
-        // Send email
-        await sendMorningPlanEmail({
-          to: user.email,
-          userName: user.name,
-          planDate: today,
-          fastWin,
-          actions,
-          focusStatement: dailyPlan.focus_statement,
-        });
+        // Send via enabled channels
+        const sendPromises: Promise<unknown>[] = [];
+
+        // Send email if enabled
+        if (channels.email) {
+          sendPromises.push(
+            sendMorningPlanEmail({
+              to: user.email,
+              userName: user.name,
+              planDate: today,
+              fastWin,
+              actions,
+              focusStatement: dailyPlan.focus_statement,
+            })
+          );
+        }
+
+        // Send push notification if enabled
+        if (channels.push) {
+          const actionCount = actions.length + (fastWin ? 1 : 0);
+          sendPromises.push(
+            sendPushNotification(supabase, user.id, "morning_plan", {
+              title: "Your NextBestMove for Today",
+              body: actionCount > 0
+                ? `You have ${actionCount} action${actionCount === 1 ? "" : "s"} ready`
+                : "Your daily plan is ready",
+              icon: "/icon-192x192.png",
+              tag: "morning-plan",
+              data: {
+                type: "morning_plan",
+                date: today,
+              },
+            })
+          );
+        }
+
+        // Wait for all notifications to be sent
+        await Promise.all(sendPromises);
 
         sent++;
         
@@ -199,9 +253,11 @@ export async function GET(request: Request) {
         if (sent < users.length) {
           await new Promise(resolve => setTimeout(resolve, 600));
         }
-      } catch (error: any) {
-        console.error(`Error sending email to ${user.email}:`, error);
-        errors.push(`User ${user.email}: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error sending notification to ${user.email}:`, error);
+        errors.push(`User ${user.email}: ${errorMessage}`);
         skipped++;
       }
     }
@@ -213,10 +269,12 @@ export async function GET(request: Request) {
       skipReasons: skipReasons.length > 0 ? skipReasons : undefined,
       errors: errors.length > 0 ? errors : undefined,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error("Error in morning plan notification job:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }
