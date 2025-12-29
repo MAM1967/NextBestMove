@@ -48,8 +48,6 @@ jobs:
         run: npm ci
       - name: Run unit tests
         run: npm run test:unit
-        env:
-          # Unit tests don't need Supabase - they're mocked
 
   integration-tests:
     runs-on: ubuntu-latest
