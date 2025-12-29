@@ -25,8 +25,8 @@ export async function GET(request: Request) {
   let clientError = null;
   try {
     adminClient = createAdminClient();
-  } catch (error: any) {
-    clientError = error.message;
+  } catch (error: unknown) {
+    clientError = error instanceof Error ? error.message : String(error);
   }
   
   // Try a simple query if client was created
@@ -40,8 +40,8 @@ export async function GET(request: Request) {
       } else {
         querySuccess = true;
       }
-    } catch (error: any) {
-      queryError = error.message;
+    } catch (error: unknown) {
+      queryError = error instanceof Error ? error.message : String(error);
     }
   }
   

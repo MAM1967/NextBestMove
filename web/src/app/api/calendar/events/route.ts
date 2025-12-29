@@ -339,7 +339,8 @@ export async function GET(request: Request) {
       timezone,
       days: daysData,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error fetching calendar events:", error);
     return NextResponse.json(
       {

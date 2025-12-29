@@ -140,7 +140,7 @@ export async function GET(request: Request) {
 
         // Find fast win action
         const fastWinAction = dailyPlan.daily_plan_actions?.find(
-          (pa: any) => pa.is_fast_win && pa.actions
+          (pa: { is_fast_win: boolean; actions: unknown }) => pa.is_fast_win && pa.actions
         );
 
         if (!fastWinAction || !fastWinAction.actions) {
@@ -149,7 +149,15 @@ export async function GET(request: Request) {
           continue;
         }
 
-        const action = fastWinAction.actions as any;
+        type ActionWithLeads = {
+          id: string;
+          action_type: string;
+          state: string;
+          description?: string;
+          leads?: { id: string; name: string } | null;
+          [key: string]: unknown;
+        };
+        const action = fastWinAction.actions as ActionWithLeads;
 
         // Check if fast win is already completed
         if (action.state === "DONE" || action.state === "SENT" || action.completed_at) {
@@ -175,7 +183,8 @@ export async function GET(request: Request) {
         if (sent < users.length) {
           await new Promise(resolve => setTimeout(resolve, 600));
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Error sending email to ${user.email}:`, error);
         errors.push(`User ${user.email}: ${error.message}`);
         skipped++;

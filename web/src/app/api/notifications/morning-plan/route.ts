@@ -164,7 +164,15 @@ export async function GET(request: Request) {
 
         if (dailyPlan.daily_plan_actions) {
           for (const planAction of dailyPlan.daily_plan_actions) {
-            const action = planAction.actions as any;
+            type ActionWithLeads = {
+              id: string;
+              action_type: string;
+              state: string;
+              description?: string;
+              leads?: Array<{ id: string; name: string }> | null;
+              [key: string]: unknown;
+            };
+            const action = planAction.actions as ActionWithLeads;
             if (!action) continue;
 
             const actionData = {
@@ -199,7 +207,8 @@ export async function GET(request: Request) {
         if (sent < users.length) {
           await new Promise(resolve => setTimeout(resolve, 600));
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Error sending email to ${user.email}:`, error);
         errors.push(`User ${user.email}: ${error.message}`);
         skipped++;

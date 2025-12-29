@@ -152,7 +152,7 @@ export async function PUT(
         if (newCadence === currentLead?.cadence && currentLead?.cadence_days) {
           finalCadenceDays = currentLead.cadence_days;
         } else {
-          finalCadenceDays = getCadenceDaysDefault(newCadence as any);
+          finalCadenceDays = getCadenceDaysDefault(newCadence as "COLD" | "WARM" | "HOT" | "MAINTAIN");
         }
       } else if (newCadence === "ad_hoc") {
         finalCadenceDays = null;
@@ -160,7 +160,7 @@ export async function PUT(
       
       // Validate cadence_days if cadence is set
       if (newCadence && newCadence !== "ad_hoc" && finalCadenceDays !== null) {
-        if (!validateCadenceDays(newCadence as any, finalCadenceDays)) {
+        if (!validateCadenceDays(newCadence as "COLD" | "WARM" | "HOT" | "MAINTAIN", finalCadenceDays)) {
           return NextResponse.json(
             { error: `Cadence days must be within the valid range for ${newCadence}` },
             { status: 400 }

@@ -59,9 +59,9 @@ export async function GET(request: Request) {
     let adminClient;
     try {
       adminClient = createAdminClient();
-    } catch (error: any) {
-      console.error("[Cron Daily Plans] Failed to create admin client:", error);
-      const errorMessage = error?.message || "Unknown error creating Supabase admin client";
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error creating Supabase admin client";
+      console.error("[Cron Daily Plans] Failed to create admin client:", errorMessage);
       if (isStaging) {
         console.error("[Cron Daily Plans] Admin client creation error details:", {
           hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,

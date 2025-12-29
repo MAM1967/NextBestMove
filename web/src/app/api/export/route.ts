@@ -5,13 +5,13 @@ import { getUserTier } from "@/lib/billing/tier";
 /**
  * Convert data to CSV format
  */
-function convertToCSV(data: any[], headers: string[]): string {
+function convertToCSV(data: Record<string, unknown>[], headers: string[]): string {
   if (data.length === 0) {
     return headers.join(",") + "\n";
   }
 
   // Escape CSV values (handle commas, quotes, newlines)
-  const escapeCSV = (value: any): string => {
+  const escapeCSV = (value: unknown): string => {
     if (value === null || value === undefined) {
       return "";
     }
@@ -28,7 +28,12 @@ function convertToCSV(data: any[], headers: string[]): string {
   for (const item of data) {
     const row = headers.map((header) => {
       // Handle nested properties (e.g., "leads.name")
-      const value = header.split(".").reduce((obj, key) => obj?.[key], item);
+      const value = header.split(".").reduce((obj: unknown, key: string) => {
+        if (obj && typeof obj === "object" && key in obj) {
+          return (obj as Record<string, unknown>)[key];
+        }
+        return undefined;
+      }, item as unknown);
       return escapeCSV(value);
     });
     rows.push(row.join(","));
@@ -38,9 +43,50 @@ function convertToCSV(data: any[], headers: string[]): string {
 }
 
 /**
+ * Export data structure
+ */
+interface ExportData {
+  export_date: string;
+  summary: {
+    total_leads: number;
+    total_actions: number;
+    total_plans: number;
+  };
+  data: {
+    pins?: Array<{
+      id: string;
+      name: string;
+      url?: string;
+      notes?: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+    actions?: Array<{
+      id: string;
+      action_type: string;
+      state: string;
+      description?: string;
+      due_date: string;
+      completed_at?: string;
+      notes?: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+    daily_plans?: Array<{
+      id: string;
+      date: string;
+      capacity?: number;
+      free_minutes?: number;
+      created_at: string;
+    }>;
+  };
+}
+
+/**
  * Generate CSV export for Standard/Premium tiers
  */
-function generateCSVExport(exportData: any): string {
+function generateCSVExport(exportData: ExportData): string {
   const csvSections: string[] = [];
 
   // Leads CSV
@@ -82,7 +128,7 @@ function generateCSVExport(exportData: any): string {
   // Daily Plans CSV (simplified - just plan metadata)
   if (exportData.data.daily_plans && exportData.data.daily_plans.length > 0) {
     csvSections.push("=== DAILY PLANS ===");
-    const simplifiedPlans = exportData.data.daily_plans.map((plan: any) => ({
+    const simplifiedPlans = exportData.data.daily_plans.map((plan) => ({
       id: plan.id,
       date: plan.date,
       capacity: plan.capacity,
@@ -295,8 +341,9 @@ export async function GET() {
         });
       }
     }
-  } catch (error) {
-    console.error("Export error:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Export error:", errorMessage);
     return NextResponse.json(
       { error: "Failed to export data" },
       { status: 500 }

@@ -79,9 +79,10 @@ export async function GET(request: Request) {
           
           console.log(`Downgraded user ${userId} to Free tier (trial ended)`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         errorCount++;
-        console.error(`Error downgrading user ${customer.user_id}:`, error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error downgrading user ${customer.user_id}:`, errorMessage);
       }
     }
 
@@ -91,10 +92,11 @@ export async function GET(request: Request) {
       downgraded: downgradedCount,
       errors: errorCount,
     });
-  } catch (error: any) {
-    console.error("Fatal error in downgrade-to-free cron:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Fatal error in downgrade-to-free cron:", errorMessage);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }

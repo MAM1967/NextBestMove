@@ -90,10 +90,11 @@ export async function POST(request: NextRequest) {
       },
       daysSinceFailure,
     });
-  } catch (error: any) {
-    logError("Error sending test payment failure email", error);
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error sending test payment failure email", errorObj);
     return NextResponse.json(
-      { error: "Failed to send email", details: error.message },
+      { error: "Failed to send email", details: errorObj.message },
       { status: 500 }
     );
   }

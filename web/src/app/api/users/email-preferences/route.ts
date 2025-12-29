@@ -38,7 +38,13 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const updateData: any = {
+  const updateData: {
+    email_morning_plan: boolean;
+    email_fast_win_reminder: boolean;
+    email_follow_up_alerts: boolean;
+    email_weekly_summary: boolean;
+    email_unsubscribed?: boolean;
+  } = {
     email_morning_plan,
     email_fast_win_reminder,
     email_follow_up_alerts,

@@ -136,14 +136,14 @@ export async function GET(request: Request) {
  * Aggregate timeline data by granularity (day, week, or month)
  */
 function aggregateByGranularity(
-  data: Array<{ date: string; metrics: any }>,
+  data: Array<{ date: string; metrics: Record<string, unknown> }>,
   granularity: "day" | "week" | "month"
-): Array<{ date: string; metrics: any }> {
+): Array<{ date: string; metrics: Record<string, unknown> }> {
   if (granularity === "day") {
     return data;
   }
 
-  const grouped = new Map<string, Array<{ date: string; metrics: any }>>();
+  const grouped = new Map<string, Array<{ date: string; metrics: Record<string, unknown> }>>();
 
   for (const item of data) {
     const date = new Date(item.date);
@@ -168,7 +168,7 @@ function aggregateByGranularity(
   }
 
   // Aggregate metrics for each group
-  const aggregated: Array<{ date: string; metrics: any }> = [];
+  const aggregated: Array<{ date: string; metrics: Record<string, unknown> }> = [];
 
   for (const [key, items] of grouped.entries()) {
     const aggregatedMetrics = {

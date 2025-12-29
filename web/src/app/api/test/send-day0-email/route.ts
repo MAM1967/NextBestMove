@@ -90,8 +90,9 @@ export async function GET(request: NextRequest) {
       message: "Day 0 email sent",
       user: { id: user.id, email: user.email, name: user.name },
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: "Failed to send email", details: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: "Failed to send email", details: errorMessage }, { status: 500 });
   }
 }
 

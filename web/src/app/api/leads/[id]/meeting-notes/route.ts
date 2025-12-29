@@ -131,7 +131,7 @@ export async function POST(
  * Called asynchronously after meeting note is created
  */
 async function extractAndPersistInteractions(
-  supabase: any,
+  supabase: ReturnType<typeof import("@/lib/supabase/server").createClient>,
   meetingNoteId: string,
   content: string,
   relationshipName: string,

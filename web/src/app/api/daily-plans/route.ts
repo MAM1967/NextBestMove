@@ -70,12 +70,21 @@ export async function GET(request: Request) {
     }
 
     // Transform the data
-    const actions: any[] = [];
-    let fastWin: any = null;
+    type ActionWithLeads = {
+      id: string;
+      action_type: string;
+      state: string;
+      description?: string;
+      due_date: string;
+      leads?: Array<{ id: string; name: string; url?: string; notes?: string }> | null;
+      [key: string]: unknown;
+    };
+    const actions: ActionWithLeads[] = [];
+    let fastWin: ActionWithLeads | null = null;
 
     if (planActions) {
       for (const planAction of planActions) {
-        const actionData = planAction.actions as any;
+        const actionData = planAction.actions as ActionWithLeads;
         if (actionData) {
           const action = {
             ...actionData,

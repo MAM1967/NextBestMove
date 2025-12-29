@@ -107,7 +107,10 @@ export async function GET(request: Request) {
         (now.getTime() - canceledDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      const user = (subscription.billing_customers as any)?.users;
+      type BillingCustomerWithUser = {
+        users?: { id: string; email?: string; name?: string | null };
+      };
+      const user = (subscription.billing_customers as BillingCustomerWithUser | null)?.users;
       if (!user || !user.email) {
         logError("User data missing for subscription", undefined, {
           subscriptionId: subscription.id,

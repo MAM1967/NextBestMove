@@ -121,7 +121,16 @@ export async function GET(request: Request) {
         }
 
         // Calculate days overdue for each action
-        const overdueActionsData = overdueActions.map((action: any) => {
+        type ActionWithLeads = {
+          id: string;
+          action_type: string;
+          state: string;
+          description?: string;
+          due_date: string;
+          leads?: { id: string; name: string } | null;
+          [key: string]: unknown;
+        };
+        const overdueActionsData = overdueActions.map((action: ActionWithLeads) => {
           const dueDate = new Date(action.due_date);
           const todayDate = new Date(today);
           const daysOverdue = Math.floor(
@@ -149,7 +158,8 @@ export async function GET(request: Request) {
         if (sent < users.length) {
           await new Promise(resolve => setTimeout(resolve, 600));
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Error sending email to ${user.email}:`, error);
         errors.push(`User ${user.email}: ${error.message}`);
         skipped++;

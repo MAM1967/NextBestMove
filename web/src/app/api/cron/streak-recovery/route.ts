@@ -93,7 +93,14 @@ export async function GET(request: NextRequest) {
         }
 
         // Get notification tracking from metadata
-        const metadata = (user.metadata as any) || {};
+        type UserMetadata = {
+          streak_notifications?: {
+            last_day?: number;
+            [key: string]: unknown;
+          };
+          [key: string]: unknown;
+        };
+        const metadata = (user.metadata as UserMetadata | null) || {};
         const streakNotifications = metadata.streak_notifications || {};
         const lastNotificationDay = streakNotifications.last_day || 0;
 

@@ -48,7 +48,14 @@ export async function GET() {
       .limit(1)
       .maybeSingle();
 
-    const metadata = subscription ? ((subscription.metadata as any) || {}) : {};
+    type SubscriptionMetadata = {
+      plan_type?: string;
+      downgrade_detected_at?: string;
+      downgrade_warning_shown?: boolean | string;
+      downgrade_pin_count?: number;
+      [key: string]: unknown;
+    };
+    const metadata = subscription ? ((subscription.metadata as SubscriptionMetadata | null) || {}) : {};
     const planType = metadata.plan_type || "standard";
 
     // Count leads
@@ -70,7 +77,7 @@ export async function GET() {
         allSubscriptions: allSubscriptions?.map((s) => ({
           id: s.id,
           status: s.status,
-          plan_type: (s.metadata as any)?.plan_type,
+          plan_type: (s.metadata as SubscriptionMetadata | null)?.plan_type,
         })),
         metadata: {
           plan_type: planType,

@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       .upsert(
         {
           user_id: user.id,
-          voice_characteristics: characteristics as any, // JSONB
+          voice_characteristics: characteristics as VoiceCharacteristics, // JSONB
           sample_count: samples.length,
           last_updated: new Date().toISOString(),
         },

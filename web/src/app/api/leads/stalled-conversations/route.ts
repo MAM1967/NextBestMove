@@ -64,7 +64,7 @@ export async function GET(request: Request) {
           {
             id: rel.id,
             name: rel.name,
-            preferred_channel: rel.preferred_channel as any,
+            preferred_channel: rel.preferred_channel as "email" | "linkedin" | "twitter" | "other" | null,
             last_interaction_at: rel.last_interaction_at,
             cadence_days: rel.cadence_days,
           },

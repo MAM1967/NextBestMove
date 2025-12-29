@@ -39,7 +39,11 @@ export async function PATCH(
     }
 
     // Update the prompt
-    const updateData: any = {};
+    const updateData: {
+      content?: string;
+      user_edited?: boolean;
+      edited_text?: string;
+    } = {};
     if (content !== undefined) {
       updateData.content = content;
     }

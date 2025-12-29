@@ -384,7 +384,15 @@ async function fetchOutlookEvents(
     .get();
 
   const events: CalendarEvent[] = [];
-  for (const item of (response.value || []) as any[]) {
+  type MicrosoftGraphEvent = {
+    id?: string;
+    subject?: string;
+    start?: { dateTime?: string; date?: string; timeZone?: string };
+    end?: { dateTime?: string; date?: string; timeZone?: string };
+    isAllDay?: boolean;
+    onlineMeeting?: { joinUrl?: string };
+  };
+  for (const item of (response.value || []) as MicrosoftGraphEvent[]) {
     if (!item.start || !item.end) continue;
 
     const isAllDay = !item.start.dateTime;

@@ -38,7 +38,11 @@ export async function PATCH(request: Request) {
     .in("status", ["active", "trialing"])
     .maybeSingle();
 
-  const planType = (subscription?.metadata as any)?.plan_type;
+  type SubscriptionMetadata = {
+    plan_type?: string;
+    [key: string]: unknown;
+  };
+  const planType = (subscription?.metadata as SubscriptionMetadata | null)?.plan_type;
   if (planType !== "premium") {
     return NextResponse.json(
       { error: "Premium subscription required" },
@@ -66,7 +70,11 @@ export async function PATCH(request: Request) {
   }
 
   // Prepare update
-  const updateData: any = {};
+  const updateData: {
+    ai_provider?: string;
+    ai_api_key_encrypted?: string | null;
+    ai_model?: string | null;
+  } = {};
   if (ai_provider) {
     updateData.ai_provider = ai_provider;
   }

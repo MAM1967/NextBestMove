@@ -49,7 +49,22 @@ export async function GET(request: Request) {
 
     // Fetch full action data with relationship
     // Try with leads join first, fallback to without if it fails (RLS might block the join)
-    let action: any | null = null;
+    type ActionWithLeads = {
+      id: string;
+      action_type: string;
+      state: string;
+      description?: string;
+      due_date: string;
+      person_id?: string | null;
+      leads?: {
+        id: string;
+        name: string;
+        url?: string;
+        notes?: string;
+      } | null;
+      [key: string]: unknown;
+    };
+    let action: ActionWithLeads | null = null;
     
     const { data: actionWithLeads, error: joinError } = await supabase
       .from("actions")

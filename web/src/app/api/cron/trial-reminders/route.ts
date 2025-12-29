@@ -90,7 +90,10 @@ export async function GET(request: Request) {
 
       // Send reminder on Day 12 (2 days remaining) or Day 14 (0 days remaining)
       if (daysRemaining === 2 || daysRemaining === 0) {
-        const user = (subscription.billing_customers as any)?.users;
+        type BillingCustomerWithUser = {
+          users?: { id: string; email?: string; name?: string | null };
+        };
+        const user = (subscription.billing_customers as BillingCustomerWithUser | null)?.users;
         if (!user || !user.email) {
           logError("User data missing for subscription", undefined, {
             subscriptionId: subscription.id,

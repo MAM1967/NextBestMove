@@ -182,7 +182,7 @@ export async function GET(request: Request) {
  * Helper function to send weekly summary email
  */
 async function sendEmailForWeeklySummary(
-  adminClient: any,
+  adminClient: ReturnType<typeof import("@/lib/supabase/admin").createAdminClient>,
   user: { id: string; email: string; name: string },
   weekStartStr: string
 ) {
