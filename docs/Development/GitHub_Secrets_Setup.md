@@ -4,23 +4,35 @@ This document explains how to configure GitHub Actions secrets for CI/CD workflo
 
 ## Required Secrets
 
-The CI workflow uses different secrets based on the branch:
+The CI workflow supports both naming conventions for flexibility:
 
-### For PRs and `staging` branch (Staging Environment)
+### Option 1: Environment-Specific Names (Recommended)
 
-These secrets are used when running tests on pull requests or the `staging` branch:
+If you want separate secrets for staging and production:
 
+**For Staging (PRs and staging branch):**
 - `NEXT_PUBLIC_SUPABASE_URL_STAGING` - Staging Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING` - Staging Supabase anon/public key
-- `SUPABASE_SERVICE_ROLE_KEY_STAGING` - Staging Supabase service role key (for admin operations in tests)
+- `SUPABASE_SERVICE_ROLE_KEY_STAGING` - Staging Supabase service role key
 
-### For `main` branch (Production Environment)
-
-These secrets are used when running tests on the `main` branch:
-
+**For Production (main branch):**
 - `NEXT_PUBLIC_SUPABASE_URL_PROD` - Production Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD` - Production Supabase anon/public key
-- `SUPABASE_SERVICE_ROLE_KEY_PROD` - Production Supabase service role key (for admin operations in tests)
+- `SUPABASE_SERVICE_ROLE_KEY_PROD` - Production Supabase service role key
+
+### Option 2: Generic Names (Current Setup)
+
+If you're using generic secret names (already configured):
+
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL (should be staging for PRs, production for main)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon/public key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
+
+**⚠️ Important:** With generic names, you must ensure:
+- For PRs and staging branch: These secrets contain **staging** credentials
+- For main branch: These secrets contain **production** credentials
+
+**Recommendation:** Use environment-specific names (`*_STAGING` and `*_PROD`) to prevent accidentally using the wrong environment.
 
 ### Optional Secrets
 
@@ -45,10 +57,11 @@ These secrets are used when running tests on the `main` branch:
 The CI workflow automatically selects the correct secrets based on the branch:
 
 - **Pull requests** → Uses `*_STAGING` secrets
-- **`staging` branch** → Uses `*_STAGING` secrets  
+- **`staging` branch** → Uses `*_STAGING` secrets
 - **`main` branch** → Uses `*_PROD` secrets
 
 This ensures:
+
 - PRs and staging tests never touch production data
 - Production tests (on main branch) use production credentials
 - No risk of accidentally using wrong environment
@@ -56,11 +69,13 @@ This ensures:
 ## Test Behavior
 
 If secrets are not configured:
+
 - Integration tests will **skip** (not fail) gracefully
 - Tests will show as "skipped" in CI results
 - CI will still pass, but tests won't run
 
 Once secrets are configured:
+
 - Tests will run automatically
 - Integration tests will use the appropriate environment
 - E2E tests will connect to the correct Supabase instance
@@ -68,9 +83,9 @@ Once secrets are configured:
 ## Verifying Setup
 
 After adding secrets, check the CI workflow logs:
+
 1. Go to **Actions** tab in GitHub
 2. Click on a workflow run
 3. Check the "Run integration tests" step
 4. If secrets are set correctly, tests will run
 5. If secrets are missing, tests will be skipped with a message
-

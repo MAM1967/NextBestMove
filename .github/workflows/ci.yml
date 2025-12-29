@@ -68,10 +68,11 @@ jobs:
       - name: Run integration tests
         run: npm run test:integration
         env:
-          # Use staging secrets for PRs and staging branch, production secrets for main branch
-          NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_URL_PROD || secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || '' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_SERVICE_ROLE_KEY_PROD || secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || '' }}
+          # Use existing secrets - they should be set to staging values for PRs/staging, production for main
+          # Supports both generic names and environment-specific names
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || secrets.NEXT_PUBLIC_SUPABASE_URL || '' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
 
   security-tests:
     runs-on: ubuntu-latest
@@ -90,10 +91,11 @@ jobs:
       - name: Run security tests (integration)
         run: npm run test:integration -- tests/integration/api/security-tier-gating.test.ts
         env:
-          # Use staging secrets for PRs and staging branch, production secrets for main branch
-          NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_URL_PROD || secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || '' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_SERVICE_ROLE_KEY_PROD || secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || '' }}
+          # Use existing secrets - they should be set to staging values for PRs/staging, production for main
+          # Supports both generic names and environment-specific names
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || secrets.NEXT_PUBLIC_SUPABASE_URL || '' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
       - name: Run npm audit
         run: npm audit --audit-level=moderate || true
         continue-on-error: true
@@ -117,10 +119,11 @@ jobs:
       - name: Run E2E tests
         run: npm run test:staging
         env:
-          # Use staging secrets for PRs and staging branch, production secrets for main branch
-          NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_URL_PROD || secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || '' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || '' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_SERVICE_ROLE_KEY_PROD || secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || '' }}
+          # Use existing secrets - they should be set to staging values for PRs/staging, production for main
+          # Supports both generic names and environment-specific names
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING || secrets.NEXT_PUBLIC_SUPABASE_URL || '' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING || secrets.SUPABASE_SERVICE_ROLE_KEY || '' }}
           PLAYWRIGHT_TEST_BASE_URL: ${{ secrets.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000' }}
       - name: Upload test results
         if: always()
