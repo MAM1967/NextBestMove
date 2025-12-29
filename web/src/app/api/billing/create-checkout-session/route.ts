@@ -78,11 +78,12 @@ export async function POST(request: NextRequest) {
         await stripe.customers.retrieve(existingCustomer.stripe_customer_id);
         customerId = existingCustomer.stripe_customer_id;
         console.log("Using existing Stripe customer:", customerId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Customer doesn't exist in Stripe, create a new one
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.warn("Existing customer ID not found in Stripe, creating new customer:", {
           customerId: existingCustomer.stripe_customer_id,
-          error: error.message,
+          error: errorMessage,
         });
         
         // Create new Stripe customer with idempotency key

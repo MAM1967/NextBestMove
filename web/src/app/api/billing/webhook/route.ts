@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       const { error: insertError } = await supabase.from("billing_events").insert({
         stripe_event_id: event.id,
         type: event.type,
-        payload: event.data.object as any,
+        payload: event.data.object as Record<string, unknown>, // Stripe event data is JSONB
         processed_at: processedAt,
       });
       
@@ -458,7 +458,11 @@ export async function handleSubscriptionUpdated(
     .eq("stripe_subscription_id", subscription.id)
     .maybeSingle();
 
-  const oldPlanType = (oldSubscriptionData?.metadata as any)?.plan_type;
+        type SubscriptionMetadata = {
+          plan_type?: string;
+          [key: string]: unknown;
+        };
+        const oldPlanType = (oldSubscriptionData?.metadata as SubscriptionMetadata | null)?.plan_type;
   const newPlanType = finalPlanType;
 
   // Cancel any other active/trialing subscriptions for this customer
@@ -603,7 +607,13 @@ export async function handleSubscriptionUpdated(
             if (leadCount > 10) {
               // Store downgrade warning flag in metadata
               // Merge with existing metadata to preserve other fields
-              const existingMetadata = upsertedData[0].metadata as any || {};
+              type SubscriptionMetadata = {
+                plan_type?: string;
+                downgrade_warning_shown?: boolean;
+                downgrade_pin_count?: number;
+                [key: string]: unknown;
+              };
+              const existingMetadata = (upsertedData[0].metadata as SubscriptionMetadata | null) || {};
               const { error: updateError } = await supabase
                 .from("billing_subscriptions")
                 .update({
@@ -669,7 +679,11 @@ async function handleSubscriptionDeleted(
       // Continue - we'll still try to update
     }
 
-    const existingMetadata = (existingSubscription?.metadata as any) || {};
+    type SubscriptionMetadata = {
+      plan_type?: string;
+      [key: string]: unknown;
+    };
+    const existingMetadata = (existingSubscription?.metadata as SubscriptionMetadata | null) || {};
 
     // Update subscription status to canceled and store canceled_at timestamp
     // This enables 30-day reactivation window
@@ -691,17 +705,18 @@ async function handleSubscriptionDeleted(
       });
       throw new Error(`Failed to update subscription: ${updateError.message}`);
     }
-  } catch (error: any) {
-    logError("Error in handleSubscriptionDeleted", error, {
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error in handleSubscriptionDeleted", errorObj, {
       subscriptionId: subscription.id,
     });
     // Re-throw so main handler can catch and return 500 for retry
-    throw error;
+    throw errorObj;
   }
 }
 
 async function handleInvoicePaid(
-  supabase: any,
+  supabase: SupabaseClient,
   invoice: Stripe.Invoice & {
     subscription?: string | Stripe.Subscription | null;
   }
@@ -801,7 +816,10 @@ async function handleInvoicePaymentFailed(
 
     // On first payment failure, immediately downgrade user to Free tier
     if (isFirstFailure) {
-      const user = (existingSubscription.billing_customers as any)?.users;
+      type BillingCustomerWithUser = {
+        users?: { id: string; email?: string; name?: string | null };
+      };
+      const user = (existingSubscription.billing_customers as BillingCustomerWithUser | null)?.users;
       if (user?.id) {
         try {
           const { updateUserTier } = await import("@/lib/billing/tier");

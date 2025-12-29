@@ -41,8 +41,9 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ success: true, exclude_weekends });
-  } catch (error: any) {
-    console.error("Error updating weekend preference:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error updating weekend preference:", errorMessage);
     return NextResponse.json(
       { error: "Failed to update weekend preference" },
       { status: 500 }

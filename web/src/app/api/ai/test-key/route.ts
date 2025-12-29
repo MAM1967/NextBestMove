@@ -40,10 +40,14 @@ export async function POST(request: Request) {
       { error: "Invalid response from API" },
       { status: 500 }
     );
-  } catch (error: any) {
-    console.error("OpenAI API test error:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("OpenAI API test error:", errorMessage);
     
-    if (error.status === 401) {
+    // Check if it's an OpenAI API error with status
+    type OpenAIError = { status?: number; message?: string };
+    const apiError = error as OpenAIError;
+    if (apiError.status === 401) {
       return NextResponse.json(
         { error: "Invalid API key" },
         { status: 401 }
