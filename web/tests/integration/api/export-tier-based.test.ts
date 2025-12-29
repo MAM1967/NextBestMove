@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Skip tests if required environment variables are not set
+const skipIfNoEnv = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 /**
  * Integration tests for tier-based data export (NEX-36)
  * 
@@ -10,12 +13,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * - Standard tier gets CSV export
  * - Premium tier gets ZIP export with JSON, CSV, and metadata
  */
-describe("Tier-Based Data Export (NEX-36)", () => {
+describe.skipIf(skipIfNoEnv)("Tier-Based Data Export (NEX-36)", () => {
   let adminSupabase: SupabaseClient;
   let testUserId: string;
   let testUserEmail: string;
 
   beforeEach(async () => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+    }
     adminSupabase = createAdminClient();
     
     // Create test user

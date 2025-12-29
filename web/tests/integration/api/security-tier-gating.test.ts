@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// Skip tests if required environment variables are not set
+const skipIfNoEnv = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 /**
  * Security tests for tier-based feature gating (NEX-34, NEX-35, NEX-36, NEX-37)
  * 
@@ -11,13 +14,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * - Tier checks are enforced at API level
  * - Follow-up limits are enforced for Free tier
  */
-describe("Security: Tier-Based Feature Gating", () => {
+describe.skipIf(skipIfNoEnv)("Security: Tier-Based Feature Gating", () => {
   let adminSupabase: SupabaseClient;
   let freeUserId: string;
   let standardUserId: string;
   let premiumUserId: string;
 
   beforeEach(async () => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+    }
     adminSupabase = createAdminClient();
 
     // Create Free tier user
