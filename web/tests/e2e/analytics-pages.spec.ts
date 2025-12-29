@@ -54,6 +54,17 @@ test.describe("Analytics Pages", () => {
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
+    // Check for 404 page (route not deployed)
+    const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
+    const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
+    if (has404) {
+      throw new Error(
+        "❌ ROUTE NOT DEPLOYED: /app/analytics returns 404. " +
+        "The analytics page route exists in the codebase but is not deployed to staging. " +
+        "Please ensure the latest code is deployed to staging before running tests."
+      );
+    }
+    
     // Wait for network requests
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
     
@@ -124,6 +135,17 @@ test.describe("Analytics Pages", () => {
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
+    
+    // Check for 404 page (route not deployed)
+    const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
+    const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
+    if (has404) {
+      throw new Error(
+        "❌ ROUTE NOT DEPLOYED: /app/analytics returns 404. " +
+        "The analytics page route exists in the codebase but is not deployed to staging. " +
+        "Please ensure the latest code is deployed to staging before running tests."
+      );
+    }
     
     // Wait for loading to complete
     const loadingText = page.locator('text="Loading analytics..."');
@@ -199,6 +221,18 @@ test.describe("Analytics Pages", () => {
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
+    
+    // Check for 404 page (route not deployed)
+    const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
+    const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
+    if (has404) {
+      throw new Error(
+        "❌ ROUTE NOT DEPLOYED: /app/analytics returns 404. " +
+        "The analytics page route exists in the codebase but is not deployed to staging. " +
+        "Please ensure the latest code is deployed to staging before running tests."
+      );
+    }
+    
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(5000);
 
