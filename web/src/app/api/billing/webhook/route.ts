@@ -6,6 +6,9 @@ import Stripe from "stripe";
 import { logWebhookEvent, logError, logBillingEvent, logWarn } from "@/lib/utils/logger";
 import { getPlanFromPriceId } from "@/lib/billing/plan-detection";
 import { updateUserTier, shouldDowngradeToFree } from "@/lib/billing/tier";
+import { getStripeErrorMessage } from "@/lib/types/stripe";
+import { getErrorMessage } from "@/lib/types/common";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Configure route for webhook handling
 export const runtime = "nodejs"; // Use Node.js runtime for better compatibility
@@ -55,15 +58,16 @@ export async function POST(request: Request) {
         signature,
         webhookSecret
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = getStripeErrorMessage(err);
       logWebhookEvent("Webhook signature verification failed", {
         status: "error",
         webhookType: "stripe",
-        error: err.message,
+        error: errorMessage,
       });
       // Return 400 for signature verification failures (don't retry)
       return NextResponse.json(
-        { error: `Webhook Error: ${err.message}` },
+        { error: `Webhook Error: ${errorMessage}` },
         { status: 400 }
       );
     }
@@ -72,8 +76,9 @@ export async function POST(request: Request) {
     let supabase;
     try {
       supabase = createAdminClient();
-    } catch (adminError: any) {
-      logError("Failed to create admin client", adminError, {
+    } catch (adminError: unknown) {
+      const error = adminError instanceof Error ? adminError : new Error(String(adminError));
+      logError("Failed to create admin client", error, {
         context: "webhook_admin_client",
         eventId: event.id,
       });
@@ -235,24 +240,26 @@ export async function POST(request: Request) {
 
       // Always return 200 for successful processing
       return NextResponse.json({ received: true }, { status: 200 });
-    } catch (error: any) {
-      logError("Error processing webhook", error, {
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logError("Error processing webhook", errorObj, {
         eventId: event.id,
         eventType: event.type,
-        errorMessage: error?.message,
-        errorStack: error?.stack,
+        errorMessage: errorObj.message,
+        errorStack: errorObj.stack,
       });
       // Return 500 so Stripe retries the webhook
       return NextResponse.json(
-        { error: "Webhook processing failed", details: error?.message },
+        { error: "Webhook processing failed", details: errorObj.message },
         { status: 500 }
       );
     }
-  } catch (outerError: any) {
+  } catch (outerError: unknown) {
     // Catch any errors in the outer try-catch (e.g., reading request body, headers)
-    logError("Fatal error in webhook handler", outerError, {
-      errorMessage: outerError?.message,
-      errorStack: outerError?.stack,
+    const errorObj = outerError instanceof Error ? outerError : new Error(String(outerError));
+    logError("Fatal error in webhook handler", errorObj, {
+      errorMessage: errorObj.message,
+      errorStack: errorObj.stack,
     });
     // Return 500 so Stripe retries
     return NextResponse.json(
@@ -263,7 +270,7 @@ export async function POST(request: Request) {
 }
 
 async function handleCheckoutCompleted(
-  supabase: any,
+  supabase: SupabaseClient,
   session: Stripe.Checkout.Session
 ) {
   try {
@@ -332,17 +339,18 @@ async function handleCheckoutCompleted(
       subscriptionId: subscription.id,
       customerId,
     });
-  } catch (error: any) {
-    logError("Error in handleCheckoutCompleted", error, {
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error in handleCheckoutCompleted", errorObj, {
       sessionId: session.id,
     });
     // Re-throw so main handler can catch and return 500 for retry
-    throw error;
+    throw errorObj;
   }
 }
 
 export async function handleSubscriptionUpdated(
-  supabase: any,
+  supabase: SupabaseClient,
   subscription: Stripe.Subscription,
   billingCustomerId?: string
 ) {
@@ -545,9 +553,10 @@ export async function handleSubscriptionUpdated(
         // Update tier based on current subscription status
         await updateUserTier(supabase, customer.user_id);
       }
-    } catch (tierError: any) {
+    } catch (tierError: unknown) {
       // Log but don't fail webhook - tier update is not critical
-      logError("Error updating user tier in webhook", tierError, {
+      const errorObj = tierError instanceof Error ? tierError : new Error(String(tierError));
+      logError("Error updating user tier in webhook", errorObj, {
         subscriptionId: subscription.id,
         billingCustomerId,
       });
@@ -630,18 +639,19 @@ export async function handleSubscriptionUpdated(
         }
       }
     }
-  } catch (error: any) {
-    logError("Error in handleSubscriptionUpdated", error, {
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error in handleSubscriptionUpdated", errorObj, {
       subscriptionId: subscription.id,
       billingCustomerId,
     });
     // Re-throw so main handler can catch and return 500 for retry
-    throw error;
+    throw errorObj;
   }
 }
 
 async function handleSubscriptionDeleted(
-  supabase: any,
+  supabase: SupabaseClient,
   subscription: Stripe.Subscription
 ) {
   try {
@@ -709,17 +719,18 @@ async function handleInvoicePaid(
     // Get subscription from Stripe to update our records
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     await handleSubscriptionUpdated(supabase, subscription);
-  } catch (error: any) {
-    logError("Error in handleInvoicePaid", error, {
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error in handleInvoicePaid", errorObj, {
       invoiceId: invoice.id,
     });
     // Re-throw so main handler can catch and return 500 for retry
-    throw error;
+    throw errorObj;
   }
 }
 
 async function handleInvoicePaymentFailed(
-  supabase: any,
+  supabase: SupabaseClient,
   invoice: Stripe.Invoice & {
     subscription?: string | Stripe.Subscription | null;
   }
@@ -764,7 +775,10 @@ async function handleInvoicePaymentFailed(
     const isFirstFailure = !existingSubscription.payment_failed_at;
 
     // Update subscription status to past_due and set payment_failed_at if first failure
-    const updateData: any = {
+    const updateData: {
+      status: "past_due";
+      payment_failed_at?: string;
+    } = {
       status: "past_due",
     };
 
@@ -810,7 +824,10 @@ async function handleInvoicePaymentFailed(
 
     // Send Day 0 email immediately on first failure
     if (isFirstFailure) {
-      const user = (existingSubscription.billing_customers as any)?.users;
+      type BillingCustomerWithUser = {
+        users?: { id: string; email?: string; name?: string | null };
+      };
+      const user = (existingSubscription.billing_customers as BillingCustomerWithUser | null)?.users;
       if (user?.email) {
         try {
           const { sendPaymentFailureEmail } = await import("@/lib/email/resend");
@@ -834,11 +851,12 @@ async function handleInvoicePaymentFailed(
         }
       }
     }
-  } catch (error: any) {
-    logError("Error in handleInvoicePaymentFailed", error, {
+  } catch (error: unknown) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    logError("Error in handleInvoicePaymentFailed", errorObj, {
       invoiceId: invoice.id,
     });
     // Re-throw so main handler can catch and return 500 for retry
-    throw error;
+    throw errorObj;
   }
 }
