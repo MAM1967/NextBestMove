@@ -8,14 +8,10 @@ import { cleanupTestUser } from "../helpers/test-data";
  * 
  * Strategy: Test APIs directly first, then verify page renders correctly
  * 
- * NOTE: Analytics tests are temporarily disabled due to circular dependency:
- * - Route must be deployed to staging for tests to pass
- * - Tests must pass for PR to merge
- * - PR must merge for route to be deployed
- * 
- * TODO: Re-enable these tests after analytics route is deployed to staging
+ * Testing incrementally: Enable tests one at a time in CI to verify they work
+ * Start with the first test, then enable others as they pass
  */
-test.describe.skip("Analytics Pages", () => {
+test.describe("Analytics Pages", () => {
   let testUser: { email: string; password: string; name: string };
 
   test.beforeEach(async ({ page }) => {
@@ -61,17 +57,14 @@ test.describe.skip("Analytics Pages", () => {
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // Check for 404 page (route not deployed)
-    // If route returns 404, skip this test (don't fail) to allow PR merge
+    // Check for 404 page (route not deployed) - fail with clear message
     const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
     const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
     if (has404) {
-      test.skip(
-        true,
-        "⚠️  SKIPPED: /app/analytics returns 404 (route not deployed to staging yet). " +
-        "This test will run once the PR is merged and the route is deployed."
+      throw new Error(
+        "⚠️  /app/analytics returns 404 (route not deployed to staging). " +
+        "Ensure the analytics route is deployed before running this test."
       );
-      return;
     }
     
     // Wait for loading state to complete first (with timeout)
@@ -175,7 +168,7 @@ test.describe.skip("Analytics Pages", () => {
     expect(hasEmptyState || hasDealMetrics).toBe(true);
   });
 
-  test("should handle Analytics page error state gracefully", async ({ page }) => {
+  test.skip("should handle Analytics page error state gracefully", async ({ page }) => {
     test.setTimeout(30000);
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
@@ -228,7 +221,7 @@ test.describe.skip("Analytics Pages", () => {
     expect(errorContent).toMatch(/error|failed/i);
   });
 
-  test("should render Cancellation Analytics page (admin access required)", async ({
+  test.skip("should render Cancellation Analytics page (admin access required)", async ({
     page,
   }) => {
     test.setTimeout(30000);
@@ -277,7 +270,7 @@ test.describe.skip("Analytics Pages", () => {
     }
   });
 
-  test("should apply date filters on Analytics page", async ({ page }) => {
+  test.skip("should apply date filters on Analytics page", async ({ page }) => {
     test.setTimeout(30000);
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
