@@ -49,7 +49,11 @@ export async function POST() {
     }
 
     // Update metadata to mark warning as shown
-    const metadata = (subscription.metadata as any) || {};
+    type SubscriptionMetadata = {
+      downgrade_warning_shown?: boolean;
+      [key: string]: unknown;
+    };
+    const metadata = (subscription.metadata as SubscriptionMetadata | null) || {};
     await supabase
       .from("billing_subscriptions")
       .update({

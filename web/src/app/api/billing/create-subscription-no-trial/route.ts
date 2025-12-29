@@ -228,8 +228,9 @@ export async function POST(request: Request) {
       status: status,
       currentPeriodEnd: currentPeriodEndDate,
     });
-  } catch (error: any) {
-    console.error("Error creating subscription:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error creating subscription:", errorMessage);
     return NextResponse.json(
       { error: "Failed to create subscription", details: error.message },
       { status: 500 }

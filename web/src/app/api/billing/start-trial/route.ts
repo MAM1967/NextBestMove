@@ -244,7 +244,8 @@ export async function POST(request: Request) {
       subscriptionId: subscription.id,
       trialEndsAt,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error starting trial:", error);
     return NextResponse.json(
       { error: "Failed to start trial", details: error.message },

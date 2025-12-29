@@ -60,7 +60,7 @@ export async function GET() {
           allSubscriptions: allSubs?.map(s => ({
             id: s.id,
             status: s.status,
-            plan_type: (s.metadata as any)?.plan_type
+            plan_type: (s.metadata as { plan_type?: string } | null)?.plan_type
           }))
         }
       });
@@ -72,7 +72,14 @@ export async function GET() {
       metadata: subscription.metadata,
     });
 
-    const metadata = (subscription.metadata as any) || {};
+    type SubscriptionMetadata = {
+      plan_type?: string;
+      downgrade_detected_at?: string;
+      downgrade_warning_shown?: boolean | string;
+      downgrade_pin_count?: number;
+      [key: string]: unknown;
+    };
+    const metadata = (subscription.metadata as SubscriptionMetadata | null) || {};
     const planType = metadata.plan_type || "standard";
 
     console.log("🔍 Checking conditions:", {

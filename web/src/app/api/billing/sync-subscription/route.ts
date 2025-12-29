@@ -114,8 +114,9 @@ export async function POST() {
       },
       saved: savedSubscription ? true : false,
     });
-  } catch (error: any) {
-    console.error("Error syncing subscription:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error syncing subscription:", errorMessage);
     return NextResponse.json(
       { error: "Failed to sync subscription", details: error.message },
       { status: 500 }

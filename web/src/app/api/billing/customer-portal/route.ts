@@ -69,19 +69,22 @@ export async function POST(request: Request) {
         email: "email" in stripeCustomer ? stripeCustomer.email : "N/A",
         deleted: "deleted" in stripeCustomer ? stripeCustomer.deleted : false,
       });
-    } catch (verifyError: any) {
+    } catch (verifyError: unknown) {
+      type StripeError = { message?: string; type?: string; code?: string; statusCode?: number };
+      const stripeError = verifyError as StripeError;
+      const errorMessage = stripeError.message || (verifyError instanceof Error ? verifyError.message : String(verifyError));
       console.error("Failed to verify Stripe customer:", {
-        error: verifyError.message,
-        type: verifyError.type,
-        code: verifyError.code,
-        statusCode: verifyError.statusCode,
+        error: errorMessage,
+        type: stripeError.type,
+        code: stripeError.code,
+        statusCode: stripeError.statusCode,
       });
       return NextResponse.json(
         {
           error: "Invalid customer",
-          details: verifyError.message,
-          type: verifyError.type,
-          code: verifyError.code,
+          details: errorMessage,
+          type: stripeError.type,
+          code: stripeError.code,
         },
         { status: 400 }
       );
