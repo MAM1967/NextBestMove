@@ -125,9 +125,9 @@ export async function GET(request: Request) {
 
     // Group actions by lane
     const actionsByLane: {
-      priority: any[];
-      in_motion: any[];
-      on_deck: any[];
+      priority: ActionWithLeads[];
+      in_motion: ActionWithLeads[];
+      on_deck: ActionWithLeads[];
     } = {
       priority: [],
       in_motion: [],

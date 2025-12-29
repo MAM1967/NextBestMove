@@ -110,7 +110,13 @@ export async function GET(request: Request) {
       try {
         // Day 3: Send email + mark for modal display (stored in metadata)
         if (daysSinceFailure === 3) {
-          const currentMetadata = (subscription as any).metadata || {};
+          type SubscriptionMetadata = {
+            day3_email_sent_date?: string;
+            show_payment_failure_modal?: boolean;
+            payment_failure_modal_shown_at?: string;
+            [key: string]: unknown;
+          };
+          const currentMetadata = (subscription.metadata as SubscriptionMetadata | null) || {};
           const today = now.toISOString().split("T")[0]; // YYYY-MM-DD format
           const lastEmailSentDate = currentMetadata?.day3_email_sent_date;
 
@@ -165,7 +171,11 @@ export async function GET(request: Request) {
 
         // Day 7: Send final reminder email (user is on Free tier)
         if (daysSinceFailure === 7) {
-          const currentMetadata = (subscription as any).metadata || {};
+          type SubscriptionMetadata = {
+            day7_email_sent_date?: string;
+            [key: string]: unknown;
+          };
+          const currentMetadata = (subscription.metadata as SubscriptionMetadata | null) || {};
           const today = now.toISOString().split("T")[0]; // YYYY-MM-DD format
           const lastEmailSentDate = currentMetadata?.day7_email_sent_date;
 

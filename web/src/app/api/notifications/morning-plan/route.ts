@@ -210,7 +210,7 @@ export async function GET(request: Request) {
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Error sending email to ${user.email}:`, error);
-        errors.push(`User ${user.email}: ${error.message}`);
+        errors.push(`User ${user.email}: ${errorMessage}`);
         skipped++;
       }
     }
@@ -222,10 +222,11 @@ export async function GET(request: Request) {
       skipReasons: skipReasons.length > 0 ? skipReasons : undefined,
       errors: errors.length > 0 ? errors : undefined,
     });
-  } catch (error: any) {
-    console.error("Error in morning plan notification job:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in morning plan notification job:", errorMessage);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }

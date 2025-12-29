@@ -341,7 +341,7 @@ export async function GET(request: Request) {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Error fetching calendar events:", error);
+    console.error("Error fetching calendar events:", errorMessage);
     return NextResponse.json(
       {
         error: "Failed to fetch calendar events",

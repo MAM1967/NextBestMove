@@ -232,7 +232,7 @@ function aggregateByGranularity(
  * Calculate summary statistics from timeline data
  */
 function calculateSummary(
-  data: Array<{ date: string; metrics: any }>
+  data: Array<{ date: string; metrics: Record<string, unknown> }>
 ): {
   total_days: number;
   avg_completion_rate: number;
