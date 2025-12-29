@@ -128,12 +128,12 @@ export async function POST(request: Request) {
     // Return more specific error message
     let userMessage = "Failed to create portal session";
     if (
-      error.type === "StripeConnectionError" ||
-      error.type === "StripeAPIError"
+      stripeError.type === "StripeConnectionError" ||
+      stripeError.type === "StripeAPIError"
     ) {
       userMessage =
         "Unable to connect to payment provider. Please try again in a moment.";
-    } else if (error.code === "resource_missing") {
+    } else if (stripeError.code === "resource_missing") {
       userMessage = "Customer account not found. Please contact support.";
     }
 
