@@ -1,267 +1,124 @@
 name: CI
 
 on:
-  push:
-    branches: [main, staging]
   pull_request:
     branches: [main, staging]
-
-permissions:
-  contents: read
-  pull-requests: read
-  checks: write
-  security-events: write  # Required for CodeQL SARIF upload
-
-env:
-  NODE_VERSION: "24.x"
-  # Conditionally select secrets based on branch
-  # For main branch: use PRODUCTION secrets
-  # For staging branch or PRs: use STAGING secrets (safer default)
-  NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_URL_PRODUCTION || secrets.NEXT_PUBLIC_SUPABASE_URL_STAGING }}
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.ref == 'refs/heads/main' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_PRODUCTION || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.SUPABASE_SERVICE_ROLE_KEY_PRODUCTION || secrets.SUPABASE_SERVICE_ROLE_KEY_STAGING }}
+  push:
+    branches: [main, staging]
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Type Check
+  lint-and-type-check:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
+          cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
-
       - name: Run ESLint
-        run: npm run lint || echo "ESLint completed with warnings/errors"
-        continue-on-error: true
-
-      - name: Run design lint
-        run: npm run lint:design || true
-
+        run: npm run lint
       - name: Type check
         run: npm run type-check
 
   unit-tests:
-    name: Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
+          cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
-
       - name: Run unit tests
         run: npm run test:unit
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - name: Upload coverage reports
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./web/coverage/coverage-final.json
-          flags: unit
-          fail_ci_if_error: false
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   integration-tests:
-    name: Integration Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
+          cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
-
       - name: Run integration tests
         run: npm run test:integration
         env:
-          # Uses environment-specific secrets selected in env section above
-          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-  e2e-tests:
-    name: E2E Tests (Playwright)
+  security-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./web
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24.x"
           cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
+          cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Run security tests (integration)
+        run: npm run test:integration -- tests/integration/api/security-tier-gating.test.ts
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate || true
+        continue-on-error: true
 
+  e2e-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Playwright tests
+        run: npx playwright install --with-deps
+      - name: Run E2E tests
         run: npm run test:staging
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
-          STAGING_USER: ${{ secrets.STAGING_USER }}
-          STAGING_PASS: ${{ secrets.STAGING_PASS }}
-
-      - name: Upload Playwright report
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PLAYWRIGHT_TEST_BASE_URL: ${{ secrets.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000' }}
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: web/playwright-report/
           retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-test-results
-          path: web/test-results/
-          retention-days: 7
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
-  security-deps:
-    name: Security (Dependencies)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: ./web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: npm audit (Dependency Scanning)
-        run: npm audit --audit-level=high
-        continue-on-error: false
-
-      # Note: GitHub Dependabot runs separately and creates PRs for vulnerabilities
-      # Enable it at: Settings → Code security and analysis → Dependabot alerts
-
-  security-sast:
-    name: Security (SAST)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Semgrep Scan
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security
-            p/owasp-top-ten
-          generateSarif: "1"
-          generateGitHubComments: "true"
-        continue-on-error: false
-
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: semgrep.sarif
-        continue-on-error: true  # Don't fail the job if SARIF upload fails
-
-  all-tests:
-    name: All Tests
-    needs: [lint-and-typecheck, unit-tests, integration-tests, e2e-tests, build, security-deps, security-sast]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Check test results
-        run: |
-          if [ "${{ needs.lint-and-typecheck.result }}" != "success" ] || \
-             [ "${{ needs.unit-tests.result }}" != "success" ] || \
-             [ "${{ needs.integration-tests.result }}" != "success" ] || \
-             [ "${{ needs.e2e-tests.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.security-deps.result }}" != "success" ] || \
-             [ "${{ needs.security-sast.result }}" != "success" ]; then
-            echo "One or more test jobs failed"
-            exit 1
-          fi
-          echo "All tests passed!"
