@@ -242,14 +242,17 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 - [ ] **Design token compliance (incremental)** ⏱ **POST-LAUNCH**  
        _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
-- [ ] Manual "Busy / Light day" capacity override
+- [x] **Manual "Busy / Light day" capacity override** ✅ **NEX-22**
+      _Allow users to manually override their daily capacity calculation to indicate a busy or light day. UI control to set daily capacity override, override affects daily plan generation, can be set per day or as a default preference._
 - [x] **Action detail modal / history view** ✅ **NEX-23**
        _Create a detailed view for actions showing full history, notes, and related interactions. Modal or page showing action details, display action history (state changes, dates), show related notes and interactions, link to related relationship/lead._
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
-- [ ] Deeper analytics (deal progression metric, more insights)
-- [ ] Notification delivery channels (email/push) beyond toggles
+- [x] **Deeper analytics (deal progression metric, more insights)** ✅ **NEX-25**
+      _Enhance analytics with deal progression tracking and additional insights beyond current weekly summaries. Deal progression metric, additional insights and analytics, enhanced reporting capabilities._
+- [x] **Notification delivery channels (email/push) beyond toggles** ✅ **NEX-26**
+      _Expand notification system to support multiple delivery channels with granular control. Support for push notifications (beyond email), granular channel preferences per notification type, delivery method selection (email, push, both)._
 - [ ] Pricing page UI (Standard vs Premium comparison, annual savings, clear value props)
-- [ ] **Cancellation feedback analytics page**  
+- [x] **Cancellation feedback analytics page** ✅ **NEX-29**
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
 - [x] **Enhanced pre-call brief detection for video conferencing** ✅ **NEX-30**
        _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
