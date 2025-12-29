@@ -88,7 +88,7 @@ export default function ActionsPage() {
           ...(laneData.on_deck || []),
         ];
         // Map ActionWithLane to Action format
-        const mappedActions: Action[] = allLaneActions.map((a: any) => ({
+        const mappedActions: Action[] = allLaneActions.map((a) => ({
           ...a,
           lane: a.lane || null,
           next_move_score: a.next_move_score || null,

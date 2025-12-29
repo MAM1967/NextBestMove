@@ -96,7 +96,15 @@ export async function GET(
     );
 
     // Fetch related actions for same lead (if action has a person_id)
-    let relatedActions: any[] = [];
+    let relatedActions: Array<{
+      id: string;
+      action_type: string;
+      state: string;
+      due_date: string | null;
+      description: string | null;
+      created_at: string;
+      completed_at: string | null;
+    }> = [];
     if (action.person_id) {
       const { data: related, error: relatedError } = await supabase
         .from("actions")

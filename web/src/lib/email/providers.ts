@@ -49,9 +49,9 @@ export async function getEmailProviderConfiguration(
   const config = EMAIL_PROVIDERS[provider];
 
   // Get credentials from environment variables
-  let clientId = process.env[config.clientIdEnv]?.trim();
-  let clientSecret = process.env[config.clientSecretEnv]?.trim();
-  let tenantId = config.tenantIdEnv
+  const clientId = process.env[config.clientIdEnv]?.trim();
+  const clientSecret = process.env[config.clientSecretEnv]?.trim();
+  const tenantId = config.tenantIdEnv
     ? process.env[config.tenantIdEnv]?.trim()
     : undefined;
 

@@ -52,7 +52,7 @@ export async function signInUser(page: Page, email: string, password: string) {
   // We need to inject the Supabase client and sign in via browser context
   const signInResult = await page.evaluate(async ({ email, password, supabaseUrl, supabaseAnonKey }) => {
     // Load Supabase client from CDN (available globally in Next.js apps)
-    // @ts-ignore - window.supabase might be available, or we use fetch
+    // @ts-expect-error - window.supabase might be available, or we use fetch
     if (typeof window !== 'undefined' && (window as any).supabase) {
       const supabase = (window as any).supabase;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });

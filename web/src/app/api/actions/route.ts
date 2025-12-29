@@ -21,7 +21,15 @@ export async function GET(request: Request) {
     const personId = searchParams.get("person_id"); // Optional filter by person
 
     // Try with leads join first, fallback to without if it fails (RLS might block the join)
-    let actions: any[] | null = null;
+    let actions: Array<{
+      id: string;
+      action_type: string;
+      state: string;
+      due_date: string | null;
+      description: string | null;
+      person_id: string | null;
+      leads?: { id: string; name: string } | null;
+    }> | null = null;
     
     // First try with leads join
     let query = supabase

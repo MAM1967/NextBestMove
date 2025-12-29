@@ -119,11 +119,11 @@ export async function GET(request: Request) {
         const userTimezone = user.timezone || "UTC";
 
         // Fetch calendar events that ended in the last 1-2 hours
-        let allEvents: CalendarEvent[] = [];
+        const allEvents: CalendarEvent[] = [];
 
         // Fetch events from all connected calendars
         for (const connection of connectionDetails) {
-          const accessToken = await getValidAccessToken(adminClient, connection as any);
+          const accessToken = await getValidAccessToken(adminClient, connection);
           if (!accessToken) {
             continue;
           }

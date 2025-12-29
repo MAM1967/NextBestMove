@@ -218,7 +218,7 @@ export async function generateDailyPlanForUser(
     }
 
     // Calculate capacity from calendar (or use default)
-    let capacityInfo = await getCapacityForDate(supabase, userId, date);
+    const capacityInfo = await getCapacityForDate(supabase, userId, date);
     let capacityLevel = capacityInfo.level;
     let actionCount = capacityInfo.actionsPerDay;
 

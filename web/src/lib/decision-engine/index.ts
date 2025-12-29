@@ -103,7 +103,7 @@ export async function runDecisionEngine(
   ];
 
   // Fetch leads for these person_ids to check for email addresses
-  let leadsMap = new Map<string, { id: string; url: string | null }>();
+  const leadsMap = new Map<string, { id: string; url: string | null }>();
   if (personIds.length > 0) {
     const { data: leads } = await supabase
       .from("leads")
