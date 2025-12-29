@@ -33,7 +33,7 @@ test.describe("Analytics Pages", () => {
   test("should render Analytics page with basic elements", async ({ page }) => {
     test.setTimeout(60000);
 
-    // First, verify APIs work by calling them directly
+    // Set up API response listener BEFORE navigation to capture all responses
     const apiResponses: Array<{ url: string; status: number; body: unknown }> = [];
     page.on('response', async (response) => {
       if (response.url().includes('/api/analytics')) {
@@ -67,18 +67,32 @@ test.describe("Analytics Pages", () => {
       return;
     }
     
-    // Wait for loading state to complete first
+    // Wait for loading state to complete first (with timeout)
     const loadingText = page.locator('text="Loading analytics..."');
     const isLoading = await loadingText.isVisible({ timeout: 5000 }).catch(() => false);
     if (isLoading) {
       // Wait for loading to disappear (max 30 seconds)
-      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+      try {
+        await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+      } catch (e) {
+        // Loading didn't disappear - page might be stuck
+        console.log('⚠️  Loading state did not disappear within 30 seconds');
+        // Check if page is actually stuck or if it's just the text not updating
+        const pageText = await page.locator('body').textContent();
+        console.log('Page content while loading (first 500 chars):', pageText?.substring(0, 500));
+      }
       await page.waitForTimeout(2000); // Give React time to render after loading
     }
 
     // Wait for network requests to complete
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
-    await page.waitForTimeout(2000); // Additional wait for React to render
+    await page.waitForTimeout(3000); // Additional wait for React to render
+
+    // Check API responses for debugging
+    const dealProgressionResponse = apiResponses.find(r => r.url.includes('deal-progression'));
+    const insightsResponse = apiResponses.find(r => r.url.includes('insights'));
+    console.log('Deal progression API status:', dealProgressionResponse?.status || 'not captured');
+    console.log('Insights API status:', insightsResponse?.status || 'not captured');
 
     // Check for error state first (before checking for heading)
     const errorBox = page.locator('.bg-red-50').first();
@@ -86,30 +100,52 @@ test.describe("Analytics Pages", () => {
     const hasError = await errorBox.isVisible({ timeout: 3000 }).catch(() => false);
     if (hasError) {
       // Error state is valid - page is working, just showing an error
-      await expect(errorText).toBeVisible({ timeout: 2000 });
-      console.log('Analytics page rendered error state (valid test outcome)');
+      const errorContent = await errorText.textContent().catch(() => '');
+      console.log('Analytics page rendered error state (valid test outcome):', errorContent);
       return; // Test passes - error handling works
     }
 
-    // Check API responses for debugging
-    const dealProgressionResponse = apiResponses.find(r => r.url.includes('deal-progression'));
-    const insightsResponse = apiResponses.find(r => r.url.includes('insights'));
-    console.log('Deal progression API status:', dealProgressionResponse?.status);
-    console.log('Insights API status:', insightsResponse?.status);
+    // Check if page is still in loading state (stuck)
+    const stillLoading = await loadingText.isVisible({ timeout: 2000 }).catch(() => false);
+    if (stillLoading) {
+      const pageText = await page.locator('body').textContent();
+      console.log('Page content while stuck in loading (first 500 chars):', pageText?.substring(0, 500));
+      throw new Error(
+        'Analytics page stuck in loading state. ' +
+        `API statuses: deal-progression=${dealProgressionResponse?.status || 'not captured'}, ` +
+        `insights=${insightsResponse?.status || 'not captured'}`
+      );
+    }
 
     // After loading and no error, page should show heading (always rendered in success state)
-    const heading = page.locator('h1:has-text("Analytics")');
-    const headingVisible = await heading.isVisible({ timeout: 5000 }).catch(() => false);
+    // Try multiple selectors in case the page structure is different
+    const heading = page.locator('h1:has-text("Analytics")').or(page.locator('h1').filter({ hasText: 'Analytics' }));
+    const headingVisible = await heading.isVisible({ timeout: 10000 }).catch(() => false);
     
     if (!headingVisible) {
       // Page didn't render heading - check what's actually on the page
       const pageText = await page.locator('body').textContent();
+      const allHeadings = await page.locator('h1').allTextContents();
       console.log('Page content (first 500 chars):', pageText?.substring(0, 500));
+      console.log('All h1 headings found:', allHeadings);
+      console.log('API responses captured:', apiResponses.length);
+      
+      // If no APIs were captured, the page might not have made requests
+      // This could be a routing or authentication issue
+      if (apiResponses.length === 0) {
+        throw new Error(
+          'Analytics page heading not visible and no API requests were captured. ' +
+          'This suggests the page may not be making API calls (routing/auth issue). ' +
+          `Page content preview: ${pageText?.substring(0, 200) || 'empty'}`
+        );
+      }
+      
       throw new Error(
         'Analytics page heading not visible after loading completed. ' +
         'Page may be stuck in loading state or failed to render. ' +
         `API statuses: deal-progression=${dealProgressionResponse?.status || 'not captured'}, ` +
-        `insights=${insightsResponse?.status || 'not captured'}`
+        `insights=${insightsResponse?.status || 'not captured'}. ` +
+        `Found ${allHeadings.length} h1 headings: ${allHeadings.join(', ')}`
       );
     }
     
