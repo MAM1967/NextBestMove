@@ -162,12 +162,17 @@ test.describe("Analytics Pages", () => {
     
     // Wait for loading to complete
     const loadingText = page.locator('text="Loading analytics..."');
-    try {
+    const isLoading = await loadingText.isVisible({ timeout: 5000 }).catch(() => false);
+    if (isLoading) {
       await expect(loadingText).not.toBeVisible({ timeout: 30000 });
-    } catch {
-      // Loading might have completed instantly
+      await page.waitForTimeout(2000);
+    } else {
+      await page.waitForTimeout(2000); // Give page time to render
     }
-    await page.waitForTimeout(3000);
+    
+    // Wait for network requests
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(2000);
 
     // Error state should show red box
     const errorBox = page.locator('.bg-red-50').first();
