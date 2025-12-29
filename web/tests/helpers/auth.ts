@@ -52,8 +52,9 @@ export async function signInUser(page: Page, email: string, password: string) {
   // We need to inject the Supabase client and sign in via browser context
   const signInResult = await page.evaluate(async ({ email, password, supabaseUrl, supabaseAnonKey }) => {
     // Load Supabase client from CDN (available globally in Next.js apps)
-    // @ts-expect-error - window.supabase might be available, or we use fetch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (typeof window !== 'undefined' && (window as any).supabase) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = (window as any).supabase;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { success: false, error: error.message };
@@ -77,10 +78,17 @@ export async function signInUser(page: Page, email: string, password: string) {
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: `HTTP ${response.status}: ${response.statusText}` }));
-        return { success: false, error: error.error_description || error.message || `HTTP ${response.status}` };
+        return { success: false, error: (error as { error_description?: string; message?: string }).error_description || (error as { error_description?: string; message?: string }).message || `HTTP ${response.status}` };
       }
       
-      const data = await response.json();
+      const data = await response.json() as {
+        access_token: string;
+        refresh_token: string;
+        expires_at: number;
+        expires_in: number;
+        token_type: string;
+        user: { id: string };
+      };
       
       // Set cookies manually using document.cookie
       // Supabase SSR expects: sb-{project-ref}-auth-token
@@ -100,8 +108,8 @@ export async function signInUser(page: Page, email: string, password: string) {
       document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}; path=/; ${expires ? `expires=${expires}; ` : ''}SameSite=Lax; Secure`;
       
       return { success: true, userId: data.user?.id };
-    } catch (error: any) {
-      return { success: false, error: error.message };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }, {
     email,
