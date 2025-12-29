@@ -3,7 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Skip tests if required environment variables are not set
-const skipIfNoEnv = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Supports both staging and production env var names
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                     process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING ||
+                     process.env.NEXT_PUBLIC_SUPABASE_URL_PROD;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                       process.env.SUPABASE_SERVICE_ROLE_KEY_STAGING ||
+                       process.env.SUPABASE_SERVICE_ROLE_KEY_PROD;
+const skipIfNoEnv = !supabaseUrl || !serviceRoleKey;
 
 /**
  * Integration tests for tier-based data export (NEX-36)
@@ -19,8 +26,8 @@ describe.skipIf(skipIfNoEnv)("Tier-Based Data Export (NEX-36)", () => {
   let testUserEmail: string;
 
   beforeEach(async () => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Supabase credentials must be set (NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)");
     }
     adminSupabase = createAdminClient();
     

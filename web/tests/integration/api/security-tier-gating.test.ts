@@ -3,7 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Skip tests if required environment variables are not set
-const skipIfNoEnv = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Supports both staging and production env var names
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 
+                     process.env.NEXT_PUBLIC_SUPABASE_URL_STAGING ||
+                     process.env.NEXT_PUBLIC_SUPABASE_URL_PROD;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ||
+                       process.env.SUPABASE_SERVICE_ROLE_KEY_STAGING ||
+                       process.env.SUPABASE_SERVICE_ROLE_KEY_PROD;
+const skipIfNoEnv = !supabaseUrl || !serviceRoleKey;
 
 /**
  * Security tests for tier-based feature gating (NEX-34, NEX-35, NEX-36, NEX-37)
@@ -21,8 +28,8 @@ describe.skipIf(skipIfNoEnv)("Security: Tier-Based Feature Gating", () => {
   let premiumUserId: string;
 
   beforeEach(async () => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Supabase credentials must be set (NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)");
     }
     adminSupabase = createAdminClient();
 
