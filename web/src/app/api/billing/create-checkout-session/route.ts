@@ -279,10 +279,11 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error("Error creating checkout session:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error creating checkout session:", errorMessage);
     return NextResponse.json(
-      { error: "Failed to create checkout session", details: error.message },
+      { error: "Failed to create checkout session", details: errorMessage },
       { status: 500 }
     );
   }

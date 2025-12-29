@@ -246,9 +246,9 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Error starting trial:", error);
+    console.error("Error starting trial:", errorMessage);
     return NextResponse.json(
-      { error: "Failed to start trial", details: error.message },
+      { error: "Failed to start trial", details: errorMessage },
       { status: 500 }
     );
   }

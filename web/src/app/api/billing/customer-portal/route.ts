@@ -101,10 +101,13 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Enhanced error logging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    type StripeError = { type?: string; code?: string; statusCode?: number };
+    const stripeError = error as StripeError;
     const errorDetails = {
-      message: error.message,
+      message: errorMessage,
       type: error.type,
       code: error.code,
       statusCode: error.statusCode,
