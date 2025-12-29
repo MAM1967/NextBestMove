@@ -22,7 +22,13 @@
     "test:staging": "playwright test",
     "test:staging:ui": "playwright test --ui",
     "test:staging:debug": "playwright test --debug",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test:staging"
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:staging",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=1000"
+    ]
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
@@ -61,7 +67,9 @@
     "@vitest/ui": "^4.0.16",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "husky": "^9.1.7",
     "jsdom": "^27.3.0",
+    "lint-staged": "^16.2.7",
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
     "typescript": "^5",

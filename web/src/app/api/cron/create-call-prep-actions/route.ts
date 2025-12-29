@@ -140,7 +140,7 @@ export async function GET(request: Request) {
 
         // Fetch events from all connected calendars
         for (const connection of connectionDetails) {
-          const accessToken = await getValidAccessToken(adminClient, connection as any);
+          const accessToken = await getValidAccessToken(adminClient, connection);
           if (!accessToken) {
             continue;
           }
@@ -399,7 +399,14 @@ async function fetchOutlookEvents(
     .get();
 
   const events: CalendarEvent[] = [];
-  for (const item of (response.value || []) as any[]) {
+  type MicrosoftGraphEvent = {
+    id?: string;
+    subject?: string;
+    start?: { dateTime?: string; date?: string; timeZone?: string };
+    end?: { dateTime?: string; date?: string; timeZone?: string };
+    onlineMeeting?: { joinUrl?: string };
+  };
+  for (const item of (response.value || []) as MicrosoftGraphEvent[]) {
     if (!item.start || !item.end) continue;
 
     const isAllDay = !item.start.dateTime;
