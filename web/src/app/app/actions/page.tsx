@@ -22,6 +22,9 @@ export default function ActionsPage() {
   const { toasts, addToast, dismissToast } = useToast();
   // Track which actions are currently being processed to prevent duplicate requests (race condition protection)
   const [processingReply, setProcessingReply] = useState<Set<string>>(new Set());
+  // Track user tier and follow-up limit for Free tier
+  const [userTier, setUserTier] = useState<"free" | "standard" | "premium" | null>(null);
+  const [followUpLimit, setFollowUpLimit] = useState<{ current: number; limit: number } | null>(null);
 
   // Modal states (keeping for snooze/complete flows, but removing follow-up modal)
   const [snoozeActionId, setSnoozeActionId] = useState<string | null>(null);
@@ -38,7 +41,33 @@ export default function ActionsPage() {
 
   useEffect(() => {
     fetchActions();
+    fetchUserTierAndLimit();
   }, []);
+
+  // Fetch user tier and follow-up limit (for Free tier indicator)
+  const fetchUserTierAndLimit = async () => {
+    try {
+      const tierResponse = await fetch("/api/billing/tier");
+      if (tierResponse.ok) {
+        const tierData = await tierResponse.json();
+        setUserTier(tierData.tier || "free");
+        
+        // If Free tier, fetch follow-up limit
+        if (tierData.tier === "free") {
+          const limitResponse = await fetch("/api/billing/follow-up-limit");
+          if (limitResponse.ok) {
+            const limitData = await limitResponse.json();
+            setFollowUpLimit({
+              current: limitData.currentCount || 0,
+              limit: limitData.limit || 3,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching user tier:", err);
+    }
+  };
 
   // Fetch actions using decision engine lanes
   const { actions: actionsByLane, loading: lanesLoading, error: lanesError } = useActionsByLane();
@@ -141,12 +170,36 @@ export default function ActionsPage() {
    * Protection against duplicates:
    * 1. Client-side: Processing lock prevents double-clicks/race conditions
    * 2. Server-side: Database query in API endpoint prevents duplicates
+   * 3. Tier-based limits: Free tier limited to 3 follow-ups per week
    */
   const handleGotReply = async (actionId: string) => {
     // Prevent duplicate requests (race condition protection)
     if (processingReply.has(actionId)) {
       console.log("Already processing reply for action:", actionId);
       return;
+    }
+
+    // Check follow-up limit for Free tier (client-side check)
+    if (userTier === "free" && followUpLimit) {
+      if (followUpLimit.current >= followUpLimit.limit) {
+        addToast({
+          type: "error",
+          message: `Free tier allows ${followUpLimit.limit} follow-ups per week. Upgrade to Standard for unlimited follow-ups.`,
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              window.location.href = "/pricing";
+            },
+          },
+        });
+        return;
+      } else if (followUpLimit.current >= followUpLimit.limit - 1) {
+        // Warning when approaching limit
+        addToast({
+          type: "warning",
+          message: `You've used ${followUpLimit.current} of ${followUpLimit.limit} follow-ups this week.`,
+        });
+      }
     }
 
     try {
@@ -233,6 +286,11 @@ export default function ActionsPage() {
 
       // Refresh actions to show the new FOLLOW_UP
       await fetchActions();
+      
+      // Refresh follow-up limit for Free tier
+      if (userTier === "free") {
+        await fetchUserTierAndLimit();
+      }
     } catch (err) {
       console.error("Error handling got reply:", err);
       addToast({
@@ -500,6 +558,27 @@ export default function ActionsPage() {
         <div className="mx-auto max-w-5xl space-y-6">
           {/* Toast notifications */}
           <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+          {/* Follow-up limit indicator for Free tier */}
+          {userTier === "free" && followUpLimit && (
+            <div className="flex items-center justify-between rounded-md border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm">
+              <span className="text-zinc-700">
+                Follow-ups this week: <strong>{followUpLimit.current}/{followUpLimit.limit}</strong>
+              </span>
+              {followUpLimit.current >= followUpLimit.limit ? (
+                <a
+                  href="/pricing"
+                  className="font-medium text-purple-600 hover:text-purple-700"
+                >
+                  Upgrade for unlimited →
+                </a>
+              ) : (
+                <span className="text-zinc-500">
+                  {followUpLimit.limit - followUpLimit.current} remaining
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div>

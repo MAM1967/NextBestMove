@@ -1,5 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateWinPost, generateInsightPost } from "@/lib/ai/content-prompts";
+import { getUserTier } from "@/lib/billing/tier";
+import {
+  generateAINarrativeSummary,
+  generateEnhancedAINarrativeSummary,
+  generateAIInsight,
+  generateEnhancedAIInsights,
+  generateAINextWeekFocus,
+  generateEnhancedAINextWeekFocus,
+} from "@/lib/ai/weekly-summary";
 
 // Placeholder narrative generation (will be replaced with AI)
 function generateNarrativeSummary(
@@ -308,27 +317,60 @@ export async function generateWeeklySummaryForUser(
       .single();
     const currentStreak = userProfile?.streak_count || 0;
 
-    // Generate narrative, insight, and next week focus
-    const narrativeSummary = generateNarrativeSummary(
-      daysActive,
-      actionsCompleted,
-      replies,
-      callsBooked
-    );
+    // 6. Get user tier to determine AI usage
+    const tier = await getUserTier(supabase, userId);
 
-    const insightText = generateInsight(
-      daysActive,
-      actionsCompleted,
-      replies,
-      callsBooked
-    );
+    // Generate narrative, insight, and next week focus based on tier
+    let narrativeSummary: string;
+    let insightText: string;
+    let nextWeekFocus: string;
 
-    const nextWeekFocus = generateNextWeekFocus(
+    const metrics = {
       daysActive,
       actionsCompleted,
       replies,
-      callsBooked
-    );
+      callsBooked,
+      currentStreak,
+      userAiProvider: userProfile?.ai_provider,
+      userApiKeyEncrypted: userProfile?.ai_api_key_encrypted,
+      userModel: userProfile?.ai_model,
+    };
+
+    if (tier === "free") {
+      // Free tier: Use placeholder functions only (no AI)
+      narrativeSummary = generateNarrativeSummary(
+        daysActive,
+        actionsCompleted,
+        replies,
+        callsBooked
+      );
+      insightText = generateInsight(
+        daysActive,
+        actionsCompleted,
+        replies,
+        callsBooked
+      );
+      nextWeekFocus = generateNextWeekFocus(
+        daysActive,
+        actionsCompleted,
+        replies,
+        callsBooked
+      );
+    } else if (tier === "standard") {
+      // Standard tier: Use basic AI for narrative and insight
+      narrativeSummary = await generateAINarrativeSummary(metrics, supabase, userId);
+      insightText = await generateAIInsight(metrics, supabase, userId);
+      nextWeekFocus = await generateAINextWeekFocus(metrics, supabase, userId);
+    } else {
+      // Premium tier: Use enhanced AI with multiple insights
+      narrativeSummary = await generateEnhancedAINarrativeSummary(metrics, supabase, userId);
+      
+      // Premium can have multiple insights - use first one for insight_text field
+      const insights = await generateEnhancedAIInsights(metrics, supabase, userId);
+      insightText = insights[0] || generateInsight(daysActive, actionsCompleted, replies, callsBooked);
+      
+      nextWeekFocus = await generateEnhancedAINextWeekFocus(metrics, supabase, userId);
+    }
 
     // Create weekly summary
     const { data: summary, error: insertError } = await supabase

@@ -26,8 +26,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has Premium for response metadata
-    // We'll generate briefs for all users so Standard users can see teasers
+    // Check if user has Premium for AI-generated notes
+    // Standard users get briefs without AI notes, Premium users get briefs with AI notes
     const { getSubscriptionInfo } = await import("@/lib/billing/subscription");
     const subscription = await getSubscriptionInfo(user.id);
     const isPremium = subscription.plan === "premium" && 
@@ -100,9 +100,12 @@ export async function GET(request: Request) {
     }
 
     // Generate briefs for detected calls
+    // Standard tier: includeAINotes = false (event context only)
+    // Premium tier: includeAINotes = true (with AI-generated notes)
+    const includeAINotes = isPremium;
     const briefs = await Promise.all(
       detectedCalls.map((call) =>
-        generatePreCallBrief(adminSupabase, user.id, call)
+        generatePreCallBrief(adminSupabase, user.id, call, includeAINotes)
       )
     );
 

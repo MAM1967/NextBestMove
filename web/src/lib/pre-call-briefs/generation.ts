@@ -149,12 +149,73 @@ function generateBriefContent(
 }
 
 /**
+ * Generate AI-generated notes for pre-call brief (Premium tier only)
+ */
+async function generateAINotes(
+  lead: LeadBasic | null,
+  history: ActionHistory,
+  eventTitle: string
+): Promise<string | null> {
+  // Only generate AI notes if there's meaningful context
+  if (!lead && history.totalActions === 0) {
+    return null;
+  }
+
+  try {
+    const { generateWithAI } = await import("@/lib/ai/openai");
+    
+    // Get user AI preferences if available
+    // For now, use system AI key (can be enhanced to support BYOK)
+    const context = {
+      leadName: lead?.name || "Contact",
+      eventTitle,
+      totalActions: history.totalActions,
+      repliesReceived: history.repliesReceived,
+      daysSinceLastAction: history.lastActionDate
+        ? Math.floor((Date.now() - history.lastActionDate.getTime()) / (1000 * 60 * 60 * 24))
+        : null,
+      lastActionNotes: history.lastActionNotes || null,
+    };
+
+    const aiPrompt = `Generate brief AI-generated notes for a pre-call brief. 
+Contact: ${context.leadName}
+Meeting: ${context.eventTitle}
+History: ${context.totalActions} total interactions, ${context.repliesReceived} replies received${context.daysSinceLastAction !== null ? `, last contact ${context.daysSinceLastAction} days ago` : ""}${context.lastActionNotes ? `. Last notes: ${context.lastActionNotes.substring(0, 100)}` : ""}
+
+Provide 2-3 concise bullet points that:
+- Highlight key context from past interactions
+- Suggest what to focus on in this call
+- Note any important details or patterns
+
+Keep it brief and actionable. Format as bullet points.`;
+
+    const fallback = null; // If AI fails, don't include notes (Standard tier behavior)
+
+    const notes = await generateWithAI(
+      aiPrompt,
+      context,
+      fallback || "",
+      undefined, // Use system AI key
+      undefined,
+      undefined
+    );
+
+    return notes && notes.length > 0 ? notes : null;
+  } catch (error) {
+    console.error("Error generating AI notes for pre-call brief:", error);
+    return null;
+  }
+}
+
+/**
  * Generate a pre-call brief for a detected call
+ * @param includeAINotes - If true, includes AI-generated notes (Premium tier only)
  */
 export async function generatePreCallBrief(
   supabase: SupabaseClient,
   userId: string,
-  detectedCall: DetectedCall
+  detectedCall: DetectedCall,
+  includeAINotes: boolean = false
 ): Promise<PreCallBrief> {
   const { event, matchedLead } = detectedCall;
 
@@ -171,11 +232,28 @@ export async function generatePreCallBrief(
   }
 
   const suggestions = generateNextStepSuggestions(history);
-  const briefContent = generateBriefContent(
+  
+  // Generate basic brief content (event context, lead info, action history)
+  let briefContent = generateBriefContent(
     matchedLead,
     history,
     suggestions
   );
+
+  // Add AI-generated notes for Premium tier
+  let aiGeneratedNotes: string | null = null;
+  if (includeAINotes) {
+    aiGeneratedNotes = await generateAINotes(
+      matchedLead,
+      history,
+      event.title
+    );
+    
+    // Append AI notes to brief content if generated
+    if (aiGeneratedNotes) {
+      briefContent += "\n\n### AI-Generated Notes\n" + aiGeneratedNotes;
+    }
+  }
 
   // Aggregate user notes from actions
   let userNotes: string | null = null;

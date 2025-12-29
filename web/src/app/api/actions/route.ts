@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getUserTier } from "@/lib/billing/tier";
+import { checkFollowUpLimit } from "@/lib/billing/follow-up-limits";
 
 // GET /api/actions - List actions for the authenticated user
 export async function GET(request: Request) {
@@ -145,6 +147,21 @@ export async function POST(request: Request) {
       notes,
       auto_created,
     } = body;
+
+    // Check follow-up limit for Free tier users
+    if (action_type === "FOLLOW_UP") {
+      const tier = await getUserTier(supabase, user.id);
+      const limitCheck = await checkFollowUpLimit(supabase, user.id, tier);
+      
+      if (!limitCheck.canCreate) {
+        return NextResponse.json(
+          { 
+            error: limitCheck.message || "Follow-up limit reached for Free tier. Upgrade to Standard for unlimited follow-ups." 
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // Validate required fields
     if (!action_type || !due_date) {
