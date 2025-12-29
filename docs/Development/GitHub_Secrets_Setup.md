@@ -11,11 +11,13 @@ The CI workflow supports both naming conventions for flexibility:
 If you want separate secrets for staging and production:
 
 **For Staging (PRs and staging branch):**
+
 - `NEXT_PUBLIC_SUPABASE_URL_STAGING` - Staging Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING` - Staging Supabase anon/public key
 - `SUPABASE_SERVICE_ROLE_KEY_STAGING` - Staging Supabase service role key
 
 **For Production (main branch):**
+
 - `NEXT_PUBLIC_SUPABASE_URL_PROD` - Production Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD` - Production Supabase anon/public key
 - `SUPABASE_SERVICE_ROLE_KEY_PROD` - Production Supabase service role key
@@ -29,6 +31,7 @@ If you're using generic secret names (already configured):
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
 
 **⚠️ Important:** With generic names, you must ensure:
+
 - For PRs and staging branch: These secrets contain **staging** credentials
 - For main branch: These secrets contain **production** credentials
 
