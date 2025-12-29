@@ -8,11 +8,12 @@ export default defineConfig({
   testDir: "./tests",
   // Only run Playwright E2E tests (.spec.ts), ignore Vitest tests (.test.ts)
   testMatch: /.*\.spec\.ts$/,
-  // Explicitly ignore Vitest test directories
+  // Explicitly ignore Vitest test directories and dev test files
   testIgnore: [
     "**/node_modules/**",
     "**/tests/unit/**",
     "**/tests/integration/**",
+    "**/*-dev.spec.ts", // Exclude development test files from CI
   ],
   fullyParallel: false, // Run sequentially to avoid email rate limits
   forbidOnly: !!process.env.CI,

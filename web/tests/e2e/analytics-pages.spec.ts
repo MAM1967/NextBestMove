@@ -8,13 +8,14 @@ import { cleanupTestUser } from "../helpers/test-data";
  * 
  * Strategy: Test APIs directly first, then verify page renders correctly
  * 
- * NOTE: Analytics tests are temporarily disabled due to circular dependency:
- * - Route must be deployed to staging for tests to pass
- * - Tests must pass for PR to merge
- * - PR must merge for route to be deployed
- * 
- * TODO: Re-enable these tests after analytics route is deployed to staging
+ * DEVELOPMENT APPROACH:
+ * - Tests are added incrementally, one at a time
+ * - Each test is debugged and verified working before adding the next
+ * - Only enabled tests are run in CI (tests with .skip() are excluded)
+ * - Once all tests pass, they can be enabled for CI
  */
+// DISABLED: Analytics tests are being developed in analytics-pages-dev.spec.ts
+// Once all tests pass in dev file, they will be moved here for CI
 test.describe.skip("Analytics Pages", () => {
   let testUser: { email: string; password: string; name: string };
 
@@ -37,6 +38,7 @@ test.describe.skip("Analytics Pages", () => {
     }
   });
 
+  // TEST 1: Basic page rendering - Start with this one, debug until it works
   test("should render Analytics page with basic elements", async ({ page }) => {
     test.setTimeout(60000);
 
@@ -175,7 +177,8 @@ test.describe.skip("Analytics Pages", () => {
     expect(hasEmptyState || hasDealMetrics).toBe(true);
   });
 
-  test("should handle Analytics page error state gracefully", async ({ page }) => {
+  // TEST 2: Error handling - Enable after TEST 1 passes
+  test.skip("should handle Analytics page error state gracefully", async ({ page }) => {
     test.setTimeout(30000);
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
@@ -228,7 +231,8 @@ test.describe.skip("Analytics Pages", () => {
     expect(errorContent).toMatch(/error|failed/i);
   });
 
-  test("should render Cancellation Analytics page (admin access required)", async ({
+  // TEST 3: Admin cancellation analytics - Enable after TEST 2 passes
+  test.skip("should render Cancellation Analytics page (admin access required)", async ({
     page,
   }) => {
     test.setTimeout(30000);
@@ -277,7 +281,8 @@ test.describe.skip("Analytics Pages", () => {
     }
   });
 
-  test("should apply date filters on Analytics page", async ({ page }) => {
+  // TEST 4: Date filters - Enable after TEST 3 passes
+  test.skip("should apply date filters on Analytics page", async ({ page }) => {
     test.setTimeout(30000);
 
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
