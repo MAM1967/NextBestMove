@@ -1,40 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { NotificationChannelSelector } from "../components/NotificationChannelSelector";
 
-type EmailPreferences = {
-  email_morning_plan: boolean;
-  email_fast_win_reminder: boolean;
-  email_follow_up_alerts: boolean;
-  email_weekly_summary: boolean;
-  email_unsubscribed?: boolean;
+type NotificationPreferences = {
+  morning_plan_email: boolean;
+  morning_plan_push: boolean;
+  fast_win_reminder_email: boolean;
+  fast_win_reminder_push: boolean;
+  follow_up_alerts_email: boolean;
+  follow_up_alerts_push: boolean;
+  weekly_summary_email: boolean;
+  weekly_summary_push: boolean;
 };
 
 type EmailPreferencesSectionProps = {
-  initialPreferences: EmailPreferences;
+  initialPreferences: {
+    email_morning_plan: boolean;
+    email_fast_win_reminder: boolean;
+    email_follow_up_alerts: boolean;
+    email_weekly_summary: boolean;
+    email_unsubscribed?: boolean;
+  };
 };
 
 export function EmailPreferencesSection({
   initialPreferences,
 }: EmailPreferencesSectionProps) {
-  const [preferences, setPreferences] = useState(initialPreferences);
+  const [preferences, setPreferences] = useState<NotificationPreferences>({
+    morning_plan_email: initialPreferences.email_morning_plan ?? true,
+    morning_plan_push: false,
+    fast_win_reminder_email: initialPreferences.email_fast_win_reminder ?? true,
+    fast_win_reminder_push: false,
+    follow_up_alerts_email: initialPreferences.email_follow_up_alerts ?? true,
+    follow_up_alerts_push: false,
+    weekly_summary_email: initialPreferences.email_weekly_summary ?? true,
+    weekly_summary_push: false,
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const isUnsubscribed = preferences.email_unsubscribed ?? false;
+  const [isLoading, setIsLoading] = useState(true);
+  const isUnsubscribed = initialPreferences.email_unsubscribed ?? false;
 
-  const handleToggle = async (key: keyof EmailPreferences) => {
-    // If unsubscribed, re-enable all preferences when toggling any
+  // Fetch current preferences from new API
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch("/api/notifications/preferences");
+        if (response.ok) {
+          const data = (await response.json()) as NotificationPreferences;
+          setPreferences(data);
+        }
+      } catch (error) {
+        console.error("Error fetching notification preferences:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPreferences();
+  }, []);
+
+  const handleChannelChange = async (
+    notificationType: keyof NotificationPreferences,
+    enabled: boolean
+  ) => {
     const newPreferences = {
       ...preferences,
-      [key]: !preferences[key],
-      email_unsubscribed: false, // Re-subscribe when user changes any preference
+      [notificationType]: enabled,
     };
     setPreferences(newPreferences);
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/users/email-preferences", {
-        method: "PATCH",
+      const response = await fetch("/api/notifications/preferences", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPreferences),
       });
@@ -46,21 +86,30 @@ export function EmailPreferencesSection({
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (error) {
-      console.error("Error saving email preferences:", error);
+      console.error("Error saving notification preferences:", error);
       // Revert on error
-      setPreferences(initialPreferences);
+      const response = await fetch("/api/notifications/preferences");
+      if (response.ok) {
+        const data = (await response.json()) as NotificationPreferences;
+        setPreferences(data);
+      }
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleUnsubscribe = async () => {
-    if (!confirm("Are you sure you want to unsubscribe from all emails? You can re-enable them later.")) {
+    if (
+      !confirm(
+        "Are you sure you want to unsubscribe from all notifications? You can re-enable them later."
+      )
+    ) {
       return;
     }
 
     setIsSaving(true);
     try {
+      // Update via users table for global unsubscribe
       const response = await fetch("/api/users/email-preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -77,14 +126,25 @@ export function EmailPreferencesSection({
         throw new Error("Failed to unsubscribe");
       }
 
-      setPreferences({
-        email_morning_plan: false,
-        email_fast_win_reminder: false,
-        email_follow_up_alerts: false,
-        email_weekly_summary: false,
-        email_unsubscribed: true,
+      // Also disable all notification preferences
+      const allDisabled: NotificationPreferences = {
+        morning_plan_email: false,
+        morning_plan_push: false,
+        fast_win_reminder_email: false,
+        fast_win_reminder_push: false,
+        follow_up_alerts_email: false,
+        follow_up_alerts_push: false,
+        weekly_summary_email: false,
+        weekly_summary_push: false,
+      };
+
+      await fetch("/api/notifications/preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(allDisabled),
       });
 
+      setPreferences(allDisabled);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (error) {
@@ -107,36 +167,66 @@ export function EmailPreferencesSection({
           You're unsubscribed from all emails. Toggle any preference above to re-enable emails.
         </div>
       )}
-      <div className="grid gap-3 md:grid-cols-2">
-        <EmailPreferenceToggle
-          label="Morning plan"
-          description="Daily at 8am in your timezone."
-          enabled={preferences.email_morning_plan && !isUnsubscribed}
-          onToggle={() => handleToggle("email_morning_plan")}
-          disabled={isSaving}
-        />
-        <EmailPreferenceToggle
-          label="Fast win reminder"
-          description="Nudge at 2pm if today's fast win is untouched."
-          enabled={preferences.email_fast_win_reminder && !isUnsubscribed}
-          onToggle={() => handleToggle("email_fast_win_reminder")}
-          disabled={isSaving}
-        />
-        <EmailPreferenceToggle
-          label="Follow-up alerts"
-          description="Reminder when replies are overdue."
-          enabled={preferences.email_follow_up_alerts && !isUnsubscribed}
-          onToggle={() => handleToggle("email_follow_up_alerts")}
-          disabled={isSaving}
-        />
-        <EmailPreferenceToggle
-          label="Weekly review"
-          description="Sunday night recap."
-          enabled={preferences.email_weekly_summary && !isUnsubscribed}
-          onToggle={() => handleToggle("email_weekly_summary")}
-          disabled={isSaving}
-        />
-      </div>
+      {isLoading ? (
+        <p className="text-sm text-zinc-600">Loading preferences...</p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          <NotificationChannelSelector
+            label="Morning plan"
+            description="Daily at 8am in your timezone."
+            emailEnabled={preferences.morning_plan_email && !isUnsubscribed}
+            pushEnabled={preferences.morning_plan_push && !isUnsubscribed}
+            onEmailChange={(enabled) =>
+              handleChannelChange("morning_plan_email", enabled)
+            }
+            onPushChange={(enabled) =>
+              handleChannelChange("morning_plan_push", enabled)
+            }
+            disabled={isSaving || isUnsubscribed}
+          />
+          <NotificationChannelSelector
+            label="Fast win reminder"
+            description="Nudge at 2pm if today's fast win is untouched."
+            emailEnabled={
+              preferences.fast_win_reminder_email && !isUnsubscribed
+            }
+            pushEnabled={preferences.fast_win_reminder_push && !isUnsubscribed}
+            onEmailChange={(enabled) =>
+              handleChannelChange("fast_win_reminder_email", enabled)
+            }
+            onPushChange={(enabled) =>
+              handleChannelChange("fast_win_reminder_push", enabled)
+            }
+            disabled={isSaving || isUnsubscribed}
+          />
+          <NotificationChannelSelector
+            label="Follow-up alerts"
+            description="Reminder when replies are overdue."
+            emailEnabled={preferences.follow_up_alerts_email && !isUnsubscribed}
+            pushEnabled={preferences.follow_up_alerts_push && !isUnsubscribed}
+            onEmailChange={(enabled) =>
+              handleChannelChange("follow_up_alerts_email", enabled)
+            }
+            onPushChange={(enabled) =>
+              handleChannelChange("follow_up_alerts_push", enabled)
+            }
+            disabled={isSaving || isUnsubscribed}
+          />
+          <NotificationChannelSelector
+            label="Weekly review"
+            description="Sunday night recap."
+            emailEnabled={preferences.weekly_summary_email && !isUnsubscribed}
+            pushEnabled={preferences.weekly_summary_push && !isUnsubscribed}
+            onEmailChange={(enabled) =>
+              handleChannelChange("weekly_summary_email", enabled)
+            }
+            onPushChange={(enabled) =>
+              handleChannelChange("weekly_summary_push", enabled)
+            }
+            disabled={isSaving || isUnsubscribed}
+          />
+        </div>
+      )}
       <div className="pt-2 border-t border-zinc-200 space-y-2">
         <button
           type="button"
@@ -154,38 +244,4 @@ export function EmailPreferencesSection({
   );
 }
 
-function EmailPreferenceToggle({
-  label,
-  description,
-  enabled,
-  onToggle,
-  disabled,
-}: {
-  label: string;
-  description?: string;
-  enabled: boolean;
-  onToggle: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-      <div className="space-y-1 text-sm">
-        <p className="font-medium text-zinc-900">{label}</p>
-        {description && <p className="text-xs text-zinc-600">{description}</p>}
-      </div>
-      <button
-        type="button"
-        onClick={onToggle}
-        disabled={disabled}
-        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          enabled
-            ? "border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100"
-            : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50"
-        }`}
-      >
-        {enabled ? "On" : "Off"}
-      </button>
-    </div>
-  );
-}
 

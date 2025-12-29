@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Action } from "./types";
 import { formatDateForDisplay } from "@/lib/utils/dateUtils";
+import type { DealStage } from "@/lib/analytics/deal-progression";
 
 interface ActionDetailModalProps {
   isOpen: boolean;
@@ -36,6 +37,116 @@ function getActionTypeLabel(actionType: string): string {
 
 function getStateLabel(state: string): string {
   return state.replace("_", " ");
+}
+
+function DealProgressionSection({
+  actionId,
+  currentStage,
+  currentValue,
+  onUpdate,
+}: {
+  actionId: string;
+  currentStage: DealStage | null | undefined;
+  currentValue: number | null;
+  onUpdate: () => void;
+}) {
+  const [stage, setStage] = useState<DealStage | null>(currentStage || null);
+  const [value, setValue] = useState<string>(currentValue?.toString() || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStage(currentStage || null);
+    setValue(currentValue?.toString() || "");
+  }, [currentStage, currentValue]);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/actions/${actionId}/deal-progression`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deal_stage: stage || null,
+          deal_value: value ? parseFloat(value) : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error || "Failed to update deal progression");
+      }
+
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update");
+      console.error("Error updating deal progression:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stages: Array<{ value: DealStage; label: string }> = [
+    { value: "prospecting", label: "Prospecting" },
+    { value: "qualifying", label: "Qualifying" },
+    { value: "proposal", label: "Proposal" },
+    { value: "negotiation", label: "Negotiation" },
+    { value: "closed_won", label: "Closed Won" },
+    { value: "closed_lost", label: "Closed Lost" },
+  ];
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-medium text-zinc-700">
+        Deal Progression
+      </h3>
+      <div className="space-y-3 text-sm">
+        <div>
+          <label className="block text-xs font-medium text-zinc-700 mb-1">
+            Deal Stage
+          </label>
+          <select
+            value={stage || ""}
+            onChange={(e) =>
+              setStage(e.target.value ? (e.target.value as DealStage) : null)
+            }
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          >
+            <option value="">Not tracking</option>
+            {stages.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-zinc-700 mb-1">
+            Deal Value ($)
+          </label>
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="w-full rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+        >
+          {loading ? "Saving..." : "Save Deal Info"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function ActionDetailModal({
@@ -185,6 +296,14 @@ export function ActionDetailModal({
                   )}
                 </div>
               </div>
+
+              {/* Deal Progression */}
+              <DealProgressionSection
+                actionId={action.id}
+                currentStage={action.deal_stage as DealStage | null | undefined}
+                currentValue={action.deal_value ? Number(action.deal_value) : null}
+                onUpdate={fetchActionDetail}
+              />
 
               {/* Related Lead */}
               {action.leads && (
