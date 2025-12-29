@@ -9,6 +9,7 @@ import {
   generateAINextWeekFocus,
   generateEnhancedAINextWeekFocus,
 } from "@/lib/ai/weekly-summary";
+import type { Tables } from "@/lib/types/supabase";
 
 // Placeholder narrative generation (will be replaced with AI)
 function generateNarrativeSummary(
@@ -247,7 +248,7 @@ export async function generateWeeklySummaryForUser(
   supabase: SupabaseClient,
   userId: string,
   weekStartDate: Date | string
-): Promise<{ success: boolean; error?: string; summary?: any }> {
+): Promise<{ success: boolean; error?: string; summary?: Tables<'weekly_summaries'> }> {
   try {
     // Normalize weekStartDate to Date
     const weekStart = typeof weekStartDate === "string" 

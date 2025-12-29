@@ -57,7 +57,7 @@ export function getOpenAIClientForUser(
  */
 export async function generateWithAI(
   template: string,
-  context: Record<string, any>,
+  context: Record<string, unknown>,
   fallback: string,
   userAiProvider?: string | null,
   userApiKeyEncrypted?: string | null,
@@ -103,7 +103,7 @@ export async function generateWithAI(
 /**
  * Build a prompt from a template and context
  */
-function buildPrompt(template: string, context: Record<string, any>): string {
+function buildPrompt(template: string, context: Record<string, unknown>): string {
   let prompt = template;
   for (const [key, value] of Object.entries(context)) {
     prompt = prompt.replace(new RegExp(`\\{${key}\\}`, "g"), String(value));

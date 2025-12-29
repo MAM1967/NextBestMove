@@ -1,14 +1,16 @@
+import Link from "next/link";
+
 export default function TermsOfServicePage() {
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-4xl px-6 py-16">
         <div className="mb-8">
-          <a
+          <Link
             href="/"
             className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500 hover:text-zinc-700"
           >
             ← Back to Home
-          </a>
+          </Link>
         </div>
         
         <div className="mb-8">

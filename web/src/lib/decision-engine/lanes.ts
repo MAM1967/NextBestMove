@@ -133,6 +133,7 @@ export function assignActionLane(
     state: string;
     person_id?: string | null;
     promised_due_at?: string | Date | null;
+    action_type?: string;
   },
   relationshipLane: Lane,
   today: Date = new Date()
@@ -178,7 +179,7 @@ export function assignActionLane(
   // Check if action is high priority and in NEW or SENT state
   // (This would need a priority field on actions - for now, we'll use action type)
   const highPriorityTypes = ["FOLLOW_UP", "CALL_PREP", "POST_CALL"];
-  const actionType = (action as any).action_type;
+  const actionType = action.action_type;
   if (
     actionType &&
     highPriorityTypes.includes(actionType) &&

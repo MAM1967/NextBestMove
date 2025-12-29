@@ -169,17 +169,18 @@ export async function GET(request: Request) {
               action_type: string;
               state: string;
               description?: string;
-              leads?: Array<{ id: string; name: string }> | null;
+              leads?: Array<{ id: string; name: string; url?: string }> | null;
               [key: string]: unknown;
             };
             const action = planAction.actions as ActionWithLeads;
             if (!action) continue;
 
+            const lead = Array.isArray(action.leads) ? action.leads[0] : action.leads;
             const actionData = {
               description: action.description || "Action",
               action_type: action.action_type,
-              personName: action.leads?.[0]?.name,
-              url: action.leads?.[0]?.url,
+              personName: lead?.name,
+              url: lead?.url,
             };
 
             if (planAction.is_fast_win) {

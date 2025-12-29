@@ -21,6 +21,7 @@ export const test = base.extend<StagingUserFixtures>({
     const user = await signUpUser(page);
     
     // Use the user in the test
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- This is a Playwright fixture, not a React hook. The 'use' parameter is Playwright's fixture callback.
     await use(user);
     
     // Clean up after test

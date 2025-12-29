@@ -1,9 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { checkFollowUpLimit } from "@/lib/billing/follow-up-limits";
-import type { SupabaseClient } from "@supabase/supabase-js";
+
+// Mock Supabase client type for testing
+type MockSupabaseClient = {
+  from: (table: string) => {
+    select: (columns?: string) => {
+      eq: (column: string, value: unknown) => {
+        single: () => Promise<{ data: unknown; error: unknown }>;
+        gte: (column: string, value: unknown) => {
+          lte: (column: string, value: unknown) => Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+  };
+};
 
 describe("follow-up-limits", () => {
-  let mockSupabase: any;
+  let mockSupabase: MockSupabaseClient;
 
   beforeEach(() => {
     mockSupabase = {

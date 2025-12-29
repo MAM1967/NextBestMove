@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       const { error: insertError } = await supabase.from("billing_events").insert({
         stripe_event_id: event.id,
         type: event.type,
-        payload: event.data.object as Record<string, unknown>, // Stripe event data is JSONB
+        payload: event.data.object as unknown as Record<string, unknown>, // Stripe event data is JSONB
         processed_at: processedAt,
       });
       

@@ -107,11 +107,11 @@ export function BillingSection({
       });
 
       if (!response.ok) {
-        let errorData: any = {};
+        let errorData: Record<string, unknown> = {};
         let errorText = "";
         try {
           errorText = await response.text();
-          errorData = JSON.parse(errorText);
+          errorData = JSON.parse(errorText) as Record<string, unknown>;
         } catch (e) {
           // Response is not JSON, use the text
           errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` };
@@ -134,9 +134,10 @@ export function BillingSection({
         throw new Error("No checkout URL returned");
       }
       window.location.href = url;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating checkout session:", error);
-      alert(`Unable to start checkout: ${error.message || "Please try again later."}`);
+      const errorMessage = error instanceof Error ? error.message : "Please try again later.";
+      alert(`Unable to start checkout: ${errorMessage}`);
       setIsLoading(false);
     }
   }

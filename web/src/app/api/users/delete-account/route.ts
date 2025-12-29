@@ -392,9 +392,8 @@ export async function DELETE(request: Request) {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error deleting user account:", error);
-    const errorMessage = error?.message || error?.code || "Failed to delete account";
     return NextResponse.json(
-      { error: errorMessage, details: error },
+      { error: "Failed to delete account", details: errorMessage },
       { status: 500 }
     );
   }

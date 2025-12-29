@@ -350,7 +350,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       ).toBeVisible({ timeout: 30000 });
       console.log("✅ Found action card via test ID");
       actionsFound = true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.log(
         "⚠️  Action cards not found by test ID, trying other selectors..."
       );
@@ -362,7 +362,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
         });
         console.log("✅ Found Fast Win badge");
         actionsFound = true;
-      } catch (error) {
+      } catch (error: unknown) {
         console.log("⚠️  Fast Win badge not found, trying plan header...");
 
         try {
@@ -376,7 +376,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
           ).toBeVisible({ timeout: 30000 });
           console.log("✅ Found plan header");
           actionsFound = true;
-        } catch (error) {
+        } catch (error: unknown) {
           console.log("⚠️  Plan header not found, trying best action card...");
 
           try {
@@ -386,7 +386,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
             ).toBeVisible({ timeout: 30000 });
             console.log("✅ Found best action card");
             actionsFound = true;
-          } catch (error) {
+          } catch (error: unknown) {
             console.log("❌ None of the expected elements found");
             // Take a screenshot for debugging (if page is still open)
             try {
@@ -428,7 +428,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
         page.locator("text=/FAST WIN|Fast Win/i").first()
       ).toBeVisible({ timeout: 10000 });
       console.log("✅ Fast Win badge confirmed");
-    } catch (error) {
+    } catch (error: unknown) {
       console.log(
         "⚠️  Fast Win badge not explicitly found, but actions were found - continuing"
       );
@@ -447,11 +447,12 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       // Try to click the button - if a modal appears, dismiss it
       try {
         await completeButton.click({ timeout: 5000 });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If click fails due to modal intercepting, dismiss the modal first
+        const errorMessage = error instanceof Error ? error.message : String(error);
         if (
-          error.message?.includes("intercepts pointer events") ||
-          error.message?.includes("modal")
+          errorMessage.includes("intercepts pointer events") ||
+          errorMessage.includes("modal")
         ) {
           console.log("⚠️  Modal detected, attempting to dismiss...");
 

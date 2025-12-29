@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: error.message || "Failed to test API key" },
+      { error: errorMessage || "Failed to test API key" },
       { status: 500 }
     );
   }

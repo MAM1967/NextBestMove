@@ -104,7 +104,7 @@ export function EmailPreferencesSection({
       )}
       {isUnsubscribed && (
         <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-700">
-          You're unsubscribed from all emails. Toggle any preference above to re-enable emails.
+          You&apos;re unsubscribed from all emails. Toggle any preference above to re-enable emails.
         </div>
       )}
       <div className="grid gap-3 md:grid-cols-2">
@@ -117,7 +117,7 @@ export function EmailPreferencesSection({
         />
         <EmailPreferenceToggle
           label="Fast win reminder"
-          description="Nudge at 2pm if today's fast win is untouched."
+          description="Nudge at 2pm if today&apos;s fast win is untouched."
           enabled={preferences.email_fast_win_reminder && !isUnsubscribed}
           onToggle={() => handleToggle("email_fast_win_reminder")}
           disabled={isSaving}
@@ -147,7 +147,7 @@ export function EmailPreferencesSection({
           {isUnsubscribed ? "Unsubscribed from all emails" : "Unsubscribe from all emails"}
         </button>
         <p className="text-xs text-zinc-500">
-          💡 <strong>Tip:</strong> If you're not receiving emails, check your spam folder and mark NextBestMove emails as "Not Spam" to improve deliverability.
+          💡 <strong>Tip:</strong> If you&apos;re not receiving emails, check your spam folder and mark NextBestMove emails as &quot;Not Spam&quot; to improve deliverability.
         </p>
       </div>
     </div>

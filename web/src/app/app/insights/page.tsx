@@ -63,7 +63,10 @@ async function getStaleActions() {
   }
 
   // Calculate how many days old each action is and transform leads
-  const actionsWithAge = (staleActions || []).map((action: any) => {
+  type ActionWithLeads = Action & {
+    leads?: Array<{ id: string; name: string; url?: string; notes?: string }> | { id: string; name: string; url?: string; notes?: string } | null;
+  };
+  const actionsWithAge = (staleActions || []).map((action: ActionWithLeads) => {
     const createdDate = new Date(action.created_at);
     const today = new Date();
     today.setHours(0, 0, 0, 0);

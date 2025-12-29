@@ -9,7 +9,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computeRelationshipStates } from "./state";
+import { computeRelationshipStates, type RelationshipState } from "./state";
 import { assignRelationshipLane, assignActionLane, type Lane } from "./lanes";
 import {
   calculateNextMoveScore,
@@ -29,7 +29,7 @@ export interface DecisionEngineResult {
     lane: Lane;
     reason: string;
   } | null;
-  relationshipStates: Map<string, any>;
+  relationshipStates: Map<string, RelationshipState>;
   scoredActions: ScoredAction[];
 }
 
@@ -137,7 +137,7 @@ export async function runDecisionEngine(
           lead.url || null
         );
         return { leadId, signals };
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error fetching email signals for relationship ${leadId}:`, error);
         // Graceful degradation: return null if email signals can't be fetched
         return null;
@@ -156,7 +156,7 @@ export async function runDecisionEngine(
   let actionsToProcess = candidateActions;
   if (maxDurationMinutes !== null && maxDurationMinutes !== undefined) {
     actionsToProcess = candidateActions.filter((action) => {
-      const estimatedMinutes = (action as any).estimated_minutes;
+      const estimatedMinutes = action.estimated_minutes;
       // Include actions with no estimate (null/undefined) OR actions with estimate <= maxDurationMinutes
       return estimatedMinutes === null || estimatedMinutes === undefined || estimatedMinutes <= maxDurationMinutes;
     });

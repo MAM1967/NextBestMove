@@ -35,6 +35,7 @@ export function ChannelNudgeCard({
       const dismissedTime = parseInt(dismissedAt, 10);
       const hoursSinceDismissal = (Date.now() - dismissedTime) / (1000 * 60 * 60);
       if (hoursSinceDismissal < 24) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Reading from localStorage on mount
         setIsDismissed(true);
       } else {
         // Clear old dismissal

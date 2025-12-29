@@ -7,18 +7,17 @@ export function UmamiScript() {
   const umamiUrl = process.env.NEXT_PUBLIC_UMAMI_URL?.trim();
   const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID?.trim();
 
-  // Don't render if Umami is not configured
-  if (!umamiUrl || !websiteId) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[Umami] Tracking not configured. Set NEXT_PUBLIC_UMAMI_URL and NEXT_PUBLIC_UMAMI_WEBSITE_ID");
-    }
-    return null;
-  }
-
   // Validate Website ID format (should be UUID)
-  const isValidWebsiteId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(websiteId);
+  const isValidWebsiteId = websiteId ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(websiteId) : false;
   
   useEffect(() => {
+    // Don't do anything if Umami is not configured
+    if (!umamiUrl || !websiteId) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[Umami] Tracking not configured. Set NEXT_PUBLIC_UMAMI_URL and NEXT_PUBLIC_UMAMI_WEBSITE_ID");
+      }
+      return;
+    }
     if (!isValidWebsiteId) {
       console.error("[Umami] Invalid Website ID format. Expected UUID format (e.g., ef97f9ec-8da6-4e4f-9bcf-730a9b0cb27d)");
       console.error("[Umami] Current Website ID:", websiteId);
@@ -33,6 +32,11 @@ export function UmamiScript() {
       });
     }
   }, [umamiUrl, websiteId, isValidWebsiteId]);
+
+  // Don't render if Umami is not configured
+  if (!umamiUrl || !websiteId) {
+    return null;
+  }
 
   // Add error handler for script loading
   const handleScriptError = () => {

@@ -200,7 +200,7 @@ export function PaywallOverlay({
             <p className="mt-2 text-sm text-zinc-600">
               {tier === "free" ? (
                 <>
-                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
+                  You&apos;re now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
                 </>
               ) : daysRemaining > 0 ? (
                 `You have ${daysRemaining} day${

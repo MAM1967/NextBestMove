@@ -35,10 +35,13 @@ export function PromiseModal({
     if (isOpen && actionId) {
       if (currentPromise) {
         const promiseDate = new Date(currentPromise);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
         setCustomDate(promiseDate.toISOString().split("T")[0]);
         const hours = promiseDate.getHours().toString().padStart(2, "0");
         const minutes = promiseDate.getMinutes().toString().padStart(2, "0");
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
         setCustomTime(`${hours}:${minutes}`);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
         setPromiseOption("custom");
       } else {
         // Default to EOD today

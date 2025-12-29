@@ -25,8 +25,11 @@ export function FollowUpSchedulingModal({
     if (isOpen && actionId) {
       const date = new Date();
       date.setDate(date.getDate() + 3);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setFollowUpDate(date.toISOString().split("T")[0]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setNote("");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setError(null);
     }
   }, [isOpen, actionId]);

@@ -44,8 +44,9 @@ export function CalendarEventsView() {
         }
         const result = await response.json();
         setData(result);
-      } catch (err: any) {
-        setError(err.message || "Failed to load calendar events");
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to load calendar events";
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

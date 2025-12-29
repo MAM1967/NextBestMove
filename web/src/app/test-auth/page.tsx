@@ -4,7 +4,7 @@ export default function TestAuthPage() {
       <h1>Basic Auth Test Page</h1>
       <p>If you can see this page, Basic Auth either:</p>
       <ul>
-        <li>Didn't prompt (middleware not running or staging detection failed)</li>
+        <li>Didn&apos;t prompt (middleware not running or staging detection failed)</li>
         <li>You entered credentials and they were accepted</li>
       </ul>
       <p>

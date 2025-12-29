@@ -60,11 +60,19 @@ export async function GET(request: Request) {
     // Detect stalled conversations
     const stalledConversations = relationships
       .map((rel) => {
+        // Map "twitter" to "text" for PreferredChannel type compatibility
+        let preferredChannel: "linkedin" | "email" | "text" | "other" | null = null;
+        if (rel.preferred_channel === "twitter") {
+          preferredChannel = "text";
+        } else if (rel.preferred_channel === "email" || rel.preferred_channel === "linkedin" || rel.preferred_channel === "other") {
+          preferredChannel = rel.preferred_channel;
+        }
+        
         const stalled = detectStalledConversation(
           {
             id: rel.id,
             name: rel.name,
-            preferred_channel: rel.preferred_channel as "email" | "linkedin" | "twitter" | "other" | null,
+            preferred_channel: preferredChannel,
             last_interaction_at: rel.last_interaction_at,
             cadence_days: rel.cadence_days,
           },

@@ -188,7 +188,7 @@ export default function PricingPage() {
           <div className="px-6 py-4 border-b border-zinc-200 bg-zinc-50">
             <h2 className="text-xl font-semibold text-zinc-900">Feature Comparison</h2>
             <p className="mt-1 text-sm text-zinc-600">
-              Compare what's included in each plan
+              Compare what&apos;s included in each plan
             </p>
           </div>
 

@@ -90,8 +90,14 @@ export async function getSubscriptionInfo(
   // Prioritize plan_type over plan_name (plan_type is the source of truth)
   let plan: PlanType = "none";
   if (subscription.metadata) {
-    const planType = (subscription.metadata as any)?.plan_type?.toLowerCase();
-    const planName = (subscription.metadata as any)?.plan_name?.toLowerCase();
+    type SubscriptionMetadata = {
+      plan_type?: string;
+      plan_name?: string;
+      [key: string]: unknown;
+    };
+    const metadata = subscription.metadata as SubscriptionMetadata;
+    const planType = metadata?.plan_type?.toLowerCase();
+    const planName = metadata?.plan_name?.toLowerCase();
     
     // plan_type is the source of truth - check it first
     if (planType === "standard") {

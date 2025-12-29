@@ -45,17 +45,24 @@ async function detectDayOfWeekPattern(
     return null;
   }
 
-  const bestDays = data
-    .filter((row: any) => row.is_best)
-    .map((row: any) => ({
-      day: row.day_of_week as string,
+  type DayOfWeekRow = {
+    day_of_week: string;
+    reply_rate: number | string;
+    is_best?: boolean;
+    is_worst?: boolean;
+  };
+
+  const bestDays = (data as DayOfWeekRow[])
+    .filter((row) => row.is_best)
+    .map((row) => ({
+      day: row.day_of_week,
       replyRate: Number(row.reply_rate) || 0,
     }));
 
-  const worstDays = data
-    .filter((row: any) => row.is_worst)
-    .map((row: any) => ({
-      day: row.day_of_week as string,
+  const worstDays = (data as DayOfWeekRow[])
+    .filter((row) => row.is_worst)
+    .map((row) => ({
+      day: row.day_of_week,
       replyRate: Number(row.reply_rate) || 0,
     }));
 
@@ -83,8 +90,15 @@ async function detectFollowUpTimingPattern(
     return null;
   }
 
-  const buckets = data.map((row: any) => ({
-    label: row.bucket_label as string,
+  type FollowUpTimingRow = {
+    bucket_label: string;
+    hours_min: number | string;
+    hours_max: number | string | null;
+    reply_rate: number | string;
+  };
+
+  const buckets = (data as FollowUpTimingRow[]).map((row) => ({
+    label: row.bucket_label,
     hoursMin: Number(row.hours_min) || 0,
     hoursMax: row.hours_max !== null ? Number(row.hours_max) : null,
     replyRate: Number(row.reply_rate) || 0,
@@ -111,8 +125,13 @@ async function detectActionTypeConversionPattern(
     return null;
   }
 
-  const entries = data.map((row: any) => ({
-    actionType: row.action_type as string,
+  type ActionTypeConversionRow = {
+    action_type: string;
+    reply_rate: number | string;
+  };
+
+  const entries = (data as ActionTypeConversionRow[]).map((row) => ({
+    actionType: row.action_type,
     replyRate: Number(row.reply_rate) || 0,
   }));
 

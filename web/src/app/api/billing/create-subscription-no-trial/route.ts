@@ -232,7 +232,7 @@ export async function POST(request: Request) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error creating subscription:", errorMessage);
     return NextResponse.json(
-      { error: "Failed to create subscription", details: error.message },
+      { error: "Failed to create subscription", details: errorMessage },
       { status: 500 }
     );
   }

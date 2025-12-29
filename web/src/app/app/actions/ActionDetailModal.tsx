@@ -52,10 +52,13 @@ export function ActionDetailModal({
     if (isOpen && actionId) {
       fetchActionDetail();
     } else {
+      // Reset state when modal closes - acceptable pattern for modals
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setActionDetail(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setError(null);
     }
-  }, [isOpen, actionId]);
+  }, [isOpen, actionId, fetchActionDetail]);
 
   const fetchActionDetail = async () => {
     if (!actionId) return;

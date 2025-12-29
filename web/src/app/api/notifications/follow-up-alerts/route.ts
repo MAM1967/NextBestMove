@@ -137,11 +137,13 @@ export async function GET(request: Request) {
             (todayDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
           );
 
+          // leads is a single object, not an array
+          const lead = Array.isArray(action.leads) ? action.leads[0] : action.leads;
           return {
             description: action.description || "Follow-up",
-            personName: action.leads?.[0]?.name || "Contact",
+            personName: lead?.name || "Contact",
             daysOverdue: Math.max(0, daysOverdue),
-            url: action.leads?.[0]?.url,
+            url: lead?.url,
           };
         });
 

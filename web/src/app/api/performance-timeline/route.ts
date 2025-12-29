@@ -133,12 +133,27 @@ export async function GET(request: Request) {
 }
 
 /**
+ * Performance metrics structure
+ */
+interface PerformanceMetrics {
+  actions_completed?: number;
+  actions_created?: number;
+  replies_received?: number;
+  pins_created?: number;
+  pins_archived?: number;
+  streak_day?: number;
+  completion_rate?: number | null;
+  reply_rate?: number | null;
+  [key: string]: unknown;
+}
+
+/**
  * Aggregate timeline data by granularity (day, week, or month)
  */
 function aggregateByGranularity(
-  data: Array<{ date: string; metrics: Record<string, unknown> }>,
+  data: Array<{ date: string; metrics: PerformanceMetrics }>,
   granularity: "day" | "week" | "month"
-): Array<{ date: string; metrics: Record<string, unknown> }> {
+): Array<{ date: string; metrics: PerformanceMetrics }> {
   if (granularity === "day") {
     return data;
   }
@@ -168,10 +183,10 @@ function aggregateByGranularity(
   }
 
   // Aggregate metrics for each group
-  const aggregated: Array<{ date: string; metrics: Record<string, unknown> }> = [];
+  const aggregated: Array<{ date: string; metrics: PerformanceMetrics }> = [];
 
   for (const [key, items] of grouped.entries()) {
-    const aggregatedMetrics = {
+    const aggregatedMetrics: PerformanceMetrics = {
       actions_completed: 0,
       actions_created: 0,
       replies_received: 0,
@@ -189,22 +204,23 @@ function aggregateByGranularity(
 
     for (const item of items) {
       const metrics = item.metrics;
-      aggregatedMetrics.actions_completed += metrics.actions_completed || 0;
-      aggregatedMetrics.actions_created += metrics.actions_created || 0;
-      aggregatedMetrics.replies_received += metrics.replies_received || 0;
-      aggregatedMetrics.pins_created += metrics.pins_created || 0;
-      aggregatedMetrics.pins_archived += metrics.pins_archived || 0;
+      aggregatedMetrics.actions_completed = (aggregatedMetrics.actions_completed || 0) + (typeof metrics.actions_completed === "number" ? metrics.actions_completed : 0);
+      aggregatedMetrics.actions_created = (aggregatedMetrics.actions_created || 0) + (typeof metrics.actions_created === "number" ? metrics.actions_created : 0);
+      aggregatedMetrics.replies_received = (aggregatedMetrics.replies_received || 0) + (typeof metrics.replies_received === "number" ? metrics.replies_received : 0);
+      aggregatedMetrics.pins_created = (aggregatedMetrics.pins_created || 0) + (typeof metrics.pins_created === "number" ? metrics.pins_created : 0);
+      aggregatedMetrics.pins_archived = (aggregatedMetrics.pins_archived || 0) + (typeof metrics.pins_archived === "number" ? metrics.pins_archived : 0);
+      const streakDay = typeof metrics.streak_day === "number" ? metrics.streak_day : 0;
       aggregatedMetrics.streak_day = Math.max(
-        aggregatedMetrics.streak_day,
-        metrics.streak_day || 0
+        aggregatedMetrics.streak_day || 0,
+        streakDay
       );
 
-      if (metrics.completion_rate !== undefined && metrics.completion_rate !== null) {
+      if (typeof metrics.completion_rate === "number" && metrics.completion_rate !== null) {
         totalCompletionRate += metrics.completion_rate;
         validCompletionRates++;
       }
 
-      if (metrics.reply_rate !== undefined && metrics.reply_rate !== null) {
+      if (typeof metrics.reply_rate === "number" && metrics.reply_rate !== null) {
         totalReplyRate += metrics.reply_rate;
         validReplyRates++;
       }
@@ -232,7 +248,7 @@ function aggregateByGranularity(
  * Calculate summary statistics from timeline data
  */
 function calculateSummary(
-  data: Array<{ date: string; metrics: Record<string, unknown> }>
+  data: Array<{ date: string; metrics: PerformanceMetrics }>
 ): {
   total_days: number;
   avg_completion_rate: number;
@@ -259,15 +275,15 @@ function calculateSummary(
 
   for (const item of data) {
     const metrics = item.metrics;
-    totalActionsCompleted += metrics.actions_completed || 0;
-    totalRepliesReceived += metrics.replies_received || 0;
+    totalActionsCompleted += typeof metrics.actions_completed === "number" ? metrics.actions_completed : 0;
+    totalRepliesReceived += typeof metrics.replies_received === "number" ? metrics.replies_received : 0;
 
-    if (metrics.completion_rate !== undefined && metrics.completion_rate !== null) {
+    if (typeof metrics.completion_rate === "number" && metrics.completion_rate !== null) {
       totalCompletionRate += metrics.completion_rate;
       validCompletionRates++;
     }
 
-    if (metrics.reply_rate !== undefined && metrics.reply_rate !== null) {
+    if (typeof metrics.reply_rate === "number" && metrics.reply_rate !== null) {
       totalReplyRate += metrics.reply_rate;
       validReplyRates++;
     }

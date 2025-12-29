@@ -9,11 +9,16 @@ import {
 import { runDecisionEngine } from "@/lib/decision-engine";
 import { assignActionLane } from "@/lib/decision-engine/lanes";
 import { computeRelationshipStates } from "@/lib/decision-engine/state";
+import type { Tables } from "@/lib/types/supabase";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
+type Action = Tables<'actions'> & {
+  leads?: { id: string; name: string; url?: string | null } | null;
+};
+
 interface ActionWithScore {
-  action: any;
+  action: Action;
   score: number;
   isFastWinCandidate: boolean;
   lane?: string;
@@ -40,7 +45,7 @@ function calculateCapacity(freeMinutes: number | null): {
 }
 
 // Calculate priority score for an action
-function calculatePriorityScore(action: any): number {
+function calculatePriorityScore(action: Action): number {
   let score = 0;
 
   // State-based scoring (highest priority first)
@@ -98,7 +103,7 @@ function calculatePriorityScore(action: any): number {
 }
 
 // Check if action is a Fast Win candidate
-function isFastWinCandidate(action: any): boolean {
+function isFastWinCandidate(action: Action): boolean {
   // Fast Win criteria:
   // 1. Can be done in <5 minutes
   // 2. High probability of impact
@@ -148,7 +153,7 @@ export async function generateDailyPlanForUser(
   supabase: SupabaseClient,
   userId: string,
   date: string
-): Promise<{ success: boolean; error?: string; dailyPlan?: any }> {
+): Promise<{ success: boolean; error?: string; dailyPlan?: Tables<'daily_plans'> }> {
   try {
     // Check if plan already exists for this date
     const { data: existingPlan } = await supabase
@@ -281,8 +286,8 @@ export async function generateDailyPlanForUser(
     // Note: due_date is a DATE column, so .lte("due_date", date) compares DATE to DATE string (YYYY-MM-DD)
     // This should work correctly regardless of timezone since we're comparing date-only values
     // Try with leads join first, fallback to without if it fails (RLS might block the join)
-    let allCandidateActions: any[] | null = null;
-    let actionsError: any = null;
+    let allCandidateActions: Action[] | null = null;
+    let actionsError: { message: string; code?: string } | null = null;
     
     // First try with leads join
     const { data: actionsWithLeads, error: joinError } = await supabase

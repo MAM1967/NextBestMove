@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     }
 
     // Group emails by relationship_id for signals format
-    const signalsByRelationship = new Map<string, any>();
+    const signalsByRelationship = new Map<string, unknown>();
 
     for (const email of recentEmails) {
       const relationshipId = email.person_id || "unknown";

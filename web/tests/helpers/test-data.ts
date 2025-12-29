@@ -135,7 +135,7 @@ export async function confirmUserEmail(email: string) {
  * Wait for staging deployment to be ready
  * Checks if the site is accessible
  */
-export async function waitForStagingDeployment(page: any, maxWait = 60000) {
+export async function waitForStagingDeployment(page: { goto: (url: string) => Promise<unknown> }, maxWait = 60000) {
   const startTime = Date.now();
   
   while (Date.now() - startTime < maxWait) {

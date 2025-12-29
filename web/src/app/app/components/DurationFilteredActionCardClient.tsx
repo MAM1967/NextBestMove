@@ -30,6 +30,7 @@ export function DurationFilteredActionCardClient({
 
       // Filter to get best action for duration
       const bestAction = getActionForDuration(allActions, duration);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Derived state from props
       setFilteredAction(bestAction);
     } else {
       setFilteredAction(null);

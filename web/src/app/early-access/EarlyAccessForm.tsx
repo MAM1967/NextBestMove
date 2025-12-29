@@ -24,7 +24,7 @@ export function EarlyAccessForm() {
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           <p className="font-semibold">Thanks for signing up!</p>
           <p className="mt-1">
-            We'll reach out personally with access details and a short onboarding.
+            We&apos;ll reach out personally with access details and a short onboarding.
           </p>
         </div>
       )}

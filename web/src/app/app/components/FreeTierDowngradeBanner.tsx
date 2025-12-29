@@ -23,7 +23,7 @@ export function FreeTierDowngradeBanner() {
             </h3>
           </div>
           <p className="text-sm text-amber-800 mb-3">
-            You're now on <strong>{freeTierInfo.name} - {freeTierInfo.tagline}</strong>. 
+            You&apos;re now on <strong>{freeTierInfo.name} - {freeTierInfo.tagline}</strong>. 
             You can still use manual planning and basic features, but automatic daily plans 
             and calendar-aware capacity require <strong>{standardTierInfo.name} - {standardTierInfo.tagline}</strong>.
           </p>

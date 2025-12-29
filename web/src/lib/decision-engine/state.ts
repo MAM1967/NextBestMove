@@ -6,6 +6,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Tables } from "@/lib/types/supabase";
 
 export interface RelationshipState {
   relationshipId: string;
@@ -72,7 +73,8 @@ export async function computeRelationshipStates(
   }
   
   // Group actions by relationship
-  const actionsByRelationship = new Map<string, any[]>();
+  type ActionWithPersonId = Tables<'actions'> & { person_id: string | null };
+  const actionsByRelationship = new Map<string, ActionWithPersonId[]>();
   (actions || []).forEach((action) => {
     if (action.person_id) {
       const existing = actionsByRelationship.get(action.person_id) || [];

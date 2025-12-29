@@ -102,7 +102,7 @@ export async function GET(request: Request) {
       action = actionOnly;
       
       // Fetch lead separately if needed
-      if (action.person_id) {
+      if (action && action.person_id) {
         const { data: lead } = await supabase
           .from("leads")
           .select("id, name, url, notes")
@@ -110,7 +110,7 @@ export async function GET(request: Request) {
           .eq("user_id", user.id)
           .single();
         
-        if (lead) {
+        if (lead && action) {
           action.leads = lead;
         }
       }

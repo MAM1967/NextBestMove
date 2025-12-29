@@ -131,23 +131,36 @@ Only extract items with high or medium confidence. Skip low-confidence items unl
       throw new Error("Empty response from AI");
     }
 
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as {
+      actionItems?: Array<{
+        description?: string;
+        action_type?: string;
+        due_date?: string;
+        notes?: string;
+        confidence?: string;
+      }>;
+      insights?: Array<{
+        text?: string;
+        confidence?: string;
+      }>;
+      overallConfidence?: string;
+    };
     
     // Validate and normalize the response
     const result: ExtractionResult = {
-      actionItems: (parsed.actionItems || []).map((item: any) => ({
+      actionItems: (parsed.actionItems || []).map((item) => ({
         description: item.description || "",
         action_type: validateActionType(item.action_type) || "FOLLOW_UP",
         due_date: item.due_date || undefined,
         notes: item.notes || undefined,
         confidence: validateConfidence(item.confidence) || "medium",
       })),
-      insights: (parsed.insights || []).map((insight: any) => ({
+      insights: (parsed.insights || []).map((insight) => ({
         text: insight.text || "",
         confidence: validateConfidence(insight.confidence) || "medium",
       })),
       overallConfidence: validateConfidence(parsed.overallConfidence) || "medium",
-      needsReview: parsed.overallConfidence === "low" || (parsed.actionItems || []).some((item: any) => item.confidence === "low"),
+      needsReview: parsed.overallConfidence === "low" || (parsed.actionItems || []).some((item) => item.confidence === "low"),
     };
 
     return result;

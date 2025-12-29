@@ -186,7 +186,7 @@ export async function createTestUserProgrammatically() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return testUser;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Failed to create test user programmatically:`, error);
     throw error;
   }
@@ -262,7 +262,7 @@ export async function createTestUserWithOnboardingCompleted(tier: "free" | "stan
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     return testUser;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(
       `Failed to create test user with onboarding completed:`,
       error
@@ -313,7 +313,7 @@ export async function getOrCreatePreSeededUser(email?: string) {
 
     // Create new user
     return await createTestUserProgrammatically();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Failed to get or create pre-seeded user:`, error);
     throw error;
   }

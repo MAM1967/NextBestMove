@@ -24,7 +24,9 @@ export function SnoozeActionModal({
     if (isOpen && actionId) {
       const date = new Date();
       date.setDate(date.getDate() + 7);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setSnoozeUntil(date.toISOString().split("T")[0]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Modal reset pattern
       setError(null);
     }
   }, [isOpen, actionId]);

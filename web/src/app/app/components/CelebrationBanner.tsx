@@ -46,9 +46,9 @@ export function CelebrationBanner() {
       <div className="flex items-center gap-3">
         <div className="text-3xl">🎉</div>
         <div className="flex-1">
-          <h3 className="font-semibold text-lg">You're on a roll!</h3>
+          <h3 className="font-semibold text-lg">You&apos;re on a roll!</h3>
           <p className="text-sm opacity-90">
-            You've completed all actions for 7 days straight. Keep up the amazing work!
+            You&apos;ve completed all actions for 7 days straight. Keep up the amazing work!
           </p>
         </div>
         <button

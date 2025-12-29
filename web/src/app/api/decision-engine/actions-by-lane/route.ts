@@ -179,8 +179,8 @@ export async function GET(request: Request) {
       keyof typeof actionsByLane
     >) {
       actionsByLane[lane].sort((a, b) => {
-        const scoreA = a.next_move_score || 0;
-        const scoreB = b.next_move_score || 0;
+        const scoreA = typeof a.next_move_score === "number" ? a.next_move_score : 0;
+        const scoreB = typeof b.next_move_score === "number" ? b.next_move_score : 0;
         return scoreB - scoreA;
       });
     }

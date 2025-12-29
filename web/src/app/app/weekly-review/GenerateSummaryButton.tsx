@@ -17,14 +17,15 @@ export function GenerateSummaryButton() {
       if (response.ok) {
         router.refresh();
       } else {
-        const error = await response.json();
+        const error = await response.json() as { error?: string; details?: string };
         const errorMsg = error.details 
           ? `${error.error}: ${error.details}` 
           : error.error || "Unknown error";
         alert(`Failed to generate review: ${errorMsg}`);
       }
-    } catch (error) {
-      alert("Failed to generate review. Please try again.");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate review. Please try again.";
+      alert(errorMessage);
     } finally {
       setIsGenerating(false);
     }

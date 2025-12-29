@@ -22,3 +22,4 @@ CREATE POLICY "Users can update own weekly summaries" ON weekly_summaries
 
 
 
+

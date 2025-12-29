@@ -73,7 +73,7 @@ export function EstimatedMinutesModal({
         </h2>
 
         <p className="text-sm text-zinc-600 mb-4">
-          How long will this action take? This helps the "I have X minutes"
+          How long will this action take? This helps the &quot;I have X minutes&quot;
           selector find the right action for your schedule.
         </p>
 

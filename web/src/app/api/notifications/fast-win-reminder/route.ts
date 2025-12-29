@@ -154,7 +154,7 @@ export async function GET(request: Request) {
           action_type: string;
           state: string;
           description?: string;
-          leads?: { id: string; name: string } | null;
+          leads?: { id: string; name: string; url?: string } | null;
           [key: string]: unknown;
         };
         const action = fastWinAction.actions as ActionWithLeads;
@@ -172,8 +172,8 @@ export async function GET(request: Request) {
           userName: user.name,
           fastWin: {
             description: action.description || "Fast Win",
-            personName: action.leads?.[0]?.name,
-            url: action.leads?.[0]?.url,
+            personName: action.leads?.name,
+            url: action.leads?.url,
           },
         });
 

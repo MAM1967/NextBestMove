@@ -20,7 +20,7 @@ export function isPostHogReady(): boolean {
  */
 export function trackEvent(
   eventName: string,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ): void {
   if (!isPostHogReady()) {
     if (process.env.NODE_ENV === "development") {
@@ -44,7 +44,7 @@ export function trackEvent(
  */
 export function identifyUser(
   userId: string,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ): void {
   if (!isPostHogReady()) {
     if (process.env.NODE_ENV === "development") {

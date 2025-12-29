@@ -47,13 +47,17 @@ function convertToCSV(data: Record<string, unknown>[], headers: string[]): strin
  */
 interface ExportData {
   export_date: string;
+  user_id: string;
+  user_email: string | undefined;
+  profile: unknown;
   summary: {
-    total_leads: number;
+    total_pins: number;
     total_actions: number;
-    total_plans: number;
+    total_daily_plans: number;
+    total_weekly_summaries: number;
   };
   data: {
-    pins?: Array<{
+    pins: Array<{
       id: string;
       name: string;
       url?: string;
@@ -62,7 +66,7 @@ interface ExportData {
       created_at: string;
       updated_at: string;
     }>;
-    actions?: Array<{
+    actions: Array<{
       id: string;
       action_type: string;
       state: string;
@@ -73,11 +77,20 @@ interface ExportData {
       created_at: string;
       updated_at: string;
     }>;
-    daily_plans?: Array<{
+    daily_plans: Array<{
       id: string;
       date: string;
       capacity?: number;
       free_minutes?: number;
+      created_at: string;
+    }>;
+    weekly_summaries: Array<{
+      id: string;
+      week_start_date: string;
+      days_active: number;
+      actions_completed: number;
+      replies: number;
+      calls_booked: number;
       created_at: string;
     }>;
   };

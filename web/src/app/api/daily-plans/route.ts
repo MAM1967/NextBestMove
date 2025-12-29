@@ -84,7 +84,10 @@ export async function GET(request: Request) {
 
     if (planActions) {
       for (const planAction of planActions) {
-        const actionData = planAction.actions as ActionWithLeads;
+        // planAction.actions is a single object from Supabase relation, not an array
+        const actionData = Array.isArray(planAction.actions) 
+          ? (planAction.actions[0] as ActionWithLeads | undefined)
+          : (planAction.actions as ActionWithLeads | null);
         if (actionData) {
           const action = {
             ...actionData,

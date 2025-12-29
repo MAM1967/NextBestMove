@@ -61,7 +61,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           <div>
             <p className="font-medium text-zinc-900">Relationships</p>
             <p className="text-sm text-zinc-600">
-              Keep context on the people you work with. We'll remind you when it's
+              Keep context on the people you work with. We&apos;ll remind you when it&apos;s
               time to follow up.
             </p>
           </div>

@@ -180,7 +180,7 @@ async function calculateDailyMetrics(
   adminClient: ReturnType<typeof createAdminClient>,
   userId: string,
   dateStr: string
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   const date = new Date(dateStr);
   const startOfDay = new Date(date);
   startOfDay.setUTCHours(0, 0, 0, 0);

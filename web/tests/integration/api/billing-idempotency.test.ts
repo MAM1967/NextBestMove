@@ -171,7 +171,7 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
         key: testKey,
         result: testResult,
         created_at: new Date().toISOString(),
-      } as any);
+      } as { key: string; result: unknown; created_at: string });
 
     expect(insertError).toBeNull();
 
@@ -184,9 +184,10 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
 
     expect(selectError).toBeNull();
     expect(data).not.toBeNull();
-    if (data) {
-      expect(data.key).toBe(testKey);
-      expect(data.result).toEqual(testResult);
+    const typedData = data as { key: string; result: unknown } | null;
+    if (typedData) {
+      expect(typedData.key).toBe(testKey);
+      expect(typedData.result).toEqual(testResult);
     }
 
     // Clean up
@@ -206,7 +207,7 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
         key: testKey,
         result: testResult,
         created_at: new Date().toISOString(),
-      } as { key: string; result: unknown; created_at: string });
+      } as unknown as { key: string; result: unknown; created_at: string });
 
     expect(firstError).toBeNull();
 
@@ -217,7 +218,7 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
         key: testKey,
         result: { subscriptionId: "sub_test_456" }, // Different result
         created_at: new Date().toISOString(),
-      } as { key: string; result: unknown; created_at: string });
+      } as unknown as { key: string; result: unknown; created_at: string });
 
     expect(secondError).not.toBeNull();
     expect(secondError?.code).toBe("23505"); // Unique constraint violation
@@ -253,7 +254,7 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
         type: "checkout.session.completed",
         payload: { test: "data" },
         processed_at: new Date().toISOString(),
-      } as { stripe_event_id: string; type: string; payload: unknown; processed_at: string });
+      } as unknown as { stripe_event_id: string; type: string; payload: unknown; processed_at: string });
 
     expect(firstInsertError).toBeNull();
 
@@ -266,8 +267,9 @@ describe.skipIf(skipIfNoEnv)("Billing Idempotency Integration", () => {
 
     expect(selectError).toBeNull();
     expect(existingEvent).not.toBeNull();
-    if (existingEvent) {
-      expect(existingEvent.stripe_event_id).toBe(testEventId);
+    const typedEvent = existingEvent as { stripe_event_id: string; processed_at: string } | null;
+    if (typedEvent) {
+      expect(typedEvent.stripe_event_id).toBe(testEventId);
     }
 
     // Clean up

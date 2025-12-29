@@ -135,6 +135,7 @@ export function OnboardingFlow() {
     const calendarParam = searchParams.get("calendar");
     if (calendarParam === "success" || calendarParam === "error") {
       // Make sure we're on the calendar step
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore step from URL params after OAuth redirect
       setCurrentStep("calendar_connect");
       saveStep("calendar_connect");
       // Clean up URL params

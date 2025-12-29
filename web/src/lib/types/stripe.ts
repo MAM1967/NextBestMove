@@ -7,20 +7,22 @@
 import type Stripe from "stripe";
 
 /**
- * Re-export commonly used Stripe types
+ * Re-export the main Stripe type
  */
-export type {
-  Stripe,
-  StripeEvent,
-  StripeCustomer,
-  StripeSubscription,
-  StripeCheckoutSession,
-  StripePrice,
-  StripeProduct,
-  StripeInvoice,
-  StripePaymentIntent,
-  StripePaymentMethod,
-} from "stripe";
+export type { Stripe };
+
+/**
+ * Type aliases for commonly used Stripe types
+ */
+export type StripeEvent = Stripe.Event;
+export type StripeCustomer = Stripe.Customer;
+export type StripeSubscription = Stripe.Subscription;
+export type StripeCheckoutSession = Stripe.Checkout.Session;
+export type StripePrice = Stripe.Price;
+export type StripeProduct = Stripe.Product;
+export type StripeInvoice = Stripe.Invoice;
+export type StripePaymentIntent = Stripe.PaymentIntent;
+export type StripePaymentMethod = Stripe.PaymentMethod;
 
 /**
  * Type guard to check if an error is a Stripe error

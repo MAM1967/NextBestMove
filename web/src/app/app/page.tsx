@@ -78,11 +78,11 @@ export default async function TodayPage() {
       
       // Check if Day 3 payment failure modal should be shown
       try {
-        const metadata = subscription.metadata as any;
+        const metadata = subscription.metadata as { show_payment_failure_modal?: boolean } | null;
         showPaymentFailureModal = 
           subscription.status === "past_due" &&
           metadata?.show_payment_failure_modal === true;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error checking payment failure modal:", error);
         showPaymentFailureModal = false;
       }
@@ -130,8 +130,14 @@ export default async function TodayPage() {
       .order("position", { ascending: true });
 
     if (planActions) {
+      type ActionData = {
+        id: string;
+        state: string;
+        action_type: string;
+        description: string | null;
+      } | null;
       for (const planAction of planActions) {
-        const action = planAction.actions as any;
+        const action = planAction.actions as ActionData;
         if (action) {
           if (planAction.is_fast_win) {
             fastWinCount = 1;
@@ -271,7 +277,8 @@ export default async function TodayPage() {
             );
             // Ensure fetch is available for Microsoft Graph client
             if (typeof globalThis.fetch === "undefined") {
-              await import("isomorphic-fetch" as any);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- isomorphic-fetch types may not be available
+              await import("isomorphic-fetch" as unknown as string);
             }
 
             const client = Client.init({

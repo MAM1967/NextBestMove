@@ -11,7 +11,7 @@ export default function EarlyAccessPage() {
             </h1>
             <p className="mt-3 text-base leading-relaxed text-zinc-600">
               Join the early access group shaping the operating system for
-              fractional work. We'll reach out personally with access details and
+              fractional work. We&apos;ll reach out personally with access details and
               a short onboarding.
             </p>
           </div>

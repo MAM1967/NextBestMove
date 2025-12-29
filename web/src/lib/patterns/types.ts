@@ -4,7 +4,7 @@ export type PatternType =
   | "action_type_conversion"
   | "warm_reengagement";
 
-export interface BasePattern<TData = any> {
+export interface BasePattern<TData = unknown> {
   type: PatternType;
   data: TData;
   insight: string;

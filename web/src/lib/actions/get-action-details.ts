@@ -16,8 +16,12 @@ export interface RelatedAction {
   completed_at: string | null;
 }
 
+import type { Tables } from "@/lib/types/supabase";
+
 export interface ActionDetails {
-  action: any;
+  action: Tables<'actions'> & {
+    leads?: { id: string; name: string; email?: string | null; avatar_url?: string | null } | null;
+  } | null;
   history: ActionHistoryItem[];
   relatedActions: RelatedAction[];
 }
