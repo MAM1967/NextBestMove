@@ -273,7 +273,7 @@ export function MeetingNotes({ leadId }: MeetingNotesProps) {
                         if (Array.isArray(insights)) {
                           return (
                             <ul className="list-disc list-inside space-y-1">
-                              {insights.map((insight: any, idx: number) => (
+                              {insights.map((insight: { text: string }, idx: number) => (
                                 <li key={idx}>{insight.text}</li>
                               ))}
                             </ul>

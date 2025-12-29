@@ -166,7 +166,7 @@ export default async function SettingsPage({
 
     if (activeSubscription) {
       subscriptionData = activeSubscription;
-      const planType = (activeSubscription.metadata as any)?.plan_type;
+      const planType = (activeSubscription.metadata as Record<string, unknown>)?.plan_type;
       isPremium = planType === "premium";
     } else {
       // If no active/trialing, get the most recent one (including canceled)

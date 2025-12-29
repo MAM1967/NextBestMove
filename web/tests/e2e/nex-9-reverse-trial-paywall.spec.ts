@@ -115,8 +115,8 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
         .update({
           trial_ends_at: pastDate.toISOString(),
           status: "trialing",
-        } as any)
-        .eq("billing_customer_id", (billingCustomer as any).id);
+        } as Record<string, unknown>)
+        .eq("billing_customer_id", (billingCustomer as { id: string }).id);
       
       if (subError) {
         console.warn("Failed to update subscription:", subError);
@@ -202,7 +202,7 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
 
     const { error } = await adminSupabase
       .from("users")
-      .update({ tier: "free" } as any)
+      .update({ tier: "free" } as Record<string, unknown>)
       .eq("id", user.id);
     
     if (error) {
@@ -260,7 +260,7 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
 
     const { error } = await adminSupabase
       .from("users")
-      .update({ tier: "free" } as any)
+      .update({ tier: "free" } as Record<string, unknown>)
       .eq("id", user.id);
     
     if (error) {

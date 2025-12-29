@@ -206,7 +206,21 @@ export default function DailyPlanPage() {
 
       if (data.success && data.briefs) {
         // Transform briefs to match our type
-        const briefs: PreCallBrief[] = data.briefs.map((b: any) => ({
+        const briefs: PreCallBrief[] = data.briefs.map((b: {
+          id?: string;
+          calendarEventId: string;
+          eventTitle: string;
+          eventStart: string;
+          personPinId?: string | null;
+          leadId?: string | null;
+          personName?: string | null;
+          briefContent: string;
+          lastInteractionDate?: string | null;
+          followUpCount?: number;
+          nextStepSuggestions?: string[];
+          userNotes?: string | null;
+          hasVideoConference?: boolean;
+        }) => ({
           id: b.id,
           calendarEventId: b.calendarEventId,
           eventTitle: b.eventTitle,
