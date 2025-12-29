@@ -104,18 +104,27 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     // Enhanced error logging
     const errorMessage = error instanceof Error ? error.message : String(error);
-    type StripeError = { type?: string; code?: string; statusCode?: number };
+    type StripeError = { 
+      type?: string; 
+      code?: string; 
+      statusCode?: number;
+      raw?: {
+        message?: string;
+        type?: string;
+        code?: string;
+      };
+    };
     const stripeError = error as StripeError;
     const errorDetails = {
       message: errorMessage,
-      type: error.type,
-      code: error.code,
-      statusCode: error.statusCode,
-      rawError: error.raw
+      type: stripeError.type,
+      code: stripeError.code,
+      statusCode: stripeError.statusCode,
+      rawError: stripeError.raw
         ? {
-            message: error.raw.message,
-            type: error.raw.type,
-            code: error.raw.code,
+            message: stripeError.raw.message,
+            type: stripeError.raw.type,
+            code: stripeError.raw.code,
           }
         : undefined,
       customerId: customer?.stripe_customer_id,
@@ -140,9 +149,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: userMessage,
-        details: error.message,
-        type: error.type,
-        code: error.code,
+        details: errorMessage,
+        type: stripeError.type,
+        code: stripeError.code,
       },
       { status: 500 }
     );
