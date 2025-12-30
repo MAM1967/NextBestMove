@@ -305,11 +305,7 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
     // Get all leads for this user with email addresses
     const { data: leads } = await supabase
       .from("leads")
-<<<<<<< HEAD
       .select("id, email, url, name")
-=======
-      .select("id, email, url")
->>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       .eq("user_id", userId)
       .eq("status", "ACTIVE");
 
@@ -319,20 +315,14 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
 
     // Build a map of email hash -> lead id
     const emailHashToLeadId = new Map<string, string>();
-<<<<<<< HEAD
     const emailToLeadId = new Map<string, { leadId: string; leadName: string }>(); // For debugging
-=======
->>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
     
     for (const lead of leads) {
       // Check new email field
       if (lead.email) {
         const emailHash = hashEmailAddress(lead.email);
         emailHashToLeadId.set(emailHash, lead.id);
-<<<<<<< HEAD
         emailToLeadId.set(lead.email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
-=======
->>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       }
       
       // Check legacy url field (mailto: format)
@@ -340,10 +330,7 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         const email = lead.url.substring(7); // Remove "mailto:" prefix
         const emailHash = hashEmailAddress(email);
         emailHashToLeadId.set(emailHash, lead.id);
-<<<<<<< HEAD
         emailToLeadId.set(email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
-=======
->>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       }
     }
 
