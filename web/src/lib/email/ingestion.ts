@@ -305,7 +305,11 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
     // Get all leads for this user with email addresses
     const { data: leads } = await supabase
       .from("leads")
+<<<<<<< HEAD
       .select("id, email, url, name")
+=======
+      .select("id, email, url")
+>>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       .eq("user_id", userId)
       .eq("status", "ACTIVE");
 
@@ -315,14 +319,20 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
 
     // Build a map of email hash -> lead id
     const emailHashToLeadId = new Map<string, string>();
+<<<<<<< HEAD
     const emailToLeadId = new Map<string, { leadId: string; leadName: string }>(); // For debugging
+=======
+>>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
     
     for (const lead of leads) {
       // Check new email field
       if (lead.email) {
         const emailHash = hashEmailAddress(lead.email);
         emailHashToLeadId.set(emailHash, lead.id);
+<<<<<<< HEAD
         emailToLeadId.set(lead.email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
+=======
+>>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       }
       
       // Check legacy url field (mailto: format)
@@ -330,7 +340,10 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         const email = lead.url.substring(7); // Remove "mailto:" prefix
         const emailHash = hashEmailAddress(email);
         emailHashToLeadId.set(emailHash, lead.id);
+<<<<<<< HEAD
         emailToLeadId.set(email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
+=======
+>>>>>>> 4afa9e8 (Fix/email backfill matching (#31))
       }
     }
 
@@ -353,6 +366,28 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         // Log unmatched emails for debugging
         console.log(`[Email Backfill] No match found for email hash: ${email.from_email_hash}`);
         console.log(`[Email Backfill] Available relationship emails:`, Array.from(emailToLeadId.keys()));
+        
+        // Also log the email metadata ID for debugging
+        const { data: emailMeta } = await supabase
+          .from("email_metadata")
+          .select("id, subject, snippet, received_at, from_email_hash")
+          .eq("id", email.id)
+          .single();
+        if (emailMeta) {
+          console.log(`[Email Backfill] Unmatched email: ${emailMeta.subject} (received: ${emailMeta.received_at}, hash: ${emailMeta.from_email_hash})`);
+          
+          // Try to find if any relationship email hash matches
+          const allHashes = Array.from(emailHashToLeadId.keys());
+          console.log(`[Email Backfill] Looking for hash ${emailMeta.from_email_hash} in ${allHashes.length} relationship hashes`);
+          
+          // Check each relationship email to see if hash matches
+          for (const [emailAddr, leadInfo] of emailToLeadId.entries()) {
+            const testHash = hashEmailAddress(emailAddr);
+            if (testHash === emailMeta.from_email_hash) {
+              console.log(`[Email Backfill] FOUND MATCH! Email ${emailAddr} (hash: ${testHash}) matches relationship ${leadInfo.leadName} (${leadInfo.leadId})`);
+            }
+          }
+        }
       }
     }
 
