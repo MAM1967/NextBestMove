@@ -36,10 +36,15 @@ export async function POST(request: Request) {
     // Ingest email metadata
     const results = await ingestEmailMetadata(user.id);
 
+    // Backfill: Match existing emails to relationships
+    const { backfillEmailMetadata } = await import("@/lib/email/ingestion");
+    const backfilledCount = await backfillEmailMetadata(user.id);
+
     return NextResponse.json({
       success: true,
       ingested: results,
-      message: `Ingested ${results.gmail + results.outlook} email messages`,
+      backfilled: backfilledCount,
+      message: `Ingested ${results.gmail + results.outlook} email messages, matched ${backfilledCount} existing emails to relationships`,
     });
   } catch (error) {
     console.error("Email sync error:", error);
@@ -52,6 +57,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
 
 

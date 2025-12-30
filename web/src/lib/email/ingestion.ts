@@ -16,7 +16,7 @@ async function matchEmailToRelationship(
   const supabase = createAdminClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, url, name")
+    .select("id, url, email, name")
     .eq("user_id", userId)
     .eq("status", "ACTIVE");
 
@@ -24,9 +24,18 @@ async function matchEmailToRelationship(
     return null;
   }
 
-  // Check if any lead's URL contains an email that matches the hash
+  // Check if any lead's email matches the hash
   for (const lead of leads) {
-    if (lead.url.startsWith("mailto:")) {
+    // First check the new email field
+    if (lead.email) {
+      const emailHash = hashEmailAddress(lead.email);
+      if (emailHash === fromEmailHash) {
+        return lead.id;
+      }
+    }
+    
+    // Fallback: check legacy url field (mailto: format)
+    if (lead.url?.startsWith("mailto:")) {
       const email = lead.url.substring(7); // Remove "mailto:" prefix
       const emailHash = hashEmailAddress(email);
       if (emailHash === fromEmailHash) {
@@ -54,6 +63,12 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
+
+      // Only process emails from relationships the user is tracking
+      // Skip emails that don't match any relationship
+      if (!personId) {
+        continue; // Skip emails from unknown senders (not in relationships)
+      }
 
       // Extract signals
       const signals = extractSignals(
@@ -88,7 +103,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
         continue;
       }
 
-      // Insert email metadata
+      // Insert email metadata (only for matched relationships)
       const { error } = await supabase.from("email_metadata").insert({
         user_id: userId,
         email_connection_id: connection.id,
@@ -145,6 +160,12 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
 
+      // Only process emails from relationships the user is tracking
+      // Skip emails that don't match any relationship
+      if (!personId) {
+        continue; // Skip emails from unknown senders (not in relationships)
+      }
+
       // Extract signals
       const signals = extractSignals(
         metadata.subject,
@@ -178,7 +199,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         continue;
       }
 
-      // Insert email metadata
+      // Insert email metadata (only for matched relationships)
       const { error } = await supabase.from("email_metadata").insert({
         user_id: userId,
         email_connection_id: connection.id,
@@ -256,6 +277,99 @@ export async function ingestEmailMetadata(userId: string): Promise<{
   return results;
 }
 
+/**
+ * Backfill email metadata: Match existing emails to relationships
+ * This is useful when:
+ * - A relationship is created after emails were already ingested
+ * - Email addresses are added to existing relationships
+ * 
+ * Updates email_metadata records where person_id is null by matching
+ * from_email_hash to relationship email hashes.
+ */
+export async function backfillEmailMetadata(userId: string): Promise<number> {
+  const supabase = createAdminClient();
+  let matchedCount = 0;
 
+  try {
+    // Get all unmatched email metadata for this user
+    const { data: unmatchedEmails } = await supabase
+      .from("email_metadata")
+      .select("id, from_email_hash")
+      .eq("user_id", userId)
+      .is("person_id", null);
 
+    if (!unmatchedEmails || unmatchedEmails.length === 0) {
+      return 0;
+    }
+
+    // Get all leads for this user with email addresses
+    const { data: leads } = await supabase
+      .from("leads")
+      .select("id, email, url, name")
+      .eq("user_id", userId)
+      .eq("status", "ACTIVE");
+
+    if (!leads || leads.length === 0) {
+      return 0;
+    }
+
+    // Build a map of email hash -> lead id
+    const emailHashToLeadId = new Map<string, string>();
+    const emailToLeadId = new Map<string, { leadId: string; leadName: string }>(); // For debugging
+    
+    for (const lead of leads) {
+      // Check new email field
+      if (lead.email) {
+        const emailHash = hashEmailAddress(lead.email);
+        emailHashToLeadId.set(emailHash, lead.id);
+        emailToLeadId.set(lead.email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
+      }
+      
+      // Check legacy url field (mailto: format)
+      if (lead.url?.startsWith("mailto:")) {
+        const email = lead.url.substring(7); // Remove "mailto:" prefix
+        const emailHash = hashEmailAddress(email);
+        emailHashToLeadId.set(emailHash, lead.id);
+        emailToLeadId.set(email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
+      }
+    }
+
+    // Match and update email metadata
+    for (const email of unmatchedEmails) {
+      const leadId = emailHashToLeadId.get(email.from_email_hash);
+      
+      if (leadId) {
+        const { error } = await supabase
+          .from("email_metadata")
+          .update({ person_id: leadId })
+          .eq("id", email.id);
+
+        if (!error) {
+          matchedCount++;
+        } else {
+          console.error(`Error updating email metadata ${email.id}:`, error);
+        }
+      } else {
+        // Log unmatched emails for debugging
+        console.log(`[Email Backfill] No match found for email hash: ${email.from_email_hash}`);
+        console.log(`[Email Backfill] Available relationship emails:`, Array.from(emailToLeadId.keys()));
+        
+        // Also log the email metadata ID for debugging
+        const { data: emailMeta } = await supabase
+          .from("email_metadata")
+          .select("id, subject, received_at")
+          .eq("id", email.id)
+          .single();
+        if (emailMeta) {
+          console.log(`[Email Backfill] Unmatched email: ${emailMeta.subject} (received: ${emailMeta.received_at})`);
+        }
+      }
+    }
+
+    return matchedCount;
+  } catch (error) {
+    console.error("Error backfilling email metadata:", error);
+    throw error;
+  }
+}
 

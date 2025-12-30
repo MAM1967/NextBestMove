@@ -26,7 +26,29 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
           throw new Error("Failed to fetch signals");
         }
         const data = await response.json();
-        setSignals(data.signals);
+        // API returns { relationship_id, relationship_name, emails }
+        // Transform to match EmailSignals type expected by component
+        if (data.emails && data.emails.length > 0) {
+          const lastEmail = data.emails[0];
+          setSignals({
+            relationship_id: data.relationship_id,
+            relationship_name: data.relationship_name,
+            last_email_received: lastEmail.received_at,
+            unread_count: 0, // TODO: Calculate from email_metadata if we track read status
+            recent_topics: data.emails
+              .map((e: any) => e.last_topic)
+              .filter((t: string | null) => t !== null),
+            recent_asks: data.emails
+              .map((e: any) => e.ask)
+              .filter((a: string | null) => a !== null),
+            recent_open_loops: Array.isArray(lastEmail.open_loops) 
+              ? lastEmail.open_loops 
+              : [],
+            recent_labels: [],
+          });
+        } else {
+          setSignals(null);
+        }
       } catch (err) {
         console.error("Error fetching signals:", err);
         setError(err instanceof Error ? err.message : "Failed to load signals");
@@ -156,6 +178,7 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
     </div>
   );
 }
+
 
 
 

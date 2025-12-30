@@ -174,17 +174,14 @@ test.describe("Analytics Pages", () => {
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // Check for 404 page (route not deployed)
-    // If route returns 404, skip this test (don't fail) to allow PR merge
+    // Check for 404 page (route not deployed) - fail with clear message
     const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
     const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
     if (has404) {
-      test.skip(
-        true,
-        "⚠️  SKIPPED: /app/analytics returns 404 (route not deployed to staging yet). " +
-        "This test will run once the PR is merged and the route is deployed."
+      throw new Error(
+        "⚠️  /app/analytics returns 404 (route not deployed to staging). " +
+        "Ensure the analytics route is deployed before running this test."
       );
-      return;
     }
 
     // Intercept API calls to simulate error
@@ -276,17 +273,14 @@ test.describe("Analytics Pages", () => {
     await page.goto("/app/analytics", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/app\/analytics/, { timeout: 10000 });
     
-    // Check for 404 page (route not deployed)
-    // If route returns 404, skip this test (don't fail) to allow PR merge
+    // Check for 404 page (route not deployed) - fail with clear message
     const notFoundHeading = page.locator('h1:has-text("404")').or(page.locator('h2:has-text("This page could not be found")'));
     const has404 = await notFoundHeading.isVisible({ timeout: 3000 }).catch(() => false);
     if (has404) {
-      test.skip(
-        true,
-        "⚠️  SKIPPED: /app/analytics returns 404 (route not deployed to staging yet). " +
-        "This test will run once the PR is merged and the route is deployed."
+      throw new Error(
+        "⚠️  /app/analytics returns 404 (route not deployed to staging). " +
+        "Ensure the analytics route is deployed before running this test."
       );
-      return;
     }
     
     // Wait for loading state to complete first
