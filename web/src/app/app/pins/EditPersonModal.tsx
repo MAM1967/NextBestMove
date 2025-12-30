@@ -28,7 +28,8 @@ export function EditPersonModal({
   const [loading, setLoading] = useState(false);
 
   // Helper to strip mailto: prefix for display
-  const stripMailto = (url: string): string => {
+  const stripMailto = (url: string | null | undefined): string => {
+    if (!url) return "";
     if (url.startsWith("mailto:")) {
       return url.substring(7);
     }
@@ -39,7 +40,7 @@ export function EditPersonModal({
     if (pin) {
       setFormData({
         name: pin.name,
-        url: stripMailto(pin.url), // Show email without mailto: prefix
+        url: stripMailto(pin.url || pin.email ? `mailto:${pin.email}` : pin.linkedin_url || undefined), // Show email without mailto: prefix, or linkedin_url, or legacy url
         notes: pin.notes || "",
       });
       setErrors({});

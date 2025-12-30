@@ -173,7 +173,7 @@ export async function POST(request: Request) {
         linkedin_url: linkedin_url?.trim() || null,
         email: email?.trim() || null,
         phone_number: phone_number?.trim() || null,
-        url: url?.trim() || null,
+        url: url?.trim() || null, // For non-LinkedIn URLs (CRM links, etc.)
         notes: notes?.trim() || null,
         status: "ACTIVE",
         cadence: cadence || null,
