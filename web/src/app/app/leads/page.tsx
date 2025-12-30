@@ -105,7 +105,10 @@ export default function LeadsPage() {
   // Handle lead creation
   const handleLeadSave = async (leadData: {
     name: string;
-    url: string;
+    linkedin_url?: string | null;
+    email?: string | null;
+    phone_number?: string | null;
+    url?: string | null;
     notes?: string;
     cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
     cadence_days?: number | null;
@@ -150,7 +153,10 @@ export default function LeadsPage() {
     leadId: string,
     leadData: {
       name: string;
-      url: string;
+      linkedin_url?: string | null;
+      email?: string | null;
+      phone_number?: string | null;
+      url?: string | null;
       notes?: string;
       cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
       cadence_days?: number | null;
