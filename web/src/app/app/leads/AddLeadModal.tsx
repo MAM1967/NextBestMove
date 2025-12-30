@@ -14,7 +14,10 @@ interface AddLeadModalProps {
   onClose: () => void;
   onSave: (leadData: {
     name: string;
-    url: string;
+    linkedin_url?: string | null;
+    email?: string | null;
+    phone_number?: string | null;
+    url?: string | null; // Legacy field for non-LinkedIn URLs (CRM links, etc.)
     notes?: string;
     cadence?: RelationshipCadence | null;
     cadence_days?: number | null;
@@ -30,7 +33,10 @@ export function AddLeadModal({
 }: AddLeadModalProps) {
   const [formData, setFormData] = useState({
     name: "",
-    url: "",
+    linkedin_url: "",
+    email: "",
+    phone_number: "",
+    url: "", // For non-LinkedIn URLs (CRM links, etc.)
     notes: "",
     cadence: "" as RelationshipCadence | "",
     cadence_days: null as number | null,
@@ -42,23 +48,23 @@ export function AddLeadModal({
 
   if (!isOpen) return null;
 
-  // Helper function to normalize URL (auto-add mailto: for emails)
-  const normalizeUrl = (url: string): string => {
+  // Validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
+  // Validate LinkedIn URL format
+  const isValidLinkedInUrl = (url: string): boolean => {
     const trimmed = url.trim();
-    // If it looks like an email address, prepend mailto:
-    if (
-      trimmed.includes("@") &&
-      !trimmed.startsWith("http://") &&
-      !trimmed.startsWith("https://") &&
-      !trimmed.startsWith("mailto:")
-    ) {
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(trimmed)) {
-        return `mailto:${trimmed}`;
-      }
-    }
-    return trimmed;
+    return trimmed.includes("linkedin.com") && 
+           (trimmed.startsWith("https://") || trimmed.startsWith("http://"));
+  };
+
+  // Validate phone number format (basic - for future SMS support)
+  const isValidPhoneNumber = (phone: string): boolean => {
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    return phoneRegex.test(phone.trim()) && phone.trim().replace(/\D/g, "").length >= 10;
   };
 
   const validate = () => {
@@ -66,19 +72,37 @@ export function AddLeadModal({
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     }
-    if (!formData.url.trim()) {
-      newErrors.url = "URL or email is required";
-    } else {
-      const normalized = normalizeUrl(formData.url);
-      if (
-        !normalized.startsWith("https://") &&
-        !normalized.startsWith("http://") &&
-        !normalized.startsWith("mailto:")
-      ) {
-        newErrors.url =
-          "Please enter a valid URL (https://...) or email address";
-      }
+    
+    // At least one contact method should be provided (LinkedIn, email, or phone)
+    const hasLinkedIn = formData.linkedin_url.trim().length > 0;
+    const hasEmail = formData.email.trim().length > 0;
+    const hasPhone = formData.phone_number.trim().length > 0;
+    const hasUrl = formData.url.trim().length > 0;
+    
+    if (!hasLinkedIn && !hasEmail && !hasPhone && !hasUrl) {
+      newErrors.contact = "Please provide at least one contact method (LinkedIn URL, email, or phone number)";
     }
+    
+    // Validate LinkedIn URL if provided
+    if (hasLinkedIn && !isValidLinkedInUrl(formData.linkedin_url)) {
+      newErrors.linkedin_url = "Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/...)";
+    }
+    
+    // Validate email if provided
+    if (hasEmail && !isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    // Validate phone if provided
+    if (hasPhone && !isValidPhoneNumber(formData.phone_number)) {
+      newErrors.phone_number = "Please enter a valid phone number";
+    }
+    
+    // Validate URL if provided (for non-LinkedIn URLs like CRM links)
+    if (hasUrl && !formData.url.startsWith("https://") && !formData.url.startsWith("http://")) {
+      newErrors.url = "Please enter a valid URL (https://...)";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -89,7 +113,6 @@ export function AddLeadModal({
 
     setLoading(true);
     try {
-      const normalizedUrl = normalizeUrl(formData.url);
       // Get cadence_days - use default if not specified and cadence is not ad_hoc
       let cadenceDays = formData.cadence_days;
       if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
@@ -98,7 +121,10 @@ export function AddLeadModal({
       
       await onSave({
         name: formData.name.trim(),
-        url: normalizedUrl,
+        linkedin_url: formData.linkedin_url.trim() || null,
+        email: formData.email.trim() || null,
+        phone_number: formData.phone_number.trim() || null,
+        url: formData.url.trim() || null, // For non-LinkedIn URLs (CRM links, etc.)
         notes: formData.notes.trim() || undefined,
         cadence: formData.cadence === "" ? null : (formData.cadence as RelationshipCadence),
         cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
@@ -107,7 +133,10 @@ export function AddLeadModal({
       });
       setFormData({ 
         name: "", 
-        url: "", 
+        linkedin_url: "",
+        email: "",
+        phone_number: "",
+        url: "",
         notes: "", 
         cadence: "", 
         cadence_days: null,
@@ -186,27 +215,104 @@ export function AddLeadModal({
 
           <div>
             <label
+              htmlFor="linkedin_url"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              LinkedIn URL (optional)
+            </label>
+            <input
+              id="linkedin_url"
+              type="url"
+              value={formData.linkedin_url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, linkedin_url: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="https://linkedin.com/in/..."
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              LinkedIn profile URL. Used by signals to monitor LinkedIn activity.
+            </p>
+            {errors.linkedin_url && (
+              <p className="mt-1 text-xs text-red-600">{errors.linkedin_url}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Email (optional)
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="name@example.com"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Email address. Used by signals to monitor email communications.
+            </p>
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="phone_number"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Phone Number (optional)
+            </label>
+            <input
+              id="phone_number"
+              type="tel"
+              value={formData.phone_number}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, phone_number: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="+1 (555) 123-4567"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Phone number for SMS communication (future feature).
+            </p>
+            {errors.phone_number && (
+              <p className="mt-1 text-xs text-red-600">{errors.phone_number}</p>
+            )}
+          </div>
+
+          <div>
+            <label
               htmlFor="url"
               className="block text-sm font-medium text-zinc-900"
             >
-              URL or Email
+              Other URL (optional)
             </label>
             <input
               id="url"
-              type="text"
+              type="url"
               value={formData.url}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, url: e.target.value }))
               }
               className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-              placeholder="https://linkedin.com/in/... or name@example.com"
-              required
+              placeholder="https://crm.example.com/contact/123"
             />
             <p className="mt-1 text-xs text-zinc-500">
-              Enter a LinkedIn profile URL, CRM link, or email address
+              CRM link or other URL (optional). At least one contact method (LinkedIn, email, or phone) is recommended for signals.
             </p>
             {errors.url && (
               <p className="mt-1 text-xs text-red-600">{errors.url}</p>
+            )}
+            {errors.contact && (
+              <p className="mt-1 text-xs text-red-600">{errors.contact}</p>
             )}
           </div>
 
