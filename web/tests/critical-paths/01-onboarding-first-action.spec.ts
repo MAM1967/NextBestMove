@@ -60,12 +60,9 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
       await nameInput.waitFor({ timeout: 10000 });
       await nameInput.fill("Test Lead");
 
-      // URL input has id="url" and placeholder contains "linkedin.com"
-      const urlInput = page
-        .locator(
-          'input#url, input[id="url"], input[placeholder*="linkedin" i], input[placeholder*="email" i]'
-        )
-        .first();
+      // Fill in at least one contact method - use the "Other URL" field (id="url")
+      // This field accepts any URL and is the simplest for the test
+      const urlInput = page.locator('input#url').first();
       await urlInput.waitFor({ timeout: 10000 });
       await urlInput.fill("https://example.com/test");
 
