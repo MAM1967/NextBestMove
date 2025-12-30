@@ -20,13 +20,17 @@ export async function GET() {
       .eq("user_id", user.id)
       .single();
 
-    if (prefError && prefError.code !== "PGRST116") {
+    if (prefError) {
       // PGRST116 = no rows returned, which is okay (will use defaults)
-      console.error("Error fetching notification preferences:", prefError);
-      return NextResponse.json(
-        { error: prefError.message },
-        { status: 500 }
-      );
+      // PGRST205 = table not found in schema cache (Supabase issue, use defaults)
+      if (prefError.code === "PGRST116" || prefError.code === "PGRST205") {
+        // Table might not exist yet or schema cache issue - use defaults
+        console.warn("Notification preferences table not available, using defaults:", prefError.code);
+      } else {
+        // Other errors should be logged but still return defaults
+        console.error("Error fetching notification preferences:", prefError);
+      }
+      // Continue to return defaults below
     }
 
     // If no preferences exist, create with defaults
