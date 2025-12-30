@@ -305,7 +305,7 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
     // Get all leads for this user with email addresses
     const { data: leads } = await supabase
       .from("leads")
-      .select("id, email, url")
+      .select("id, email, url, name")
       .eq("user_id", userId)
       .eq("status", "ACTIVE");
 
@@ -315,12 +315,14 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
 
     // Build a map of email hash -> lead id
     const emailHashToLeadId = new Map<string, string>();
+    const emailToLeadId = new Map<string, { leadId: string; leadName: string }>(); // For debugging
     
     for (const lead of leads) {
       // Check new email field
       if (lead.email) {
         const emailHash = hashEmailAddress(lead.email);
         emailHashToLeadId.set(emailHash, lead.id);
+        emailToLeadId.set(lead.email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
       }
       
       // Check legacy url field (mailto: format)
@@ -328,6 +330,7 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         const email = lead.url.substring(7); // Remove "mailto:" prefix
         const emailHash = hashEmailAddress(email);
         emailHashToLeadId.set(emailHash, lead.id);
+        emailToLeadId.set(email.toLowerCase().trim(), { leadId: lead.id, leadName: lead.name });
       }
     }
 
@@ -346,6 +349,10 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         } else {
           console.error(`Error updating email metadata ${email.id}:`, error);
         }
+      } else {
+        // Log unmatched emails for debugging
+        console.log(`[Email Backfill] No match found for email hash: ${email.from_email_hash}`);
+        console.log(`[Email Backfill] Available relationship emails:`, Array.from(emailToLeadId.keys()));
       }
     }
 
