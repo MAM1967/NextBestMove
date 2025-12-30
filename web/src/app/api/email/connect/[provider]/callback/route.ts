@@ -55,7 +55,7 @@ function buildRedirectUrl(
 }
 
 /**
- * GET /api/email/callback/[provider]
+ * GET /api/email/connect/[provider]/callback
  * 
  * Handles OAuth callback from email provider (Gmail or Outlook).
  * Exchanges authorization code for tokens and stores connection.
@@ -126,7 +126,7 @@ export async function GET(
 
     emailAddress = userData.email || undefined;
 
-    const redirectUri = `${request.nextUrl.origin}/api/email/callback/${provider}`;
+    const redirectUri = `${request.nextUrl.origin}/api/email/connect/${provider}/callback`;
     const hostname = request.nextUrl.hostname;
     const config = await getEmailProviderConfiguration(provider, hostname);
 
@@ -262,7 +262,4 @@ export async function GET(
     buildRedirectUrl(request.nextUrl.origin, "success", callbackUrl)
   );
 }
-
-
-
 
