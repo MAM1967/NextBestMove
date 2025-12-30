@@ -33,7 +33,8 @@ function formatRelativeDate(dateString: string): string {
   return `${Math.floor(diffDays / 30)} months ago`;
 }
 
-function getUrlTypeLabel(url: string): string {
+function getUrlTypeLabel(url: string | null | undefined): string {
+  if (!url) return "Link";
   if (url.startsWith("mailto:")) {
     return "Email";
   }
@@ -161,15 +162,17 @@ export function RelationshipDetailClient({
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm text-zinc-600">
-                <a
-                  href={lead.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-700 hover:text-zinc-900 hover:underline"
-                >
-                  {getUrlTypeLabel(lead.url)}
-                </a>
-                <span>•</span>
+                {(lead.linkedin_url || lead.email || lead.url) && (
+                  <a
+                    href={lead.linkedin_url || lead.email ? `mailto:${lead.email}` : (lead.url || undefined)}
+                    target={lead.linkedin_url || lead.url ? "_blank" : undefined}
+                    rel={lead.linkedin_url || lead.url ? "noopener noreferrer" : undefined}
+                    className="text-zinc-700 hover:text-zinc-900 hover:underline"
+                  >
+                    {lead.linkedin_url ? "LinkedIn" : lead.email ? "Email" : getUrlTypeLabel(lead.url)}
+                  </a>
+                )}
+                {(lead.linkedin_url || lead.email || lead.url) && <span>•</span>}
                 <span>Added {formatRelativeDate(lead.created_at)}</span>
               </div>
             </div>
