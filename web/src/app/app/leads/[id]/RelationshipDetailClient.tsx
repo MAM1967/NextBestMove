@@ -81,11 +81,15 @@ export function RelationshipDetailClient({
     leadId: string,
     leadData: {
       name: string;
-      url: string;
+      linkedin_url?: string | null;
+      email?: string | null;
+      phone_number?: string | null;
+      url?: string | null;
       notes?: string;
       cadence?: string | null;
       cadence_days?: number | null;
       tier?: string | null;
+      preferred_channel?: string | null;
     }
   ) => {
     try {

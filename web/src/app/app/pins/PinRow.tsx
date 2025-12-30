@@ -24,7 +24,8 @@ function getStatusBadgeVariant(status: Lead["status"]) {
   }
 }
 
-function getUrlTypeLabel(url: string): string {
+function getUrlTypeLabel(url: string | null | undefined): string {
+  if (!url) return "Link";
   if (url.startsWith("mailto:")) {
     return "Email";
   }
@@ -157,14 +158,16 @@ export function PinRow({
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <a
-              href={pin.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-600 hover:text-zinc-900 hover:underline"
-            >
-              {getUrlTypeLabel(pin.url)}
-            </a>
+            {(pin.linkedin_url || pin.email || pin.url) && (
+              <a
+                href={pin.linkedin_url || pin.email ? `mailto:${pin.email}` : (pin.url || undefined)}
+                target={pin.linkedin_url || pin.url ? "_blank" : undefined}
+                rel={pin.linkedin_url || pin.url ? "noopener noreferrer" : undefined}
+                className="text-zinc-600 hover:text-zinc-900 hover:underline"
+              >
+                {pin.linkedin_url ? "LinkedIn" : pin.email ? "Email" : getUrlTypeLabel(pin.url)}
+              </a>
+            )}
             <span>•</span>
             <span>Added {formatRelativeDate(pin.created_at)}</span>
           </div>
