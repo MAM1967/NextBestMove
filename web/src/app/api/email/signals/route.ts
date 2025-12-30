@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id"
       )
       .eq("user_id", user.id)
+      .not("person_id", "is", null) // Only include emails from tracked relationships
       .gte("received_at", thirtyDaysAgo.toISOString())
       .order("received_at", { ascending: false })
       .limit(100);
@@ -95,12 +96,17 @@ export async function GET(request: Request) {
     const signalsByRelationship = new Map<string, any>();
 
     for (const email of recentEmails) {
-      const relationshipId = email.person_id || "unknown";
+      // person_id is guaranteed to be non-null due to filter above
+      if (!email.person_id) {
+        continue; // Skip any emails without relationship (shouldn't happen with filter, but safety check)
+      }
+      
+      const relationshipId = email.person_id;
       
       if (!signalsByRelationship.has(relationshipId)) {
         signalsByRelationship.set(relationshipId, {
-          relationship_id: email.person_id || null,
-          relationship_name: email.person_id ? relationshipNames[email.person_id] || "Unknown" : "Unknown",
+          relationship_id: email.person_id,
+          relationship_name: relationshipNames[email.person_id] || "Unknown",
           last_email_received: email.received_at,
           unread_count: 0, // TODO: Calculate from email_metadata if we track read status
           recent_topics: [] as string[],

@@ -16,7 +16,7 @@ async function matchEmailToRelationship(
   const supabase = createAdminClient();
   const { data: leads } = await supabase
     .from("leads")
-    .select("id, url, name")
+    .select("id, url, email, name")
     .eq("user_id", userId)
     .eq("status", "ACTIVE");
 
@@ -24,9 +24,18 @@ async function matchEmailToRelationship(
     return null;
   }
 
-  // Check if any lead's URL contains an email that matches the hash
+  // Check if any lead's email matches the hash
   for (const lead of leads) {
-    if (lead.url.startsWith("mailto:")) {
+    // First check the new email field
+    if (lead.email) {
+      const emailHash = hashEmailAddress(lead.email);
+      if (emailHash === fromEmailHash) {
+        return lead.id;
+      }
+    }
+    
+    // Fallback: check legacy url field (mailto: format)
+    if (lead.url?.startsWith("mailto:")) {
       const email = lead.url.substring(7); // Remove "mailto:" prefix
       const emailHash = hashEmailAddress(email);
       if (emailHash === fromEmailHash) {
@@ -54,6 +63,12 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
+
+      // Only process emails from relationships the user is tracking
+      // Skip emails that don't match any relationship
+      if (!personId) {
+        continue; // Skip emails from unknown senders (not in relationships)
+      }
 
       // Extract signals
       const signals = extractSignals(
@@ -88,7 +103,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
         continue;
       }
 
-      // Insert email metadata
+      // Insert email metadata (only for matched relationships)
       const { error } = await supabase.from("email_metadata").insert({
         user_id: userId,
         email_connection_id: connection.id,
@@ -145,6 +160,12 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
 
+      // Only process emails from relationships the user is tracking
+      // Skip emails that don't match any relationship
+      if (!personId) {
+        continue; // Skip emails from unknown senders (not in relationships)
+      }
+
       // Extract signals
       const signals = extractSignals(
         metadata.subject,
@@ -178,7 +199,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         continue;
       }
 
-      // Insert email metadata
+      // Insert email metadata (only for matched relationships)
       const { error } = await supabase.from("email_metadata").insert({
         user_id: userId,
         email_connection_id: connection.id,
@@ -255,6 +276,7 @@ export async function ingestEmailMetadata(userId: string): Promise<{
 
   return results;
 }
+
 
 
 

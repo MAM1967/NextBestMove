@@ -278,6 +278,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Code Refactor: Align Internal Code with New Language** 🟡 **LOWER PRIORITY P2 - POST-LANGUAGE-REFACTOR**  
        _Refactor internal code (API endpoints, TypeScript types, variable names, function names) to align with new UI language. This is a follow-up to the user-facing language refactor. Scope: API endpoint names (e.g., `/api/leads` → `/api/relationships`), TypeScript types, variable names, internal comments. No changes to database schema. Estimated: 2-3 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md` (Part 2). Priority: P2 - can be done after user-facing language is stable._
 
+- [ ] **Multiple email account support (like multi-calendar)** 🟡 **P2 - POST-LAUNCH**  
+       _Allow users to connect multiple email accounts (Gmail and/or Outlook), similar to multi-calendar support (NEX-14, NEX-17). Enables users managing multiple email addresses to aggregate all email signals in one place. Backend: Update ingestion to process all active connections, update signals aggregation. UI: Show list of connected accounts in Settings, allow connecting/disconnecting individual accounts. Estimated: 4-6 hours. Reference: Multi-calendar implementation pattern. Linear: NEX-40_
+
 ---
 
 ## Launch Hardening
