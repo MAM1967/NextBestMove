@@ -353,6 +353,16 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         // Log unmatched emails for debugging
         console.log(`[Email Backfill] No match found for email hash: ${email.from_email_hash}`);
         console.log(`[Email Backfill] Available relationship emails:`, Array.from(emailToLeadId.keys()));
+        
+        // Also log the email metadata ID for debugging
+        const { data: emailMeta } = await supabase
+          .from("email_metadata")
+          .select("id, subject, received_at")
+          .eq("id", email.id)
+          .single();
+        if (emailMeta) {
+          console.log(`[Email Backfill] Unmatched email: ${emailMeta.subject} (received: ${emailMeta.received_at})`);
+        }
       }
     }
 
