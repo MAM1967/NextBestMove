@@ -26,7 +26,7 @@ export async function GET(
     // Get the lead
     const { data: lead, error: leadError } = await supabase
       .from("leads")
-      .select("id, url, name")
+      .select("id, url, email, name")
       .eq("id", leadId)
       .eq("user_id", user.id)
       .single();
@@ -38,29 +38,15 @@ export async function GET(
       );
     }
 
-    // Extract email from lead URL if it's a mailto: link
-    let emailHash: string | null = null;
-    if (lead.url.startsWith("mailto:")) {
-      const email = extractEmailAddress(lead.url.substring(7));
-      emailHash = hashEmailAddress(email);
-    }
-
-    if (!emailHash) {
-      // No email to match, return empty signals
-      return NextResponse.json({
-        signals: [],
-        total: 0,
-      });
-    }
-
-    // Fetch email metadata for this relationship
+    // Fetch email metadata for this relationship using person_id
+    // This is more reliable than matching by email hash since we now store person_id
     const { data: emailMetadata, error: metadataError } = await supabase
       .from("email_metadata")
       .select(
         "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels"
       )
       .eq("user_id", user.id)
-      .eq("from_email_hash", emailHash)
+      .eq("person_id", leadId)
       .order("received_at", { ascending: false })
       .limit(50);
 
@@ -100,6 +86,7 @@ export async function GET(
     );
   }
 }
+
 
 
 
