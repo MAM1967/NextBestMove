@@ -277,7 +277,82 @@ export async function ingestEmailMetadata(userId: string): Promise<{
   return results;
 }
 
+/**
+ * Backfill email metadata: Match existing emails to relationships
+ * This is useful when:
+ * - A relationship is created after emails were already ingested
+ * - Email addresses are added to existing relationships
+ * 
+ * Updates email_metadata records where person_id is null by matching
+ * from_email_hash to relationship email hashes.
+ */
+export async function backfillEmailMetadata(userId: string): Promise<number> {
+  const supabase = createAdminClient();
+  let matchedCount = 0;
 
+  try {
+    // Get all unmatched email metadata for this user
+    const { data: unmatchedEmails } = await supabase
+      .from("email_metadata")
+      .select("id, from_email_hash")
+      .eq("user_id", userId)
+      .is("person_id", null);
 
+    if (!unmatchedEmails || unmatchedEmails.length === 0) {
+      return 0;
+    }
 
+    // Get all leads for this user with email addresses
+    const { data: leads } = await supabase
+      .from("leads")
+      .select("id, email, url")
+      .eq("user_id", userId)
+      .eq("status", "ACTIVE");
+
+    if (!leads || leads.length === 0) {
+      return 0;
+    }
+
+    // Build a map of email hash -> lead id
+    const emailHashToLeadId = new Map<string, string>();
+    
+    for (const lead of leads) {
+      // Check new email field
+      if (lead.email) {
+        const emailHash = hashEmailAddress(lead.email);
+        emailHashToLeadId.set(emailHash, lead.id);
+      }
+      
+      // Check legacy url field (mailto: format)
+      if (lead.url?.startsWith("mailto:")) {
+        const email = lead.url.substring(7); // Remove "mailto:" prefix
+        const emailHash = hashEmailAddress(email);
+        emailHashToLeadId.set(emailHash, lead.id);
+      }
+    }
+
+    // Match and update email metadata
+    for (const email of unmatchedEmails) {
+      const leadId = emailHashToLeadId.get(email.from_email_hash);
+      
+      if (leadId) {
+        const { error } = await supabase
+          .from("email_metadata")
+          .update({ person_id: leadId })
+          .eq("id", email.id);
+
+        if (!error) {
+          matchedCount++;
+        } else {
+          console.error(`Error updating email metadata ${email.id}:`, error);
+        }
+      }
+    }
+
+    return matchedCount;
+  } catch (error) {
+    console.error("Error backfilling email metadata:", error);
+    throw error;
+  }
+}
 
