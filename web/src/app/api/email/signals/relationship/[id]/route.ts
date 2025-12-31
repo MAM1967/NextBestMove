@@ -40,16 +40,40 @@ export async function GET(
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    // Debug: Check if relationship has email set
+    const { data: relationshipDetails } = await supabase
+      .from("leads")
+      .select("id, name, email, url")
+      .eq("id", relationshipId)
+      .single();
+    
+    if (relationshipDetails) {
+      console.log(`[Email Signals Debug] Relationship: ${relationshipDetails.name}, email: ${relationshipDetails.email}, url: ${relationshipDetails.url}`);
+    }
+
     const { data: emails, error: emailError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id, from_email_hash"
       )
       .eq("user_id", user.id)
       .eq("person_id", relationshipId)
       .gte("received_at", thirtyDaysAgo.toISOString())
       .order("received_at", { ascending: false })
       .limit(50);
+
+    // Debug: Check unmatched emails for this user
+    if (!emails || emails.length === 0) {
+      const { data: unmatchedCount } = await supabase
+        .from("email_metadata")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .is("person_id", null);
+      
+      console.log(`[Email Signals Debug] No emails found for relationship ${relationshipId}. Total unmatched emails for user: ${unmatchedCount || 0}`);
+    } else {
+      console.log(`[Email Signals Debug] Found ${emails.length} emails for relationship ${relationshipId}`);
+    }
 
     if (emailError) {
       console.error("Error fetching relationship email signals:", emailError);
