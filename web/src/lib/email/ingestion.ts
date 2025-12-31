@@ -30,6 +30,7 @@ async function matchEmailToRelationship(
     if (lead.email) {
       const emailHash = hashEmailAddress(lead.email);
       if (emailHash === fromEmailHash) {
+        console.log(`[Email Match] Found match: ${lead.email} (hash: ${emailHash}) matches relationship ${lead.name} (${lead.id})`);
         return lead.id;
       }
     }
@@ -39,10 +40,15 @@ async function matchEmailToRelationship(
       const email = lead.url.substring(7); // Remove "mailto:" prefix
       const emailHash = hashEmailAddress(email);
       if (emailHash === fromEmailHash) {
+        console.log(`[Email Match] Found match: ${email} (hash: ${emailHash}) matches relationship ${lead.name} (${lead.id})`);
         return lead.id;
       }
     }
   }
+  
+  // Debug: Log what we're looking for vs what we have
+  console.log(`[Email Match] No match found for hash: ${fromEmailHash}`);
+  console.log(`[Email Match] Available relationship emails:`, leads.map(l => ({ name: l.name, email: l.email, url: l.url })));
 
   return null;
 }
@@ -354,14 +360,22 @@ export async function backfillEmailMetadata(userId: string): Promise<number> {
         console.log(`[Email Backfill] No match found for email hash: ${email.from_email_hash}`);
         console.log(`[Email Backfill] Available relationship emails:`, Array.from(emailToLeadId.keys()));
         
+        // Calculate and log the expected hash for rosie@digitalcluesgroup.com to verify
+        const testEmail = "rosie@digitalcluesgroup.com";
+        const expectedHash = hashEmailAddress(testEmail);
+        console.log(`[Email Backfill] Expected hash for ${testEmail}: ${expectedHash}`);
+        console.log(`[Email Backfill] Looking for hash: ${email.from_email_hash}`);
+        console.log(`[Email Backfill] Hashes match: ${expectedHash === email.from_email_hash}`);
+        
         // Also log the email metadata ID for debugging
         const { data: emailMeta } = await supabase
           .from("email_metadata")
-          .select("id, subject, received_at")
+          .select("id, subject, received_at, from_email_hash, to_email_hash")
           .eq("id", email.id)
           .single();
         if (emailMeta) {
           console.log(`[Email Backfill] Unmatched email: ${emailMeta.subject} (received: ${emailMeta.received_at})`);
+          console.log(`[Email Backfill] From hash: ${emailMeta.from_email_hash}, To hash: ${emailMeta.to_email_hash}`);
         }
       }
     }

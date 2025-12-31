@@ -60,26 +60,56 @@ export async function fetchGmailMessages(
     return [];
   }
 
-  // Fetch full message details for each message
-  const messagePromises = listData.messages.map(async (msg) => {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+  // Fetch full message details for each message with rate limiting
+  // Gmail API has rate limits, so we batch requests with delays
+  const messages: GmailMessage[] = [];
+  const BATCH_SIZE = 10;
+  const DELAY_MS = 100; // 100ms delay between batches
+  
+  for (let i = 0; i < listData.messages.length; i += BATCH_SIZE) {
+    const batch = listData.messages.slice(i, i + BATCH_SIZE);
     
-    const messageResponse = await fetch(messageUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+    const batchPromises = batch.map(async (msg) => {
+      const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+      
+      const messageResponse = await fetch(messageUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!messageResponse.ok) {
+        if (messageResponse.status === 429) {
+          // Rate limited - wait and retry once
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const retryResponse = await fetch(messageUrl, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+          if (!retryResponse.ok) {
+            console.error(`Failed to fetch Gmail message ${msg.id} after retry:`, retryResponse.statusText);
+            return null;
+          }
+          return retryResponse.json() as Promise<GmailMessage>;
+        }
+        console.error(`Failed to fetch Gmail message ${msg.id}:`, messageResponse.statusText);
+        return null;
+      }
+
+      return messageResponse.json() as Promise<GmailMessage>;
     });
-
-    if (!messageResponse.ok) {
-      console.error(`Failed to fetch Gmail message ${msg.id}:`, messageResponse.statusText);
-      return null;
+    
+    const batchResults = await Promise.all(batchPromises);
+    messages.push(...batchResults.filter((msg): msg is GmailMessage => msg !== null));
+    
+    // Add delay between batches to avoid rate limiting
+    if (i + BATCH_SIZE < listData.messages.length) {
+      await new Promise(resolve => setTimeout(resolve, DELAY_MS));
     }
-
-    return messageResponse.json() as Promise<GmailMessage>;
-  });
-
-  const messages = await Promise.all(messagePromises);
-  return messages.filter((msg): msg is GmailMessage => msg !== null);
+  }
+  
+  return messages;
 }
 
 /**
