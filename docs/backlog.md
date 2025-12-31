@@ -281,6 +281,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] **Multiple email account support (like multi-calendar)** 🟡 **P2 - POST-LAUNCH**  
        _Allow users to connect multiple email accounts (Gmail and/or Outlook), similar to multi-calendar support (NEX-14, NEX-17). Enables users managing multiple email addresses to aggregate all email signals in one place. Backend: Update ingestion to process all active connections, update signals aggregation. UI: Show list of connected accounts in Settings, allow connecting/disconnecting individual accounts. Estimated: 4-6 hours. Reference: Multi-calendar implementation pattern. Linear: NEX-40_
 
+- [ ] **AI-Powered Email Signal Extraction (Full Body Analysis)** 🔴 **HIGH PRIORITY - IMMEDIATE**  
+       _Replace rule-based email signal extraction with AI-powered analysis using gpt-4o-mini. Extract full email body (not just snippet), add sentiment analysis (positive/neutral/negative/urgent), add intent classification (question/request/follow_up/introduction/meeting_request/proposal/complaint/other), improve accuracy of topic/ask/open loop extraction. Use existing AI infrastructure with gpt-4o-mini model. Estimated: 8-16 hours (1-2 days). Linear: NEX-42_
+
+- [ ] **Email Attachment Capture & Analysis** 🟡 **P2 - POST-LAUNCH**  
+       _Capture attachment metadata (filename, MIME type, size) from Gmail/Outlook emails. Store in database, display in Signals UI, use attachment context to enhance signal extraction (e.g., "attached proposal" → open loop). Future: Extract text from PDFs, analyze spreadsheet data. Estimated: 6-8 hours. Linear: NEX-43_
+
 ---
 
 ## Launch Hardening

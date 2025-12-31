@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashEmailAddress, extractEmailAddress } from "./utils";
-import { extractSignals } from "./signals";
+import { extractSignalsWithAI } from "./ai-signals";
+import { htmlToText } from "./html-to-text";
 import { fetchGmailMessages, extractGmailMetadata } from "./gmail";
 import { fetchOutlookMessages, extractOutlookMetadata } from "./outlook";
 import type { EmailProvider } from "./providers";
@@ -70,6 +71,17 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
     console.log(`[Email Ingestion] Starting Gmail metadata ingestion for user ${userId}`);
     const supabase = createAdminClient();
     
+    // Get user AI settings for AI-powered extraction
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("ai_provider, ai_api_key_encrypted, ai_model")
+      .eq("id", userId)
+      .single();
+    
+    const userAiProvider = userProfile?.ai_provider || null;
+    const userApiKeyEncrypted = userProfile?.ai_api_key_encrypted || null;
+    const userModel = userProfile?.ai_model || null;
+    
     // Get all active relationships with email addresses
     const { data: leads, error: leadsError } = await supabase
       .from("leads")
@@ -129,11 +141,16 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
           // We already know this matches because we searched by sender
           const personId = relEmail.leadId;
 
-          // Extract signals
-          const signals = extractSignals(
+          // Extract signals using AI (with fallback to rule-based)
+          const fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
+          const signals = await extractSignalsWithAI(
             metadata.subject,
             metadata.snippet,
-            undefined
+            fullBodyText,
+            undefined,
+            userAiProvider,
+            userApiKeyEncrypted,
+            userModel
           );
 
           // Check if metadata already exists
@@ -173,12 +190,15 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
             to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
             subject: metadata.subject,
             snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
+            full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
             received_at: metadata.receivedAt,
             person_id: personId,
             last_topic: signals.topic,
             ask: signals.asks.length > 0 ? signals.asks[0] : null,
             open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
             priority: signals.priority,
+            sentiment: signals.sentiment,
+            intent: signals.intent,
             processed_at: new Date().toISOString(),
           });
 
@@ -218,6 +238,18 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
     const messages = await fetchOutlookMessages(userId, 50);
     console.log(`[Email Ingestion] Fetched ${messages.length} Outlook messages`);
     const supabase = createAdminClient();
+    
+    // Get user AI settings for AI-powered extraction
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("ai_provider, ai_api_key_encrypted, ai_model")
+      .eq("id", userId)
+      .single();
+    
+    const userAiProvider = userProfile?.ai_provider || null;
+    const userApiKeyEncrypted = userProfile?.ai_api_key_encrypted || null;
+    const userModel = userProfile?.ai_model || null;
+    
     let ingestedCount = 0;
     let skippedNoMatch = 0;
     let skippedAlreadyExists = 0;
@@ -239,11 +271,16 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         continue; // Skip emails from unknown senders (not in relationships)
       }
 
-      // Extract signals
-      const signals = extractSignals(
+      // Extract signals using AI (with fallback to rule-based)
+      const fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
+      const signals = await extractSignalsWithAI(
         metadata.subject,
         metadata.snippet,
-        metadata.importance
+        fullBodyText,
+        metadata.importance,
+        userAiProvider,
+        userApiKeyEncrypted,
+        userModel
       );
 
       // Check if metadata already exists
@@ -283,6 +320,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
         subject: metadata.subject,
         snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
+        full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
         received_at: metadata.receivedAt,
         person_id: personId,
         last_topic: signals.topic,
@@ -290,6 +328,8 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
         labels: metadata.categories || null,
         priority: signals.priority,
+        sentiment: signals.sentiment,
+        intent: signals.intent,
         processed_at: new Date().toISOString(),
       });
 

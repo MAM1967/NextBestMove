@@ -7,6 +7,7 @@ export interface GmailMessage {
   snippet: string;
   payload: {
     headers: Array<{ name: string; value: string }>;
+    body?: { data?: string };
     parts?: Array<{
       mimeType: string;
       body: { data?: string };
@@ -85,12 +86,13 @@ export async function fetchGmailMessages(
 
   /**
    * Fetch a single message with exponential backoff retry
+   * Uses format=full to get full email body for AI analysis
    */
   async function fetchMessageWithRetry(
     messageId: string,
     maxRetries: number = 3
   ): Promise<GmailMessage | null> {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const response = await fetch(messageUrl, {
@@ -152,7 +154,52 @@ export async function fetchGmailMessages(
 }
 
 /**
+ * Extract email body text from Gmail message payload
+ * Handles both simple and multipart messages
+ */
+function extractGmailBody(payload: GmailMessage["payload"]): string {
+  // If payload has body directly (simple message)
+  if (payload.body?.data) {
+    return Buffer.from(payload.body.data, "base64").toString("utf-8");
+  }
+
+  // If payload has parts (multipart message)
+  if (payload.parts) {
+    for (const part of payload.parts) {
+      // Prefer text/plain, fallback to text/html
+      if (part.mimeType === "text/plain" && part.body?.data) {
+        return Buffer.from(part.body.data, "base64").toString("utf-8");
+      }
+    }
+    // If no plain text, try HTML
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/html" && part.body?.data) {
+        return Buffer.from(part.body.data, "base64").toString("utf-8");
+      }
+    }
+    // Check nested parts (multipart/alternative)
+    for (const part of payload.parts) {
+      if (part.parts) {
+        for (const subPart of part.parts) {
+          if (subPart.mimeType === "text/plain" && subPart.body?.data) {
+            return Buffer.from(subPart.body.data, "base64").toString("utf-8");
+          }
+        }
+        for (const subPart of part.parts) {
+          if (subPart.mimeType === "text/html" && subPart.body?.data) {
+            return Buffer.from(subPart.body.data, "base64").toString("utf-8");
+          }
+        }
+      }
+    }
+  }
+
+  return "";
+}
+
+/**
  * Extract email metadata from Gmail message
+ * Now includes full body for AI analysis
  */
 export function extractGmailMetadata(message: GmailMessage) {
   const headers = message.payload.headers || [];
@@ -164,6 +211,7 @@ export function extractGmailMetadata(message: GmailMessage) {
   const to = getHeader("To");
   const subject = getHeader("Subject");
   const date = getHeader("Date");
+  const fullBody = extractGmailBody(message.payload);
 
   return {
     messageId: message.id,
@@ -172,6 +220,7 @@ export function extractGmailMetadata(message: GmailMessage) {
     to,
     subject,
     snippet: message.snippet || "",
+    fullBody,
     receivedAt: date
       ? new Date(date).toISOString()
       : new Date(message.internalDate).toISOString(),
