@@ -45,6 +45,8 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
               ? lastEmail.open_loops 
               : [],
             recent_labels: [],
+            sentiment: lastEmail.sentiment || null,
+            intent: lastEmail.intent || null,
           });
         } else {
           setSignals(null);
@@ -171,6 +173,40 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
                   {label}
                 </span>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sentiment */}
+        {signals.sentiment && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Sentiment</div>
+            <div className="mt-1">
+              <span
+                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                  signals.sentiment === "positive"
+                    ? "bg-green-100 text-green-800"
+                    : signals.sentiment === "negative"
+                    ? "bg-red-100 text-red-800"
+                    : signals.sentiment === "urgent"
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-zinc-100 text-zinc-800"
+                }`}
+              >
+                {signals.sentiment}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Intent */}
+        {signals.intent && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Intent</div>
+            <div className="mt-1">
+              <span className="inline-flex rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">
+                {signals.intent.replace("_", " ")}
+              </span>
             </div>
           </div>
         )}

@@ -172,6 +172,40 @@ export function SignalsClient() {
                 </ul>
               </div>
             )}
+
+            {/* Sentiment */}
+            {signal.sentiment && (
+              <div>
+                <div className="text-xs font-medium text-zinc-600">Sentiment</div>
+                <div className="mt-1">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                      signal.sentiment === "positive"
+                        ? "bg-green-100 text-green-800"
+                        : signal.sentiment === "negative"
+                        ? "bg-red-100 text-red-800"
+                        : signal.sentiment === "urgent"
+                        ? "bg-orange-100 text-orange-800"
+                        : "bg-zinc-100 text-zinc-800"
+                    }`}
+                  >
+                    {signal.sentiment}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Intent */}
+            {signal.intent && (
+              <div>
+                <div className="text-xs font-medium text-zinc-600">Intent</div>
+                <div className="mt-1">
+                  <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                    {signal.intent.replace("_", " ")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ))}

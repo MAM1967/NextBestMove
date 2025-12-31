@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const { data: recentEmails, error: emailError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, sentiment, intent, person_id"
       )
       .eq("user_id", user.id)
       .not("person_id", "is", null) // Only include emails from tracked relationships
@@ -119,8 +119,11 @@ export async function GET(request: Request) {
       const signal = signalsByRelationship.get(relationshipId)!;
       
       // Update last email received if this is more recent
+      // Also update sentiment and intent from most recent email
       if (new Date(email.received_at) > new Date(signal.last_email_received || 0)) {
         signal.last_email_received = email.received_at;
+        signal.sentiment = email.sentiment || null;
+        signal.intent = email.intent || null;
       }
 
       // Add topic if present

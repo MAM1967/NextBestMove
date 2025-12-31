@@ -51,6 +51,8 @@ export interface EmailSignals {
   recent_open_loops: string[];
   unread_count: number;
   recent_labels: string[];
+  sentiment?: "positive" | "neutral" | "negative" | "urgent" | null;
+  intent?: "question" | "request" | "follow_up" | "introduction" | "meeting_request" | "proposal" | "complaint" | "other" | null;
 }
 
 
