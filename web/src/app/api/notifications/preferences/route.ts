@@ -45,7 +45,7 @@ export async function GET() {
         .single();
 
       if (userPrefs) {
-        // Create preferences from user table
+        // Try to create preferences from user table, but skip if table doesn't exist
         const { data: newPrefs, error: createError } = await supabase
           .from("notification_preferences")
           .insert({
@@ -59,7 +59,12 @@ export async function GET() {
           .single();
 
         if (createError) {
-          console.error("Error creating notification preferences:", createError);
+          // PGRST205 = table not found - skip creation, just return defaults
+          if (createError.code === "PGRST205") {
+            console.warn("Notification preferences table not found, skipping creation");
+          } else {
+            console.error("Error creating notification preferences:", createError);
+          }
         }
 
         return NextResponse.json(newPrefs || {
