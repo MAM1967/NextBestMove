@@ -30,11 +30,17 @@ export async function fetchOutlookMessages(
     throw new Error("No valid access token for Outlook");
   }
 
+  // Fetch emails from last 90 days (1 quarter) to capture less frequent relationships
+  // Relationships represent <5% of email volume, so we need to go back further
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const dateFilter = ninetyDaysAgo.toISOString();
+  
   const graphUrl = new URL("https://graph.microsoft.com/v1.0/me/messages");
   graphUrl.searchParams.set("$top", top.toString());
   graphUrl.searchParams.set("$select", "id,conversationId,subject,bodyPreview,from,toRecipients,receivedDateTime,importance,categories");
   graphUrl.searchParams.set("$orderby", "receivedDateTime desc");
-  graphUrl.searchParams.set("$filter", "isRead eq false or isRead eq true"); // Get all messages
+  graphUrl.searchParams.set("$filter", `receivedDateTime ge ${dateFilter}`); // Get messages from last 90 days
 
   const response = await fetch(graphUrl.toString(), {
     headers: {

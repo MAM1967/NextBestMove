@@ -34,9 +34,15 @@ export async function fetchGmailMessages(
   }
 
   // First, get list of message IDs
+  // Fetch emails from last 90 days (1 quarter) to capture less frequent relationships
+  // Relationships represent <5% of email volume, so we need to go back further
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const dateFilter = ninetyDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+  
   const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
   listUrl.searchParams.set("maxResults", maxResults.toString());
-  listUrl.searchParams.set("q", "in:inbox"); // Only inbox messages
+  listUrl.searchParams.set("q", `in:inbox after:${dateFilter}`); // Only inbox messages from last 90 days
 
   const listResponse = await fetch(listUrl.toString(), {
     headers: {
