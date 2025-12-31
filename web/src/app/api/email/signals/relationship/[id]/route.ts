@@ -54,7 +54,7 @@ export async function GET(
     const { data: emails, error: emailError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id, from_email_hash"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id, from_email_hash, sentiment, intent, recommended_action_type, recommended_action_description"
       )
       .eq("user_id", user.id)
       .eq("person_id", relationshipId)

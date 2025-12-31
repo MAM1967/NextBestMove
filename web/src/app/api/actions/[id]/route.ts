@@ -26,30 +26,35 @@ export async function GET(
 
     const { id: actionId } = await params;
 
-    // Fetch action with lead relationship
+    // Fetch action
     const { data: action, error: actionError } = await supabase
       .from("actions")
-      .select(
-        `
-        *,
-        leads (
-          id,
-          name,
-          url,
-          notes,
-          status
-        )
-      `
-      )
+      .select("*")
       .eq("id", actionId)
       .eq("user_id", user.id)
       .single();
 
     if (actionError || !action) {
+      console.error("Error fetching action:", actionError);
       return NextResponse.json(
         { error: "Action not found" },
         { status: 404 }
       );
+    }
+
+    // Fetch lead relationship if person_id exists
+    let lead = null;
+    if (action.person_id) {
+      const { data: leadData, error: leadError } = await supabase
+        .from("leads")
+        .select("id, name, linkedin_url, email, phone_number, url, notes, status")
+        .eq("id", action.person_id)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (!leadError && leadData) {
+        lead = leadData;
+      }
     }
 
     // Derive action history from timestamps
@@ -115,6 +120,7 @@ export async function GET(
     return NextResponse.json({
       action: {
         ...action,
+        leads: lead ? [lead] : null, // Match expected format from original query
         history,
         relatedActions,
       },

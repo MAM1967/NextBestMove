@@ -172,6 +172,48 @@ export function SignalsClient() {
                 </ul>
               </div>
             )}
+
+            {/* Sentiment */}
+            {signal.last_email_sentiment && (
+              <div>
+                <div className="text-xs font-medium text-zinc-600">Sentiment</div>
+                <div className="mt-1">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      signal.last_email_sentiment === "positive"
+                        ? "bg-green-100 text-green-800"
+                        : signal.last_email_sentiment === "negative"
+                        ? "bg-red-100 text-red-800"
+                        : signal.last_email_sentiment === "urgent"
+                        ? "bg-orange-100 text-orange-800"
+                        : "bg-zinc-100 text-zinc-800"
+                    }`}
+                  >
+                    {signal.last_email_sentiment}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Intent */}
+            {signal.last_email_intent && (
+              <div>
+                <div className="text-xs font-medium text-zinc-600">Intent</div>
+                <div className="mt-1">
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                    {signal.last_email_intent.replace("_", " ")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Recommended Action */}
+            {signal.recommended_action && (
+              <div className="md:col-span-2">
+                <div className="text-xs font-medium text-zinc-600">Recommended Action</div>
+                <div className="mt-1 text-sm text-zinc-900">{signal.recommended_action}</div>
+              </div>
+            )}
           </div>
         </div>
       ))}

@@ -45,6 +45,9 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
               ? lastEmail.open_loops 
               : [],
             recent_labels: [],
+            last_email_sentiment: lastEmail.sentiment || null,
+            last_email_intent: lastEmail.intent || null,
+            recommended_action: lastEmail.recommended_action_description || null,
           });
         } else {
           setSignals(null);
@@ -172,6 +175,48 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Sentiment */}
+        {signals.last_email_sentiment && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Sentiment</div>
+            <div className="mt-1">
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-medium ${
+                  signals.last_email_sentiment === "positive"
+                    ? "bg-green-100 text-green-800"
+                    : signals.last_email_sentiment === "negative"
+                    ? "bg-red-100 text-red-800"
+                    : signals.last_email_sentiment === "urgent"
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-zinc-100 text-zinc-800"
+                }`}
+              >
+                {signals.last_email_sentiment}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Intent */}
+        {signals.last_email_intent && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Intent</div>
+            <div className="mt-1">
+              <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
+                {signals.last_email_intent.replace("_", " ")}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Recommended Action */}
+        {signals.recommended_action && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Recommended Action</div>
+            <div className="mt-1 text-sm text-zinc-900">{signals.recommended_action}</div>
           </div>
         )}
       </div>

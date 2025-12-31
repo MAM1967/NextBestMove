@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const { data: recentEmails, error: emailError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, person_id, sentiment, intent, recommended_action_type, recommended_action_description"
       )
       .eq("user_id", user.id)
       .not("person_id", "is", null) // Only include emails from tracked relationships
@@ -113,6 +113,9 @@ export async function GET(request: Request) {
           recent_asks: [] as string[],
           recent_open_loops: [] as string[],
           recent_labels: [] as string[],
+          last_email_sentiment: email.sentiment || null,
+          last_email_intent: email.intent || null,
+          recommended_action: email.recommended_action_description || null,
         });
       }
 
@@ -121,6 +124,10 @@ export async function GET(request: Request) {
       // Update last email received if this is more recent
       if (new Date(email.received_at) > new Date(signal.last_email_received || 0)) {
         signal.last_email_received = email.received_at;
+        // Update AI fields from most recent email
+        signal.last_email_sentiment = email.sentiment || null;
+        signal.last_email_intent = email.intent || null;
+        signal.recommended_action = email.recommended_action_description || null;
       }
 
       // Add topic if present
