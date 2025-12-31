@@ -1,10 +1,61 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hashEmailAddress, extractEmailAddress } from "./utils";
-import { extractSignalsWithAI } from "./ai-signals";
+import { extractSignalsWithAI, type ActionType } from "./ai-signals";
 import { htmlToText } from "./html-to-text";
 import { fetchGmailMessages, extractGmailMetadata } from "./gmail";
 import { fetchOutlookMessages, extractOutlookMetadata } from "./outlook";
 import type { EmailProvider } from "./providers";
+
+/**
+ * Create an action from an email signal recommendation
+ * Prevents duplicates by checking for existing actions of the same type for the relationship
+ */
+async function createActionFromEmailSignal(
+  userId: string,
+  personId: string,
+  actionType: ActionType,
+  description: string,
+  dueDate: string,
+  emailMetadataId: string
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  // Check for existing action of same type for this relationship (prevent duplicates)
+  const today = new Date().toISOString().split("T")[0];
+  const { data: existingAction } = await supabase
+    .from("actions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("person_id", personId)
+    .eq("action_type", actionType)
+    .in("state", ["NEW", "SNOOZED"])
+    .gte("due_date", today)
+    .maybeSingle();
+
+  if (existingAction) {
+    console.log(`[Action Creation] Skipping duplicate ${actionType} action for relationship ${personId}`);
+    return; // Don't create duplicate
+  }
+
+  // Create the action
+  const { error } = await supabase.from("actions").insert({
+    user_id: userId,
+    person_id: personId,
+    action_type: actionType,
+    state: "NEW",
+    description: description,
+    due_date: dueDate,
+    auto_created: true,
+    notes: `Auto-created from email signal (email_metadata: ${emailMetadataId})`,
+  });
+
+  if (error) {
+    console.error(`[Action Creation] Error creating ${actionType} action:`, error);
+    throw error;
+  }
+
+  console.log(`[Action Creation] Successfully created ${actionType} action for relationship ${personId}, due ${dueDate}`);
+}
 
 /**
  * Match email sender to a relationship (lead) by hashed email
@@ -180,8 +231,16 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
             continue;
           }
 
+          // Calculate recommended due date if action is recommended
+          let recommendedDueDate: string | null = null;
+          if (signals.recommendedAction?.due_date_days !== null && signals.recommendedAction?.due_date_days !== undefined) {
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + signals.recommendedAction.due_date_days);
+            recommendedDueDate = dueDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+          }
+
           // Insert email metadata (only for matched relationships)
-          const { error } = await supabase.from("email_metadata").insert({
+          const { error, data: insertedEmail } = await supabase.from("email_metadata").insert({
             user_id: userId,
             email_connection_id: connection.id,
             message_id: metadata.messageId,
@@ -199,11 +258,32 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
             priority: signals.priority,
             sentiment: signals.sentiment,
             intent: signals.intent,
+            recommended_action_type: signals.recommendedAction?.action_type || null,
+            recommended_action_description: signals.recommendedAction?.description || null,
+            recommended_due_date: recommendedDueDate,
             processed_at: new Date().toISOString(),
-          });
+          }).select().single();
 
-          if (!error) {
+          if (!error && insertedEmail) {
             ingestedCount++;
+            
+            // Automatically create action if recommended
+            if (signals.recommendedAction?.action_type && recommendedDueDate) {
+              try {
+                await createActionFromEmailSignal(
+                  userId,
+                  personId,
+                  signals.recommendedAction.action_type,
+                  signals.recommendedAction.description || `Follow up on: ${signals.topic}`,
+                  recommendedDueDate,
+                  insertedEmail.id
+                );
+                console.log(`[Email Ingestion] Created recommended action: ${signals.recommendedAction.action_type} for ${relEmail.leadName}`);
+              } catch (actionError) {
+                console.error(`[Email Ingestion] Error creating action from email signal:`, actionError);
+                // Don't fail ingestion if action creation fails
+              }
+            }
           } else {
             console.error("Error ingesting Gmail metadata:", error);
           }
@@ -310,8 +390,16 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         continue;
       }
 
+      // Calculate recommended due date if action is recommended
+      let recommendedDueDate: string | null = null;
+      if (signals.recommendedAction?.due_date_days !== null && signals.recommendedAction?.due_date_days !== undefined) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + signals.recommendedAction.due_date_days);
+        recommendedDueDate = dueDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+      }
+
       // Insert email metadata (only for matched relationships)
-      const { error } = await supabase.from("email_metadata").insert({
+      const { error, data: insertedEmail } = await supabase.from("email_metadata").insert({
         user_id: userId,
         email_connection_id: connection.id,
         message_id: metadata.messageId,
@@ -330,8 +418,35 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         priority: signals.priority,
         sentiment: signals.sentiment,
         intent: signals.intent,
+        recommended_action_type: signals.recommendedAction?.action_type || null,
+        recommended_action_description: signals.recommendedAction?.description || null,
+        recommended_due_date: recommendedDueDate,
         processed_at: new Date().toISOString(),
-      });
+      }).select().single();
+
+      if (!error && insertedEmail) {
+        ingestedCount++;
+        
+        // Automatically create action if recommended
+        if (signals.recommendedAction?.action_type && recommendedDueDate) {
+          try {
+            await createActionFromEmailSignal(
+              userId,
+              personId,
+              signals.recommendedAction.action_type,
+              signals.recommendedAction.description || `Follow up on: ${signals.topic}`,
+              recommendedDueDate,
+              insertedEmail.id
+            );
+            console.log(`[Email Ingestion] Created recommended action: ${signals.recommendedAction.action_type}`);
+          } catch (actionError) {
+            console.error(`[Email Ingestion] Error creating action from email signal:`, actionError);
+            // Don't fail ingestion if action creation fails
+          }
+        }
+      } else if (error) {
+        console.error("Error ingesting Outlook metadata:", error);
+      }
 
       if (!error) {
         ingestedCount++;
