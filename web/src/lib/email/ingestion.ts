@@ -278,33 +278,43 @@ export async function ingestEmailMetadata(userId: string): Promise<{
   gmail: number;
   outlook: number;
 }> {
+  console.log(`[Email Ingestion] Starting email metadata ingestion for user ${userId}`);
   const supabase = createAdminClient();
-  const { data: connections } = await supabase
+  const { data: connections, error: connError } = await supabase
     .from("email_connections")
-    .select("provider")
+    .select("provider, status")
     .eq("user_id", userId)
     .eq("status", "active");
+
+  if (connError) {
+    console.error(`[Email Ingestion] Error fetching connections:`, connError);
+  }
+
+  console.log(`[Email Ingestion] Found ${connections?.length || 0} active email connections:`, connections?.map(c => `${c.provider} (${c.status})`));
 
   const results = { gmail: 0, outlook: 0 };
 
   if (!connections || connections.length === 0) {
+    console.log(`[Email Ingestion] No active email connections found for user ${userId}`);
     return results;
   }
 
   // Ingest from each connected provider
   for (const conn of connections) {
     try {
+      console.log(`[Email Ingestion] Processing ${conn.provider} connection`);
       if (conn.provider === "gmail") {
         results.gmail = await ingestGmailMetadata(userId);
       } else if (conn.provider === "outlook") {
         results.outlook = await ingestOutlookMetadata(userId);
       }
     } catch (error) {
-      console.error(`Error ingesting ${conn.provider} metadata:`, error);
+      console.error(`[Email Ingestion] Error ingesting ${conn.provider} metadata:`, error);
       // Continue with other providers even if one fails
     }
   }
 
+  console.log(`[Email Ingestion] Complete - Gmail: ${results.gmail}, Outlook: ${results.outlook}`);
   return results;
 }
 
