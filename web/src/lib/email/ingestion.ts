@@ -14,22 +14,32 @@ async function matchEmailToRelationship(
 ): Promise<string | null> {
   // Get all leads for this user
   const supabase = createAdminClient();
-  const { data: leads } = await supabase
+  const { data: leads, error: leadsError } = await supabase
     .from("leads")
     .select("id, url, email, name")
     .eq("user_id", userId)
     .eq("status", "ACTIVE");
 
-  if (!leads || leads.length === 0) {
+  if (leadsError) {
+    console.error(`[Email Match] Error fetching leads:`, leadsError);
     return null;
   }
+
+  if (!leads || leads.length === 0) {
+    console.log(`[Email Match] No active leads found for user ${userId}`);
+    return null;
+  }
+
+  console.log(`[Email Match] Checking ${leads.length} active leads against email hash: ${fromEmailHash}`);
 
   // Check if any lead's email matches the hash
   for (const lead of leads) {
     // First check the new email field
     if (lead.email) {
       const emailHash = hashEmailAddress(lead.email);
+      console.log(`[Email Match] Comparing lead "${lead.name}" email "${lead.email}" hash: ${emailHash}`);
       if (emailHash === fromEmailHash) {
+        console.log(`[Email Match] ✅ MATCH FOUND: Lead "${lead.name}" (${lead.id}) matches email hash`);
         return lead.id;
       }
     }
@@ -38,12 +48,15 @@ async function matchEmailToRelationship(
     if (lead.url?.startsWith("mailto:")) {
       const email = lead.url.substring(7); // Remove "mailto:" prefix
       const emailHash = hashEmailAddress(email);
+      console.log(`[Email Match] Comparing lead "${lead.name}" legacy url email "${email}" hash: ${emailHash}`);
       if (emailHash === fromEmailHash) {
+        console.log(`[Email Match] ✅ MATCH FOUND: Lead "${lead.name}" (${lead.id}) matches email hash (legacy url)`);
         return lead.id;
       }
     }
   }
 
+  console.log(`[Email Match] ❌ No match found for email hash: ${fromEmailHash}`);
   return null;
 }
 
@@ -64,6 +77,8 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       const metadata = extractGmailMetadata(message);
       const fromEmail = extractEmailAddress(metadata.from);
       const fromEmailHash = hashEmailAddress(fromEmail);
+      
+      console.log(`[Email Ingestion] Processing Gmail message from: ${fromEmail} (hash: ${fromEmailHash})`);
       
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
@@ -167,6 +182,8 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       const metadata = extractOutlookMetadata(message);
       const fromEmail = extractEmailAddress(metadata.from);
       const fromEmailHash = hashEmailAddress(fromEmail);
+      
+      console.log(`[Email Ingestion] Processing Outlook message from: ${fromEmail} (hash: ${fromEmailHash})`);
       
       // Match to relationship if possible
       const personId = await matchEmailToRelationship(userId, fromEmailHash);
