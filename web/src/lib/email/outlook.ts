@@ -6,6 +6,10 @@ export interface OutlookMessage {
   conversationId: string;
   subject: string;
   bodyPreview: string;
+  body?: {
+    contentType: string; // "text" or "html"
+    content: string;
+  };
   from: { emailAddress: { address: string; name: string } };
   toRecipients: Array<{ emailAddress: { address: string; name: string } }>;
   receivedDateTime: string;
@@ -94,7 +98,7 @@ export async function fetchOutlookMessages(
 
   const graphUrl = new URL("https://graph.microsoft.com/v1.0/me/messages");
   graphUrl.searchParams.set("$top", top.toString());
-  graphUrl.searchParams.set("$select", "id,conversationId,subject,bodyPreview,from,toRecipients,receivedDateTime,importance,categories");
+  graphUrl.searchParams.set("$select", "id,conversationId,subject,bodyPreview,body,from,toRecipients,receivedDateTime,importance,categories");
   graphUrl.searchParams.set("$orderby", "receivedDateTime desc");
   graphUrl.searchParams.set("$filter", `receivedDateTime ge ${dateFilter}`); // Get messages from last 90 days
 
@@ -107,8 +111,12 @@ export async function fetchOutlookMessages(
 
 /**
  * Extract email metadata from Outlook message
+ * Now includes full body for AI analysis
  */
 export function extractOutlookMetadata(message: OutlookMessage) {
+  // Extract full body (prefer body.content, fallback to bodyPreview)
+  const fullBody = message.body?.content || message.bodyPreview || "";
+
   return {
     messageId: message.id,
     threadId: message.conversationId,
@@ -116,6 +124,7 @@ export function extractOutlookMetadata(message: OutlookMessage) {
     to: message.toRecipients?.[0]?.emailAddress?.address || "",
     subject: message.subject || "",
     snippet: message.bodyPreview || "",
+    fullBody,
     receivedAt: message.receivedDateTime,
     importance: message.importance,
     categories: message.categories || [],
