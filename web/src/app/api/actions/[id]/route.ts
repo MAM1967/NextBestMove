@@ -26,21 +26,10 @@ export async function GET(
 
     const { id: actionId } = await params;
 
-    // Fetch action with lead relationship
+    // Fetch action (without join to avoid PostgREST ambiguity)
     const { data: action, error: actionError } = await supabase
       .from("actions")
-      .select(
-        `
-        *,
-        leads (
-          id,
-          name,
-          url,
-          notes,
-          status
-        )
-      `
-      )
+      .select("*")
       .eq("id", actionId)
       .eq("user_id", user.id)
       .single();
@@ -50,6 +39,24 @@ export async function GET(
         { error: "Action not found" },
         { status: 404 }
       );
+    }
+
+    // Fetch lead separately if action has a person_id
+    let lead: any = null;
+    if (action.person_id) {
+      const { data: fetchedLead, error: leadError } = await supabase
+        .from("leads")
+        .select("id, name, linkedin_url, email, phone_number, url, notes, status")
+        .eq("id", action.person_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (leadError) {
+        console.error("Error fetching lead for action:", leadError);
+        // Continue without lead if there's an error fetching it
+      } else {
+        lead = fetchedLead;
+      }
     }
 
     // Derive action history from timestamps
@@ -115,6 +122,7 @@ export async function GET(
     return NextResponse.json({
       action: {
         ...action,
+        leads: lead, // Attach the fetched lead
         history,
         relatedActions,
       },

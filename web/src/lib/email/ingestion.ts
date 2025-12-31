@@ -7,6 +7,48 @@ import { fetchOutlookMessages, extractOutlookMetadata } from "./outlook";
 import type { EmailProvider } from "./providers";
 
 /**
+ * Create an action from an AI-recommended email signal
+ */
+async function createActionFromEmailSignal(
+  userId: string,
+  personId: string,
+  actionType: string,
+  description: string,
+  dueDate: string,
+  emailMetadataId: string
+): Promise<string | null> {
+  try {
+    const supabase = createAdminClient();
+    
+    const { data: action, error } = await supabase
+      .from("actions")
+      .insert({
+        user_id: userId,
+        person_id: personId,
+        action_type: actionType,
+        description: description,
+        due_date: dueDate,
+        state: "NEW",
+        auto_created: true,
+        notes: `Auto-created from email signal (email_metadata_id: ${emailMetadataId})`,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error(`[Email Ingestion] Error creating action from signal:`, error);
+      return null;
+    }
+
+    console.log(`[Email Ingestion] ✅ Created action ${action.id} from email signal`);
+    return action.id;
+  } catch (error) {
+    console.error(`[Email Ingestion] Error creating action from signal:`, error);
+    return null;
+  }
+}
+
+/**
  * Match email sender to a relationship (lead) by hashed email
  */
 async function matchEmailToRelationship(
@@ -153,6 +195,19 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
             userModel
           );
 
+          // Calculate recommended due date
+          let recommendedDueDate: string | null = null;
+          if (signals.recommendedAction?.due_date_days !== null && signals.recommendedAction?.due_date_days !== undefined) {
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + signals.recommendedAction.due_date_days);
+            recommendedDueDate = dueDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+          } else if (signals.recommendedAction?.action_type) {
+            // Default to tomorrow if action is recommended but no specific due_date_days
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            recommendedDueDate = tomorrow.toISOString().split("T")[0];
+          }
+
           // Check if metadata already exists
           const { data: existing } = await supabase
             .from("email_metadata")
@@ -181,29 +236,48 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
           }
 
           // Insert email metadata (only for matched relationships)
-          const { error } = await supabase.from("email_metadata").insert({
-            user_id: userId,
-            email_connection_id: connection.id,
-            message_id: metadata.messageId,
-            thread_id: metadata.threadId,
-            from_email_hash: fromEmailHash,
-            to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
-            subject: metadata.subject,
-            snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
-            full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
-            received_at: metadata.receivedAt,
-            person_id: personId,
-            last_topic: signals.topic,
-            ask: signals.asks.length > 0 ? signals.asks[0] : null,
-            open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
-            priority: signals.priority,
-            sentiment: signals.sentiment,
-            intent: signals.intent,
-            processed_at: new Date().toISOString(),
-          });
+          const { error, data: insertedEmail } = await supabase
+            .from("email_metadata")
+            .insert({
+              user_id: userId,
+              email_connection_id: connection.id,
+              message_id: metadata.messageId,
+              thread_id: metadata.threadId,
+              from_email_hash: fromEmailHash,
+              to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
+              subject: metadata.subject,
+              snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
+              full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
+              received_at: metadata.receivedAt,
+              person_id: personId,
+              last_topic: signals.topic,
+              ask: signals.asks.length > 0 ? signals.asks[0] : null,
+              open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
+              priority: signals.priority,
+              sentiment: signals.sentiment,
+              intent: signals.intent,
+              recommended_action_type: signals.recommendedAction?.action_type || null,
+              recommended_action_description: signals.recommendedAction?.description || null,
+              recommended_due_date: recommendedDueDate,
+              processed_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
 
-          if (!error) {
+          if (!error && insertedEmail) {
             ingestedCount++;
+            
+            // If AI recommended an action, create it
+            if (signals.recommendedAction?.action_type && recommendedDueDate) {
+              await createActionFromEmailSignal(
+                userId,
+                personId,
+                signals.recommendedAction.action_type,
+                signals.recommendedAction.description || `Follow up on: ${signals.topic}`,
+                recommendedDueDate,
+                insertedEmail.id
+              );
+            }
           } else {
             console.error("Error ingesting Gmail metadata:", error);
           }
@@ -283,6 +357,19 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         userModel
       );
 
+      // Calculate recommended due date
+      let recommendedDueDate: string | null = null;
+      if (signals.recommendedAction?.due_date_days !== null && signals.recommendedAction?.due_date_days !== undefined) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + signals.recommendedAction.due_date_days);
+        recommendedDueDate = dueDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+      } else if (signals.recommendedAction?.action_type) {
+        // Default to tomorrow if action is recommended but no specific due_date_days
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        recommendedDueDate = tomorrow.toISOString().split("T")[0];
+      }
+
       // Check if metadata already exists
       const { data: existing } = await supabase
         .from("email_metadata")
@@ -311,30 +398,49 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       }
 
       // Insert email metadata (only for matched relationships)
-      const { error } = await supabase.from("email_metadata").insert({
-        user_id: userId,
-        email_connection_id: connection.id,
-        message_id: metadata.messageId,
-        thread_id: metadata.threadId,
-        from_email_hash: fromEmailHash,
-        to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
-        subject: metadata.subject,
-        snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
-        full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
-        received_at: metadata.receivedAt,
-        person_id: personId,
-        last_topic: signals.topic,
-        ask: signals.asks.length > 0 ? signals.asks[0] : null,
-        open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
-        labels: metadata.categories || null,
-        priority: signals.priority,
-        sentiment: signals.sentiment,
-        intent: signals.intent,
-        processed_at: new Date().toISOString(),
-      });
+      const { error, data: insertedEmail } = await supabase
+        .from("email_metadata")
+        .insert({
+          user_id: userId,
+          email_connection_id: connection.id,
+          message_id: metadata.messageId,
+          thread_id: metadata.threadId,
+          from_email_hash: fromEmailHash,
+          to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
+          subject: metadata.subject,
+          snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
+          full_body: fullBodyText.substring(0, 10000), // Limit to 10KB for storage
+          received_at: metadata.receivedAt,
+          person_id: personId,
+          last_topic: signals.topic,
+          ask: signals.asks.length > 0 ? signals.asks[0] : null,
+          open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
+          labels: metadata.categories || null,
+          priority: signals.priority,
+          sentiment: signals.sentiment,
+          intent: signals.intent,
+          recommended_action_type: signals.recommendedAction?.action_type || null,
+          recommended_action_description: signals.recommendedAction?.description || null,
+          recommended_due_date: recommendedDueDate,
+          processed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-      if (!error) {
+      if (!error && insertedEmail) {
         ingestedCount++;
+        
+        // If AI recommended an action, create it
+        if (signals.recommendedAction?.action_type && recommendedDueDate) {
+          await createActionFromEmailSignal(
+            userId,
+            personId,
+            signals.recommendedAction.action_type,
+            signals.recommendedAction.description || `Follow up on: ${signals.topic}`,
+            recommendedDueDate,
+            insertedEmail.id
+          );
+        }
       } else {
         console.error("Error ingesting Outlook metadata:", error);
       }
