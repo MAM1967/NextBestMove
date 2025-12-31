@@ -28,10 +28,13 @@ export async function fetchGmailMessages(
   userId: string,
   maxResults: number = 50
 ): Promise<GmailMessage[]> {
+  console.log(`[Gmail Fetch] Starting fetch for user ${userId}, maxResults: ${maxResults}`);
   const accessToken = await getEmailAccessToken(userId, "gmail");
   if (!accessToken) {
+    console.error(`[Gmail Fetch] No valid access token for Gmail (user: ${userId})`);
     throw new Error("No valid access token for Gmail");
   }
+  console.log(`[Gmail Fetch] Access token obtained successfully`);
 
   // First, get list of message IDs
   // Fetch emails from last 90 days (1 quarter) to capture less frequent relationships

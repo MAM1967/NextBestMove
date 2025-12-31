@@ -25,10 +25,13 @@ export async function fetchOutlookMessages(
   userId: string,
   top: number = 50
 ): Promise<OutlookMessage[]> {
+  console.log(`[Outlook Fetch] Starting fetch for user ${userId}, top: ${top}`);
   const accessToken = await getEmailAccessToken(userId, "outlook");
   if (!accessToken) {
+    console.error(`[Outlook Fetch] No valid access token for Outlook (user: ${userId})`);
     throw new Error("No valid access token for Outlook");
   }
+  console.log(`[Outlook Fetch] Access token obtained successfully`);
 
   // Fetch emails from last 90 days (1 quarter) to capture less frequent relationships
   // Relationships represent <5% of email volume, so we need to go back further
