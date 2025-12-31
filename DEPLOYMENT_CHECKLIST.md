@@ -1,8 +1,14 @@
 # Deployment Checklist
 
+> **⚠️ MANDATORY: Read this entire file before every deployment. Do not skip this step.**
+
 > **Reference:** See `nextbestmove_cursor_guide.md` lines 209-303 for full deployment documentation.
 
 ## ⚠️ CRITICAL: Before Every Deployment
+
+**STEP 0: READ THIS CHECKLIST FIRST**
+- [ ] **I have read this entire checklist before proceeding**
+- [ ] **I understand the workflow: Keep changes uncommitted, let script commit them**
 
 ### Pre-Deployment Checklist
 
