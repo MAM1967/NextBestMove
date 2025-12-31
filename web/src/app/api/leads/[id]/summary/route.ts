@@ -116,8 +116,34 @@ export async function GET(
       .filter((topic, index, self) => self.indexOf(topic) === index) // Unique
       .slice(0, 5);
     
-    // Combine and deduplicate topics
-    const allTopics = [...new Set([...leadNotesTopics, ...actionNotesTopics])].slice(0, 5);
+    // Fetch email topics from email_metadata (last 30 days)
+    const { data: emailMetadata, error: emailError } = await supabase
+      .from("email_metadata")
+      .select("last_topic")
+      .eq("user_id", user.id)
+      .eq("person_id", id)
+      .not("last_topic", "is", null)
+      .gte("received_at", thirtyDaysAgo.toISOString())
+      .order("received_at", { ascending: false })
+      .limit(50);
+
+    // Extract email topics (AI-extracted topics from emails)
+    const emailTopics: string[] = [];
+    if (emailMetadata && !emailError) {
+      emailMetadata.forEach((email) => {
+        if (email.last_topic && typeof email.last_topic === "string") {
+          // Normalize topic (capitalize first letter, trim)
+          const normalizedTopic = email.last_topic.trim();
+          if (normalizedTopic && !emailTopics.includes(normalizedTopic)) {
+            emailTopics.push(normalizedTopic);
+          }
+        }
+      });
+    }
+    
+    // Combine and deduplicate topics from notes and emails
+    // Prioritize email topics (AI-extracted) but include notes topics
+    const allTopics = [...new Set([...emailTopics, ...leadNotesTopics, ...actionNotesTopics])].slice(0, 10);
 
     // Momentum snapshot (from lead fields)
     const momentumScore = lead.momentum_score || null;
