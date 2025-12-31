@@ -177,3 +177,64 @@ export function extractGmailMetadata(message: GmailMessage) {
       : new Date(message.internalDate).toISOString(),
   };
 }
+
+/**
+ * Search Gmail for messages from a specific email address
+ * This is more efficient than fetching all messages and filtering
+ */
+export async function searchGmailBySender(
+  userId: string,
+  senderEmail: string,
+  maxResults: number = 50
+): Promise<GmailMessage[]> {
+  const accessToken = await getEmailAccessToken(userId, "gmail");
+  if (!accessToken) {
+    throw new Error("No valid access token for Gmail");
+  }
+
+  // Search for emails from the specific sender in the last 90 days
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const dateFilter = ninetyDaysAgo.toISOString().split("T")[0];
+
+  const listUrl = new URL(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+  );
+  listUrl.searchParams.set("maxResults", maxResults.toString());
+  // Search for emails from this specific sender
+  listUrl.searchParams.set("q", `from:${senderEmail} after:${dateFilter}`);
+
+  const listResponse = await fetch(listUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!listResponse.ok) {
+    throw new Error(`Gmail API error: ${listResponse.statusText}`);
+  }
+
+  const listData: GmailMessageListResponse = await listResponse.json();
+
+  if (!listData.messages || listData.messages.length === 0) {
+    return [];
+  }
+
+  // Fetch full message details (simplified - no rate limiting for targeted search)
+  const messages: GmailMessage[] = [];
+  for (const msg of listData.messages) {
+    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+
+    const messageResponse = await fetch(messageUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (messageResponse.ok) {
+      messages.push(await messageResponse.json());
+    }
+  }
+
+  return messages;
+}
