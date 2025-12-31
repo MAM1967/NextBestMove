@@ -62,91 +62,135 @@ async function matchEmailToRelationship(
 
 /**
  * Ingest email metadata from Gmail
+ * Strategy: Search for emails from each relationship's email address
+ * This ensures we find emails even if they're not in the top 50 general messages
  */
 export async function ingestGmailMetadata(userId: string): Promise<number> {
   try {
     console.log(`[Email Ingestion] Starting Gmail metadata ingestion for user ${userId}`);
-    const messages = await fetchGmailMessages(userId, 50);
-    console.log(`[Email Ingestion] Fetched ${messages.length} Gmail messages`);
     const supabase = createAdminClient();
+    
+    // Get all active relationships with email addresses
+    const { data: leads, error: leadsError } = await supabase
+      .from("leads")
+      .select("id, name, email, url")
+      .eq("user_id", userId)
+      .eq("status", "ACTIVE");
+
+    if (leadsError) {
+      console.error(`[Email Ingestion] Error fetching leads:`, leadsError);
+      return 0;
+    }
+
+    // Collect all email addresses from relationships
+    const relationshipEmails: Array<{ leadId: string; leadName: string; email: string }> = [];
+    for (const lead of leads || []) {
+      if (lead.email) {
+        relationshipEmails.push({
+          leadId: lead.id,
+          leadName: lead.name,
+          email: lead.email,
+        });
+      }
+      // Also check legacy url field
+      if (lead.url?.startsWith("mailto:")) {
+        const email = lead.url.substring(7);
+        relationshipEmails.push({
+          leadId: lead.id,
+          leadName: lead.name,
+          email,
+        });
+      }
+    }
+
+    console.log(`[Email Ingestion] Found ${relationshipEmails.length} relationship email addresses to search for`);
+
+    if (relationshipEmails.length === 0) {
+      console.log(`[Email Ingestion] No relationship emails found, skipping Gmail ingestion`);
+      return 0;
+    }
+
+    // Search Gmail for emails from each relationship's email address
+    const { searchGmailBySender } = await import("./gmail");
     let ingestedCount = 0;
-    let skippedNoMatch = 0;
     let skippedAlreadyExists = 0;
 
-    for (const message of messages) {
-      const metadata = extractGmailMetadata(message);
-      const fromEmail = extractEmailAddress(metadata.from);
-      const fromEmailHash = hashEmailAddress(fromEmail);
-      
-      console.log(`[Email Ingestion] Processing Gmail message from: ${fromEmail} (hash: ${fromEmailHash})`);
-      
-      // Match to relationship if possible
-      const personId = await matchEmailToRelationship(userId, fromEmailHash);
+    for (const relEmail of relationshipEmails) {
+      try {
+        console.log(`[Email Ingestion] Searching Gmail for emails from: ${relEmail.email} (${relEmail.leadName})`);
+        const messages = await searchGmailBySender(userId, relEmail.email, 50);
+        console.log(`[Email Ingestion] Found ${messages.length} emails from ${relEmail.email}`);
 
-      // Only process emails from relationships the user is tracking
-      // Skip emails that don't match any relationship
-      if (!personId) {
-        skippedNoMatch++;
-        continue; // Skip emails from unknown senders (not in relationships)
-      }
+        for (const message of messages) {
+          const metadata = extractGmailMetadata(message);
+          const fromEmail = extractEmailAddress(metadata.from);
+          const fromEmailHash = hashEmailAddress(fromEmail);
+          
+          // We already know this matches because we searched by sender
+          const personId = relEmail.leadId;
 
-      // Extract signals
-      const signals = extractSignals(
-        metadata.subject,
-        metadata.snippet,
-        undefined
-      );
+          // Extract signals
+          const signals = extractSignals(
+            metadata.subject,
+            metadata.snippet,
+            undefined
+          );
 
-      // Check if metadata already exists
-      const { data: existing } = await supabase
-        .from("email_metadata")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("message_id", metadata.messageId)
-        .maybeSingle();
+          // Check if metadata already exists
+          const { data: existing } = await supabase
+            .from("email_metadata")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("message_id", metadata.messageId)
+            .maybeSingle();
 
-      if (existing) {
-        skippedAlreadyExists++;
-        continue; // Skip already ingested messages
-      }
+          if (existing) {
+            skippedAlreadyExists++;
+            continue; // Skip already ingested messages
+          }
 
-      // Get email connection ID
-      const { data: connection } = await supabase
-        .from("email_connections")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("provider", "gmail")
-        .eq("status", "active")
-        .single();
+          // Get email connection ID
+          const { data: connection } = await supabase
+            .from("email_connections")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("provider", "gmail")
+            .eq("status", "active")
+            .single();
 
-      if (!connection) {
-        console.error("No active Gmail connection found for user", userId);
-        continue;
-      }
+          if (!connection) {
+            console.error("No active Gmail connection found for user", userId);
+            continue;
+          }
 
-      // Insert email metadata (only for matched relationships)
-      const { error } = await supabase.from("email_metadata").insert({
-        user_id: userId,
-        email_connection_id: connection.id,
-        message_id: metadata.messageId,
-        thread_id: metadata.threadId,
-        from_email_hash: fromEmailHash,
-        to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
-        subject: metadata.subject,
-        snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
-        received_at: metadata.receivedAt,
-        person_id: personId,
-        last_topic: signals.topic,
-        ask: signals.asks.length > 0 ? signals.asks[0] : null,
-        open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
-        priority: signals.priority,
-        processed_at: new Date().toISOString(),
-      });
+          // Insert email metadata (only for matched relationships)
+          const { error } = await supabase.from("email_metadata").insert({
+            user_id: userId,
+            email_connection_id: connection.id,
+            message_id: metadata.messageId,
+            thread_id: metadata.threadId,
+            from_email_hash: fromEmailHash,
+            to_email_hash: hashEmailAddress(extractEmailAddress(metadata.to)),
+            subject: metadata.subject,
+            snippet: metadata.snippet.substring(0, 200), // Limit to 200 chars
+            received_at: metadata.receivedAt,
+            person_id: personId,
+            last_topic: signals.topic,
+            ask: signals.asks.length > 0 ? signals.asks[0] : null,
+            open_loops: signals.openLoops.length > 0 ? signals.openLoops : null,
+            priority: signals.priority,
+            processed_at: new Date().toISOString(),
+          });
 
-      if (!error) {
-        ingestedCount++;
-      } else {
-        console.error("Error ingesting Gmail metadata:", error);
+          if (!error) {
+            ingestedCount++;
+          } else {
+            console.error("Error ingesting Gmail metadata:", error);
+          }
+        }
+      } catch (error) {
+        console.error(`[Email Ingestion] Error searching for emails from ${relEmail.email}:`, error);
+        // Continue with other relationships even if one fails
       }
     }
 
@@ -157,7 +201,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       .eq("user_id", userId)
       .eq("provider", "gmail");
 
-    console.log(`[Email Ingestion] Gmail complete - Ingested: ${ingestedCount}, Skipped (no match): ${skippedNoMatch}, Skipped (exists): ${skippedAlreadyExists}`);
+    console.log(`[Email Ingestion] Gmail complete - Ingested: ${ingestedCount}, Skipped (exists): ${skippedAlreadyExists}`);
     return ingestedCount;
   } catch (error) {
     console.error("Error ingesting Gmail metadata:", error);
