@@ -30,11 +30,16 @@ export async function fetchOutlookMessages(
     throw new Error("No valid access token for Outlook");
   }
 
+  // Fetch emails from last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateFilter = thirtyDaysAgo.toISOString();
+  
   const graphUrl = new URL("https://graph.microsoft.com/v1.0/me/messages");
   graphUrl.searchParams.set("$top", top.toString());
   graphUrl.searchParams.set("$select", "id,conversationId,subject,bodyPreview,from,toRecipients,receivedDateTime,importance,categories");
   graphUrl.searchParams.set("$orderby", "receivedDateTime desc");
-  graphUrl.searchParams.set("$filter", "isRead eq false or isRead eq true"); // Get all messages
+  graphUrl.searchParams.set("$filter", `receivedDateTime ge ${dateFilter}`); // Get messages from last 30 days
 
   const response = await fetch(graphUrl.toString(), {
     headers: {

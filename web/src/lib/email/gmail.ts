@@ -34,9 +34,14 @@ export async function fetchGmailMessages(
   }
 
   // First, get list of message IDs
+  // Fetch emails from last 30 days to ensure we get older emails too
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateFilter = thirtyDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+  
   const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
   listUrl.searchParams.set("maxResults", maxResults.toString());
-  listUrl.searchParams.set("q", "in:inbox"); // Only inbox messages
+  listUrl.searchParams.set("q", `in:inbox after:${dateFilter}`); // Only inbox messages from last 30 days
 
   const listResponse = await fetch(listUrl.toString(), {
     headers: {
