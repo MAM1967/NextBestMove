@@ -56,7 +56,10 @@ export async function fetchGmailMessages(
 
   const listData: GmailMessageListResponse = await listResponse.json();
 
+  console.log(`[Gmail Fetch] Found ${listData.messages?.length || 0} messages in inbox from last 90 days`);
+
   if (!listData.messages || listData.messages.length === 0) {
+    console.log("[Gmail Fetch] No messages found, returning empty array");
     return [];
   }
 

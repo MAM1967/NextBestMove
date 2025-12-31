@@ -52,9 +52,13 @@ async function matchEmailToRelationship(
  */
 export async function ingestGmailMetadata(userId: string): Promise<number> {
   try {
+    console.log(`[Email Ingestion] Starting Gmail metadata ingestion for user ${userId}`);
     const messages = await fetchGmailMessages(userId, 50);
+    console.log(`[Email Ingestion] Fetched ${messages.length} Gmail messages`);
     const supabase = createAdminClient();
     let ingestedCount = 0;
+    let skippedNoMatch = 0;
+    let skippedAlreadyExists = 0;
 
     for (const message of messages) {
       const metadata = extractGmailMetadata(message);
@@ -67,6 +71,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       // Only process emails from relationships the user is tracking
       // Skip emails that don't match any relationship
       if (!personId) {
+        skippedNoMatch++;
         continue; // Skip emails from unknown senders (not in relationships)
       }
 
@@ -86,6 +91,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
         .maybeSingle();
 
       if (existing) {
+        skippedAlreadyExists++;
         continue; // Skip already ingested messages
       }
 
@@ -136,6 +142,7 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
       .eq("user_id", userId)
       .eq("provider", "gmail");
 
+    console.log(`[Email Ingestion] Gmail complete - Ingested: ${ingestedCount}, Skipped (no match): ${skippedNoMatch}, Skipped (exists): ${skippedAlreadyExists}`);
     return ingestedCount;
   } catch (error) {
     console.error("Error ingesting Gmail metadata:", error);
@@ -148,9 +155,13 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
  */
 export async function ingestOutlookMetadata(userId: string): Promise<number> {
   try {
+    console.log(`[Email Ingestion] Starting Outlook metadata ingestion for user ${userId}`);
     const messages = await fetchOutlookMessages(userId, 50);
+    console.log(`[Email Ingestion] Fetched ${messages.length} Outlook messages`);
     const supabase = createAdminClient();
     let ingestedCount = 0;
+    let skippedNoMatch = 0;
+    let skippedAlreadyExists = 0;
 
     for (const message of messages) {
       const metadata = extractOutlookMetadata(message);
@@ -163,6 +174,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       // Only process emails from relationships the user is tracking
       // Skip emails that don't match any relationship
       if (!personId) {
+        skippedNoMatch++;
         continue; // Skip emails from unknown senders (not in relationships)
       }
 
@@ -182,6 +194,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
         .maybeSingle();
 
       if (existing) {
+        skippedAlreadyExists++;
         continue; // Skip already ingested messages
       }
 
@@ -233,6 +246,7 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
       .eq("user_id", userId)
       .eq("provider", "outlook");
 
+    console.log(`[Email Ingestion] Outlook complete - Ingested: ${ingestedCount}, Skipped (no match): ${skippedNoMatch}, Skipped (exists): ${skippedAlreadyExists}`);
     return ingestedCount;
   } catch (error) {
     console.error("Error ingesting Outlook metadata:", error);
