@@ -60,26 +60,75 @@ export async function fetchGmailMessages(
     return [];
   }
 
-  // Fetch full message details for each message
-  const messagePromises = listData.messages.map(async (msg) => {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+  // Fetch full message details with proper rate limiting
+  // Based on Gmail API official limits:
+  // - Per-user rate limit: 250 quota units/second (moving average)
+  // - messages.get consumes 5 quota units each
+  // - Maximum: 50 requests/second (250/5)
+  // - We limit to 40 requests/second for safety margin (~25ms between requests)
+  // Reference: https://developers.google.com/workspace/gmail/api/reference/quota
+  const messages: GmailMessage[] = [];
+  const REQUESTS_PER_SECOND = 40;
+  const DELAY_MS = 1000 / REQUESTS_PER_SECOND; // ~25ms between requests
+  
+  /**
+   * Fetch a single message with exponential backoff retry
+   */
+  async function fetchMessageWithRetry(
+    messageId: string,
+    maxRetries: number = 3
+  ): Promise<GmailMessage | null> {
+    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
     
-    const messageResponse = await fetch(messageUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const response = await fetch(messageUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
-    if (!messageResponse.ok) {
-      console.error(`Failed to fetch Gmail message ${msg.id}:`, messageResponse.statusText);
+      if (response.ok) {
+        return response.json() as Promise<GmailMessage>;
+      }
+
+      // Handle rate limiting (429) with exponential backoff
+      if (response.status === 429) {
+        // Check for Retry-After header
+        const retryAfter = response.headers.get("Retry-After");
+        const waitTime = retryAfter 
+          ? parseInt(retryAfter, 10) * 1000 
+          : Math.min(1000 * Math.pow(2, attempt), 8000); // Exponential backoff: 1s, 2s, 4s, max 8s
+        
+        if (attempt < maxRetries - 1) {
+          console.warn(`Gmail rate limited for message ${messageId}, retrying after ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+      }
+
+      // Other errors - log and return null
+      console.error(`Failed to fetch Gmail message ${messageId}:`, response.status, response.statusText);
       return null;
     }
 
-    return messageResponse.json() as Promise<GmailMessage>;
-  });
+    return null;
+  }
 
-  const messages = await Promise.all(messagePromises);
-  return messages.filter((msg): msg is GmailMessage => msg !== null);
+  // Fetch messages sequentially with rate limiting
+  // This ensures we stay under 40 requests/second
+  for (const msg of listData.messages) {
+    const message = await fetchMessageWithRetry(msg.id);
+    if (message) {
+      messages.push(message);
+    }
+    
+    // Rate limit: wait between requests to stay under 40/sec
+    if (messages.length < listData.messages.length) {
+      await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+    }
+  }
+  
+  return messages;
 }
 
 /**
