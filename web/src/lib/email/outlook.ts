@@ -97,7 +97,9 @@ export async function fetchOutlookMessages(
 
   const response = await fetchWithRetry(graphUrl.toString());
   const data: OutlookMessageListResponse = await response.json();
-  return data.value || [];
+  const messages = data.value || [];
+  console.log(`[Outlook Fetch] Found ${messages.length} messages from last 90 days`);
+  return messages;
 }
 
 /**
