@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActionListRow } from "./ActionListRow";
+import { UnifiedActionCard } from "../components/UnifiedActionCard";
 import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
@@ -370,6 +370,28 @@ export default function ActionsPage() {
     }
   };
 
+  const handleSetPromise = async (actionId: string, promisedDueAt: string | null) => {
+    try {
+      const response = await fetch(`/api/actions/${actionId}/promise`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promised_due_at: promisedDueAt }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update promise");
+      }
+
+      await fetchActions();
+    } catch (err) {
+      addToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to update promise",
+      });
+    }
+  };
+
   /**
    * Bucket actions using decision engine lanes if available, otherwise use legacy heuristics
    */
@@ -542,19 +564,19 @@ export default function ActionsPage() {
                     Nothing urgent right now.
                   </p>
                 ) : (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-4">
                     {needsAttentionNow.map((action) => (
-                      <ActionListRow
+                      <UnifiedActionCard
                         key={action.id}
                         action={action}
-                        variant="urgent"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onClick={(id) => setDetailActionId(id)}
+                        onSetPromise={handleSetPromise}
+                        onClick={(action) => setDetailActionId(action.id)}
                       />
                     ))}
                   </div>
@@ -574,19 +596,19 @@ export default function ActionsPage() {
                     No active conversations right now.
                   </p>
                 ) : (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-4">
                     {conversationsInMotion.map((action) => (
-                      <ActionListRow
+                      <UnifiedActionCard
                         key={action.id}
                         action={action}
-                        variant="motion"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onClick={(id) => setDetailActionId(id)}
+                        onSetPromise={handleSetPromise}
+                        onClick={(action) => setDetailActionId(action.id)}
                       />
                     ))}
                   </div>
@@ -606,19 +628,19 @@ export default function ActionsPage() {
                     No nurture actions right now.
                   </p>
                 ) : (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-4">
                     {stayTopOfMind.map((action) => (
-                      <ActionListRow
+                      <UnifiedActionCard
                         key={action.id}
                         action={action}
-                        variant="nurture"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onClick={(id) => setDetailActionId(id)}
+                        onSetPromise={handleSetPromise}
+                        onClick={(action) => setDetailActionId(action.id)}
                       />
                     ))}
                   </div>
@@ -638,19 +660,19 @@ export default function ActionsPage() {
                     No optional actions right now.
                   </p>
                 ) : (
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 space-y-4">
                     {optionalBackground.map((action) => (
-                      <ActionListRow
+                      <UnifiedActionCard
                         key={action.id}
                         action={action}
-                        variant="optional"
                         onComplete={handleComplete}
                         onSnooze={(id) => setSnoozeActionId(id)}
                         onAddNote={handleAddNote}
                         onGotReply={handleGotReply}
                         onViewPrompt={(action) => setViewPromptAction(action)}
                         onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onClick={(id) => setDetailActionId(id)}
+                        onSetPromise={handleSetPromise}
+                        onClick={(action) => setDetailActionId(action.id)}
                       />
                     ))}
                   </div>

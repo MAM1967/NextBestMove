@@ -57,5 +57,8 @@ export interface LeadBasic {
   preferred_channel?: PreferredChannel;
   last_interaction_at?: string | null;
   cadence_days?: number | null;
+  // Relationship state machine fields (NEX-46)
+  relationship_state?: "UNENGAGED" | "ACTIVE_CONVERSATION" | "OPPORTUNITY" | "WARM_BUT_PASSIVE" | "DORMANT" | null;
+  state_updated_at?: string | null;
 }
 
