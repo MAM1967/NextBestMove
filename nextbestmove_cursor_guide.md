@@ -405,6 +405,12 @@ NextBestMove/
 
 ### Best Practices
 
+**File Modification:**
+
+- **ALWAYS read files first** - Check the current state of a file before modifying it
+- Never assume file contents - Read the file to understand its current structure and content
+- This prevents errors from mismatched search/replace operations and ensures changes align with existing code
+
 **Error Handling:**
 
 - Graceful degradation (never block users)
