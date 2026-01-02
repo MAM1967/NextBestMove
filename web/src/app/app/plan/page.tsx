@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActionCard } from "../actions/ActionCard";
+import { UnifiedActionCard } from "../components/UnifiedActionCard";
 import { FollowUpFlowModal } from "../actions/FollowUpFlowModal";
 import { FollowUpSchedulingModal } from "../actions/FollowUpSchedulingModal";
 import { SnoozeActionModal } from "../actions/SnoozeActionModal";
@@ -11,6 +11,7 @@ import { CelebrationBanner } from "../components/CelebrationBanner";
 import { PreCallBriefCarousel } from "../components/PreCallBriefCarousel";
 import { PreCallBriefModal } from "../components/PreCallBriefModal";
 import { CapacityOverrideControl } from "../components/CapacityOverrideControl";
+import { DurationSelector } from "../components/DurationSelector";
 import { Action } from "../actions/types";
 import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
 import type { CapacityLevel } from "@/lib/plan/capacity";
@@ -56,6 +57,7 @@ export default function DailyPlanPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [capacityOverride, setCapacityOverride] = useState<CapacityLevel | null>(null);
   const [capacityOverrideReason, setCapacityOverrideReason] = useState<string | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSubscriptionStatus();
@@ -526,7 +528,19 @@ export default function DailyPlanPage() {
   const actions = dailyPlan?.actions || [];
   const fastWin = dailyPlan?.fast_win;
   // Fast win is already excluded from actions array in API, but filter just to be safe
-  const regularActions = actions.filter((a) => a.id !== fastWin?.id);
+  let regularActions = actions.filter((a) => a.id !== fastWin?.id);
+  
+  // Filter by duration if selected
+  if (selectedDuration !== null) {
+    regularActions = regularActions.filter((action) => {
+      if (!action.estimated_minutes) return false;
+      return action.estimated_minutes <= selectedDuration;
+    });
+    // Also filter fast win if it doesn't match duration
+    if (fastWin && fastWin.estimated_minutes && fastWin.estimated_minutes > selectedDuration) {
+      // Don't show fast win if it exceeds selected duration
+    }
+  }
 
   // Include fast win in counts for progress calculation
   const allActionsInPlan = [...(fastWin ? [fastWin] : []), ...actions];
@@ -571,21 +585,44 @@ export default function DailyPlanPage() {
           )}
         </div>
 
-        {/* Capacity Override Control */}
+        {/* Daily Capacity Card */}
         {dailyPlan && (
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <CapacityOverrideControl
-              date={new Date().toISOString().split("T")[0]}
-              currentOverride={capacityOverride}
-              currentOverrideReason={capacityOverrideReason}
-              onOverrideChange={() => {
-                fetchCapacityOverride();
-                // Optionally regenerate plan when override changes
-                // handleGeneratePlan();
-              }}
-              showLabel={true}
-              compact={false}
-            />
+            <div className="space-y-4">
+              <CapacityOverrideControl
+                date={new Date().toISOString().split("T")[0]}
+                currentOverride={capacityOverride}
+                currentOverrideReason={capacityOverrideReason}
+                onOverrideChange={() => {
+                  fetchCapacityOverride();
+                  // Optionally regenerate plan when override changes
+                  // handleGeneratePlan();
+                }}
+                showLabel={true}
+                compact={false}
+              />
+              
+              {/* Show auto capacity details when Auto is selected */}
+              {!capacityOverride && dailyPlan.capacity && (
+                <div className="rounded-lg bg-zinc-50 p-3 text-sm">
+                  <p className="text-zinc-700">
+                    <span className="font-medium">Auto Capacity</span> is set at{" "}
+                    <span className="font-semibold">
+                      {totalCount} task{totalCount !== 1 ? "s" : ""}
+                    </span>{" "}
+                    based on {dailyPlan.free_minutes || 0} minutes of availability today.
+                  </p>
+                </div>
+              )}
+              
+              {/* Duration Filter */}
+              <div className="border-t border-zinc-200 pt-4">
+                <DurationSelector
+                  selectedDuration={selectedDuration}
+                  onDurationChange={setSelectedDuration}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -773,16 +810,14 @@ export default function DailyPlanPage() {
                 Under 5 minutes
               </span>
             </div>
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
-              <ActionCard
-                action={fastWin}
-                onComplete={handleActionComplete}
-                onSnooze={(id) => setSnoozeActionId(id)}
-                onAddNote={handleAddNote}
-                onGotReply={handleGotReply}
-                onSetPromise={handleSetPromise}
-              />
-            </div>
+            <UnifiedActionCard
+              action={fastWin}
+              onComplete={handleActionComplete}
+              onSnooze={(id) => setSnoozeActionId(id)}
+              onAddNote={handleAddNote}
+              onGotReply={handleGotReply}
+              onSetPromise={handleSetPromise}
+            />
           </div>
         )}
 
@@ -792,9 +827,9 @@ export default function DailyPlanPage() {
             <h2 className="text-xl font-semibold text-zinc-900">
               Your Actions
             </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {regularActions.map((action) => (
-                <ActionCard
+                <UnifiedActionCard
                   key={action.id}
                   action={action}
                   onComplete={handleActionComplete}

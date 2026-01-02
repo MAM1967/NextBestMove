@@ -337,32 +337,16 @@ export function EditLeadModal({
             )}
           </div>
 
-          <div>
-            <label
-              htmlFor="edit-url"
-              className="block text-sm font-medium text-zinc-900"
-            >
-              Other URL (optional)
-            </label>
+          {/* Other URL field removed from UI but kept in database */}
+          <div className="hidden">
             <input
               id="edit-url"
               type="url"
-              value={formData.url}
+              value={formData.url || ""}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, url: e.target.value }))
               }
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-              placeholder="https://crm.example.com/contact/123"
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              CRM link or other URL (optional). At least one contact method (LinkedIn, email, or phone) is recommended for signals.
-            </p>
-            {errors.url && (
-              <p className="mt-1 text-xs text-red-600">{errors.url}</p>
-            )}
-            {errors.contact && (
-              <p className="mt-1 text-xs text-red-600">{errors.contact}</p>
-            )}
           </div>
 
           <div>
@@ -370,7 +354,7 @@ export function EditLeadModal({
               htmlFor="edit-notes"
               className="block text-sm font-medium text-zinc-900"
             >
-              Notes (optional)
+              Relationship Notes
             </label>
             <textarea
               id="edit-notes"

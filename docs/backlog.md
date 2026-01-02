@@ -210,6 +210,24 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Fixed database trigger `update_user_calendar_status()` to properly handle DELETE operations. The original trigger only used `NEW.user_id` which doesn't exist on DELETE - now correctly uses `OLD.user_id` for DELETE and `NEW.user_id` for INSERT/UPDATE. This ensures the `calendar_connected` flag updates correctly when calendars are disconnected. Migration: `supabase/migrations/202512160001_fix_calendar_connected_trigger.sql`_  
        ⚠️ **PRODUCTION DEPLOYMENT PENDING:** This migration has been applied to staging only. Must be applied to production database before deploying calendar disconnect fixes to production.
 
+- [ ] **Relationship State Machine Implementation** 🔴 **NEX-46**
+       _Implement relationship state machine based on Decision Engine refinement document. States: UNENGAGED, ACTIVE_CONVERSATION, OPPORTUNITY, WARM_BUT_PASSIVE, DORMANT. Add database field, detection logic, transition rules, and UI components. Database: Add `relationship_state` enum and column to `leads` table, add `state_updated_at` timestamp. Logic: Auto-detect state from actions, emails, signals; enforce valid action types per state; handle state transitions. UI: Display current state in ActionDetailModal, show state transition options, update state based on actions/emails._
+
+- [ ] **Today Page UI Improvements** 🔴 **NEX-47**
+       _Refine Today page for better overview and consistency. Remove duration filter (move to Daily Plan), replace numeric score with qualitative urgency/value labels (matches Signals 2x2 matrix), replace "Today's Plan" section with compact summary + link, fix overdue relationships counter (ensure consistency across pages), add calendar event count and time until next event, show capacity level (Auto/Micro/Light/Standard/Heavy), simplify layout: keep Best Action, overdue counts, calendar info, capacity._
+
+- [ ] **Unified Action Card Component** 🔴 **NEX-48**
+       _Create unified action card component to ensure consistent look/feel across all pages (Today, Daily Plan, Actions). Create `UnifiedActionCard.tsx` component matching Actions page design, replace `ActionCard`, `ActionListRow`, and `DurationFilteredActionCard` instances, ensure same styling, buttons, state badges, and information hierarchy everywhere, test responsive design._
+
+- [ ] **Relationships Page Improvements** 🔴 **NEX-50**
+       _Enhance Relationships page with better email signals, notes organization, and UI cleanup. Remove "View all" link from Top Overdue Relationships card, fix overdue relationship card click to use same view/edit screen, improve email signals: show AI insights, attachment prompts, follow-up topics, rename "Notes (Optional)" to "Relationship Notes" or merge with Meeting Notes, remove "Other URL" field from UI (keep in database), enhance Notes Summary: AI-organized topics from notes + emails, last discussion per topic, action items per topic, pending/overdue status, remove Momentum and Trend from Notes Summary (keep Interactions and Last 30 days)._
+
+- [ ] **Actions Page Improvements** 🔴 **NEX-51**
+       _Refine Actions page to remove CRM features and add relationship state tracking. Move relationship name to top of ActionDetailModal, remove Deal Progression section from UI (keep in database), add relationship state machine UI to ActionDetailModal, add action completion tracking: "Next call calendered", "Replied to email with topics", "Got response" with notes, "Close" button creates new action if needed, moves notes forward, updates relationship state._
+
+- [ ] **Signals 2x2 Urgency/Value Matrix** 🔴 **NEX-52**
+       _Implement 2x2 urgency/value matrix on Signals page to visualize relationship priorities. Calculate urgency: days since last interaction + overdue actions + email signals. Calculate value: tier + response rate + deal potential. Create 2x2 matrix UI with four quadrants (Low/Low, Low/High, High/Low, High/High), group relationships by quadrant, display relationship cards in each group, update Best Action to use same qualitative labels (matches Signals quadrant)._
+
 ---
 
 ## 🟡 P2 – Nice-to-Have / v0.2 Candidates
@@ -244,6 +262,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
 - [x] **Manual "Busy / Light day" capacity override** ✅ **NEX-22**
       _Allow users to manually override their daily capacity calculation to indicate a busy or light day. UI control to set daily capacity override, override affects daily plan generation, can be set per day or as a default preference._
+
+- [ ] **Daily Plan Page Improvements** 🟡 **NEX-49**
+       _Improve Daily Plan page consistency and functionality. Move duration filter (5min/10min/15min) to Daily Capacity card, show "Auto Capacity is set at X number of tasks based on availability" when Auto selected, unify Fast Win card design with action cards, replace action cards with UnifiedActionCard component._
+
+- [ ] **Weekly Reviews - Remove CRM Features** 🟡 **NEX-53**
+       _Remove CRM-like features from Weekly Reviews page to align with NextBestMove positioning. Remove "Deeper Insights" section from UI, remove deal progression references, keep database fields but hide from UI._
 - [x] **Action detail modal / history view** ✅ **NEX-23**
        _Create a detailed view for actions showing full history, notes, and related interactions. Modal or page showing action details, display action history (state changes, dates), show related notes and interactions, link to related relationship/lead._
 - [ ] Additional login providers (Apple, LinkedIn, etc.)

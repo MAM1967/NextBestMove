@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SignalsClient } from "./SignalsClient";
+import { UrgencyValueMatrix } from "./UrgencyValueMatrix";
 
 export default async function SignalsPage() {
   const supabase = await createClient();
@@ -26,7 +27,12 @@ export default async function SignalsPage() {
         </p>
       </header>
 
-      <SignalsClient />
+      <UrgencyValueMatrix />
+      
+      <div className="mt-8">
+        <h2 className="mb-4 text-xl font-semibold text-zinc-900">Email Signals</h2>
+        <SignalsClient />
+      </div>
     </div>
   );
 }

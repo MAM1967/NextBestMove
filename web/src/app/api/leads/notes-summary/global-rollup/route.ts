@@ -56,11 +56,44 @@ export async function GET(request: Request) {
     }
 
     // Get relationships with overdue next_touch_due_at
+    // Use same logic as /api/leads/overdue: overdue if has overdue actions, next touch overdue, or no interaction in 90+ days
+    const relationshipIds = relationships?.map((r) => r.id) || [];
+    const { data: allPendingActions } = await supabase
+      .from("actions")
+      .select("id, person_id, due_date")
+      .eq("user_id", user.id)
+      .in("person_id", relationshipIds)
+      .in("state", ["NEW", "SENT", "SNOOZED"]);
+
     const overdueRelationships = relationships?.filter((rel) => {
-      if (!rel.next_touch_due_at) return false;
-      const nextTouch = new Date(rel.next_touch_due_at);
-      nextTouch.setHours(0, 0, 0, 0);
-      return nextTouch < today;
+      // Count overdue actions for this relationship
+      const relationshipActions = (allPendingActions || []).filter(
+        (action) => action.person_id === rel.id
+      );
+      const overdueActions = relationshipActions.filter((action) => {
+        const dueDate = new Date(action.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate < today;
+      });
+      const hasOverdueActions = overdueActions.length > 0;
+
+      // Check if next touch is overdue
+      const nextTouchOverdue =
+        rel.next_touch_due_at &&
+        new Date(rel.next_touch_due_at) < today;
+
+      // Check if no interaction in 90+ days
+      const daysSinceLastInteraction = rel.last_interaction_at
+        ? Math.floor(
+            (today.getTime() - new Date(rel.last_interaction_at).getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        : null;
+      const noInteraction90Days =
+        daysSinceLastInteraction !== null && daysSinceLastInteraction > 90;
+
+      // Overdue if any of these conditions are true
+      return hasOverdueActions || nextTouchOverdue || noInteraction90Days;
     }) || [];
 
     // Map actions to relationships

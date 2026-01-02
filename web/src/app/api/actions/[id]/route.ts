@@ -27,9 +27,10 @@ export async function GET(
     const { id: actionId } = await params;
 
     // Fetch action (without join to avoid PostgREST ambiguity)
+    // Include completion tracking fields
     const { data: action, error: actionError } = await supabase
       .from("actions")
-      .select("*")
+      .select("*, next_call_calendared_at, replied_to_email_at, got_response_at, got_response_notes")
       .eq("id", actionId)
       .eq("user_id", user.id)
       .single();
@@ -46,7 +47,7 @@ export async function GET(
     if (action.person_id) {
       const { data: fetchedLead, error: leadError } = await supabase
         .from("leads")
-        .select("id, name, linkedin_url, email, phone_number, url, notes, status")
+        .select("id, name, linkedin_url, email, phone_number, url, notes, status, relationship_state, state_updated_at")
         .eq("id", action.person_id)
         .eq("user_id", user.id)
         .single();

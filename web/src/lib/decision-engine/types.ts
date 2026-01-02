@@ -65,6 +65,9 @@ export interface ActionWithLane {
     effort_bias: number;
     total: number;
   };
+  
+  // Qualitative urgency/value label (replaces numeric score display)
+  urgency_value_label?: string | null;
 }
 
 export interface BestActionResponse {

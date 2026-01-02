@@ -217,11 +217,11 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
 
         {/* Recommended Action */}
         {signals.recommended_action_type && (
-          <div>
-            <div className="text-xs font-medium text-purple-700">Recommended Action</div>
-            <div className="mt-1 space-y-1">
-              <div className="text-sm font-medium text-purple-900">
-                {signals.recommended_action_type.replace("_", " ")}
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+            <div className="text-xs font-medium text-purple-700">AI Recommended Action</div>
+            <div className="mt-2 space-y-2">
+              <div className="text-sm font-semibold text-purple-900">
+                {signals.recommended_action_type.replace(/_/g, " ")}
               </div>
               {signals.recommended_action_description && (
                 <p className="text-sm text-zinc-700">{signals.recommended_action_description}</p>
@@ -229,6 +229,28 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
               {signals.recommended_due_date && (
                 <p className="text-xs text-zinc-600">
                   Suggested due: {new Date(signals.recommended_due_date).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* AI Insights - Attachment and Follow-up Prompts */}
+        {signals.last_email_received && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <div className="text-xs font-medium text-blue-700">AI Insights</div>
+            <div className="mt-2 space-y-1 text-sm text-zinc-700">
+              {signals.recent_open_loops.length > 0 && (
+                <p>
+                  💡 Consider following up on: {signals.recent_open_loops[0]}
+                </p>
+              )}
+              <p>
+                📎 Check for attachments that may need your attention
+              </p>
+              {signals.recent_topics.length > 0 && (
+                <p>
+                  💬 Recent discussion topics: {signals.recent_topics.slice(0, 2).join(", ")}
                 </p>
               )}
             </div>
