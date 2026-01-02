@@ -273,10 +273,11 @@ export async function searchGmailBySender(
     return [];
   }
 
-  // Fetch full message details (simplified - no rate limiting for targeted search)
+  // Fetch full message details (with full body for AI analysis)
+  // Uses format=full to get full email body, not just metadata
   const messages: GmailMessage[] = [];
   for (const msg of listData.messages) {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`;
 
     const messageResponse = await fetch(messageUrl, {
       headers: {
