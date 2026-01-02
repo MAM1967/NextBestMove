@@ -106,39 +106,12 @@ export function UrgencyValueMatrix() {
       </div>
 
       {/* 2x2 Matrix Grid */}
+      {/* Standard 2x2 matrix layout:
+          Left side (Low Value): High/Low (top), Low/Low (bottom)
+          Right side (High Value): High/High (top), Low/High (bottom)
+      */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* High Urgency, High Value */}
-        <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-red-900">
-              High Urgency, High Value
-            </h3>
-            <span className="rounded-full bg-red-200 px-2 py-0.5 text-xs font-medium text-red-900">
-              {quadrants["high-high"].length}
-            </span>
-          </div>
-          <p className="mb-3 text-xs text-red-800">
-            Focus here first. These relationships need attention and are valuable.
-          </p>
-          <div className="space-y-2">
-            {quadrants["high-high"].length === 0 ? (
-              <p className="text-xs text-red-700 italic">None</p>
-            ) : (
-              quadrants["high-high"].map((rel) => (
-                <Link
-                  key={rel.id}
-                  href={`/app/leads/${rel.id}`}
-                  className="block rounded-lg border border-red-200 bg-white p-2 text-sm transition-colors hover:bg-red-100"
-                >
-                  <div className="font-medium text-zinc-900">{rel.name}</div>
-                  <div className="text-xs text-zinc-600">{rel.label}</div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* High Urgency, Low Value */}
+        {/* Top-Left: High Urgency, Low Value */}
         <div className="rounded-xl border-2 border-orange-300 bg-orange-50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-orange-900">
@@ -169,28 +142,28 @@ export function UrgencyValueMatrix() {
           </div>
         </div>
 
-        {/* Low Urgency, High Value */}
-        <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-4">
+        {/* Top-Right: High Urgency, High Value */}
+        <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-blue-900">
-              Low Urgency, High Value
+            <h3 className="text-sm font-semibold text-red-900">
+              High Urgency, High Value
             </h3>
-            <span className="rounded-full bg-blue-200 px-2 py-0.5 text-xs font-medium text-blue-900">
-              {quadrants["low-high"].length}
+            <span className="rounded-full bg-red-200 px-2 py-0.5 text-xs font-medium text-red-900">
+              {quadrants["high-high"].length}
             </span>
           </div>
-          <p className="mb-3 text-xs text-blue-800">
-            Strategic relationships. Nurture these consistently but don&apos;t let urgency drive them.
+          <p className="mb-3 text-xs text-red-800">
+            Focus here first. These relationships need attention and are valuable.
           </p>
           <div className="space-y-2">
-            {quadrants["low-high"].length === 0 ? (
-              <p className="text-xs text-blue-700 italic">None</p>
+            {quadrants["high-high"].length === 0 ? (
+              <p className="text-xs text-red-700 italic">None</p>
             ) : (
-              quadrants["low-high"].map((rel) => (
+              quadrants["high-high"].map((rel) => (
                 <Link
                   key={rel.id}
                   href={`/app/leads/${rel.id}`}
-                  className="block rounded-lg border border-blue-200 bg-white p-2 text-sm transition-colors hover:bg-blue-100"
+                  className="block rounded-lg border border-red-200 bg-white p-2 text-sm transition-colors hover:bg-red-100"
                 >
                   <div className="font-medium text-zinc-900">{rel.name}</div>
                   <div className="text-xs text-zinc-600">{rel.label}</div>
@@ -200,7 +173,7 @@ export function UrgencyValueMatrix() {
           </div>
         </div>
 
-        {/* Low Urgency, Low Value */}
+        {/* Bottom-Left: Low Urgency, Low Value */}
         <div className="rounded-xl border-2 border-zinc-300 bg-zinc-50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-zinc-900">
@@ -222,6 +195,37 @@ export function UrgencyValueMatrix() {
                   key={rel.id}
                   href={`/app/leads/${rel.id}`}
                   className="block rounded-lg border border-zinc-200 bg-white p-2 text-sm transition-colors hover:bg-zinc-100"
+                >
+                  <div className="font-medium text-zinc-900">{rel.name}</div>
+                  <div className="text-xs text-zinc-600">{rel.label}</div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Bottom-Right: Low Urgency, High Value */}
+        <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-blue-900">
+              Low Urgency, High Value
+            </h3>
+            <span className="rounded-full bg-blue-200 px-2 py-0.5 text-xs font-medium text-blue-900">
+              {quadrants["low-high"].length}
+            </span>
+          </div>
+          <p className="mb-3 text-xs text-blue-800">
+            Strategic relationships. Nurture these consistently but don&apos;t let urgency drive them.
+          </p>
+          <div className="space-y-2">
+            {quadrants["low-high"].length === 0 ? (
+              <p className="text-xs text-blue-700 italic">None</p>
+            ) : (
+              quadrants["low-high"].map((rel) => (
+                <Link
+                  key={rel.id}
+                  href={`/app/leads/${rel.id}`}
+                  className="block rounded-lg border border-blue-200 bg-white p-2 text-sm transition-colors hover:bg-blue-100"
                 >
                   <div className="font-medium text-zinc-900">{rel.name}</div>
                   <div className="text-xs text-zinc-600">{rel.label}</div>
