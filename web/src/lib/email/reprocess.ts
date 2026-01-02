@@ -1,6 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractSignalsWithAI } from "./ai-signals";
 import { htmlToText } from "./html-to-text";
+import { extractGmailMetadata } from "./gmail";
+import type { GmailMessage } from "./gmail";
+import { getEmailAccessToken } from "./tokens";
 
 /**
  * Reprocess existing email metadata with comprehensive AI extraction
@@ -35,7 +38,7 @@ export async function reprocessEmailSignals(
     // Only reprocess emails that are missing comprehensive fields
     let query = supabase
       .from("email_metadata")
-      .select("id, subject, snippet, full_body, person_id")
+      .select("id, subject, snippet, full_body, person_id, message_id, email_connection_id")
       .eq("user_id", userId)
       .is("thread_summary_1l", null); // Only reprocess emails missing comprehensive fields
 
@@ -43,7 +46,9 @@ export async function reprocessEmailSignals(
       query = query.eq("person_id", relationshipId);
     }
 
-    const { data: emails, error: emailsError } = await query.limit(100); // Process in batches
+    // Also get email connection info to know which provider to use
+    const { data: emails, error: emailsError } = await query
+      .limit(100); // Process in batches
 
     if (emailsError) {
       console.error("[Email Reprocess] Error fetching emails:", emailsError);
@@ -55,14 +60,67 @@ export async function reprocessEmailSignals(
       return 0;
     }
 
+    // Get email connection info to determine provider
+    const { data: emailConnections } = await supabase
+      .from("email_connections")
+      .select("id, provider")
+      .eq("user_id", userId)
+      .eq("status", "active");
+
+    const connectionMap = new Map(
+      emailConnections?.map((conn) => [conn.id, conn.provider]) || []
+    );
+
     console.log(`[Email Reprocess] Reprocessing ${emails.length} emails for user ${userId}`);
 
     for (const email of emails) {
       try {
-        // Extract signals using AI
-        const fullBodyText = email.full_body 
+        let fullBodyText = email.full_body 
           ? htmlToText(email.full_body)
           : email.snippet || "";
+
+        // If full_body is missing or too short (likely was ingested with format=metadata),
+        // re-fetch the full email from Gmail/Outlook
+        if (!email.full_body || email.full_body.length < 100) {
+          const provider = email.email_connection_id 
+            ? connectionMap.get(email.email_connection_id)
+            : null;
+          
+          if (provider && email.message_id) {
+            console.log(`[Email Reprocess] Re-fetching full body for email ${email.id} from ${provider}`);
+            try {
+              if (provider === "gmail") {
+                const accessToken = await getEmailAccessToken(userId, "gmail");
+                if (accessToken) {
+                  const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${email.message_id}?format=full`;
+                  const response = await fetch(messageUrl, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                  });
+                  if (response.ok) {
+                    const fetchedMessage: GmailMessage = await response.json();
+                    const metadata = extractGmailMetadata(fetchedMessage);
+                    fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
+                    
+                    // Update full_body in database for future use
+                    if (fullBodyText.length > (email.snippet?.length || 0)) {
+                      await supabase
+                        .from("email_metadata")
+                        .update({ full_body: fullBodyText.substring(0, 10000) })
+                        .eq("id", email.id);
+                    }
+                  }
+                }
+              } else if (provider === "outlook") {
+                // Outlook re-fetch would go here if needed
+                // For now, just use snippet
+                console.log(`[Email Reprocess] Outlook re-fetch not yet implemented for email ${email.id}`);
+              }
+            } catch (fetchError) {
+              console.error(`[Email Reprocess] Error re-fetching email ${email.id}:`, fetchError);
+              // Continue with snippet if re-fetch fails
+            }
+          }
+        }
 
         const signals = await extractSignalsWithAI(
           email.subject || "",
@@ -119,4 +177,3 @@ export async function reprocessEmailSignals(
     throw error;
   }
 }
-
