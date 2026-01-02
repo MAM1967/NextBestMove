@@ -15,32 +15,54 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
 
   useEffect(() => {
     const fetchSignals = async () => {
+      setLoading(true);
+      setError(null);
       try {
         const response = await fetch(`/api/email/signals/relationship/${relationshipId}`);
         if (!response.ok) {
           if (response.status === 404) {
             // No signals yet, that's okay
             setSignals(null);
+            setLoading(false);
             return;
           }
-          throw new Error("Failed to fetch signals");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to fetch signals");
         }
         const data = await response.json();
+        
+        // Debug logging
+        console.log(`[RelationshipSignals] Fetched data for ${relationshipId}:`, {
+          emailCount: data.emails?.length || 0,
+          hasEmails: !!data.emails && data.emails.length > 0,
+        });
+        
         // API returns { relationship_id, relationship_name, emails }
         // Transform to match EmailSignals type expected by component
         if (data.emails && data.emails.length > 0) {
           const lastEmail = data.emails[0];
+          
+          // Collect topics - prefer comprehensive topics array, fallback to last_topic
+          const topics = lastEmail.topics && Array.isArray(lastEmail.topics) && lastEmail.topics.length > 0
+            ? lastEmail.topics
+            : data.emails
+                .map((e: any) => e.last_topic)
+                .filter((t: string | null) => t !== null);
+          
+          // Collect asks - prefer comprehensive asks_from_sender, fallback to ask
+          const asks = lastEmail.asks_from_sender && Array.isArray(lastEmail.asks_from_sender) && lastEmail.asks_from_sender.length > 0
+            ? lastEmail.asks_from_sender
+            : data.emails
+                .map((e: any) => e.ask)
+                .filter((a: string | null) => a !== null);
+          
           setSignals({
             relationship_id: data.relationship_id,
             relationship_name: data.relationship_name,
             last_email_received: lastEmail.received_at,
             unread_count: 0, // TODO: Calculate from email_metadata if we track read status
-            recent_topics: lastEmail.topics || data.emails
-              .map((e: any) => e.last_topic)
-              .filter((t: string | null) => t !== null),
-            recent_asks: lastEmail.asks_from_sender || data.emails
-              .map((e: any) => e.ask)
-              .filter((a: string | null) => a !== null),
+            recent_topics: topics,
+            recent_asks: asks,
             recent_open_loops: Array.isArray(lastEmail.open_loops) 
               ? lastEmail.open_loops 
               : [],
@@ -62,17 +84,20 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
             relationship_signal: lastEmail.relationship_signal || null,
           });
         } else {
+          console.log(`[RelationshipSignals] No emails found for relationship ${relationshipId}`);
           setSignals(null);
         }
       } catch (err) {
-        console.error("Error fetching signals:", err);
+        console.error("[RelationshipSignals] Error fetching signals:", err);
         setError(err instanceof Error ? err.message : "Failed to load signals");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSignals();
+    if (relationshipId) {
+      fetchSignals();
+    }
   }, [relationshipId]);
 
   if (loading) {
