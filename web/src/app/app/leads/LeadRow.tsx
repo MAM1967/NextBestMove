@@ -196,7 +196,7 @@ export function LeadRow({
               <>
                 <span>•</span>
                 <span className="text-zinc-600">
-                  Next touch: {formatDateForDisplay(lead.next_touch_due_at.split("T")[0])}
+                  Next touch: {formatDateForDisplay(typeof lead.next_touch_due_at === 'string' ? lead.next_touch_due_at.split("T")[0] : lead.next_touch_due_at)}
                 </span>
               </>
             )}
