@@ -1,8 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractSignalsWithAI } from "./ai-signals";
 import { htmlToText } from "./html-to-text";
-import { fetchGmailMessage, extractGmailMetadata } from "./gmail";
-import { fetchOutlookMessage, extractOutlookMetadata } from "./outlook";
+import { extractGmailMetadata } from "./gmail";
+import type { GmailMessage } from "./gmail";
+import { getEmailAccessToken } from "./tokens";
 
 /**
  * Reprocess existing email metadata with comprehensive AI extraction
@@ -88,27 +89,31 @@ export async function reprocessEmailSignals(
           if (provider && email.message_id) {
             console.log(`[Email Reprocess] Re-fetching full body for email ${email.id} from ${provider}`);
             try {
-              let fetchedMessage: any = null;
               if (provider === "gmail") {
-                fetchedMessage = await fetchGmailMessage(userId, email.message_id);
-                if (fetchedMessage) {
-                  const metadata = extractGmailMetadata(fetchedMessage);
-                  fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
+                const accessToken = await getEmailAccessToken(userId, "gmail");
+                if (accessToken) {
+                  const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${email.message_id}?format=full`;
+                  const response = await fetch(messageUrl, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                  });
+                  if (response.ok) {
+                    const fetchedMessage: GmailMessage = await response.json();
+                    const metadata = extractGmailMetadata(fetchedMessage);
+                    fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
+                    
+                    // Update full_body in database for future use
+                    if (fullBodyText.length > (email.snippet?.length || 0)) {
+                      await supabase
+                        .from("email_metadata")
+                        .update({ full_body: fullBodyText.substring(0, 10000) })
+                        .eq("id", email.id);
+                    }
+                  }
                 }
               } else if (provider === "outlook") {
-                fetchedMessage = await fetchOutlookMessage(userId, email.message_id);
-                if (fetchedMessage) {
-                  const metadata = extractOutlookMetadata(fetchedMessage);
-                  fullBodyText = htmlToText(metadata.fullBody || metadata.snippet);
-                }
-              }
-              
-              // Update full_body in database for future use
-              if (fetchedMessage && fullBodyText.length > email.snippet?.length || 0) {
-                await supabase
-                  .from("email_metadata")
-                  .update({ full_body: fullBodyText.substring(0, 10000) })
-                  .eq("id", email.id);
+                // Outlook re-fetch would go here if needed
+                // For now, just use snippet
+                console.log(`[Email Reprocess] Outlook re-fetch not yet implemented for email ${email.id}`);
               }
             } catch (fetchError) {
               console.error(`[Email Reprocess] Error re-fetching email ${email.id}:`, fetchError);
