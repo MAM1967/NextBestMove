@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { extractInteractions } from "@/lib/ai/interaction-extraction";
+import { findNextAvailableActionDate } from "@/lib/actions/smart-scheduling";
 
 /**
  * POST /api/leads/[id]/meeting-notes
@@ -155,16 +156,25 @@ async function extractAndPersistInteractions(
     const today = new Date().toISOString().split("T")[0];
 
     // Create actions from extracted action items
+    // Use smart scheduling to ensure max 2 actions per day per relationship
     const createdActionIds: string[] = [];
     for (const actionItem of extractionResult.actionItems) {
       // Calculate due date: use extracted date if provided, otherwise default to 3 days from now for POST_CALL, 7 days for others
-      let dueDate = actionItem.due_date || today;
+      let proposedDueDate = actionItem.due_date || today;
       if (!actionItem.due_date) {
         const defaultDays = actionItem.action_type === "POST_CALL" ? 3 : 7;
         const defaultDate = new Date();
         defaultDate.setDate(defaultDate.getDate() + defaultDays);
-        dueDate = defaultDate.toISOString().split("T")[0];
+        proposedDueDate = defaultDate.toISOString().split("T")[0];
       }
+
+      // Use smart scheduling to find next available date (max 2 actions per day)
+      const scheduledDueDate = await findNextAvailableActionDate(
+        userId,
+        leadId,
+        proposedDueDate,
+        2 // Max 2 actions per day per relationship
+      );
 
       const { data: action, error: actionError } = await supabase
         .from("actions")
@@ -174,7 +184,7 @@ async function extractAndPersistInteractions(
           action_type: actionItem.action_type,
           state: "NEW",
           description: actionItem.description,
-          due_date: dueDate,
+          due_date: scheduledDueDate, // Use smart-scheduled date
           notes: actionItem.notes || null,
           auto_created: true,
           meeting_note_id: meetingNoteId,
@@ -184,6 +194,7 @@ async function extractAndPersistInteractions(
 
       if (!actionError && action) {
         createdActionIds.push(action.id);
+        console.log(`[Meeting Notes] Created action ${action.id} scheduled for ${scheduledDueDate}`);
       } else {
         console.error("Error creating action:", actionError);
       }
