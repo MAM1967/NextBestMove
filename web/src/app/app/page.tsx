@@ -26,7 +26,7 @@ export default async function TodayPage() {
   const { data: userProfile } = await supabase
     .from("users")
     .select(
-      "onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone"
+      "onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone, default_capacity_override"
     )
     .eq("id", user.id)
     .single();
@@ -100,7 +100,7 @@ export default async function TodayPage() {
   // Fetch today's daily plan
   const { data: dailyPlan } = await supabase
     .from("daily_plans")
-    .select("*")
+    .select("*, capacity_override")
     .eq("user_id", user.id)
     .eq("date", today)
     .single();
@@ -179,6 +179,12 @@ export default async function TodayPage() {
   const hasActiveCalendarConnection =
     (calendarConnections && calendarConnections.length > 0) ||
     calendarConnected;
+
+  // Determine if we should show "Auto" based on user's default setting
+  // If user's default_capacity_override is null (Auto) and there's no daily override, show "Auto"
+  const userDefaultIsAuto = userProfile?.default_capacity_override === null;
+  const hasDailyOverride = dailyPlan?.capacity_override !== null;
+  const shouldShowAuto = userDefaultIsAuto && !hasDailyOverride && hasActiveCalendarConnection;
 
   // Fetch next calendar event to show time until next event
   let timeUntilNextEvent = "Calendar not connected";
@@ -571,11 +577,7 @@ export default async function TodayPage() {
       {/* Best Action - Single clear next move */}
       <BestActionCardClient />
 
-      {/* Global Rollup - Top overdue items across relationships */}
-      <GlobalRollup />
-
-      <ChannelNudgesList />
-
+      {/* Executive Summary - 4 key metrics */}
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
           <h2 className="text-sm font-medium text-zinc-900">Suggested focus</h2>
@@ -592,11 +594,6 @@ export default async function TodayPage() {
                 {todayEventCount} event{todayEventCount !== 1 ? "s" : ""} today
               </p>
               <p className="mt-1 text-xs text-zinc-500">{timeUntilNextEvent}</p>
-              {freeMinutes !== null && (
-                <p className="mt-1 text-xs text-zinc-500">
-                  {freeMinutes} min available
-                </p>
-              )}
             </>
           ) : (
             <p className="mt-1 text-sm text-zinc-600">Not connected</p>
@@ -605,7 +602,7 @@ export default async function TodayPage() {
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
           <h2 className="text-sm font-medium text-zinc-900">Capacity</h2>
           <p className="mt-1 text-sm font-semibold text-zinc-900">
-            {capacity === "auto"
+            {shouldShowAuto
               ? "Auto"
               : capacity === "micro"
               ? "Micro"
@@ -617,11 +614,6 @@ export default async function TodayPage() {
               ? "Heavy"
               : "Default"}
           </p>
-          {capacity === "auto" && freeMinutes !== null && (
-            <p className="mt-1 text-xs text-zinc-500">
-              Based on {freeMinutes} min available
-            </p>
-          )}
         </div>
       </section>
 
@@ -657,6 +649,11 @@ export default async function TodayPage() {
           </Link>
         </div>
       </section>
+
+      {/* Global Rollup - Top overdue items across relationships */}
+      <GlobalRollup />
+
+      <ChannelNudgesList />
     </div>
   );
 }

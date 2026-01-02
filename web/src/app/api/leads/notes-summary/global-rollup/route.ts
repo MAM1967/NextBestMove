@@ -118,24 +118,72 @@ export async function GET(request: Request) {
         score: action.next_move_score,
       })),
       overdueRelationships: overdueRelationships
-        .sort((a, b) => {
-          if (!a.next_touch_due_at || !b.next_touch_due_at) return 0;
-          return (
-            new Date(a.next_touch_due_at).getTime() -
-            new Date(b.next_touch_due_at).getTime()
-          );
+        .map((rel) => {
+          // Calculate days overdue based on the actual reason
+          let daysOverdue = 0;
+          
+          // Check if next touch is overdue
+          if (rel.next_touch_due_at) {
+            const nextTouchDate = new Date(rel.next_touch_due_at);
+            nextTouchDate.setHours(0, 0, 0, 0);
+            if (nextTouchDate < today) {
+              daysOverdue = Math.floor(
+                (today.getTime() - nextTouchDate.getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+            }
+          }
+          
+          // If no next_touch_due_at, check overdue actions
+          if (daysOverdue === 0) {
+            const relationshipActions = (allPendingActions || []).filter(
+              (action) => action.person_id === rel.id
+            );
+            const overdueActions = relationshipActions.filter((action) => {
+              const dueDate = new Date(action.due_date);
+              dueDate.setHours(0, 0, 0, 0);
+              return dueDate < today;
+            });
+            
+            if (overdueActions.length > 0) {
+              // Find the most overdue action
+              const mostOverdue = overdueActions.reduce((prev, curr) => {
+                const prevDate = new Date(prev.due_date);
+                const currDate = new Date(curr.due_date);
+                return prevDate < currDate ? prev : curr;
+              });
+              const mostOverdueDate = new Date(mostOverdue.due_date);
+              mostOverdueDate.setHours(0, 0, 0, 0);
+              daysOverdue = Math.floor(
+                (today.getTime() - mostOverdueDate.getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+            }
+          }
+          
+          // If still 0, check no interaction in 90+ days
+          if (daysOverdue === 0 && rel.last_interaction_at) {
+            const daysSinceLastInteraction = Math.floor(
+              (today.getTime() - new Date(rel.last_interaction_at).getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
+            if (daysSinceLastInteraction > 90) {
+              daysOverdue = daysSinceLastInteraction - 90;
+            }
+          }
+          
+          return {
+            rel,
+            daysOverdue,
+          };
         })
+        .sort((a, b) => b.daysOverdue - a.daysOverdue)
         .slice(0, 5)
-        .map((rel) => ({
+        .map(({ rel, daysOverdue }) => ({
           id: rel.id,
           name: rel.name,
           nextTouchDueAt: rel.next_touch_due_at,
-          daysOverdue: rel.next_touch_due_at
-            ? Math.floor(
-                (today.getTime() - new Date(rel.next_touch_due_at).getTime()) /
-                  (1000 * 60 * 60 * 24)
-              )
-            : 0,
+          daysOverdue,
         })),
     };
 
