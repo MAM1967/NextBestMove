@@ -71,10 +71,11 @@ export function calculateUrgency(input: UrgencyValueInput): UrgencyLevel {
 export function calculateValue(input: UrgencyValueInput): ValueLevel {
   let valueScore = 0;
 
-  // Tier (0-40 points)
+  // Tier (0-60 points)
+  // "inner" tier relationships are by definition high value
   switch (input.tier) {
     case "inner":
-      valueScore += 40;
+      valueScore += 60; // High base score - inner tier should almost always be high value
       break;
     case "active":
       valueScore += 30;
@@ -133,9 +134,11 @@ export function calculateUrgencyValue(
   }
 
   // Value calculation
+  // "inner" tier relationships are by definition high value
+  // They should guarantee high value unless response rate is extremely low
   switch (input.tier) {
     case "inner":
-      valueScore += 40;
+      valueScore += 60; // High base score - inner tier should almost always be high value
       break;
     case "active":
       valueScore += 30;

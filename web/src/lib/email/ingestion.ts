@@ -259,6 +259,19 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
               recommended_action_type: signals.recommendedAction?.action_type || null,
               recommended_action_description: signals.recommendedAction?.description || null,
               recommended_due_date: recommendedDueDate,
+              // Comprehensive signal fields
+              thread_summary_1l: signals.thread_summary_1l,
+              thread_summary_detail: signals.thread_summary_detail,
+              primary_category: signals.primary_category,
+              secondary_categories: signals.secondary_categories,
+              topics_comprehensive: signals.topics,
+              proposed_tiers: signals.proposed_tiers ? JSON.stringify(signals.proposed_tiers) : null,
+              asks_from_sender: signals.asks_from_sender,
+              value_to_capture: signals.value_to_capture,
+              suggested_next_actions: signals.suggested_next_actions,
+              attachments: signals.attachments ? JSON.stringify(signals.attachments) : null,
+              links: signals.links ? JSON.stringify(signals.links) : null,
+              relationship_signal: signals.relationship_signal ? JSON.stringify(signals.relationship_signal) : null,
               processed_at: new Date().toISOString(),
             })
             .select()
@@ -422,6 +435,19 @@ export async function ingestOutlookMetadata(userId: string): Promise<number> {
           recommended_action_type: signals.recommendedAction?.action_type || null,
           recommended_action_description: signals.recommendedAction?.description || null,
           recommended_due_date: recommendedDueDate,
+          // Comprehensive signal fields
+          thread_summary_1l: signals.thread_summary_1l,
+          thread_summary_detail: signals.thread_summary_detail,
+          primary_category: signals.primary_category,
+          secondary_categories: signals.secondary_categories,
+          topics_comprehensive: signals.topics,
+          proposed_tiers: signals.proposed_tiers ? JSON.stringify(signals.proposed_tiers) : null,
+          asks_from_sender: signals.asks_from_sender,
+          value_to_capture: signals.value_to_capture,
+          suggested_next_actions: signals.suggested_next_actions,
+          attachments: signals.attachments ? JSON.stringify(signals.attachments) : null,
+          links: signals.links ? JSON.stringify(signals.links) : null,
+          relationship_signal: signals.relationship_signal ? JSON.stringify(signals.relationship_signal) : null,
           processed_at: new Date().toISOString(),
         })
         .select()

@@ -34,7 +34,30 @@ export interface RecommendedAction {
   due_date_days: number | null; // Days from now (e.g., 2 = 2 days from today)
 }
 
+export interface ProposedTier {
+  tier: string;
+  size: number;
+}
+
+export interface AttachmentInfo {
+  filename: string;
+  type: string;
+  reason: string;
+}
+
+export interface LinkInfo {
+  url: string;
+  label: string;
+}
+
+export interface RelationshipSignal {
+  signal_type: string;
+  strength: "Low" | "Medium" | "High";
+  evidence: string[];
+}
+
 export interface AISignals {
+  // Legacy fields (kept for backward compatibility)
   topic: string;
   asks: string[];
   openLoops: string[];
@@ -42,6 +65,20 @@ export interface AISignals {
   sentiment: Sentiment | null;
   intent: Intent | null;
   recommendedAction: RecommendedAction | null;
+  
+  // Enhanced comprehensive fields
+  thread_summary_1l: string | null; // One-line summary
+  thread_summary_detail: string | null; // Detailed summary
+  primary_category: string | null;
+  secondary_categories: string[] | null;
+  topics: string[] | null; // Enhanced topics list
+  proposed_tiers: ProposedTier[] | null;
+  asks_from_sender: string[] | null; // Enhanced asks
+  value_to_capture: string[] | null;
+  suggested_next_actions: string[] | null;
+  attachments: AttachmentInfo[] | null;
+  links: LinkInfo[] | null;
+  relationship_signal: RelationshipSignal | null;
 }
 
 /**
@@ -62,6 +99,7 @@ export async function extractSignalsWithAI(
     // No AI available, fallback to rule-based
     const ruleBased = extractSignals(subject, snippet, importance);
     return {
+      // Legacy fields
       topic: ruleBased.topic,
       asks: ruleBased.asks,
       openLoops: ruleBased.openLoops,
@@ -69,6 +107,19 @@ export async function extractSignalsWithAI(
       sentiment: null,
       intent: null,
       recommendedAction: null,
+      // Comprehensive fields (null when AI not available)
+      thread_summary_1l: null,
+      thread_summary_detail: null,
+      primary_category: null,
+      secondary_categories: null,
+      topics: null,
+      proposed_tiers: null,
+      asks_from_sender: null,
+      value_to_capture: null,
+      suggested_next_actions: null,
+      attachments: null,
+      links: null,
+      relationship_signal: null,
     };
   }
 
@@ -86,36 +137,36 @@ export async function extractSignalsWithAI(
       messages: [
         {
           role: "system",
-          content: `You are an expert at analyzing business emails to extract key signals for relationship management and recommend follow-up actions.
+          content: `You are extracting CRM-style signals from an email for categorization and follow-up.
 
-Extract the following from the email:
-1. **Topic**: Main subject/topic (1-2 sentences, max 100 chars)
-2. **Asks**: Direct questions or requests (array of strings, max 5)
-3. **Open Loops**: Unresolved action items or commitments (array of strings, max 5)
-4. **Priority**: high, medium, low, or normal
-5. **Sentiment**: positive, neutral, negative, or urgent
-6. **Intent**: question, request, follow_up, introduction, meeting_request, proposal, complaint, or other
-7. **Recommended Action**: Based on email content, attachments mentioned, asks, and open loops, recommend:
-   - **action_type**: One of: OUTREACH, FOLLOW_UP, NURTURE, CALL_PREP, POST_CALL, CONTENT, FAST_WIN, or null if no action needed
-   - **description**: Specific action description (e.g., "Follow up with sender on topic X", "Review attachment and provide feedback", "Schedule meeting to discuss proposal")
-   - **due_date_days**: Number of days from now for due date (e.g., 2 = 2 days from today, null if no urgency)
+Return ONLY valid JSON.
 
-Action type guidelines:
-- FOLLOW_UP: Email requires a response or follow-up (questions, requests, open loops)
-- OUTREACH: New conversation starter or introduction
-- NURTURE: Soft touch, relationship building (no urgent CTA)
-- CALL_PREP: Email mentions upcoming call/meeting
-- POST_CALL: Email is after a call (recap, next steps)
-- CONTENT: Email suggests content creation opportunity
-- FAST_WIN: Quick action (<5 min) that moves relationship forward
+Rules:
+- Be specific. Capture intent, asks, and any concrete numbers.
+- Include categories, topics, and suggested next actions.
+- Extract any tier structures or frameworks verbatim into structured fields.
+- Detect attachments and links (if present in the input).
+- Do NOT restate the entire email. Summarize.
 
-Return ONLY valid JSON in this exact format:
+Output schema:
 {
-  "topic": "string",
-  "asks": ["string"],
-  "openLoops": ["string"],
+  "thread_summary_1l": string,
+  "thread_summary_detail": string,
+  "primary_category": string,
+  "secondary_categories": string[],
+  "topics": string[],
+  "proposed_tiers": [{"tier": string, "size": number}] (optional),
+  "asks_from_sender": string[],
+  "value_to_capture": string[],
+  "suggested_next_actions": string[],
+  "attachments": [{"filename": string, "type": string, "reason": string}] (optional),
+  "links": [{"url": string, "label": string}] (optional),
+  "sentiment": "Positive" | "Neutral" | "Negative",
+  "relationship_signal": {"signal_type": string, "strength": "Low"|"Medium"|"High", "evidence": string[]},
+  "topic": string (legacy - one-line topic summary),
+  "asks": string[] (legacy - same as asks_from_sender),
+  "openLoops": string[] (legacy - unresolved items),
   "priority": "high" | "medium" | "low" | "normal",
-  "sentiment": "positive" | "neutral" | "negative" | "urgent",
   "intent": "question" | "request" | "follow_up" | "introduction" | "meeting_request" | "proposal" | "complaint" | "other",
   "recommendedAction": {
     "action_type": "OUTREACH" | "FOLLOW_UP" | "NURTURE" | "CALL_PREP" | "POST_CALL" | "CONTENT" | "FAST_WIN" | null,
@@ -126,11 +177,14 @@ Return ONLY valid JSON in this exact format:
         },
         {
           role: "user",
-          content: `Analyze this email:\n\n${truncatedEmail}`,
+          content: `EMAIL INPUT:
+<<<
+${truncatedEmail}
+>>>`,
         },
       ],
-      temperature: 0.3, // Lower temperature for more consistent extraction
-      max_tokens: 500,
+      temperature: 0.3,
+      max_tokens: 2000, // Increased for comprehensive output
       response_format: { type: "json_object" },
     });
 
@@ -143,13 +197,28 @@ Return ONLY valid JSON in this exact format:
 
     // Validate and sanitize response
     const signals: AISignals = {
-      topic: sanitizeString(parsed.topic, 100) || subject || "No topic",
-      asks: sanitizeArray(parsed.asks, 5, 200),
+      // Legacy fields (for backward compatibility)
+      topic: sanitizeString(parsed.topic, 100) || sanitizeString(parsed.thread_summary_1l, 100) || subject || "No topic",
+      asks: sanitizeArray(parsed.asks || parsed.asks_from_sender, 5, 200),
       openLoops: sanitizeArray(parsed.openLoops, 5, 200),
       priority: validatePriority(parsed.priority),
-      sentiment: validateSentiment(parsed.sentiment),
+      sentiment: validateSentiment(parsed.sentiment?.toLowerCase()),
       intent: validateIntent(parsed.intent),
       recommendedAction: validateRecommendedAction(parsed.recommendedAction),
+      
+      // Enhanced comprehensive fields
+      thread_summary_1l: sanitizeString(parsed.thread_summary_1l, 200) || null,
+      thread_summary_detail: sanitizeString(parsed.thread_summary_detail, 1000) || null,
+      primary_category: sanitizeString(parsed.primary_category, 100) || null,
+      secondary_categories: sanitizeArray(parsed.secondary_categories, 10, 100) || null,
+      topics: sanitizeArray(parsed.topics, 10, 200) || null,
+      proposed_tiers: validateProposedTiers(parsed.proposed_tiers),
+      asks_from_sender: sanitizeArray(parsed.asks_from_sender, 10, 200) || null,
+      value_to_capture: sanitizeArray(parsed.value_to_capture, 10, 200) || null,
+      suggested_next_actions: sanitizeArray(parsed.suggested_next_actions, 10, 200) || null,
+      attachments: validateAttachments(parsed.attachments),
+      links: validateLinks(parsed.links),
+      relationship_signal: validateRelationshipSignal(parsed.relationship_signal),
     };
 
     return signals;
@@ -158,6 +227,7 @@ Return ONLY valid JSON in this exact format:
     // Fallback to rule-based extraction
     const ruleBased = extractSignals(subject, snippet, importance);
     return {
+      // Legacy fields
       topic: ruleBased.topic,
       asks: ruleBased.asks,
       openLoops: ruleBased.openLoops,
@@ -165,6 +235,19 @@ Return ONLY valid JSON in this exact format:
       sentiment: null,
       intent: null,
       recommendedAction: null,
+      // Comprehensive fields (null when AI fails)
+      thread_summary_1l: null,
+      thread_summary_detail: null,
+      primary_category: null,
+      secondary_categories: null,
+      topics: null,
+      proposed_tiers: null,
+      asks_from_sender: null,
+      value_to_capture: null,
+      suggested_next_actions: null,
+      attachments: null,
+      links: null,
+      relationship_signal: null,
     };
   }
 }
@@ -257,6 +340,84 @@ function validateRecommendedAction(value: any): RecommendedAction | null {
       typeof value.due_date_days === "number" && value.due_date_days >= 0
         ? value.due_date_days
         : null,
+  };
+}
+
+/**
+ * Validate proposed tiers
+ */
+function validateProposedTiers(value: any): ProposedTier[] | null {
+  if (!Array.isArray(value)) return null;
+  
+  return value
+    .filter((item) => 
+      item && 
+      typeof item === "object" &&
+      typeof item.tier === "string" &&
+      typeof item.size === "number"
+    )
+    .map((item) => ({
+      tier: String(item.tier).substring(0, 50),
+      size: Math.max(0, Math.min(1000, Math.floor(item.size))),
+    }))
+    .slice(0, 20); // Limit to 20 tiers
+}
+
+/**
+ * Validate attachments
+ */
+function validateAttachments(value: any): AttachmentInfo[] | null {
+  if (!Array.isArray(value)) return null;
+  
+  return value
+    .filter((item) => 
+      item && 
+      typeof item === "object" &&
+      typeof item.filename === "string" &&
+      typeof item.type === "string"
+    )
+    .map((item) => ({
+      filename: String(item.filename).substring(0, 255),
+      type: String(item.type).substring(0, 50),
+      reason: typeof item.reason === "string" ? String(item.reason).substring(0, 200) : "",
+    }))
+    .slice(0, 20); // Limit to 20 attachments
+}
+
+/**
+ * Validate links
+ */
+function validateLinks(value: any): LinkInfo[] | null {
+  if (!Array.isArray(value)) return null;
+  
+  return value
+    .filter((item) => 
+      item && 
+      typeof item === "object" &&
+      typeof item.url === "string"
+    )
+    .map((item) => ({
+      url: String(item.url).substring(0, 500),
+      label: typeof item.label === "string" ? String(item.label).substring(0, 200) : "",
+    }))
+    .slice(0, 20); // Limit to 20 links
+}
+
+/**
+ * Validate relationship signal
+ */
+function validateRelationshipSignal(value: any): RelationshipSignal | null {
+  if (!value || typeof value !== "object") return null;
+  
+  const validStrengths = ["Low", "Medium", "High"];
+  const strength = validStrengths.includes(value.strength) ? value.strength : "Medium";
+  
+  return {
+    signal_type: typeof value.signal_type === "string" 
+      ? String(value.signal_type).substring(0, 100) 
+      : "General",
+    strength: strength as "Low" | "Medium" | "High",
+    evidence: sanitizeArray(value.evidence, 10, 200) || [],
   };
 }
 
