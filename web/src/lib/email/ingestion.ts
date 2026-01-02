@@ -265,13 +265,13 @@ export async function ingestGmailMetadata(userId: string): Promise<number> {
               primary_category: signals.primary_category,
               secondary_categories: signals.secondary_categories,
               topics_comprehensive: signals.topics,
-              proposed_tiers: signals.proposed_tiers ? JSON.stringify(signals.proposed_tiers) : null,
+              proposed_tiers: signals.proposed_tiers || null, // JSONB - store as object, not string
               asks_from_sender: signals.asks_from_sender,
               value_to_capture: signals.value_to_capture,
               suggested_next_actions: signals.suggested_next_actions,
-              attachments: signals.attachments ? JSON.stringify(signals.attachments) : null,
-              links: signals.links ? JSON.stringify(signals.links) : null,
-              relationship_signal: signals.relationship_signal ? JSON.stringify(signals.relationship_signal) : null,
+              attachments: signals.attachments || null, // JSONB - store as object, not string
+              links: signals.links || null, // JSONB - store as object, not string
+              relationship_signal: signals.relationship_signal || null, // JSONB - store as object, not string
               processed_at: new Date().toISOString(),
             })
             .select()

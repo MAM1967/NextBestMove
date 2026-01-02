@@ -43,8 +43,8 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
           const lastEmail = data.emails[0];
           
           // Collect topics - prefer comprehensive topics array, fallback to last_topic
-          const topics = lastEmail.topics && Array.isArray(lastEmail.topics) && lastEmail.topics.length > 0
-            ? lastEmail.topics
+          const topics = lastEmail.topics_comprehensive && Array.isArray(lastEmail.topics_comprehensive) && lastEmail.topics_comprehensive.length > 0
+            ? lastEmail.topics_comprehensive
             : data.emails
                 .map((e: any) => e.last_topic)
                 .filter((t: string | null) => t !== null);
