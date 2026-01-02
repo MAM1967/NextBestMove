@@ -43,7 +43,7 @@ export async function GET(
     const { data: emailMetadata, error: metadataError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels, sentiment, intent, recommended_action_type, recommended_action_description, recommended_due_date, thread_summary_1l, thread_summary_detail, primary_category, secondary_categories, topics, proposed_tiers, asks_from_sender, value_to_capture, suggested_next_actions, attachments, links, relationship_signal"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels, sentiment, intent, recommended_action_type, recommended_action_description, recommended_due_date, thread_summary_1l, thread_summary_detail, primary_category, secondary_categories, topics_comprehensive, proposed_tiers, asks_from_sender, value_to_capture, suggested_next_actions, attachments, links, relationship_signal"
       )
       .eq("user_id", user.id)
       .eq("person_id", leadId)
@@ -74,7 +74,7 @@ export async function GET(
       thread_summary_detail: meta.thread_summary_detail,
       primary_category: meta.primary_category,
       secondary_categories: meta.secondary_categories,
-      topics: meta.topics,
+      topics: meta.topics_comprehensive, // Use topics_comprehensive from DB
       asks_from_sender: meta.asks_from_sender,
       suggested_next_actions: meta.suggested_next_actions,
       attachments: meta.attachments,
