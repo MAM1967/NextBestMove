@@ -157,9 +157,6 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
         </Link>
       </div>
 
-      {reason && (
-        <p className="mt-3 text-xs text-gray-500 italic">{reason}</p>
-      )}
     </div>
   );
 }
