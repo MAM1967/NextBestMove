@@ -5,6 +5,7 @@ import { htmlToText } from "./html-to-text";
 import { fetchGmailMessages, extractGmailMetadata } from "./gmail";
 import { fetchOutlookMessages, extractOutlookMetadata } from "./outlook";
 import type { EmailProvider } from "./providers";
+import { findNextAvailableActionDate } from "@/lib/actions/smart-scheduling";
 
 /**
  * Create an action from an AI-recommended email signal
@@ -20,6 +21,14 @@ async function createActionFromEmailSignal(
   try {
     const supabase = createAdminClient();
     
+    // Use smart scheduling to ensure max 2 actions per day per relationship
+    const scheduledDate = await findNextAvailableActionDate(
+      userId,
+      personId,
+      dueDate,
+      2 // Max 2 actions per day
+    );
+    
     const { data: action, error } = await supabase
       .from("actions")
       .insert({
@@ -27,7 +36,7 @@ async function createActionFromEmailSignal(
         person_id: personId,
         action_type: actionType,
         description: description,
-        due_date: dueDate,
+        due_date: scheduledDate, // Use smart-scheduled date
         state: "NEW",
         auto_created: true,
         notes: `Auto-created from email signal (email_metadata_id: ${emailMetadataId})`,
@@ -40,7 +49,7 @@ async function createActionFromEmailSignal(
       return null;
     }
 
-    console.log(`[Email Ingestion] ✅ Created action ${action.id} from email signal`);
+    console.log(`[Email Ingestion] ✅ Created action ${action.id} from email signal (scheduled for ${scheduledDate})`);
     return action.id;
   } catch (error) {
     console.error(`[Email Ingestion] Error creating action from signal:`, error);
