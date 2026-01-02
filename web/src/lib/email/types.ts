@@ -61,6 +61,19 @@ export interface EmailSignals {
   recommended_action_type: ActionType | null;
   recommended_action_description: string | null;
   recommended_due_date: string | null;
+  // Comprehensive signal fields
+  thread_summary_1l?: string | null;
+  thread_summary_detail?: string | null;
+  primary_category?: string | null;
+  secondary_categories?: string[] | null;
+  suggested_next_actions?: string[] | null;
+  attachments?: Array<{ filename: string; type: string; reason: string }> | null;
+  links?: Array<{ url: string; label: string }> | null;
+  relationship_signal?: {
+    signal_type: string;
+    strength: "Low" | "Medium" | "High";
+    evidence: string[];
+  } | null;
 }
 
 

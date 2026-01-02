@@ -35,10 +35,10 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
             relationship_name: data.relationship_name,
             last_email_received: lastEmail.received_at,
             unread_count: 0, // TODO: Calculate from email_metadata if we track read status
-            recent_topics: data.emails
+            recent_topics: lastEmail.topics || data.emails
               .map((e: any) => e.last_topic)
               .filter((t: string | null) => t !== null),
-            recent_asks: data.emails
+            recent_asks: lastEmail.asks_from_sender || data.emails
               .map((e: any) => e.ask)
               .filter((a: string | null) => a !== null),
             recent_open_loops: Array.isArray(lastEmail.open_loops) 
@@ -51,6 +51,15 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
             recommended_action_type: lastEmail.recommended_action_type || null,
             recommended_action_description: lastEmail.recommended_action_description || null,
             recommended_due_date: lastEmail.recommended_due_date || null,
+            // Comprehensive signal fields
+            thread_summary_1l: lastEmail.thread_summary_1l || null,
+            thread_summary_detail: lastEmail.thread_summary_detail || null,
+            primary_category: lastEmail.primary_category || null,
+            secondary_categories: lastEmail.secondary_categories || null,
+            suggested_next_actions: lastEmail.suggested_next_actions || null,
+            attachments: lastEmail.attachments || null,
+            links: lastEmail.links || null,
+            relationship_signal: lastEmail.relationship_signal || null,
           });
         } else {
           setSignals(null);
@@ -99,32 +108,66 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
       <h3 className="mb-4 text-lg font-semibold text-zinc-900">Email Signals</h3>
       
       <div className="space-y-4">
-        {/* Last Email */}
-        {signals.last_email_received && (
-          <div>
-            <div className="text-xs font-medium text-zinc-600">Last Email</div>
-            <div className="mt-1 text-sm text-zinc-900">
-              {formatDistanceToNow(new Date(signals.last_email_received), { addSuffix: true })}
-            </div>
+        {/* 1-line Summary */}
+        {signals.thread_summary_1l && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <div className="text-xs font-medium text-blue-700 mb-1">Summary</div>
+            <div className="text-sm text-zinc-900">{signals.thread_summary_1l}</div>
           </div>
         )}
 
-        {/* Unread Count */}
-        {signals.unread_count > 0 && (
+        {/* Signal Strength */}
+        {signals.relationship_signal && (
           <div>
-            <div className="text-xs font-medium text-zinc-600">Unread Emails</div>
-            <div className="mt-1 text-sm font-semibold text-orange-600">
-              {signals.unread_count} unread
+            <div className="text-xs font-medium text-zinc-600 mb-1">Signal Strength</div>
+            <div className="flex items-center gap-2">
+              <span
+                className={`rounded-full px-2 py-1 text-xs font-medium ${
+                  signals.relationship_signal.strength === "High"
+                    ? "bg-red-100 text-red-800"
+                    : signals.relationship_signal.strength === "Medium"
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {signals.relationship_signal.strength}
+              </span>
+              <span className="text-xs text-zinc-600">
+                {signals.relationship_signal.signal_type}
+              </span>
             </div>
+            {signals.relationship_signal.evidence.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {signals.relationship_signal.evidence.slice(0, 3).map((evidence, index) => (
+                  <li key={index} className="text-xs text-zinc-600">
+                    • {evidence}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
-        {/* Recent Topics */}
+        {/* Asks */}
+        {signals.recent_asks.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600 mb-2">Asks</div>
+            <ul className="space-y-2">
+              {signals.recent_asks.slice(0, 5).map((ask, index) => (
+                <li key={index} className="text-sm text-zinc-700 bg-blue-50 p-2 rounded">
+                  {ask}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Topics */}
         {signals.recent_topics.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-zinc-600">Recent Topics</div>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {signals.recent_topics.slice(0, 5).map((topic, index) => (
+            <div className="text-xs font-medium text-zinc-600 mb-2">Topics</div>
+            <div className="flex flex-wrap gap-2">
+              {signals.recent_topics.map((topic, index) => (
                 <span
                   key={index}
                   className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800"
@@ -136,123 +179,91 @@ export function RelationshipSignals({ relationshipId }: RelationshipSignalsProps
           </div>
         )}
 
-        {/* Recent Asks */}
-        {signals.recent_asks.length > 0 && (
+        {/* Next Actions */}
+        {signals.suggested_next_actions && signals.suggested_next_actions.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-zinc-600">Recent Asks</div>
-            <ul className="mt-1 space-y-1">
-              {signals.recent_asks.slice(0, 3).map((ask, index) => (
+            <div className="text-xs font-medium text-zinc-600 mb-2">Next Actions</div>
+            <ul className="space-y-2">
+              {signals.suggested_next_actions.map((action, index) => (
+                <li key={index} className="text-sm text-zinc-700 bg-purple-50 p-2 rounded">
+                  {action}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Attachments to Review */}
+        {signals.attachments && signals.attachments.length > 0 && (
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
+            <div className="text-xs font-medium text-orange-700 mb-2">Attachments to Review</div>
+            <ul className="space-y-2">
+              {signals.attachments.map((attachment, index) => (
                 <li key={index} className="text-sm text-zinc-700">
-                  • {ask}
+                  <div className="font-medium">{attachment.filename}</div>
+                  <div className="text-xs text-zinc-600">{attachment.type} • {attachment.reason}</div>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Open Loops */}
-        {signals.recent_open_loops.length > 0 && (
+        {/* Links */}
+        {signals.links && signals.links.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-orange-700">Open Loops</div>
-            <ul className="mt-1 space-y-1">
-              {signals.recent_open_loops.slice(0, 3).map((loop, index) => (
-                <li key={index} className="text-sm font-medium text-orange-800">
-                  ⚠️ {loop}
+            <div className="text-xs font-medium text-zinc-600 mb-2">Links</div>
+            <ul className="space-y-1">
+              {signals.links.map((link, index) => (
+                <li key={index}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {link.label || link.url}
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Recent Labels */}
-        {signals.recent_labels.length > 0 && (
+        {/* Detailed Summary (collapsible) */}
+        {signals.thread_summary_detail && (
+          <details className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+            <summary className="text-xs font-medium text-zinc-700 cursor-pointer">
+              Detailed Summary
+            </summary>
+            <p className="mt-2 text-sm text-zinc-700">{signals.thread_summary_detail}</p>
+          </details>
+        )}
+
+        {/* Primary Category */}
+        {signals.primary_category && (
           <div>
-            <div className="text-xs font-medium text-zinc-600">Labels</div>
+            <div className="text-xs font-medium text-zinc-600">Category</div>
+            <div className="mt-1">
+              <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700">
+                {signals.primary_category}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Secondary Categories */}
+        {signals.secondary_categories && signals.secondary_categories.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-600">Secondary Categories</div>
             <div className="mt-1 flex flex-wrap gap-2">
-              {signals.recent_labels.slice(0, 5).map((label, index) => (
+              {signals.secondary_categories.map((category, index) => (
                 <span
                   key={index}
                   className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700"
                 >
-                  {label}
+                  {category}
                 </span>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sentiment */}
-        {signals.last_email_sentiment && (
-          <div>
-            <div className="text-xs font-medium text-zinc-600">Sentiment</div>
-            <div className="mt-1">
-              <span
-                className={`rounded-full px-2 py-1 text-xs font-medium ${
-                  signals.last_email_sentiment === "positive"
-                    ? "bg-green-100 text-green-800"
-                    : signals.last_email_sentiment === "negative"
-                    ? "bg-red-100 text-red-800"
-                    : signals.last_email_sentiment === "urgent"
-                    ? "bg-orange-100 text-orange-800"
-                    : "bg-zinc-100 text-zinc-800"
-                }`}
-              >
-                {signals.last_email_sentiment}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Intent */}
-        {signals.last_email_intent && (
-          <div>
-            <div className="text-xs font-medium text-zinc-600">Intent</div>
-            <div className="mt-1">
-              <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                {signals.last_email_intent.replace("_", " ")}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Recommended Action */}
-        {signals.recommended_action_type && (
-          <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
-            <div className="text-xs font-medium text-purple-700">AI Recommended Action</div>
-            <div className="mt-2 space-y-2">
-              <div className="text-sm font-semibold text-purple-900">
-                {signals.recommended_action_type.replace(/_/g, " ")}
-              </div>
-              {signals.recommended_action_description && (
-                <p className="text-sm text-zinc-700">{signals.recommended_action_description}</p>
-              )}
-              {signals.recommended_due_date && (
-                <p className="text-xs text-zinc-600">
-                  Suggested due: {new Date(signals.recommended_due_date).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* AI Insights - Attachment and Follow-up Prompts */}
-        {signals.last_email_received && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-            <div className="text-xs font-medium text-blue-700">AI Insights</div>
-            <div className="mt-2 space-y-1 text-sm text-zinc-700">
-              {signals.recent_open_loops.length > 0 && (
-                <p>
-                  💡 Consider following up on: {signals.recent_open_loops[0]}
-                </p>
-              )}
-              <p>
-                📎 Check for attachments that may need your attention
-              </p>
-              {signals.recent_topics.length > 0 && (
-                <p>
-                  💬 Recent discussion topics: {signals.recent_topics.slice(0, 2).join(", ")}
-                </p>
-              )}
             </div>
           </div>
         )}

@@ -142,7 +142,7 @@ export function GlobalRollup() {
               {rollup.overdueRelationships.map((rel) => (
                 <Link
                   key={rel.id}
-                  href={`/app/leads/${rel.id}`}
+                  href={`/app/leads?editId=${rel.id}`}
                   className="block rounded-md border border-orange-200 bg-orange-50 p-3 text-sm transition-colors hover:bg-orange-100"
                 >
                   <div className="flex items-start justify-between">
