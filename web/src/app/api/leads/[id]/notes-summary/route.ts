@@ -66,20 +66,73 @@ export async function GET(
       );
     }
 
-    // Compute aggregates
+    // Compute aggregates - interactions include:
+    // 1. Completed actions
+    // 2. Emails received
+    // 3. Meeting notes created
+    
     const completedActions = actions?.filter(
       (a) => a.completed_at && (a.state === "DONE" || a.state === "SENT" || a.state === "REPLIED")
     ) || [];
 
-    // Total interactions in last 30 days
-    const recentInteractions = completedActions.filter((a) => {
-      if (!a.completed_at) return false;
-      const completedDate = new Date(a.completed_at);
-      return completedDate >= thirtyDaysAgo;
+    // Get emails for this relationship
+    const { data: emails } = await supabase
+      .from("email_metadata")
+      .select("received_at")
+      .eq("user_id", user.id)
+      .eq("person_id", id)
+      .order("received_at", { ascending: false });
+
+    // Get meeting notes for this relationship
+    let meetingNotes: any[] = [];
+    try {
+      const { data: notes } = await supabase
+        .from("meeting_notes")
+        .select("created_at")
+        .eq("user_id", user.id)
+        .eq("person_id", id);
+      meetingNotes = notes || [];
+    } catch (error) {
+      // Table might not exist, that's okay
+      console.log("meeting_notes table not found, skipping");
+    }
+
+    // Combine all interaction timestamps
+    const allInteractions: Date[] = [];
+    
+    // Add completed actions
+    completedActions.forEach((a) => {
+      if (a.completed_at) {
+        allInteractions.push(new Date(a.completed_at));
+      }
+    });
+    
+    // Add emails
+    if (emails) {
+      emails.forEach((e) => {
+        if (e.received_at) {
+          allInteractions.push(new Date(e.received_at));
+        }
+      });
+    }
+    
+    // Add meeting notes
+    meetingNotes.forEach((n) => {
+      if (n.created_at) {
+        allInteractions.push(new Date(n.created_at));
+      }
     });
 
-    // Last interaction date
-    const lastInteraction = completedActions[0]?.completed_at || lead.last_interaction_at || null;
+    // Sort by date (most recent first)
+    allInteractions.sort((a, b) => b.getTime() - a.getTime());
+
+    // Total interactions in last 30 days
+    const recentInteractions = allInteractions.filter((date) => date >= thirtyDaysAgo);
+
+    // Last interaction date (most recent from any source)
+    const lastInteraction = allInteractions.length > 0 
+      ? allInteractions[0].toISOString()
+      : lead.last_interaction_at || null;
 
     // Pending action items (NEW, SENT, SNOOZED states)
     const pendingActions = actions?.filter(
@@ -164,8 +217,8 @@ export async function GET(
     const summary = {
       relationshipId: id,
       relationshipName: lead.name,
-      // Interaction metrics
-      totalInteractions: completedActions.length,
+      // Interaction metrics (includes actions, emails, meeting notes)
+      totalInteractions: allInteractions.length,
       recentInteractions: recentInteractions.length,
       lastInteractionDate: lastInteraction,
       // Action items
