@@ -26,7 +26,7 @@ interface TopOverdueAction {
 interface OverdueRelationship {
   id: string;
   name: string;
-  nextTouchDueAt: string;
+  nextTouchDueAt: string | null;
   daysOverdue: number;
 }
 
@@ -153,7 +153,7 @@ export function GlobalRollup() {
                       </div>
                     </div>
                     <div className="ml-4 text-right text-xs text-orange-600">
-                      {formatDateForDisplay(rel.nextTouchDueAt.split("T")[0])}
+                      {rel.nextTouchDueAt ? formatDateForDisplay(rel.nextTouchDueAt.split("T")[0]) : "N/A"}
                     </div>
                   </div>
                 </Link>
