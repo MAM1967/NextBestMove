@@ -43,7 +43,7 @@ export async function GET(
     const { data: emailMetadata, error: metadataError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels, sentiment, intent, recommended_action_type, recommended_action_description, recommended_due_date, thread_summary_1l, thread_summary_detail, primary_category, secondary_categories, topics, proposed_tiers, asks_from_sender, value_to_capture, suggested_next_actions, attachments, links, relationship_signal"
       )
       .eq("user_id", user.id)
       .eq("person_id", leadId)
@@ -69,6 +69,22 @@ export async function GET(
       openLoops: meta.open_loops || [],
       priority: meta.priority,
       labels: meta.labels || [],
+      // Comprehensive signal fields
+      thread_summary_1l: meta.thread_summary_1l,
+      thread_summary_detail: meta.thread_summary_detail,
+      primary_category: meta.primary_category,
+      secondary_categories: meta.secondary_categories,
+      topics: meta.topics,
+      asks_from_sender: meta.asks_from_sender,
+      suggested_next_actions: meta.suggested_next_actions,
+      attachments: meta.attachments,
+      links: meta.links,
+      relationship_signal: meta.relationship_signal,
+      sentiment: meta.sentiment,
+      intent: meta.intent,
+      recommended_action_type: meta.recommended_action_type,
+      recommended_action_description: meta.recommended_action_description,
+      recommended_due_date: meta.recommended_due_date,
     }));
 
     return NextResponse.json({

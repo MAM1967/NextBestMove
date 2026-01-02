@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { LeadFilterToggle } from "./LeadFilterToggle";
 import { LeadList } from "./LeadList";
 import { AddLeadModal } from "./AddLeadModal";
@@ -12,6 +13,8 @@ import { GlobalRollup } from "./GlobalRollup";
 import type { Lead, LeadFilter } from "@/lib/leads/types";
 
 export default function LeadsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [filter, setFilter] = useState<LeadFilter>("ALL");
@@ -92,6 +95,20 @@ export default function LeadsPage() {
   useEffect(() => {
     loadLeads();
   }, []);
+
+  // Handle editId query param to open edit modal
+  useEffect(() => {
+    const editId = searchParams.get("editId");
+    if (editId && leads.length > 0) {
+      const leadToEdit = leads.find((lead) => lead.id === editId);
+      if (leadToEdit) {
+        setSelectedLead(leadToEdit);
+        setIsEditModalOpen(true);
+        // Remove query param from URL
+        router.replace("/app/leads", { scroll: false });
+      }
+    }
+  }, [searchParams, leads, router]);
 
   // Apply filter
   useEffect(() => {
