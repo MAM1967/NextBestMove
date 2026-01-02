@@ -18,9 +18,10 @@ interface MeetingNote {
 
 interface MeetingNotesProps {
   leadId: string;
+  onNotesSaved?: () => void; // Callback to trigger NotesSummary refresh
 }
 
-export function MeetingNotes({ leadId }: MeetingNotesProps) {
+export function MeetingNotes({ leadId, onNotesSaved }: MeetingNotesProps) {
   const [notes, setNotes] = useState<MeetingNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,11 @@ export function MeetingNotes({ leadId }: MeetingNotesProps) {
       setNotes((prev) => [data.meetingNote, ...prev]);
       setNewNoteContent("");
       setShowAddForm(false);
+
+      // Trigger NotesSummary refresh
+      if (onNotesSaved) {
+        onNotesSaved();
+      }
 
       // Poll for extraction completion (with timeout)
       if (data.meetingNote.extraction_status === "processing") {

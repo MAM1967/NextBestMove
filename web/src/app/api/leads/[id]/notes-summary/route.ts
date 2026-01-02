@@ -100,9 +100,37 @@ export async function GET(
       return dueDate < today;
     });
 
-    // Key research topics (extract from notes - simple keyword extraction)
-    // For v1, we'll just show if there are notes with certain keywords
+    // Key research topics - merge from multiple sources:
+    // 1. Email topics (from comprehensive AI extraction)
+    // 2. Notes keywords
     const researchTopics: string[] = [];
+    
+    // Get email topics from comprehensive AI extraction
+    const { data: emails } = await supabase
+      .from("email_metadata")
+      .select("topics_comprehensive, last_topic")
+      .eq("user_id", user.id)
+      .eq("person_id", id)
+      .order("received_at", { ascending: false })
+      .limit(20);
+
+    if (emails && emails.length > 0) {
+      emails.forEach((email) => {
+        // Use comprehensive topics array if available
+        if (email.topics_comprehensive && Array.isArray(email.topics_comprehensive)) {
+          email.topics_comprehensive.forEach((topic) => {
+            if (topic && !researchTopics.includes(topic)) {
+              researchTopics.push(topic);
+            }
+          });
+        } else if (email.last_topic && !researchTopics.includes(email.last_topic)) {
+          // Fallback to legacy last_topic
+          researchTopics.push(email.last_topic);
+        }
+      });
+    }
+
+    // Also extract from notes (simple keyword detection)
     const allNotes = [
       lead.notes,
       ...(actions?.map((a) => a.notes).filter(Boolean) || []),

@@ -52,6 +52,7 @@ export function EditLeadModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [notesSummaryRefreshTrigger, setNotesSummaryRefreshTrigger] = useState(0);
 
   // Helper to extract email from legacy mailto: URL
   const extractEmailFromUrl = (url: string | null | undefined): string => {
@@ -191,6 +192,10 @@ export function EditLeadModal({
         preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
       setErrors({});
+      // Trigger NotesSummary refresh if notes were changed
+      if (formData.notes.trim() !== (lead.notes || "")) {
+        setNotesSummaryRefreshTrigger((prev) => prev + 1);
+      }
       onClose();
     } catch (error) {
       setErrors({
@@ -520,14 +525,17 @@ export function EditLeadModal({
         {/* Notes Summary Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <NotesSummary relationshipId={lead.id} />
+            <NotesSummary relationshipId={lead.id} refreshTrigger={notesSummaryRefreshTrigger} />
           </div>
         )}
 
         {/* Meeting Notes Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <MeetingNotes leadId={lead.id} />
+            <MeetingNotes 
+              leadId={lead.id} 
+              onNotesSaved={() => setNotesSummaryRefreshTrigger((prev) => prev + 1)}
+            />
           </div>
         )}
 
