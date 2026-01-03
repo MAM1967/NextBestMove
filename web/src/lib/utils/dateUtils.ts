@@ -65,10 +65,57 @@ export function getDayOfWeekInTimezone(timezone: string = 'America/New_York'): n
 }
 
 /**
+ * Get the day of week for a specific date string (YYYY-MM-DD) in a specific timezone
+ * This is used to check if a given date (not just "today") is a weekend
+ * 
+ * CRITICAL: The date string represents a calendar date (timezone-agnostic).
+ * We need to interpret what day of week that date is in the user's timezone.
+ * 
+ * Strategy: Create a Date object at noon UTC for that date (to avoid midnight edge cases),
+ * then use formatInTimeZone to get the day name as it appears in the user's timezone.
+ * This ensures consistency with how getTodayInTimezone works.
+ */
+export function getDayOfWeekForDate(dateString: string, timezone: string = 'America/New_York'): number {
+  // Parse the date string
+  const dateParts = dateString.split("-").map(Number);
+  const year = dateParts[0];
+  const month = dateParts[1] - 1; // JavaScript months are 0-indexed
+  const day = dateParts[2];
+  
+  // Create a Date object at noon UTC for that date
+  // Using UTC noon avoids timezone conversion issues at midnight
+  // This date represents the calendar date, and we'll format it in the user's timezone
+  const dateAtNoonUTC = new Date(Date.UTC(year, month, day, 12, 0, 0));
+  
+  // Format this date in the user's timezone to get the day name
+  // This gives us the day of week as it appears in the user's timezone
+  const dayName = formatInTimeZone(dateAtNoonUTC, timezone, 'EEEE');
+  
+  const dayNames: Record<string, number> = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+  return dayNames[dayName] ?? 1; // Default to Monday if not found
+}
+
+/**
  * Check if a date is a weekend in a specific timezone
  */
 export function isWeekendInTimezone(timezone: string = 'America/New_York'): boolean {
   const dayOfWeek = getDayOfWeekInTimezone(timezone);
+  return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
+/**
+ * Check if a specific date string (YYYY-MM-DD) is a weekend in a specific timezone
+ */
+export function isDateWeekend(dateString: string, timezone: string = 'America/New_York'): boolean {
+  const dayOfWeek = getDayOfWeekForDate(dateString, timezone);
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
