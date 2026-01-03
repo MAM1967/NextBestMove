@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { CapacityLevel } from "@/lib/plan/capacity";
+import { capacityLabels } from "@/lib/plan/capacity-labels";
 
 interface DefaultCapacitySectionProps {
   initialDefault?: CapacityLevel | null;
@@ -28,28 +29,28 @@ export function DefaultCapacitySection({
   }> = [
     {
       value: null,
-      label: "Auto (from calendar)",
-      description: "Use calendar to determine capacity",
+      label: capacityLabels.auto.label,
+      description: capacityLabels.auto.description,
     },
     {
       value: "micro",
-      label: "Micro",
-      description: "1-2 actions per day",
+      label: capacityLabels.micro.label,
+      description: capacityLabels.micro.description,
     },
     {
       value: "light",
-      label: "Light",
-      description: "3-4 actions per day",
+      label: capacityLabels.light.label,
+      description: capacityLabels.light.description,
     },
     {
       value: "standard",
-      label: "Standard",
-      description: "5-6 actions per day",
+      label: capacityLabels.standard.label,
+      description: capacityLabels.standard.description,
     },
     {
       value: "heavy",
-      label: "Heavy",
-      description: "7-8 actions per day",
+      label: capacityLabels.heavy.label,
+      description: capacityLabels.heavy.description,
     },
   ];
 
