@@ -600,6 +600,15 @@ export async function generateDailyPlanForUser(
 
     // Create or update daily_plan record
     // If plan exists (with just override), update it; otherwise create new
+    console.log(`[generateDailyPlan] Creating/updating daily plan:`, {
+      existingPlan: existingPlan?.id || null,
+      date,
+      capacityLevel,
+      actionCount,
+      selectedActionsCount: selectedActions.length,
+      fastWin: fastWin ? fastWin.action.id : null,
+    });
+    
     let dailyPlan;
     if (existingPlan) {
       // Update existing plan (preserve override if it exists)
@@ -622,6 +631,7 @@ export async function generateDailyPlanForUser(
         return { success: false, error: "Failed to update daily plan" };
       }
       dailyPlan = updatedPlan;
+      console.log(`[generateDailyPlan] Updated existing plan:`, dailyPlan.id);
     } else {
       // Create new plan
       const { data: newPlan, error: planError } = await supabase
@@ -641,6 +651,7 @@ export async function generateDailyPlanForUser(
         return { success: false, error: "Failed to create daily plan" };
       }
       dailyPlan = newPlan;
+      console.log(`[generateDailyPlan] Created new plan:`, dailyPlan.id);
     }
 
     // Create daily_plan_actions records
@@ -668,6 +679,7 @@ export async function generateDailyPlanForUser(
     }
 
     if (planActions.length > 0) {
+      console.log(`[generateDailyPlan] Creating ${planActions.length} plan actions`);
       const { error: planActionsError } = await supabase
         .from("daily_plan_actions")
         .insert(planActions);
@@ -678,7 +690,15 @@ export async function generateDailyPlanForUser(
         await supabase.from("daily_plans").delete().eq("id", dailyPlan.id);
         return { success: false, error: "Failed to create plan actions" };
       }
+      console.log(`[generateDailyPlan] Successfully created ${planActions.length} plan actions`);
+    } else {
+      console.warn(`[generateDailyPlan] No plan actions to create (planActions.length = 0)`);
     }
+
+    console.log(`[generateDailyPlan] Plan generation completed successfully:`, {
+      planId: dailyPlan.id,
+      actionCount: planActions.length,
+    });
 
     return {
       success: true,
