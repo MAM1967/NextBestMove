@@ -184,33 +184,25 @@ export async function generateDailyPlanForUser(
     const userTimezone = userProfile?.timezone || "America/New_York"; // Default fallback
 
     // Check if date is a weekend in the user's timezone
-    // Parse date string (YYYY-MM-DD) and check day of week in user's timezone
-    const dateParts = date.split("-").map(Number);
-    const planYear = dateParts[0];
-    const planMonth = dateParts[1];
-    const planDay = dateParts[2];
+    // Use the same utility function that's used elsewhere for consistency
+    const { getDayOfWeekForDate, isDateWeekend } = await import("@/lib/utils/dateUtils");
     
-    // Create date object for the given date (at noon UTC to avoid DST issues)
-    const dateAtNoonUTC = new Date(Date.UTC(planYear, planMonth - 1, planDay, 12, 0, 0));
+    // Check if the date is a weekend using the utility function
+    // This ensures we use the same logic as getTodayInTimezone
+    const isWeekend = isDateWeekend(date, userTimezone);
     
-    // Get day name using user's timezone
-    const dayName = new Intl.DateTimeFormat("en-US", {
-      timeZone: userTimezone,
-      weekday: "long",
-    }).format(dateAtNoonUTC);
-    
-    // Convert day name to day number (0 = Sunday, 6 = Saturday)
-    const dayNames: Record<string, number> = {
-      Sunday: 0,
-      Monday: 1,
-      Tuesday: 2,
-      Wednesday: 3,
-      Thursday: 4,
-      Friday: 5,
-      Saturday: 6,
+    // Get day name for the error message
+    const dayOfWeek = getDayOfWeekForDate(date, userTimezone);
+    const dayNames: Record<number, string> = {
+      0: "Sunday",
+      1: "Monday",
+      2: "Tuesday",
+      3: "Wednesday",
+      4: "Thursday",
+      5: "Friday",
+      6: "Saturday",
     };
-    const dayOfWeek = dayNames[dayName] ?? 1; // Default to Monday if not found
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const dayName = dayNames[dayOfWeek] || "day";
 
     // If weekend and user excludes weekends, skip with helpful message
     if (isWeekend && excludeWeekends) {
