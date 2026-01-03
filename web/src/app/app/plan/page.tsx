@@ -15,6 +15,7 @@ import { DurationSelector } from "../components/DurationSelector";
 import { Action } from "../actions/types";
 import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
 import type { CapacityLevel } from "@/lib/plan/capacity";
+import { getCapacityLabel } from "@/lib/plan/capacity-labels";
 
 interface DailyPlan {
   id: string;
@@ -644,10 +645,7 @@ export default function DailyPlanPage() {
                     <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                       <p className="text-zinc-700">
                         <span className="font-medium">
-                          {capacityOverride === "micro" && "Busy Day"}
-                          {capacityOverride === "light" && "Light Day"}
-                          {capacityOverride === "standard" && "Standard"}
-                          {capacityOverride === "heavy" && "Heavy Day"}
+                          {getCapacityLabel(capacityOverride)}
                         </span>{" "}
                         capacity is set at{" "}
                         <span className="font-semibold">
@@ -672,12 +670,11 @@ export default function DailyPlanPage() {
                   defaultCapacityOverride !== dailyPlan.capacity;
                 
                 if (isAdaptiveRecovery) {
-                  const isMicro = dailyPlan.capacity === "micro";
                   return (
                     <div className="rounded-lg bg-blue-50 p-3 text-sm">
                       <p className="text-blue-900">
                         <span className="font-medium">
-                          {isMicro ? "Micro" : "Light"} capacity
+                          {getCapacityLabel(dailyPlan.capacity || null)}
                         </span>{" "}
                         ({totalCount} task{totalCount !== 1 ? "s" : ""}) - easing back into your routine
                       </p>
@@ -851,10 +848,7 @@ export default function DailyPlanPage() {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    {dailyPlan.capacity === "light" && "Light capacity"}
-                    {dailyPlan.capacity === "micro" && "Micro capacity"}
-                    {dailyPlan.capacity === "heavy" && "Heavy capacity"}
-                    {dailyPlan.capacity === "standard" && "Calendar-based capacity"}
+                    {getCapacityLabel(dailyPlan.capacity || null)}
                   </span>
                 )}
               </div>
