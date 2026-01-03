@@ -71,9 +71,14 @@ export function getDayOfWeekInTimezone(timezone: string = 'America/New_York'): n
  * CRITICAL: The date string represents a calendar date (timezone-agnostic).
  * We need to interpret what day of week that date is in the user's timezone.
  * 
- * Strategy: Create a Date object at noon UTC for that date (to avoid midnight edge cases),
- * then use formatInTimeZone to get the day name as it appears in the user's timezone.
- * This ensures consistency with how getTodayInTimezone works.
+ * Strategy: The date string "2026-01-02" represents Jan 2 in the user's timezone.
+ * We use the same approach as getTodayInTimezone: format the current date/time
+ * in the user's timezone, but we need to check what day a specific date string
+ * represents in that timezone.
+ * 
+ * The key insight: We create a date at noon UTC for that date, then format it
+ * in the user's timezone. This works because formatInTimeZone will show us
+ * what day that UTC moment appears as in the user's timezone.
  */
 export function getDayOfWeekForDate(dateString: string, timezone: string = 'America/New_York'): number {
   // Parse the date string
@@ -83,12 +88,12 @@ export function getDayOfWeekForDate(dateString: string, timezone: string = 'Amer
   const day = dateParts[2];
   
   // Create a Date object at noon UTC for that date
-  // Using UTC noon avoids timezone conversion issues at midnight
-  // This date represents the calendar date, and we'll format it in the user's timezone
+  // This represents a specific moment in time (noon UTC on that calendar date)
   const dateAtNoonUTC = new Date(Date.UTC(year, month, day, 12, 0, 0));
   
-  // Format this date in the user's timezone to get the day name
-  // This gives us the day of week as it appears in the user's timezone
+  // Format this UTC date in the user's timezone to get the day name
+  // formatInTimeZone converts the UTC moment to the user's timezone and formats it
+  // This tells us what day of week that UTC moment appears as in the user's timezone
   const dayName = formatInTimeZone(dateAtNoonUTC, timezone, 'EEEE');
   
   const dayNames: Record<string, number> = {
