@@ -57,6 +57,7 @@ export default function DailyPlanPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [capacityOverride, setCapacityOverride] = useState<CapacityLevel | null>(null);
   const [capacityOverrideReason, setCapacityOverrideReason] = useState<string | null>(null);
+  const [defaultCapacityOverride, setDefaultCapacityOverride] = useState<CapacityLevel | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
 
   useEffect(() => {
@@ -105,9 +106,11 @@ export default function DailyPlanPage() {
         const data = (await response.json()) as {
           dailyOverride?: CapacityLevel | null;
           dailyOverrideReason?: string | null;
+          defaultOverride?: CapacityLevel | null;
         };
         setCapacityOverride(data.dailyOverride || null);
         setCapacityOverrideReason(data.dailyOverrideReason || null);
+        setDefaultCapacityOverride(data.defaultOverride || null);
       }
     } catch (err) {
       console.error("Failed to fetch capacity override:", err);
@@ -611,31 +614,91 @@ export default function DailyPlanPage() {
         {dailyPlan && (
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="space-y-4">
-              <CapacityOverrideControl
-                date={new Date().toISOString().split("T")[0]}
-                currentOverride={capacityOverride}
-                currentOverrideReason={capacityOverrideReason}
-                onOverrideChange={() => {
-                  fetchCapacityOverride();
-                  // Optionally regenerate plan when override changes
-                  // handleGeneratePlan();
-                }}
-                showLabel={true}
-                compact={false}
-              />
+              {/* Determine effective capacity: manual override OR actual capacity used (includes adaptive recovery) */}
+              {(() => {
+                const effectiveCapacity = capacityOverride || (dailyPlan.capacity !== "default" ? dailyPlan.capacity : null);
+                return (
+                  <CapacityOverrideControl
+                    date={new Date().toISOString().split("T")[0]}
+                    currentOverride={effectiveCapacity}
+                    currentOverrideReason={capacityOverrideReason}
+                    onOverrideChange={() => {
+                      fetchCapacityOverride();
+                      // Optionally regenerate plan when override changes
+                      // handleGeneratePlan();
+                    }}
+                    showLabel={true}
+                    compact={false}
+                  />
+                );
+              })()}
               
-              {/* Show auto capacity details when Auto is selected */}
-              {!capacityOverride && dailyPlan.capacity && (
-                <div className="rounded-lg bg-zinc-50 p-3 text-sm">
-                  <p className="text-zinc-700">
-                    <span className="font-medium">Auto Capacity</span> is set at{" "}
-                    <span className="font-semibold">
-                      {totalCount} task{totalCount !== 1 ? "s" : ""}
-                    </span>{" "}
-                    based on {dailyPlan.free_minutes || 0} minutes of availability today.
-                  </p>
-                </div>
-              )}
+              {/* Show capacity details - different messages for Auto vs Adaptive Recovery vs Manual Override */}
+              {(() => {
+                // If there's a manual override, show override message
+                if (capacityOverride) {
+                  return (
+                    <div className="rounded-lg bg-zinc-50 p-3 text-sm">
+                      <p className="text-zinc-700">
+                        <span className="font-medium">
+                          {capacityOverride === "micro" && "Busy Day"}
+                          {capacityOverride === "light" && "Light Day"}
+                          {capacityOverride === "standard" && "Standard"}
+                          {capacityOverride === "heavy" && "Heavy Day"}
+                        </span>{" "}
+                        capacity is set at{" "}
+                        <span className="font-semibold">
+                          {totalCount} task{totalCount !== 1 ? "s" : ""}
+                        </span>
+                        {capacityOverrideReason && (
+                          <span className="text-zinc-500"> ({capacityOverrideReason})</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                }
+                
+                // If adaptive recovery was applied (capacity is micro/light but no manual override and not user default)
+                // We know it's adaptive recovery if:
+                // - dailyPlan.capacity is micro/light
+                // - No manual override (capacityOverride is null)
+                // - Not user's default (defaultCapacityOverride !== dailyPlan.capacity)
+                const isAdaptiveRecovery = 
+                  (dailyPlan.capacity === "micro" || dailyPlan.capacity === "light") &&
+                  !capacityOverride &&
+                  defaultCapacityOverride !== dailyPlan.capacity;
+                
+                if (isAdaptiveRecovery) {
+                  const isMicro = dailyPlan.capacity === "micro";
+                  return (
+                    <div className="rounded-lg bg-blue-50 p-3 text-sm">
+                      <p className="text-blue-900">
+                        <span className="font-medium">
+                          {isMicro ? "Micro" : "Light"} capacity
+                        </span>{" "}
+                        ({totalCount} task{totalCount !== 1 ? "s" : ""}) - easing back into your routine
+                      </p>
+                    </div>
+                  );
+                }
+                
+                // If capacity is truly auto (from calendar or default)
+                if (dailyPlan.capacity && dailyPlan.capacity !== "default") {
+                  return (
+                    <div className="rounded-lg bg-zinc-50 p-3 text-sm">
+                      <p className="text-zinc-700">
+                        <span className="font-medium">Auto Capacity</span> is set at{" "}
+                        <span className="font-semibold">
+                          {totalCount} task{totalCount !== 1 ? "s" : ""}
+                        </span>{" "}
+                        based on {dailyPlan.free_minutes || 0} minutes of availability today.
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return null;
+              })()}
               
               {/* Duration Filter */}
               <div className="border-t border-zinc-200 pt-4">
