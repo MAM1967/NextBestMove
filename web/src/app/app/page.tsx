@@ -9,6 +9,7 @@ import { PaymentFailureModalClient } from "./components/PaymentFailureModalClien
 import { GlobalRollup } from "./components/GlobalRollup";
 import { ChannelNudgesList } from "./components/ChannelNudgeCard";
 import { BestActionCardClient } from "./components/BestActionCardClient";
+import { getTodayInTimezone, isWeekendInTimezone } from "@/lib/utils/dateUtils";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -89,12 +90,12 @@ export default async function TodayPage() {
     }
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // Get today's date in user's timezone (not browser/server timezone)
+  const userTimezone = userProfile?.timezone || "America/New_York";
+  const today = getTodayInTimezone(userTimezone);
 
-  // Check if today is a weekend
-  const todayDate = new Date();
-  const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  // Check if today is a weekend in user's timezone
+  const isWeekend = isWeekendInTimezone(userTimezone);
   const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
   // Fetch today's daily plan

@@ -198,9 +198,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Track preferred channel per relationship (LinkedIn / email / text / other) and detect stalled conversations. Suggest appropriate escalation ("move to email", "ask for call") inside Today and Actions, based on inactivity and cadence._
 
 - [x] **Adopt idempotency everywhere for Stripe billing flows** ✅ **NEX-16**
-      _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
+       _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
 
-- [x] **Fix Weekly Summary date calculation** ✅  
+- [ ] **Setup Admin Account with Premium Access (No Payment)** 🔴 **NEX-54**
+       _Create a clean admin account for internal use with premium access but no payment required. Email: `michael.mcdermott@nextbestmove.app`. Should have premium plan access (unlimited leads + premium features), bypass payment checks, and be usable for testing and internal use. Implementation: Add `is_admin` flag to `users` table, modify subscription checks to allow admin accounts, create account manually or via admin script, ensure admin accounts bypass paywall._
+
+- [x] **Fix Weekly Summary date calculation** ✅
        _Fixed weekly summary past week calculation bug (was showing 2 weeks behind, then showing current week instead of previous week). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates. Verified working - now correctly shows "Week of Dec 7-13, 2025" instead of current week._
 
 - [x] **Fix account overview email to use login credentials** ✅  
@@ -227,6 +230,9 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 - [ ] **Signals 2x2 Urgency/Value Matrix** 🔴 **NEX-52**
        _Implement 2x2 urgency/value matrix on Signals page to visualize relationship priorities. Calculate urgency: days since last interaction + overdue actions + email signals. Calculate value: tier + response rate + deal potential. Create 2x2 matrix UI with four quadrants (Low/Low, Low/High, High/Low, High/High), group relationships by quadrant, display relationship cards in each group, update Best Action to use same qualitative labels (matches Signals quadrant)._
+
+- [ ] **Setup Admin Account with Premium Access (No Payment)** 🔴 **NEX-54**
+       _Create a clean admin account for internal use with premium access but no payment required. Email: `michael.mcdermott@nextbestmove.app`. Should have premium plan access (unlimited leads + premium features), bypass payment checks, and be usable for testing and internal use. Implementation: Add `is_admin` flag to `users` table, modify subscription checks to allow admin accounts, create account manually or via admin script, ensure admin accounts bypass paywall._
 
 ---
 
