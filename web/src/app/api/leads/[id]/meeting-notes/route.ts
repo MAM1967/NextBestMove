@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { extractInteractions } from "@/lib/ai/interaction-extraction";
-import { findNextAvailableActionDate } from "@/lib/actions/smart-scheduling";
+import { scheduleMultipleActions, type ProposedAction } from "@/lib/actions/smart-scheduling";
 
 /**
  * POST /api/leads/[id]/meeting-notes
@@ -155,9 +155,8 @@ async function extractAndPersistInteractions(
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Create actions from extracted action items
-    const createdActionIds: string[] = [];
-    for (const actionItem of extractionResult.actionItems) {
+    // Prepare proposed actions for batch scheduling
+    const proposedActions: ProposedAction[] = extractionResult.actionItems.map((actionItem) => {
       // Calculate due date: use extracted date if provided, otherwise default to 3 days from now for POST_CALL, 7 days for others
       let proposedDueDate = actionItem.due_date || today;
       if (!actionItem.due_date) {
@@ -166,14 +165,22 @@ async function extractAndPersistInteractions(
         defaultDate.setDate(defaultDate.getDate() + defaultDays);
         proposedDueDate = defaultDate.toISOString().split("T")[0];
       }
+      return { proposedDueDate };
+    });
 
-      // Use smart scheduling to find next available date (max 2 actions per day)
-      const scheduledDueDate = await findNextAvailableActionDate(
-        userId,
-        leadId,
-        proposedDueDate,
-        2 // Max 2 actions per day per relationship
-      );
+    // Use batch scheduling to schedule all actions at once (more efficient)
+    const scheduledActions = await scheduleMultipleActions(
+      userId,
+      leadId,
+      proposedActions,
+      2 // Max 2 actions per day per relationship
+    );
+
+    // Create actions with scheduled dates
+    const createdActionIds: string[] = [];
+    for (let i = 0; i < extractionResult.actionItems.length; i++) {
+      const actionItem = extractionResult.actionItems[i];
+      const scheduled = scheduledActions[i];
 
       const { data: action, error: actionError } = await supabase
         .from("actions")
@@ -183,7 +190,7 @@ async function extractAndPersistInteractions(
           action_type: actionItem.action_type,
           state: "NEW",
           description: actionItem.description,
-          due_date: scheduledDueDate, // Use smart-scheduled date
+          due_date: scheduled.scheduledDate, // Use batch-scheduled date
           notes: actionItem.notes || null,
           auto_created: true,
           meeting_note_id: meetingNoteId,
