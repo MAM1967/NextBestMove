@@ -54,13 +54,24 @@ echo ""
 echo "📋 Step 4/6: Creating deployment branch..."
 cd "$PROJECT_ROOT"
 
-# Ensure we're on staging and up to date
+# CRITICAL: Capture current branch and any uncommitted changes BEFORE switching
 CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" != "staging" ]; then
-    echo "📥 Switching to staging branch..."
-    git checkout staging
-    git pull origin staging
+HAS_UNCOMMITTED=$(git diff-index --quiet HEAD --; echo $?)
+
+# Commit any uncommitted changes on current branch first
+if [ "$HAS_UNCOMMITTED" != "0" ]; then
+    echo "📝 Committing uncommitted changes on current branch ($CURRENT_BRANCH)..."
+    git add -A
+    git commit -m "$COMMIT_MESSAGE" || {
+        echo "⚠️  No changes to commit, continuing..."
+    }
 fi
+
+# Ensure staging is up to date
+echo "📥 Updating staging branch..."
+git fetch origin staging
+git checkout staging
+git pull origin staging
 
 # Create a unique branch name
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -68,13 +79,20 @@ BRANCH_NAME="deploy/staging-${TIMESTAMP}"
 echo "🌿 Creating branch: $BRANCH_NAME"
 git checkout -b "$BRANCH_NAME"
 
-# Check if there are uncommitted changes
-if ! git diff-index --quiet HEAD --; then
-    echo "📝 Staging uncommitted changes..."
-    git add -A
-    git commit -m "$COMMIT_MESSAGE" || {
-        echo "⚠️  No changes to commit, continuing..."
-    }
+# CRITICAL STEP: If we were on a different branch, merge its commits into deployment branch
+if [ "$CURRENT_BRANCH" != "staging" ] && [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
+    echo "🔄 Merging changes from $CURRENT_BRANCH into deployment branch..."
+    if git merge "$CURRENT_BRANCH" --no-edit; then
+        echo "✅ Successfully merged $CURRENT_BRANCH into $BRANCH_NAME"
+    else
+        echo "⚠️  Merge conflict detected. Resolving automatically (preferring $CURRENT_BRANCH changes)..."
+        # Auto-resolve conflicts by preferring current branch changes
+        git checkout --theirs . 2>/dev/null || true
+        git add -A
+        git commit -m "Merge $CURRENT_BRANCH into $BRANCH_NAME" || {
+            echo "⚠️  No merge commit needed, continuing..."
+        }
+    fi
 fi
 
 # Step 5: Push feature branch
