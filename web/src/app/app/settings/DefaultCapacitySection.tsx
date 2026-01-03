@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { CapacityLevel } from "@/lib/plan/capacity";
-import { capacityLabels } from "@/lib/plan/capacity-labels";
+import { capacityLabels, getCapacityLabel } from "@/lib/plan/capacity-labels";
 
 interface DefaultCapacitySectionProps {
   initialDefault?: CapacityLevel | null;
@@ -17,10 +17,66 @@ export function DefaultCapacitySection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [todayCapacity, setTodayCapacity] = useState<{
+    capacity: CapacityLevel | null;
+    reason: string | null;
+  } | null>(null);
 
   useEffect(() => {
     setDefaultCapacity(initialDefault || null);
   }, [initialDefault]);
+
+  // Fetch today's actual capacity being used
+  useEffect(() => {
+    async function fetchTodayCapacity() {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const response = await fetch(`/api/plan/capacity-override?date=${today}`);
+        if (response.ok) {
+          const data = (await response.json()) as {
+            dailyOverride?: CapacityLevel | null;
+            defaultOverride?: CapacityLevel | null;
+          };
+          
+          // Get today's daily plan to see actual capacity being used
+          const planResponse = await fetch(`/api/daily-plans?date=${today}`);
+          if (planResponse.ok) {
+            const planData = await planResponse.json();
+            const actualCapacity = planData.dailyPlan?.capacity as CapacityLevel | null;
+            
+            // Determine effective capacity (same logic as Daily Plan page)
+            const effectiveCapacity = data.dailyOverride || 
+              (actualCapacity && actualCapacity !== "default" ? actualCapacity : null);
+            
+            // Determine reason
+            let reason: string | null = null;
+            if (data.dailyOverride) {
+              reason = "manual override";
+            } else if (actualCapacity && actualCapacity !== "default" && data.defaultOverride !== actualCapacity) {
+              if (actualCapacity === "micro" || actualCapacity === "light") {
+                reason = "adaptive recovery";
+              } else {
+                reason = "calendar-based";
+              }
+            } else if (data.defaultOverride) {
+              reason = "your default setting";
+            } else {
+              reason = "calendar-based";
+            }
+            
+            setTodayCapacity({
+              capacity: effectiveCapacity,
+              reason,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch today's capacity:", err);
+      }
+    }
+    
+    fetchTodayCapacity();
+  }, []);
 
   const capacityOptions: Array<{
     value: CapacityLevel | null;
@@ -130,6 +186,24 @@ export function DefaultCapacitySection({
         <p className="text-sm text-green-600">Default capacity updated!</p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
+      
+      {/* Show today's actual capacity if it differs from default */}
+      {todayCapacity && todayCapacity.capacity !== defaultCapacity && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+          <p className="text-sm text-blue-900">
+            <span className="font-medium">Today's capacity:</span>{" "}
+            <span className="font-semibold">
+              {getCapacityLabel(todayCapacity.capacity)}
+            </span>
+            {todayCapacity.reason && (
+              <span className="text-blue-700"> ({todayCapacity.reason})</span>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-blue-700">
+            This differs from your default setting above. Today's capacity is used for your daily plan.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
