@@ -65,16 +65,37 @@ export default function DailyPlanPage() {
     fetchWeeklyFocus();
     fetchPreCallBriefs();
     fetchCapacityOverride();
-    // Set formatted date on client side only to avoid hydration mismatch
-    setFormattedDate(
-      new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    );
+    fetchFormattedDate();
   }, []);
+
+  const fetchFormattedDate = async () => {
+    try {
+      // Fetch user's timezone from database
+      const response = await fetch("/api/users/timezone");
+      if (!response.ok) {
+        throw new Error("Failed to fetch timezone");
+      }
+      const data = await response.json();
+      const userTimezone = data.timezone || "America/New_York";
+
+      // Format date using user's timezone (not browser timezone)
+      const { formatInTimeZone } = await import("date-fns-tz");
+      const now = new Date();
+      const formatted = formatInTimeZone(now, userTimezone, "EEEE, MMMM d, yyyy");
+      setFormattedDate(formatted);
+    } catch (error) {
+      console.error("Error fetching formatted date:", error);
+      // Fallback to browser timezone if API fails
+      setFormattedDate(
+        new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      );
+    }
+  };
 
   const fetchCapacityOverride = async () => {
     try {
@@ -270,11 +291,12 @@ export default function DailyPlanPage() {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date().toISOString().split("T")[0];
+      // Don't send date - let server calculate it from user's timezone
+      // This prevents timezone mismatches
       const response = await fetch("/api/daily-plans/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today }),
+        body: JSON.stringify({}), // Empty body - server will calculate date from user's timezone
       });
 
       if (!response.ok) {
