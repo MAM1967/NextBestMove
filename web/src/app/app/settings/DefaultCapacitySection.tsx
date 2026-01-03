@@ -158,7 +158,10 @@ export function DefaultCapacitySection({
 
       <div className="flex flex-wrap gap-2">
         {capacityOptions.map((option) => {
-          const isSelected = defaultCapacity === option.value;
+          // Show today's effective capacity as selected if it differs from default
+          const isSelected = todayCapacity && todayCapacity.capacity !== defaultCapacity
+            ? todayCapacity.capacity === option.value
+            : defaultCapacity === option.value;
           return (
             <button
               key={option.value || "auto"}
@@ -187,20 +190,21 @@ export function DefaultCapacitySection({
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
       
-      {/* Show today's actual capacity if it differs from default */}
+      {/* Show note if today's capacity differs from default */}
       {todayCapacity && todayCapacity.capacity !== defaultCapacity && (
         <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
           <p className="text-sm text-blue-900">
-            <span className="font-medium">Today's capacity:</span>{" "}
+            <span className="font-medium">Currently using:</span>{" "}
             <span className="font-semibold">
               {getCapacityLabel(todayCapacity.capacity)}
             </span>
             {todayCapacity.reason && (
               <span className="text-blue-700"> ({todayCapacity.reason})</span>
             )}
+            {" "}instead of your default setting above.
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            This differs from your default setting above. Today's capacity is used for your daily plan.
+            This matches what you see on your Daily Plan page. Your default setting will be used when no override or adaptive recovery applies.
           </p>
         </div>
       )}
