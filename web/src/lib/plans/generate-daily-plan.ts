@@ -506,17 +506,33 @@ export async function generateDailyPlanForUser(
     const planDate = new Date(date);
     planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     
-    const decisionResult = await runDecisionEngine(supabase, userId, {
-      persist: true, // Persist lane and score to database
-      referenceDate: planDate,
-    });
+    console.log(`[generateDailyPlan] Running decision engine for ${candidateActions.length} actions`);
+    let decisionResult;
+    try {
+      decisionResult = await runDecisionEngine(supabase, userId, {
+        persist: true, // Persist lane and score to database
+        referenceDate: planDate,
+      });
+      console.log(`[generateDailyPlan] Decision engine completed, scored ${decisionResult.scoredActions.length} actions`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error running decision engine:", error);
+      return { success: false, error: `Failed to run decision engine: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Compute relationship states for lane assignment
-    const relationshipStates = await computeRelationshipStates(
-      supabase,
-      userId,
-      planDate
-    );
+    console.log(`[generateDailyPlan] Computing relationship states`);
+    let relationshipStates;
+    try {
+      relationshipStates = await computeRelationshipStates(
+        supabase,
+        userId,
+        planDate
+      );
+      console.log(`[generateDailyPlan] Relationship states computed for ${relationshipStates.size} relationships`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error computing relationship states:", error);
+      return { success: false, error: `Failed to compute relationship states: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Score and sort actions using decision engine
     const { assignRelationshipLane } = await import("@/lib/decision-engine/lanes");
