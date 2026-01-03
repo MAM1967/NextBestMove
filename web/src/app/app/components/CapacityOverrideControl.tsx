@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { CapacityLevel } from "@/lib/plan/capacity";
+import { capacityLabels } from "@/lib/plan/capacity-labels";
 
 interface CapacityOverrideControlProps {
   date: string;
@@ -38,31 +39,31 @@ export function CapacityOverrideControl({
   }> = [
     {
       value: null,
-      label: "Auto",
-      description: "Use calendar-based capacity",
+      label: capacityLabels.auto.label,
+      description: capacityLabels.auto.description,
     },
     {
       value: "micro",
-      label: "Busy Day",
-      description: "1-2 actions",
+      label: capacityLabels.micro.label,
+      description: capacityLabels.micro.description,
       reason: "busy",
     },
     {
       value: "light",
-      label: "Light Day",
-      description: "3-4 actions",
+      label: capacityLabels.light.label,
+      description: capacityLabels.light.description,
       reason: "light",
     },
     {
       value: "standard",
-      label: "Standard",
-      description: "5-6 actions",
+      label: capacityLabels.standard.label,
+      description: capacityLabels.standard.description,
       reason: "manual",
     },
     {
       value: "heavy",
-      label: "Heavy Day",
-      description: "7-8 actions",
+      label: capacityLabels.heavy.label,
+      description: capacityLabels.heavy.description,
       reason: "manual",
     },
   ];
