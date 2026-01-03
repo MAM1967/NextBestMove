@@ -186,7 +186,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Add per-relationship "Notes Summary" that surfaces at-a-glance: last/next interaction dates, pending/post-call action items, research topics, and momentum-directed tasks. Implement as a structured rollup over existing Interaction/Action/Insight entities and surface in Relationship detail and a global dashboard rollup._
 
 - [x] **Meeting notes / transcript ingestion (manual v1)** ✅ **NEX-13**
-      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording._
+      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording. **Enhancement:** Implemented batch scheduling (`scheduleMultipleActions`) to efficiently schedule multiple actions at once, ensuring proper spacing (max 2 per day) when multiple actions are extracted from meeting notes._
 
 - [x] **Multi-calendar awareness (read-only) - Backend** ✅ **NEX-14**
       _Backend support for multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels ("based on 3 calendars"). Capacity logic and pre-call briefs use aggregated availability. SQL migration completed successfully._
