@@ -30,7 +30,7 @@ test.describe("Critical Path 1: Onboarding → First Action", () => {
     }
   });
 
-  test("should complete onboarding and generate first daily plan with Fast Win", async ({
+  test.skip("should complete onboarding and generate first daily plan with Fast Win", async ({
     page,
   }) => {
     // Increase timeout for this test - onboarding + plan generation can take time

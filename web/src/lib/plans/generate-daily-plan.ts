@@ -506,17 +506,33 @@ export async function generateDailyPlanForUser(
     const planDate = new Date(date);
     planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     
-    const decisionResult = await runDecisionEngine(supabase, userId, {
-      persist: true, // Persist lane and score to database
-      referenceDate: planDate,
-    });
+    console.log(`[generateDailyPlan] Running decision engine for ${candidateActions.length} actions`);
+    let decisionResult;
+    try {
+      decisionResult = await runDecisionEngine(supabase, userId, {
+        persist: true, // Persist lane and score to database
+        referenceDate: planDate,
+      });
+      console.log(`[generateDailyPlan] Decision engine completed, scored ${decisionResult.scoredActions.length} actions`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error running decision engine:", error);
+      return { success: false, error: `Failed to run decision engine: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Compute relationship states for lane assignment
-    const relationshipStates = await computeRelationshipStates(
-      supabase,
-      userId,
-      planDate
-    );
+    console.log(`[generateDailyPlan] Computing relationship states`);
+    let relationshipStates;
+    try {
+      relationshipStates = await computeRelationshipStates(
+        supabase,
+        userId,
+        planDate
+      );
+      console.log(`[generateDailyPlan] Relationship states computed for ${relationshipStates.size} relationships`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error computing relationship states:", error);
+      return { success: false, error: `Failed to compute relationship states: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Score and sort actions using decision engine
     const { assignRelationshipLane } = await import("@/lib/decision-engine/lanes");
@@ -600,6 +616,15 @@ export async function generateDailyPlanForUser(
 
     // Create or update daily_plan record
     // If plan exists (with just override), update it; otherwise create new
+    console.log(`[generateDailyPlan] Creating/updating daily plan:`, {
+      existingPlan: existingPlan?.id || null,
+      date,
+      capacityLevel,
+      actionCount,
+      selectedActionsCount: selectedActions.length,
+      fastWin: fastWin ? fastWin.action.id : null,
+    });
+    
     let dailyPlan;
     if (existingPlan) {
       // Update existing plan (preserve override if it exists)
@@ -622,6 +647,7 @@ export async function generateDailyPlanForUser(
         return { success: false, error: "Failed to update daily plan" };
       }
       dailyPlan = updatedPlan;
+      console.log(`[generateDailyPlan] Updated existing plan:`, dailyPlan.id);
     } else {
       // Create new plan
       const { data: newPlan, error: planError } = await supabase
@@ -641,6 +667,7 @@ export async function generateDailyPlanForUser(
         return { success: false, error: "Failed to create daily plan" };
       }
       dailyPlan = newPlan;
+      console.log(`[generateDailyPlan] Created new plan:`, dailyPlan.id);
     }
 
     // Create daily_plan_actions records
@@ -668,6 +695,7 @@ export async function generateDailyPlanForUser(
     }
 
     if (planActions.length > 0) {
+      console.log(`[generateDailyPlan] Creating ${planActions.length} plan actions`);
       const { error: planActionsError } = await supabase
         .from("daily_plan_actions")
         .insert(planActions);
@@ -678,7 +706,15 @@ export async function generateDailyPlanForUser(
         await supabase.from("daily_plans").delete().eq("id", dailyPlan.id);
         return { success: false, error: "Failed to create plan actions" };
       }
+      console.log(`[generateDailyPlan] Successfully created ${planActions.length} plan actions`);
+    } else {
+      console.warn(`[generateDailyPlan] No plan actions to create (planActions.length = 0)`);
     }
+
+    console.log(`[generateDailyPlan] Plan generation completed successfully:`, {
+      planId: dailyPlan.id,
+      actionCount: planActions.length,
+    });
 
     return {
       success: true,
