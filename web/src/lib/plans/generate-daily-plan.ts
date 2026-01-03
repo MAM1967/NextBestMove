@@ -184,7 +184,7 @@ export async function generateDailyPlanForUser(
     const userTimezone = userProfile?.timezone || "America/New_York"; // Default fallback
 
     // Check if date is a weekend in the user's timezone
-    // Parse date string (YYYY-MM-DD) and create date at noon to avoid timezone edge cases
+    // Parse date string (YYYY-MM-DD) and check day of week in user's timezone
     const dateParts = date.split("-").map(Number);
     const planYear = dateParts[0];
     const planMonth = dateParts[1];
@@ -193,16 +193,8 @@ export async function generateDailyPlanForUser(
     // Create date object for the given date (at noon UTC to avoid DST issues)
     const dateAtNoonUTC = new Date(Date.UTC(planYear, planMonth - 1, planDay, 12, 0, 0));
     
-    // Get day of week using user's timezone
-    // Use a date formatter to get the day name, then convert to day number
+    // Get day name using user's timezone
     const dayName = new Intl.DateTimeFormat("en-US", {
-      timeZone: userTimezone,
-      weekday: "long",
-    }).format(dateAtNoonUTC);
-    
-    // Get day of week number (0 = Sunday, 6 = Saturday) using user's timezone
-    // We need to format a known date to establish the pattern, then use it
-    const dayOfWeekStr = new Intl.DateTimeFormat("en-US", {
       timeZone: userTimezone,
       weekday: "long",
     }).format(dateAtNoonUTC);

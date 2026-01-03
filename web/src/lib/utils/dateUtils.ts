@@ -4,6 +4,7 @@
  */
 
 import { parse, format, startOfDay, differenceInDays, isValid } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Parse a date string (YYYY-MM-DD) as a local date (not UTC)
@@ -32,6 +33,43 @@ export function parseLocalDate(dateString: string): Date {
  */
 export function getTodayLocal(): Date {
   return startOfDay(new Date());
+}
+
+/**
+ * Get today's date string (YYYY-MM-DD) in a specific timezone
+ * This is critical for ensuring the date matches what the user sees
+ */
+export function getTodayInTimezone(timezone: string = 'America/New_York'): string {
+  const now = new Date();
+  // Format the current date in the user's timezone
+  return formatInTimeZone(now, timezone, 'yyyy-MM-dd');
+}
+
+/**
+ * Get the day of week (0 = Sunday, 6 = Saturday) in a specific timezone
+ */
+export function getDayOfWeekInTimezone(timezone: string = 'America/New_York'): number {
+  const now = new Date();
+  // Get day of week in user's timezone
+  const dayName = formatInTimeZone(now, timezone, 'EEEE'); // Full day name
+  const dayNames: Record<string, number> = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+  return dayNames[dayName] ?? 1; // Default to Monday if not found
+}
+
+/**
+ * Check if a date is a weekend in a specific timezone
+ */
+export function isWeekendInTimezone(timezone: string = 'America/New_York'): boolean {
+  const dayOfWeek = getDayOfWeekInTimezone(timezone);
+  return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
 /**

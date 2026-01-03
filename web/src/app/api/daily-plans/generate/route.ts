@@ -22,13 +22,15 @@ export async function POST(request: Request) {
     }
 
     // Check if user is still in onboarding - allow plan generation during onboarding
+    // Also get timezone for date calculation
     const { data: userProfile } = await supabase
       .from("users")
-      .select("onboarding_completed")
+      .select("onboarding_completed, timezone")
       .eq("id", user.id)
       .single();
 
     const isInOnboarding = !userProfile?.onboarding_completed;
+    const userTimezone = userProfile?.timezone || "America/New_York";
 
     // If not in onboarding, check subscription status and grace period
     if (!isInOnboarding) {
@@ -77,9 +79,11 @@ export async function POST(request: Request) {
         }
       }
     }
-
+    
     const body = await request.json();
-    const date = body.date || new Date().toISOString().split("T")[0];
+    // Use user's timezone to get today's date, not UTC
+    const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
+    const date = body.date || getTodayInTimezone(userTimezone);
 
     // Check if plan already exists for this date - if so, delete it to allow regeneration
     const { data: existingPlan } = await supabase
