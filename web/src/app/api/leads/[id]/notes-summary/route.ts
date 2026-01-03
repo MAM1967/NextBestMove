@@ -90,7 +90,7 @@ export async function GET(
         .from("meeting_notes")
         .select("created_at")
         .eq("user_id", user.id)
-        .eq("person_id", id);
+        .eq("lead_id", id); // Fixed: use lead_id, not person_id
       meetingNotes = notes || [];
     } catch (error) {
       // Table might not exist, that's okay
