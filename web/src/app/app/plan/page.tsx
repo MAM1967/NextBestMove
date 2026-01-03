@@ -616,7 +616,10 @@ export default function DailyPlanPage() {
             <div className="space-y-4">
               {/* Determine effective capacity: manual override OR actual capacity used (includes adaptive recovery) */}
               {(() => {
-                const effectiveCapacity = capacityOverride || (dailyPlan.capacity !== "default" ? dailyPlan.capacity : null);
+                const effectiveCapacity: CapacityLevel | null = capacityOverride || 
+                  (dailyPlan.capacity && dailyPlan.capacity !== "default" 
+                    ? (dailyPlan.capacity as CapacityLevel) 
+                    : null);
                 return (
                   <CapacityOverrideControl
                     date={new Date().toISOString().split("T")[0]}
