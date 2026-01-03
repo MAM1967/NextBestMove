@@ -81,9 +81,10 @@ export async function POST(request: Request) {
     }
     
     const body = await request.json();
-    // Use user's timezone to get today's date, not UTC
+    // ALWAYS use user's timezone to get today's date, ignore client-provided date
+    // This prevents timezone mismatches where client sends UTC date but user is in different timezone
     const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
-    const date = body.date || getTodayInTimezone(userTimezone);
+    const date = getTodayInTimezone(userTimezone); // Always calculate from user's timezone, ignore body.date
 
     // Check if plan already exists for this date - if so, delete it to allow regeneration
     const { data: existingPlan } = await supabase

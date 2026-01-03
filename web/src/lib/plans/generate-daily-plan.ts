@@ -187,12 +187,18 @@ export async function generateDailyPlanForUser(
     // Use the same utility function that's used elsewhere for consistency
     const { getDayOfWeekForDate, isDateWeekend } = await import("@/lib/utils/dateUtils");
     
+    // DEBUG: Log the date calculation for troubleshooting
+    console.log(`[generateDailyPlan] Date: ${date}, Timezone: ${userTimezone}`);
+    
     // Check if the date is a weekend using the utility function
     // This ensures we use the same logic as getTodayInTimezone
     const isWeekend = isDateWeekend(date, userTimezone);
+    const dayOfWeek = getDayOfWeekForDate(date, userTimezone);
+    
+    // DEBUG: Log the weekend check result
+    console.log(`[generateDailyPlan] Day of week: ${dayOfWeek}, Is weekend: ${isWeekend}`);
     
     // Get day name for the error message
-    const dayOfWeek = getDayOfWeekForDate(date, userTimezone);
     const dayNames: Record<number, string> = {
       0: "Sunday",
       1: "Monday",
