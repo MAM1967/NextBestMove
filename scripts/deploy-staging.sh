@@ -70,14 +70,36 @@ fi
 # Ensure staging is up to date
 echo "📥 Updating staging branch..."
 git fetch origin staging
-git checkout staging
-git pull origin staging
+
+# Handle worktree conflicts: if staging is checked out in another worktree,
+# use commit hash instead of checking out the branch
+if ! git checkout staging 2>/dev/null; then
+    echo "⚠️  Cannot checkout staging (likely worktree conflict). Using commit hash instead..."
+    STAGING_COMMIT=$(git ls-remote origin refs/heads/staging | cut -f1)
+    if [ -z "$STAGING_COMMIT" ]; then
+        echo "❌ Failed to fetch staging commit hash. Aborting deployment."
+        exit 1
+    fi
+    echo "📌 Using staging commit: $STAGING_COMMIT"
+    STAGING_REF="$STAGING_COMMIT"
+else
+    git pull origin staging
+    STAGING_REF="staging"
+fi
 
 # Create a unique branch name
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BRANCH_NAME="deploy/staging-${TIMESTAMP}"
 echo "🌿 Creating branch: $BRANCH_NAME"
-git checkout -b "$BRANCH_NAME"
+
+# Create branch from staging (using commit hash if worktree conflict occurred)
+if [ "$STAGING_REF" != "staging" ]; then
+    # Using commit hash - create branch directly from it
+    git checkout -b "$BRANCH_NAME" "$STAGING_REF"
+else
+    # Normal case - create branch from staging
+    git checkout -b "$BRANCH_NAME"
+fi
 
 # CRITICAL STEP: If we were on a different branch, merge its commits into deployment branch
 if [ "$CURRENT_BRANCH" != "staging" ] && [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
