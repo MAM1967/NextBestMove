@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActionListRow } from "./ActionListRow";
+import { UnifiedActionCard } from "../components/UnifiedActionCard";
 import { FollowUpSchedulingModal } from "./FollowUpSchedulingModal";
 import { SnoozeActionModal } from "./SnoozeActionModal";
 import { ActionNoteModal } from "./ActionNoteModal";
@@ -389,15 +389,9 @@ export default function ActionsPage() {
     const optionalBackground: Action[] = [];
     const assigned = new Set<string>();
 
-    const mark = (bucket: Action[], action: Action) => {
-      bucket.push(action);
-      assigned.add(action.id);
-    };
-
-    // Determine buckets using simple heuristics based on existing fields
-    allActions.forEach((action) => {
-      if (action.state === "ARCHIVED") {
-        return;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update time estimate");
       }
 
       // If action has a lane, use it directly
@@ -485,13 +479,6 @@ export default function ActionsPage() {
     );
   }
 
-  const {
-    needsAttentionNow,
-    conversationsInMotion,
-    stayTopOfMind,
-    optionalBackground,
-  } = bucketActions(actions);
-
   return (
     <>
       <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -503,7 +490,9 @@ export default function ActionsPage() {
             <div>
               <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
               <p className="mt-1 text-sm text-zinc-600">
-                Focus on the first section. Everything else can wait.
+                {filters.view === 'due' 
+                  ? 'Process follow-ups and keep relationships moving.'
+                  : 'View actions grouped by relationship.'}
               </p>
             </div>
             <button

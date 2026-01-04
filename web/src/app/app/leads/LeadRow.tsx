@@ -27,7 +27,8 @@ function getStatusBadgeVariant(status: Lead["status"]) {
   }
 }
 
-function getUrlTypeLabel(url: string): string {
+function getUrlTypeLabel(url: string | null | undefined): string {
+  if (!url) return "Link";
   if (url.startsWith("mailto:")) {
     return "Email";
   }

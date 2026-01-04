@@ -70,36 +70,64 @@ export async function PUT(
     const { name, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
 
     // Validation
-    if (!name || !url) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Name and URL are required" },
+        { error: "Name is required" },
         { status: 400 }
       );
     }
 
-    // Normalize URL - auto-add mailto: for email addresses
-    let normalizedUrl = url.trim();
-    if (
-      normalizedUrl.includes("@") &&
-      !normalizedUrl.startsWith("http://") &&
-      !normalizedUrl.startsWith("https://") &&
-      !normalizedUrl.startsWith("mailto:")
-    ) {
-      // Basic email validation
+    // At least one contact method should be provided
+    const hasLinkedIn = linkedin_url?.trim();
+    const hasEmail = email?.trim();
+    const hasPhone = phone_number?.trim();
+    const hasUrl = url?.trim();
+    
+    if (!hasLinkedIn && !hasEmail && !hasPhone && !hasUrl) {
+      return NextResponse.json(
+        { error: "Please provide at least one contact method (LinkedIn URL, email, or phone number)" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format if provided
+    if (hasEmail) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(normalizedUrl)) {
-        normalizedUrl = `mailto:${normalizedUrl}`;
+      if (!emailRegex.test(email.trim())) {
+        return NextResponse.json(
+          { error: "Please enter a valid email address" },
+          { status: 400 }
+        );
       }
     }
 
-    // Validate URL format
-    if (
-      !normalizedUrl.startsWith("https://") &&
-      !normalizedUrl.startsWith("http://") &&
-      !normalizedUrl.startsWith("mailto:")
-    ) {
+    // Validate LinkedIn URL format if provided
+    if (hasLinkedIn) {
+      const trimmed = linkedin_url.trim();
+      if (!trimmed.includes("linkedin.com") || (!trimmed.startsWith("https://") && !trimmed.startsWith("http://"))) {
+        return NextResponse.json(
+          { error: "Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/...)" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate phone number format if provided
+    if (hasPhone) {
+      const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      const digitsOnly = phone_number.trim().replace(/\D/g, "");
+      if (!phoneRegex.test(phone_number.trim()) || digitsOnly.length < 10) {
+        return NextResponse.json(
+          { error: "Please enter a valid phone number" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate URL format if provided (for non-LinkedIn URLs)
+    if (hasUrl && !url.startsWith("https://") && !url.startsWith("http://")) {
       return NextResponse.json(
-        { error: "Please enter a valid URL (https://...) or email address" },
+        { error: "Please enter a valid URL (https://...)" },
         { status: 400 }
       );
     }

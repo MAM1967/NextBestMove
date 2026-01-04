@@ -458,13 +458,14 @@
 - [ ] Recommended date highlighted
 - [ ] Optional note field
 - [ ] New FOLLOW_UP action created with due_date
-- [ ] Action linked to same person_pin
+- [ ] Action linked to same person_pin (required for FOLLOW_UP actions)
 - [ ] Action state = NEW
 
 **Technical Notes:**
 - Default to 2-3 days from today
 - Calculate next business day if needed
 - Store in actions table
+- **Note:** FOLLOW_UP actions are relationship-required. CONTENT and some general business actions may be relationship-optional (see PRD Section 22 for details).
 
 ---
 
@@ -600,6 +601,7 @@
 - [ ] Create daily_plan record
 - [ ] Link actions via daily_plan_actions junction table
 - [ ] Mark Fast Win with is_fast_win flag
+- [ ] **Note:** Relationship-linked actions prioritized first, then general business actions (CONTENT, general NURTURE). CONTENT actions may not have a relationship (lead_id nullable). See PRD Section 22 for relationship-optional actions.
 
 **Technical Notes:**
 - Reference PRD Section 11.2-11.3

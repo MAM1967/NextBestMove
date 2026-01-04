@@ -15,6 +15,9 @@ export type ActionState =
   | "DONE"
   | "ARCHIVED";
 
+export type ActionSource = 'email' | 'linkedin' | 'calendar' | 'meeting_note' | 'manual' | 'system';
+export type ActionIntentType = 'follow_up' | 'reply' | 'schedule' | 'review' | 'outreach' | 'nurture';
+
 import type { LeadBasic } from "@/lib/leads/types";
 
 // Re-export for convenience

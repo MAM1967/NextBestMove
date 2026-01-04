@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UmamiScript } from "@/components/UmamiScript";
 import { GlitchTipInit } from "@/components/GlitchTipInit";
+import { PostHogInit } from "@/components/PostHogInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GlitchTipInit />
+        <PostHogInit />
         {children}
         <UmamiScript />
       </body>

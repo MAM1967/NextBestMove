@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { validateActionRelationship } from "@/lib/actions/validation";
 
 // GET /api/actions - List actions for the authenticated user
 export async function GET(request: Request) {
@@ -17,7 +18,13 @@ export async function GET(request: Request) {
     const state = searchParams.get("state"); // Optional filter: NEW, SENT, REPLIED, SNOOZED, DONE, ARCHIVED
     const dueDate = searchParams.get("due_date"); // Optional filter by due date
     const personId = searchParams.get("person_id"); // Optional filter by person
+    const source = searchParams.get("source"); // Optional filter by source
+    const intentType = searchParams.get("intent_type"); // Optional filter by intent_type
 
+    // Try with leads join first, fallback to without if it fails (RLS might block the join)
+    let actions: any[] | null = null;
+    
+    // First try with leads join
     let query = supabase
       .from("actions")
       .select(
@@ -47,17 +54,86 @@ export async function GET(request: Request) {
       query = query.eq("person_id", personId);
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching actions:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch actions" },
-        { status: 500 }
-      );
+    if (source) {
+      query = query.eq("source", source);
     }
 
-    return NextResponse.json({ actions: data || [] });
+    if (intentType) {
+      query = query.eq("intent_type", intentType);
+    }
+
+    const { data: dataWithLeads, error: joinError } = await query;
+
+    if (joinError) {
+      console.warn("Error fetching actions with leads join, trying without join:", joinError);
+      // Fallback: fetch actions without leads join
+      let fallbackQuery = supabase
+        .from("actions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("due_date", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (state) {
+        fallbackQuery = fallbackQuery.eq("state", state);
+      }
+
+      if (dueDate) {
+        fallbackQuery = fallbackQuery.eq("due_date", dueDate);
+      }
+
+      if (personId) {
+        fallbackQuery = fallbackQuery.eq("person_id", personId);
+      }
+
+      if (source) {
+        fallbackQuery = fallbackQuery.eq("source", source);
+      }
+
+      if (intentType) {
+        fallbackQuery = fallbackQuery.eq("intent_type", intentType);
+      }
+
+      const { data: actionsOnly, error: actionsError } = await fallbackQuery;
+
+      if (actionsError) {
+        console.error("Error fetching actions (both with and without join):", actionsError);
+        return NextResponse.json(
+          { error: "Failed to fetch actions" },
+          { status: 500 }
+        );
+      }
+
+      actions = actionsOnly;
+      
+      // Fetch leads separately for each action if needed
+      if (actions && actions.length > 0) {
+        const leadIds = actions
+          .map(a => a.person_id)
+          .filter((id): id is string => id !== null);
+        
+        if (leadIds.length > 0) {
+          const { data: leads } = await supabase
+            .from("leads")
+            .select("id, name, url, notes")
+            .eq("user_id", user.id)
+            .in("id", leadIds);
+          
+          // Attach leads to actions
+          if (leads) {
+            const leadsMap = new Map(leads.map(l => [l.id, l]));
+            actions = actions.map(action => ({
+              ...action,
+              leads: action.person_id ? leadsMap.get(action.person_id) || null : null
+            }));
+          }
+        }
+      }
+    } else {
+      actions = dataWithLeads;
+    }
+
+    return NextResponse.json({ actions: actions || [] });
   } catch (error) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
@@ -87,6 +163,9 @@ export async function POST(request: Request) {
       due_date,
       notes,
       auto_created,
+      source,
+      source_ref,
+      intent_type,
     } = body;
 
     // Validate required fields
@@ -114,6 +193,15 @@ export async function POST(request: Request) {
             ", "
           )}`,
         },
+        { status: 400 }
+      );
+    }
+
+    // Validate relationship requirement
+    const validation = validateActionRelationship(action_type, person_id);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
         { status: 400 }
       );
     }
@@ -198,6 +286,9 @@ export async function POST(request: Request) {
         due_date,
         notes: notes || null,
         auto_created: auto_created === true, // Default to false if not provided
+        source: source || 'manual', // Default to 'manual' for user-created actions
+        source_ref: source_ref || null,
+        intent_type: intent_type || null,
       })
       .select(
         `

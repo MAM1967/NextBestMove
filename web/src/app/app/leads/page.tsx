@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { LeadFilterToggle } from "./LeadFilterToggle";
 import { LeadList } from "./LeadList";
 import { AddLeadModal } from "./AddLeadModal";
@@ -12,6 +13,8 @@ import { GlobalRollup } from "./GlobalRollup";
 import type { Lead, LeadFilter } from "@/lib/leads/types";
 
 export default function LeadsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [filter, setFilter] = useState<LeadFilter>("ALL");
@@ -93,6 +96,20 @@ export default function LeadsPage() {
     loadLeads();
   }, []);
 
+  // Handle editId query param to open edit modal
+  useEffect(() => {
+    const editId = searchParams.get("editId");
+    if (editId && leads.length > 0) {
+      const leadToEdit = leads.find((lead) => lead.id === editId);
+      if (leadToEdit) {
+        setSelectedLead(leadToEdit);
+        setIsEditModalOpen(true);
+        // Remove query param from URL
+        router.replace("/app/leads", { scroll: false });
+      }
+    }
+  }, [searchParams, leads, router]);
+
   // Apply filter
   useEffect(() => {
     const filtered =
@@ -105,7 +122,10 @@ export default function LeadsPage() {
   // Handle lead creation
   const handleLeadSave = async (leadData: {
     name: string;
-    url: string;
+    linkedin_url?: string | null;
+    email?: string | null;
+    phone_number?: string | null;
+    url?: string | null;
     notes?: string;
     cadence?: "frequent" | "moderate" | "infrequent" | "ad_hoc" | null;
     cadence_days?: number | null;
@@ -128,6 +148,15 @@ export default function LeadsPage() {
         }
         throw new Error(error.error || "Failed to create lead");
       }
+
+      const data = await response.json();
+      
+      // Track lead creation
+      const { trackLeadCreated } = await import("@/lib/analytics/posthog");
+      trackLeadCreated({
+        leadId: data.lead?.id,
+        source: "manual",
+      });
 
       await loadLeads();
       setIsAddModalOpen(false);

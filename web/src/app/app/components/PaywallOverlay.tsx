@@ -36,12 +36,10 @@ export function PaywallOverlay({
       normalizedStatus,
       trialEndsAt
     );
-    console.log("[Paywall Analytics] Paywall viewed", {
-      status: effectiveStatus,
-      subscriptionStatus,
-      trialEndsAt,
+    trackPaywallViewed({
+      subscriptionStatus: effectiveStatus,
+      trialEndsAt: trialEndsAt || undefined,
       isReadOnly,
-      timestamp: new Date().toISOString(),
     });
   }, [subscriptionStatus, trialEndsAt, isReadOnly, normalizedStatus]);
 
@@ -50,11 +48,9 @@ export function PaywallOverlay({
       normalizedStatus,
       trialEndsAt
     );
-    console.log("[Paywall Analytics] Subscribe CTA clicked", {
-      status: effectiveStatus,
-      subscriptionStatus,
-      trialEndsAt,
-      timestamp: new Date().toISOString(),
+    trackPaywallCTAClicked({
+      subscriptionStatus: effectiveStatus,
+      ctaType: "subscribe",
     });
 
     setIsLoading(true);
@@ -72,23 +68,10 @@ export function PaywallOverlay({
         throw new Error("Failed to create checkout session");
       }
 
-      console.log("[Paywall Analytics] Checkout session created", {
-        status: effectiveStatus,
-        timestamp: new Date().toISOString(),
-      });
-
       const { url } = await response.json();
       window.location.href = url;
     } catch (error) {
-      const effectiveStatus = getSubscriptionStatus(
-        normalizedStatus,
-        trialEndsAt
-      );
-      console.error("[Paywall Analytics] Checkout error", {
-        error,
-        status: effectiveStatus,
-        timestamp: new Date().toISOString(),
-      });
+      console.error("[Paywall] Checkout error:", error);
       alert("Unable to start checkout. Please try again later.");
       setIsLoading(false);
     }
@@ -172,10 +155,9 @@ export function PaywallOverlay({
           <div className="space-y-3">
             <button
               onClick={() => {
-                console.log("[Paywall Analytics] Update payment CTA clicked", {
-                  status: "past_due",
-                  isReadOnly,
-                  timestamp: new Date().toISOString(),
+                trackPaywallCTAClicked({
+                  subscriptionStatus: "past_due",
+                  ctaType: "update_payment",
                 });
                 handleManageBilling();
               }}
@@ -187,10 +169,7 @@ export function PaywallOverlay({
             {onDismiss && !isReadOnly && (
               <button
                 onClick={() => {
-                  console.log("[Paywall Analytics] Paywall dismissed", {
-                    status: "past_due",
-                    timestamp: new Date().toISOString(),
-                  });
+                  // Dismiss tracking is optional - user is just closing the modal
                   onDismiss();
                 }}
                 className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
@@ -204,7 +183,7 @@ export function PaywallOverlay({
     );
   }
 
-  // Grace period - read-only mode (Day 15-21) - only for trial expiration, not payment failure
+  // Grace period - trial expiration (Day 15-21) - downgrade to Free tier, not read-only
   // Note: past_due is already handled above, so this only applies to trial expiration
   // isReadOnly can be true for trial grace period, so check that status is not canceled
   if (effectiveStatus === "grace_period" || (isReadOnly && subscriptionStatus !== "canceled") || isInGracePeriod) {
@@ -239,14 +218,14 @@ export function PaywallOverlay({
               disabled={isLoading}
               className="w-full rounded-full bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
             >
-              {isLoading ? "Loading..." : "Subscribe Now"}
+              {isLoading ? "Loading..." : "Upgrade to Standard"}
             </button>
             {onDismiss && (
               <button
                 onClick={onDismiss}
                 className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
               >
-                Continue in Read-Only Mode
+                Continue on Free Tier
               </button>
             )}
           </div>
@@ -300,10 +279,7 @@ export function PaywallOverlay({
           {onDismiss && (
             <button
               onClick={() => {
-                console.log("[Paywall Analytics] Paywall dismissed", {
-                  status: effectiveStatus,
-                  timestamp: new Date().toISOString(),
-                });
+                // Dismiss tracking is optional - user is just closing the modal
                 onDismiss();
               }}
               className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
