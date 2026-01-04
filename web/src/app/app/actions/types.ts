@@ -15,6 +15,9 @@ export type ActionState =
   | "DONE"
   | "ARCHIVED";
 
+export type ActionSource = 'email' | 'linkedin' | 'calendar' | 'meeting_note' | 'manual' | 'system';
+export type ActionIntentType = 'follow_up' | 'reply' | 'schedule' | 'review' | 'outreach' | 'nurture';
+
 import type { LeadBasic } from "@/lib/leads/types";
 
 // Re-export for convenience
@@ -55,6 +58,11 @@ export interface Action {
   replied_to_email_at?: string | null;
   got_response_at?: string | null;
   got_response_notes?: string | null;
+  
+  // Source attribution (NEX-56)
+  source?: ActionSource;
+  source_ref?: string | null;
+  intent_type?: ActionIntentType | null;
 }
 
 
