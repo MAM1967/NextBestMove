@@ -42,7 +42,7 @@ export async function GET(
   const provider = providerLower as EmailProvider;
   const origin = request.nextUrl.origin;
   const hostname = request.nextUrl.hostname;
-  const redirectUri = `${origin}/api/email/connect/${provider}/callback`;
+  const redirectUri = `${origin}/api/email/callback/${provider}`;
 
   try {
     const config = await getEmailProviderConfiguration(provider, hostname);
@@ -146,8 +146,4 @@ export async function GET(
     );
   }
 }
-
-
-
-
 

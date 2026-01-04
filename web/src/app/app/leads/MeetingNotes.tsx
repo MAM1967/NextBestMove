@@ -18,10 +18,9 @@ interface MeetingNote {
 
 interface MeetingNotesProps {
   leadId: string;
-  onNotesSaved?: () => void; // Callback to trigger NotesSummary refresh
 }
 
-export function MeetingNotes({ leadId, onNotesSaved }: MeetingNotesProps) {
+export function MeetingNotes({ leadId }: MeetingNotesProps) {
   const [notes, setNotes] = useState<MeetingNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +78,6 @@ export function MeetingNotes({ leadId, onNotesSaved }: MeetingNotesProps) {
       setNotes((prev) => [data.meetingNote, ...prev]);
       setNewNoteContent("");
       setShowAddForm(false);
-
-      // Trigger NotesSummary refresh
-      if (onNotesSaved) {
-        onNotesSaved();
-      }
 
       // Poll for extraction completion (with timeout)
       if (data.meetingNote.extraction_status === "processing") {
@@ -279,7 +273,7 @@ export function MeetingNotes({ leadId, onNotesSaved }: MeetingNotesProps) {
                         if (Array.isArray(insights)) {
                           return (
                             <ul className="list-disc list-inside space-y-1">
-                              {insights.map((insight: { text: string }, idx: number) => (
+                              {insights.map((insight: any, idx: number) => (
                                 <li key={idx}>{insight.text}</li>
                               ))}
                             </ul>

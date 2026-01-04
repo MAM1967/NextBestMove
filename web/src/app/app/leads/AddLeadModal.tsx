@@ -14,10 +14,7 @@ interface AddLeadModalProps {
   onClose: () => void;
   onSave: (leadData: {
     name: string;
-    linkedin_url?: string | null;
-    email?: string | null;
-    phone_number?: string | null;
-    url?: string | null; // Legacy field for non-LinkedIn URLs (CRM links, etc.)
+    url: string;
     notes?: string;
     cadence?: RelationshipCadence | null;
     cadence_days?: number | null;
@@ -113,6 +110,7 @@ export function AddLeadModal({
 
     setLoading(true);
     try {
+      const normalizedUrl = normalizeUrl(formData.url);
       // Get cadence_days - use default if not specified and cadence is not ad_hoc
       let cadenceDays = formData.cadence_days;
       if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
@@ -133,10 +131,7 @@ export function AddLeadModal({
       });
       setFormData({ 
         name: "", 
-        linkedin_url: "",
-        email: "",
-        phone_number: "",
-        url: "",
+        url: "", 
         notes: "", 
         cadence: "", 
         cadence_days: null,

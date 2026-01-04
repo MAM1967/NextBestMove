@@ -26,7 +26,7 @@ export async function GET(
     // Get the lead
     const { data: lead, error: leadError } = await supabase
       .from("leads")
-      .select("id, url, email, name")
+      .select("id, url, name")
       .eq("id", leadId)
       .eq("user_id", user.id)
       .single();
@@ -38,15 +38,29 @@ export async function GET(
       );
     }
 
-    // Fetch email metadata for this relationship using person_id
-    // This is more reliable than matching by email hash since we now store person_id
+    // Extract email from lead URL if it's a mailto: link
+    let emailHash: string | null = null;
+    if (lead.url.startsWith("mailto:")) {
+      const email = extractEmailAddress(lead.url.substring(7));
+      emailHash = hashEmailAddress(email);
+    }
+
+    if (!emailHash) {
+      // No email to match, return empty signals
+      return NextResponse.json({
+        signals: [],
+        total: 0,
+      });
+    }
+
+    // Fetch email metadata for this relationship
     const { data: emailMetadata, error: metadataError } = await supabase
       .from("email_metadata")
       .select(
-        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels, sentiment, intent, recommended_action_type, recommended_action_description, recommended_due_date, thread_summary_1l, thread_summary_detail, primary_category, secondary_categories, topics_comprehensive, proposed_tiers, asks_from_sender, value_to_capture, suggested_next_actions, attachments, links, relationship_signal"
+        "id, subject, snippet, received_at, last_topic, ask, open_loops, priority, labels"
       )
       .eq("user_id", user.id)
-      .eq("person_id", leadId)
+      .eq("from_email_hash", emailHash)
       .order("received_at", { ascending: false })
       .limit(50);
 
@@ -69,22 +83,6 @@ export async function GET(
       openLoops: meta.open_loops || [],
       priority: meta.priority,
       labels: meta.labels || [],
-      // Comprehensive signal fields
-      thread_summary_1l: meta.thread_summary_1l,
-      thread_summary_detail: meta.thread_summary_detail,
-      primary_category: meta.primary_category,
-      secondary_categories: meta.secondary_categories,
-      topics: meta.topics_comprehensive, // Use topics_comprehensive from DB
-      asks_from_sender: meta.asks_from_sender,
-      suggested_next_actions: meta.suggested_next_actions,
-      attachments: meta.attachments,
-      links: meta.links,
-      relationship_signal: meta.relationship_signal,
-      sentiment: meta.sentiment,
-      intent: meta.intent,
-      recommended_action_type: meta.recommended_action_type,
-      recommended_action_description: meta.recommended_action_description,
-      recommended_due_date: meta.recommended_due_date,
     }));
 
     return NextResponse.json({
@@ -102,8 +100,4 @@ export async function GET(
     );
   }
 }
-
-
-
-
 

@@ -15,7 +15,6 @@ interface ActionListRowProps {
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
   onSetEstimatedMinutes?: (actionId: string) => void;
-  onClick?: (actionId: string) => void;
   /**
    * Visual variant tied to the section/bucket the action is rendered in.
    * purely presentational – no behavior changes.
@@ -115,7 +114,6 @@ export function ActionListRow({
   onGotReply,
   onViewPrompt,
   onSetEstimatedMinutes,
-  onClick,
   variant,
 }: ActionListRowProps) {
   const verb = getVerbForAction(action);

@@ -63,6 +63,3 @@ After connecting calendar, check Vercel logs for:
 
 
 
-
-
-

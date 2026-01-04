@@ -64,6 +64,3 @@ CREATE POLICY "Users can delete their own meeting notes"
   FOR DELETE
   USING (auth.uid() = user_id);
 
-
-
-

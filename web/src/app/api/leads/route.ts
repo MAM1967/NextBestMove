@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, linkedin_url, email, phone_number, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
+    const { name, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
 
     // Validation
     if (!name) {

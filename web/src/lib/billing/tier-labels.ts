@@ -52,6 +52,3 @@ export function getTierTagline(tier: UserTier): string {
   return TIER_INFO[tier].tagline;
 }
 
-
-
-

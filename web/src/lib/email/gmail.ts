@@ -7,7 +7,6 @@ export interface GmailMessage {
   snippet: string;
   payload: {
     headers: Array<{ name: string; value: string }>;
-    body?: { data?: string };
     parts?: Array<{
       mimeType: string;
       body: { data?: string };
@@ -29,30 +28,15 @@ export async function fetchGmailMessages(
   userId: string,
   maxResults: number = 50
 ): Promise<GmailMessage[]> {
-  console.log(
-    `[Gmail Fetch] Starting fetch for user ${userId}, maxResults: ${maxResults}`
-  );
   const accessToken = await getEmailAccessToken(userId, "gmail");
   if (!accessToken) {
-    console.error(
-      `[Gmail Fetch] No valid access token for Gmail (user: ${userId})`
-    );
     throw new Error("No valid access token for Gmail");
   }
-  console.log(`[Gmail Fetch] Access token obtained successfully`);
 
   // First, get list of message IDs
-  // Fetch emails from last 90 days (1 quarter) to capture less frequent relationships
-  // Relationships represent <5% of email volume, so we need to go back further
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const dateFilter = ninetyDaysAgo.toISOString().split("T")[0]; // YYYY-MM-DD format
-
-  const listUrl = new URL(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages"
-  );
+  const listUrl = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
   listUrl.searchParams.set("maxResults", maxResults.toString());
-  listUrl.searchParams.set("q", `in:inbox after:${dateFilter}`); // Only inbox messages from last 90 days
+  listUrl.searchParams.set("q", "in:inbox"); // Only inbox messages
 
   const listResponse = await fetch(listUrl.toString(), {
     headers: {
@@ -66,156 +50,44 @@ export async function fetchGmailMessages(
 
   const listData: GmailMessageListResponse = await listResponse.json();
 
-  console.log(
-    `[Gmail Fetch] Found ${
-      listData.messages?.length || 0
-    } messages in inbox from last 90 days`
-  );
-
   if (!listData.messages || listData.messages.length === 0) {
-    console.log("[Gmail Fetch] No messages found, returning empty array");
     return [];
   }
 
-  // Fetch full message details with proper rate limiting
-  // Based on Gmail API official limits:
-  // - Per-user rate limit: 250 quota units/second (moving average)
-  // - messages.get consumes 5 quota units each
-  // - Maximum: 50 requests/second (250/5)
-  // - We limit to 40 requests/second for safety margin (~25ms between requests)
-  // Reference: https://developers.google.com/workspace/gmail/api/reference/quota
-  const messages: GmailMessage[] = [];
-  const REQUESTS_PER_SECOND = 40;
-  const DELAY_MS = 1000 / REQUESTS_PER_SECOND; // ~25ms between requests
+  // Fetch full message details for each message
+  const messagePromises = listData.messages.map(async (msg) => {
+    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`;
+    
+    const messageResponse = await fetch(messageUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
-  /**
-   * Fetch a single message with exponential backoff retry
-   * Uses format=full to get full email body for AI analysis
-   */
-  async function fetchMessageWithRetry(
-    messageId: string,
-    maxRetries: number = 3
-  ): Promise<GmailMessage | null> {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const response = await fetch(messageUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        return response.json() as Promise<GmailMessage>;
-      }
-
-      // Handle rate limiting (429) with exponential backoff
-      if (response.status === 429) {
-        // Check for Retry-After header
-        const retryAfter = response.headers.get("Retry-After");
-        const waitTime = retryAfter
-          ? parseInt(retryAfter, 10) * 1000
-          : Math.min(1000 * Math.pow(2, attempt), 8000); // Exponential backoff: 1s, 2s, 4s, max 8s
-
-        if (attempt < maxRetries - 1) {
-          console.warn(
-            `Gmail rate limited for message ${messageId}, retrying after ${waitTime}ms (attempt ${
-              attempt + 1
-            }/${maxRetries})`
-          );
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
-          continue;
-        }
-      }
-
-      // Other errors - log and return null
-      console.error(
-        `Failed to fetch Gmail message ${messageId}:`,
-        response.status,
-        response.statusText
-      );
+    if (!messageResponse.ok) {
+      console.error(`Failed to fetch Gmail message ${msg.id}:`, messageResponse.statusText);
       return null;
     }
 
-    return null;
-  }
+    return messageResponse.json() as Promise<GmailMessage>;
+  });
 
-  // Fetch messages sequentially with rate limiting
-  // This ensures we stay under 40 requests/second
-  for (const msg of listData.messages) {
-    const message = await fetchMessageWithRetry(msg.id);
-    if (message) {
-      messages.push(message);
-    }
-
-    // Rate limit: wait between requests to stay under 40/sec
-    if (messages.length < listData.messages.length) {
-      await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
-    }
-  }
-
-  return messages;
-}
-
-/**
- * Extract email body text from Gmail message payload
- * Handles both simple and multipart messages
- */
-function extractGmailBody(payload: GmailMessage["payload"]): string {
-  // If payload has body directly (simple message)
-  if (payload.body?.data) {
-    return Buffer.from(payload.body.data, "base64").toString("utf-8");
-  }
-
-  // If payload has parts (multipart message)
-  if (payload.parts) {
-    for (const part of payload.parts) {
-      // Prefer text/plain, fallback to text/html
-      if (part.mimeType === "text/plain" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64").toString("utf-8");
-      }
-    }
-    // If no plain text, try HTML
-    for (const part of payload.parts) {
-      if (part.mimeType === "text/html" && part.body?.data) {
-        return Buffer.from(part.body.data, "base64").toString("utf-8");
-      }
-    }
-    // Check nested parts (multipart/alternative)
-    for (const part of payload.parts) {
-      if (part.parts) {
-        for (const subPart of part.parts) {
-          if (subPart.mimeType === "text/plain" && subPart.body?.data) {
-            return Buffer.from(subPart.body.data, "base64").toString("utf-8");
-          }
-        }
-        for (const subPart of part.parts) {
-          if (subPart.mimeType === "text/html" && subPart.body?.data) {
-            return Buffer.from(subPart.body.data, "base64").toString("utf-8");
-          }
-        }
-      }
-    }
-  }
-
-  return "";
+  const messages = await Promise.all(messagePromises);
+  return messages.filter((msg): msg is GmailMessage => msg !== null);
 }
 
 /**
  * Extract email metadata from Gmail message
- * Now includes full body for AI analysis
  */
 export function extractGmailMetadata(message: GmailMessage) {
   const headers = message.payload.headers || [];
   const getHeader = (name: string) =>
-    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ||
-    "";
+    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
 
   const from = getHeader("From");
   const to = getHeader("To");
   const subject = getHeader("Subject");
   const date = getHeader("Date");
-  const fullBody = extractGmailBody(message.payload);
 
   return {
     messageId: message.id,
@@ -224,71 +96,7 @@ export function extractGmailMetadata(message: GmailMessage) {
     to,
     subject,
     snippet: message.snippet || "",
-    fullBody,
-    receivedAt: date
-      ? new Date(date).toISOString()
-      : new Date(message.internalDate).toISOString(),
+    receivedAt: date ? new Date(date).toISOString() : new Date(message.internalDate).toISOString(),
   };
 }
 
-/**
- * Search Gmail for messages from a specific email address
- * This is more efficient than fetching all messages and filtering
- */
-export async function searchGmailBySender(
-  userId: string,
-  senderEmail: string,
-  maxResults: number = 50
-): Promise<GmailMessage[]> {
-  const accessToken = await getEmailAccessToken(userId, "gmail");
-  if (!accessToken) {
-    throw new Error("No valid access token for Gmail");
-  }
-
-  // Search for emails from the specific sender in the last 90 days
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const dateFilter = ninetyDaysAgo.toISOString().split("T")[0];
-
-  const listUrl = new URL(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages"
-  );
-  listUrl.searchParams.set("maxResults", maxResults.toString());
-  // Search for emails from this specific sender
-  listUrl.searchParams.set("q", `from:${senderEmail} after:${dateFilter}`);
-
-  const listResponse = await fetch(listUrl.toString(), {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!listResponse.ok) {
-    throw new Error(`Gmail API error: ${listResponse.statusText}`);
-  }
-
-  const listData: GmailMessageListResponse = await listResponse.json();
-
-  if (!listData.messages || listData.messages.length === 0) {
-    return [];
-  }
-
-  // Fetch full message details (with full body for AI analysis)
-  // Uses format=full to get full email body, not just metadata
-  const messages: GmailMessage[] = [];
-  for (const msg of listData.messages) {
-    const messageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`;
-
-    const messageResponse = await fetch(messageUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (messageResponse.ok) {
-      messages.push(await messageResponse.json());
-    }
-  }
-
-  return messages;
-}

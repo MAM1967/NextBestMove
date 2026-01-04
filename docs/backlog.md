@@ -186,6 +186,30 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Add per-relationship "Notes Summary" that surfaces at-a-glance: last/next interaction dates, pending/post-call action items, research topics, and momentum-directed tasks. Implement as a structured rollup over existing Interaction/Action/Insight entities and surface in Relationship detail and a global dashboard rollup._
 
 - [x] **Meeting notes / transcript ingestion (manual v1)** ✅ **NEX-13**
+      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording._
+
+- [x] **Multi-calendar awareness (read-only) - Backend** ✅ **NEX-14**
+      _Backend support for multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels ("based on 3 calendars"). Capacity logic and pre-call briefs use aggregated availability. SQL migration completed successfully._
+
+- [x] **Multi-calendar awareness - Settings UI updates** ✅ **NEX-17**
+      _Update Settings page to show a list of all connected calendars (not just "Calendar Connected"), allow disconnecting individual calendars, allow connecting additional calendars, and display confidence labels (optional, subtle). Backend is complete; this is the UI implementation._
+
+- [x] **Relationship channel awareness & progression nudges** ✅ **NEX-15**
+      _Track preferred channel per relationship (LinkedIn / email / text / other) and detect stalled conversations. Suggest appropriate escalation ("move to email", "ask for call") inside Today and Actions, based on inactivity and cadence._
+
+- [x] **Adopt idempotency everywhere for Stripe billing flows** ✅ **NEX-16**
+      _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
+
+- [x] **Deterministic decision engine (Priority / In Motion / On Deck) implementation** ✅ **NEX-10**
+      _Implement the lane-based decision engine described in the Decision Engine PRD amendment. Compute relationship-level state (cadence, momentum, overdue actions, insights), assign Priority / In Motion / On Deck lanes, score candidate actions (urgency, stall risk, value, effort), and persist one "next move" per relationship plus per-action lanes and scores. Wire this into Today, Daily Plan, Actions, and Signals._
+
+- [x] **Signals v1 (email context → next move)** ✅ **NEX-11**
+      _Implement the launch-scoped email integration for Gmail and Outlook using read-only `Mail.Read` scopes. Ingest recent threads per relationship into an `email_metadata` table, extract last topic/ask/open loops, and surface them in the Signals tab and decision engine as structured inputs. Strictly privacy-first and metadata-focused; no full-blown inbox UI._
+
+- [x] **Notes summary / interaction topline feature** ✅ **NEX-12**
+      _Add per-relationship "Notes Summary" that surfaces at-a-glance: last/next interaction dates, pending/post-call action items, research topics, and momentum-directed tasks. Implement as a structured rollup over existing Interaction/Action/Insight entities and surface in Relationship detail and a global dashboard rollup._
+
+- [x] **Meeting notes / transcript ingestion (manual v1)** ✅ **NEX-13**
       _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording. **Enhancement:** Implemented batch scheduling (`scheduleMultipleActions`) to efficiently schedule multiple actions at once, ensuring proper spacing (max 2 per day) when multiple actions are extracted from meeting notes._
 
 - [x] **Multi-calendar awareness (read-only) - Backend** ✅ **NEX-14**

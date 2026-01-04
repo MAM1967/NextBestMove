@@ -172,52 +172,10 @@ export function SignalsClient() {
                 </ul>
               </div>
             )}
-
-            {/* AI-Powered Signals */}
-            {(signal.last_email_sentiment || signal.last_email_intent || signal.recommended_action_type) && (
-              <div className="md:col-span-2 border-t border-zinc-200 pt-3 mt-3">
-                <div className="text-xs font-medium text-zinc-600 mb-2">AI Analysis</div>
-                <div className="flex flex-wrap gap-2">
-                  {signal.last_email_sentiment && (
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${
-                        signal.last_email_sentiment === "positive"
-                          ? "bg-green-100 text-green-800"
-                          : signal.last_email_sentiment === "negative"
-                          ? "bg-red-100 text-red-800"
-                          : signal.last_email_sentiment === "urgent"
-                          ? "bg-orange-100 text-orange-800"
-                          : "bg-zinc-100 text-zinc-800"
-                      }`}
-                    >
-                      {signal.last_email_sentiment}
-                    </span>
-                  )}
-                  {signal.last_email_intent && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
-                      {signal.last_email_intent.replace("_", " ")}
-                    </span>
-                  )}
-                </div>
-                {signal.recommended_action_type && (
-                  <div className="mt-2 p-2 rounded-lg bg-purple-50 border border-purple-200">
-                    <div className="text-xs font-medium text-purple-900">
-                      Recommended: {signal.recommended_action_type.replace("_", " ")}
-                    </div>
-                    {signal.recommended_action_description && (
-                      <p className="text-xs text-purple-700 mt-1">{signal.recommended_action_description}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       ))}
     </div>
   );
 }
-
-
-
 

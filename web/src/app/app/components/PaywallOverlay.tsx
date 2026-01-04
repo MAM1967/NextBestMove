@@ -8,7 +8,6 @@ import {
 } from "@/lib/billing/subscription-status";
 import { useUserTier } from "@/lib/billing/use-user-tier";
 import { getTierInfo } from "@/lib/billing/tier-labels";
-import { trackPaywallViewed, trackPaywallCTAClicked } from "@/lib/analytics/posthog";
 
 type PaywallOverlayProps = {
   subscriptionStatus: "none" | "trialing" | "active" | "past_due" | "canceled";
@@ -200,14 +199,14 @@ export function PaywallOverlay({
             <p className="mt-2 text-sm text-zinc-600">
               {tier === "free" ? (
                 <>
-                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
+                  You're now on <strong>Free - Memory Relief</strong>. Upgrade to <strong>Standard - Decision Automation</strong> to keep automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries.
                 </>
               ) : daysRemaining > 0 ? (
                 `You have ${daysRemaining} day${
                   daysRemaining !== 1 ? "s" : ""
-                } left to upgrade and keep automatic plans. Your data is safe.`
+                } left to subscribe and keep your rhythm going. Your data is safe.`
               ) : (
-                "You're now on Free - Memory Relief. Upgrade to Standard - Decision Automation to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries."
+                "Subscribe to resume your rhythm. Your data is safe and nothing is lost."
               )}
             </p>
           </div>

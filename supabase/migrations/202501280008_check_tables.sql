@@ -30,6 +30,3 @@ WHERE schema_name = 'auth';
 
 
 
-
-
-

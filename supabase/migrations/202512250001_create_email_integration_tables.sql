@@ -168,6 +168,3 @@ CREATE POLICY "Users can manage own email metadata" ON email_metadata
 
 COMMIT;
 
-
-
-

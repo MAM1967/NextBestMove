@@ -33,6 +33,3 @@ CREATE POLICY "Service role full access to idempotency_keys"
 -- This prevents unbounded table growth while still providing protection against
 -- duplicate operations within a reasonable time window
 
-
-
-

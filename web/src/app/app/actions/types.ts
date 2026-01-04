@@ -48,21 +48,6 @@ export interface Action {
   
   // Estimated duration for "I have X minutes" feature
   estimated_minutes?: number | null;
-  
-  // Deal progression tracking
-  deal_stage?: "prospecting" | "qualifying" | "proposal" | "negotiation" | "closed_won" | "closed_lost" | null;
-  deal_value?: number | null;
-  
-  // Action completion tracking (NEX-51)
-  next_call_calendared_at?: string | null;
-  replied_to_email_at?: string | null;
-  got_response_at?: string | null;
-  got_response_notes?: string | null;
-  
-  // Source attribution (NEX-56)
-  source?: ActionSource;
-  source_ref?: string | null;
-  intent_type?: ActionIntentType | null;
 }
 
 

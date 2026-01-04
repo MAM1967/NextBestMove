@@ -20,7 +20,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export function generateIdempotencyKey(
   userId: string,
   operation: string,
-  params: Record<string, unknown>
+  params: Record<string, any>
 ): string {
   // Sort params to ensure consistent key generation
   const sortedParams = Object.keys(params)
@@ -28,7 +28,7 @@ export function generateIdempotencyKey(
     .reduce((acc, key) => {
       acc[key] = params[key];
       return acc;
-    }, {} as Record<string, unknown>);
+    }, {} as Record<string, any>);
 
   // Create a deterministic key from user ID, operation, and params
   const keyData = JSON.stringify({ userId, operation, params: sortedParams });
@@ -42,11 +42,11 @@ export function generateIdempotencyKey(
  * Check if an operation with this idempotency key has already been processed
  * 
  * @param idempotencyKey - The idempotency key
- * @returns Object with `exists: boolean` and `result?: unknown` if exists
+ * @returns Object with `exists: boolean` and `result?: any` if exists
  */
 export async function checkIdempotency(
   idempotencyKey: string
-): Promise<{ exists: boolean; result?: unknown }> {
+): Promise<{ exists: boolean; result?: any }> {
   try {
     const supabase = createAdminClient(); // Use admin client to bypass RLS
     const { data, error } = await supabase
@@ -83,7 +83,7 @@ export async function checkIdempotency(
  */
 export async function storeIdempotencyResult(
   idempotencyKey: string,
-  result: unknown
+  result: any
 ): Promise<boolean> {
   try {
     const supabase = createAdminClient(); // Use admin client to bypass RLS

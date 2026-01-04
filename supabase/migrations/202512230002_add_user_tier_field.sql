@@ -32,6 +32,3 @@ WHERE tier IS NULL OR tier = 'free';
 
 COMMIT;
 
-
-
-

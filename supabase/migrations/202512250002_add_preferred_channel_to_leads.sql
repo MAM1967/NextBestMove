@@ -15,6 +15,3 @@ CREATE INDEX IF NOT EXISTS idx_leads_preferred_channel ON leads(preferred_channe
 
 COMMIT;
 
-
-
-

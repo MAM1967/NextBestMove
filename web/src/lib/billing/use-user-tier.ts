@@ -39,6 +39,3 @@ export function useUserTier() {
   return { tier, loading, error };
 }
 
-
-
-

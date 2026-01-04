@@ -179,24 +179,22 @@ export function LeadRow({
             )}
           </div>
           <div className="flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
-            {(lead.linkedin_url || lead.email || lead.url) && (
-              <a
-                href={lead.linkedin_url || lead.email ? `mailto:${lead.email}` : (lead.url || undefined)}
-                target={lead.linkedin_url || lead.url ? "_blank" : undefined}
-                rel={lead.linkedin_url || lead.url ? "noopener noreferrer" : undefined}
-                className="text-zinc-600 hover:text-zinc-900 hover:underline"
-              >
-                {lead.linkedin_url ? "LinkedIn" : lead.email ? "Email" : getUrlTypeLabel(lead.url)}
-              </a>
-            )}
-            {(lead.linkedin_url || lead.email || lead.url) && <span>•</span>}
+            <a
+              href={lead.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-600 hover:text-zinc-900 hover:underline"
+            >
+              {getUrlTypeLabel(lead.url)}
+            </a>
+            <span>•</span>
             <span>Added {formatRelativeDate(lead.created_at)}</span>
             {/* Show next touch due date if cadence is set */}
             {lead.next_touch_due_at && lead.status === "ACTIVE" && (
               <>
                 <span>•</span>
                 <span className="text-zinc-600">
-                  Next touch: {formatDateForDisplay(typeof lead.next_touch_due_at === 'string' ? lead.next_touch_due_at.split("T")[0] : lead.next_touch_due_at)}
+                  Next touch: {formatDateForDisplay(lead.next_touch_due_at.split("T")[0])}
                 </span>
               </>
             )}

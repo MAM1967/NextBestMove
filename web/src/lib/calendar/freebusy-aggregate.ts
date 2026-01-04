@@ -214,6 +214,3 @@ export async function aggregateFreeBusy(
   };
 }
 
-
-
-

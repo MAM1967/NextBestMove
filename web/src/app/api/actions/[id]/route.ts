@@ -24,11 +24,42 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: actionId } = await params;
+    const body = await request.json();
+    const { due_date, notes, description, promised_due_at } = body;
 
-    // Fetch action (without join to avoid PostgREST ambiguity)
-    // Include completion tracking fields
-    const { data: action, error: actionError } = await supabase
+    // Build update object (only include fields that are provided)
+    const updateData: {
+      due_date?: string;
+      notes?: string | null;
+      description?: string | null;
+      promised_due_at?: string | null;
+    } = {};
+
+    if (due_date) {
+      updateData.due_date = due_date;
+    }
+
+    if (notes !== undefined) {
+      updateData.notes = notes || null;
+    }
+
+    if (description !== undefined) {
+      updateData.description = description || null;
+    }
+
+    if (promised_due_at !== undefined) {
+      updateData.promised_due_at = promised_due_at || null;
+    }
+
+    // Validate that at least one field is being updated
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: "At least one field (due_date, notes, description, promised_due_at) must be provided" },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
       .from("actions")
       .select("*, next_call_calendared_at, replied_to_email_at, got_response_at, got_response_notes")
       .eq("id", actionId)

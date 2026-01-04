@@ -63,24 +63,13 @@ echo ""
 echo "📋 Step 4/5: Creating deployment branch..."
 cd "$PROJECT_ROOT"
 
-# CRITICAL: Capture current branch and any uncommitted changes BEFORE switching
+# Ensure we're on main and up to date
 CURRENT_BRANCH=$(git branch --show-current)
-HAS_UNCOMMITTED=$(git diff-index --quiet HEAD --; echo $?)
-
-# Commit any uncommitted changes on current branch first
-if [ "$HAS_UNCOMMITTED" != "0" ]; then
-    echo "📝 Committing uncommitted changes on current branch ($CURRENT_BRANCH)..."
-    git add -A
-    git commit -m "$COMMIT_MESSAGE" || {
-        echo "⚠️  No changes to commit, continuing..."
-    }
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "📥 Switching to main branch..."
+    git checkout main
+    git pull origin main
 fi
-
-# Ensure main is up to date
-echo "📥 Updating main branch..."
-git fetch origin main
-git checkout main
-git pull origin main
 
 # Create a unique branch name
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -88,20 +77,13 @@ BRANCH_NAME="deploy/production-${TIMESTAMP}"
 echo "🌿 Creating branch: $BRANCH_NAME"
 git checkout -b "$BRANCH_NAME"
 
-# CRITICAL STEP: If we were on a different branch, merge its commits into deployment branch
-if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
-    echo "🔄 Merging changes from $CURRENT_BRANCH into deployment branch..."
-    if git merge "$CURRENT_BRANCH" --no-edit; then
-        echo "✅ Successfully merged $CURRENT_BRANCH into $BRANCH_NAME"
-    else
-        echo "⚠️  Merge conflict detected. Resolving automatically (preferring $CURRENT_BRANCH changes)..."
-        # Auto-resolve conflicts by preferring current branch changes
-        git checkout --theirs . 2>/dev/null || true
-        git add -A
-        git commit -m "Merge $CURRENT_BRANCH into $BRANCH_NAME" || {
-            echo "⚠️  No merge commit needed, continuing..."
-        }
-    fi
+# Check if there are uncommitted changes
+if ! git diff-index --quiet HEAD --; then
+    echo "📝 Staging uncommitted changes..."
+    git add -A
+    git commit -m "$COMMIT_MESSAGE" || {
+        echo "⚠️  No changes to commit, continuing..."
+    }
 fi
 
 # Step 5: Push feature branch

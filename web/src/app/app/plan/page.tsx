@@ -421,7 +421,7 @@ export default function DailyPlanPage() {
     }
   };
 
-  const handleGotReply = async (actionId: string) => {
+  const handleGotReply = (actionId: string) => {
     const allActions = [
       ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
       ...(dailyPlan?.actions || []),
@@ -900,14 +900,16 @@ export default function DailyPlanPage() {
                 Under 5 minutes
               </span>
             </div>
-            <UnifiedActionCard
-              action={fastWin}
-              onComplete={handleActionComplete}
-              onSnooze={(id) => setSnoozeActionId(id)}
-              onAddNote={handleAddNote}
-              onGotReply={handleGotReply}
-              onSetPromise={handleSetPromise}
-            />
+            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
+              <ActionCard
+                action={fastWin}
+                onComplete={handleActionComplete}
+                onSnooze={(id) => setSnoozeActionId(id)}
+                onAddNote={handleAddNote}
+                onGotReply={handleGotReply}
+                onSetPromise={handleSetPromise}
+              />
+            </div>
           </div>
         )}
 

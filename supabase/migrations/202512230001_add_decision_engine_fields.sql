@@ -68,6 +68,3 @@ CREATE INDEX IF NOT EXISTS idx_relationship_decision_state_lane ON relationship_
 
 COMMIT;
 
-
-
-

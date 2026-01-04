@@ -8,8 +8,7 @@ import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient"
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
 import { GlobalRollup } from "./components/GlobalRollup";
 import { ChannelNudgesList } from "./components/ChannelNudgeCard";
-import { BestActionCardClient } from "./components/BestActionCardClient";
-import { getTodayInTimezone, isWeekendInTimezone } from "@/lib/utils/dateUtils";
+import { DurationSelectorClient } from "./components/DurationSelectorClient";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -575,10 +574,14 @@ export default async function TodayPage() {
         </p>
       </header>
 
-      {/* Best Action - Single clear next move */}
-      <BestActionCardClient />
+      {/* Best Action - Single clear next move, with duration selector */}
+      <DurationSelectorClient />
 
-      {/* Executive Summary - 4 key metrics */}
+      {/* Global Rollup - Top overdue items across relationships */}
+      <GlobalRollup />
+
+      <ChannelNudgesList />
+
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
           <h2 className="text-sm font-medium text-zinc-900">Suggested focus</h2>

@@ -8,7 +8,7 @@ import {
   validateCadenceDays,
 } from "@/lib/leads/relationship-status";
 import { NotesSummary } from "./NotesSummary";
-import { RelationshipSignals } from "./[id]/RelationshipSignals";
+import { Signals } from "./Signals";
 import { MeetingNotes } from "./MeetingNotes";
 
 interface EditLeadModalProps {
@@ -19,10 +19,7 @@ interface EditLeadModalProps {
     leadId: string,
     leadData: {
       name: string;
-      linkedin_url?: string | null;
-      email?: string | null;
-      phone_number?: string | null;
-      url?: string | null;
+      url: string;
       notes?: string;
       cadence?: RelationshipCadence | null;
       cadence_days?: number | null;
@@ -163,6 +160,18 @@ export function EditLeadModal({
       }
     }
     
+    // Validate cadence_days if cadence is set (and not ad_hoc)
+    if (formData.cadence && formData.cadence !== "ad_hoc") {
+      if (formData.cadence_days === null || formData.cadence_days === undefined) {
+        newErrors.cadence_days = "Please specify the number of days";
+      } else {
+        const range = getCadenceRange(formData.cadence);
+        if (range && !validateCadenceDays(formData.cadence, formData.cadence_days)) {
+          newErrors.cadence_days = `Must be between ${range.min} and ${range.max} days`;
+        }
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -173,6 +182,7 @@ export function EditLeadModal({
 
     setLoading(true);
     try {
+      const normalizedUrl = normalizeUrl(formData.url);
       // Get cadence_days - use default if not specified and cadence is not ad_hoc
       let cadenceDays = formData.cadence_days;
       if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
@@ -525,24 +535,21 @@ export function EditLeadModal({
         {/* Notes Summary Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <NotesSummary relationshipId={lead.id} refreshTrigger={notesSummaryRefreshTrigger} />
+            <NotesSummary relationshipId={lead.id} />
           </div>
         )}
 
         {/* Meeting Notes Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <MeetingNotes 
-              leadId={lead.id} 
-              onNotesSaved={() => setNotesSummaryRefreshTrigger((prev) => prev + 1)}
-            />
+            <MeetingNotes leadId={lead.id} />
           </div>
         )}
 
         {/* Signals Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <RelationshipSignals relationshipId={lead.id} />
+            <Signals leadId={lead.id} />
           </div>
         )}
       </div>

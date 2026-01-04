@@ -68,9 +68,6 @@ For each Linear issue (e.g., `NEX-10`), work through these steps **in order**:
   - `docs/Architecture/Database_Schema.md` (if database related)
 - Implement code + migrations.
 - Run relevant tests; add new unit/integration tests where missing.
-- **Add unit tests (Vitest):** Create test files in `web/tests/unit/` for new business logic
-- **Add integration tests:** Create test files in `web/tests/integration/` for new API endpoints
-- **Update security tests:** If new endpoints or authentication logic added, ensure security tests cover them
 - **When done:** Add a comment to Linear summarizing what was implemented, then move to Step 3.
 
 ### Step 3: UI/Integration Agent Pass
@@ -79,11 +76,8 @@ For each Linear issue (e.g., `NEX-10`), work through these steps **in order**:
 - Review Product/Spec and Backend Agent comments on the Linear issue.
 - Connect backend changes to UI (Next.js pages, components, server actions).
 - Verify navigation/labels match the language refactor (Today, Relationships, Daily Plan, Weekly Review, Signals, Insights).
-- **Add unit tests (Vitest):** Create test files in `web/tests/unit/` for new React components/utilities
-- **Add E2E tests (Playwright):** Create test files in `web/tests/critical-paths/` or `web/tests/e2e/` for new user flows
-- **Update security tests:** If new user-facing features added, ensure security tests cover them
-- **Update CI scripts:** Ensure new tests are included in CI workflow (`.github/workflows/ci.yml`)
-- **When done:** Add a comment to Linear summarizing what was implemented, update `docs/backlog.md` to mark item as complete, confirm all acceptance criteria are met, and move the issue to "Done" in Linear.
+- Add/adjust tests and basic manual QA notes.
+- **When done:** Add a comment to Linear summarizing what was implemented, confirm all acceptance criteria are met, and move the issue to "Done" in Linear.
 
 ---
 
@@ -110,9 +104,6 @@ You can paste this snippet into Linear issue templates so every agent run follow
 - [ ] Read relevant architecture docs: - `docs/Architecture/Architecture_Summary.md` - `docs/Architecture/Decision_Engine_Implementation_Spec.md` (if decision engine related) - `docs/Architecture/Database_Schema.md` (if database related)
 - [ ] Review Product/Spec Agent comments on this issue
 - [ ] Implement backend/system changes + tests
-- [ ] Add unit tests (Vitest) for new backend logic
-- [ ] Add integration tests for new API endpoints
-- [ ] Update security tests if new endpoints or authentication logic added
 - [ ] Add comment summarizing what was implemented
 
 **Step 3: UI/Integration Agent**
@@ -122,15 +113,9 @@ You can paste this snippet into Linear issue templates so every agent run follow
 - [ ] Review Product/Spec and Backend Agent comments on this issue
 - [ ] Implement UI/integration changes + tests
 - [ ] Verify UX matches language refactor (Today, Relationships, etc.)
-- [ ] Add unit tests (Vitest) for new React components/utilities
-- [ ] Add E2E tests (Playwright) for new user flows
-- [ ] Update security tests if new user-facing features added
 - [ ] Add comment summarizing what was implemented
 - [ ] Confirm all acceptance criteria are met
-- [ ] Update backlog.md to mark item as complete
 - [ ] Move issue to "Done" in Linear
 ```
 
 **See `docs/Planning/Agent_Role_Prompts.md` for copy-pasteable prompts for each agent role.**
-
-**See `docs/Planning/Implementation_Checklist.md` for the complete implementation checklist including testing, CI, and security requirements.**

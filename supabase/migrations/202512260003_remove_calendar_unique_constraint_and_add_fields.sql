@@ -22,6 +22,3 @@ WHERE status = 'active';
 COMMENT ON COLUMN calendar_connections.calendar_name IS 'Optional user-friendly name for the calendar (e.g., "Work Calendar", "Personal Calendar")';
 COMMENT ON COLUMN calendar_connections.account_email IS 'Email address associated with the calendar account (e.g., "work@company.com")';
 
-
-
-

@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         if (!await canGeneratePlans(subscriptionStatus, trialEndsAt, userTier)) {
           return NextResponse.json(
             { 
-              error: "Your Standard trial has ended. Upgrade to Standard to unlock automatic daily plans, or use manual planning on the Free tier.",
+              error: "Your trial has ended. Subscribe to continue generating daily plans.",
               gracePeriod: true 
             },
             { status: 403 }

@@ -66,7 +66,37 @@ export function NotesSummary({ summary }: NotesSummaryProps) {
         </div>
       </div>
 
-      {/* Momentum and Trend removed from UI per NEX-50 */}
+      {/* Momentum Snapshot */}
+      {summary.momentumScore !== null && (
+        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-medium text-zinc-700">Momentum</span>
+            <span
+              className={`text-xs font-medium ${
+                summary.momentumTrend === "increasing"
+                  ? "text-green-600"
+                  : summary.momentumTrend === "declining"
+                  ? "text-red-600"
+                  : "text-zinc-600"
+              }`}
+            >
+              {summary.momentumTrend === "increasing" && "↗ Increasing"}
+              {summary.momentumTrend === "declining" && "↘ Declining"}
+              {summary.momentumTrend === "stable" && "→ Stable"}
+              {summary.momentumTrend === "unknown" && "? Unknown"}
+            </span>
+          </div>
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className="h-full bg-purple-600 transition-all"
+              style={{ width: `${summary.momentumScore}%` }}
+            />
+          </div>
+          <div className="mt-1 text-xs text-zinc-600">
+            {summary.momentumScore}/100
+          </div>
+        </div>
+      )}
 
       {/* Pending Actions */}
       {summary.pendingActions.length > 0 && (
@@ -154,7 +184,4 @@ export function NotesSummary({ summary }: NotesSummaryProps) {
     </div>
   );
 }
-
-
-
 

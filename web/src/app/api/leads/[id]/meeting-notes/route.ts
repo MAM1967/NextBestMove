@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { extractInteractions } from "@/lib/ai/interaction-extraction";
-import { scheduleMultipleActions, type ProposedAction } from "@/lib/actions/smart-scheduling";
 
 /**
  * POST /api/leads/[id]/meeting-notes
@@ -155,41 +154,17 @@ async function extractAndPersistInteractions(
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Prepare proposed actions for batch scheduling
-    const proposedActions: ProposedAction[] = extractionResult.actionItems.map((actionItem) => {
+    // Create actions from extracted action items
+    const createdActionIds: string[] = [];
+    for (const actionItem of extractionResult.actionItems) {
       // Calculate due date: use extracted date if provided, otherwise default to 3 days from now for POST_CALL, 7 days for others
-      let proposedDueDate = actionItem.due_date || today;
+      let dueDate = actionItem.due_date || today;
       if (!actionItem.due_date) {
         const defaultDays = actionItem.action_type === "POST_CALL" ? 3 : 7;
         const defaultDate = new Date();
         defaultDate.setDate(defaultDate.getDate() + defaultDays);
-        proposedDueDate = defaultDate.toISOString().split("T")[0];
+        dueDate = defaultDate.toISOString().split("T")[0];
       }
-      return { proposedDueDate };
-    });
-
-    // Use batch scheduling to schedule all actions at once (more efficient)
-    const scheduledActions = await scheduleMultipleActions(
-      userId,
-      leadId,
-      proposedActions,
-      2 // Max 2 actions per day per relationship
-    );
-
-    // Create actions with scheduled dates
-    const createdActionIds: string[] = [];
-    for (let i = 0; i < extractionResult.actionItems.length; i++) {
-      const actionItem = extractionResult.actionItems[i];
-      const scheduled = scheduledActions[i];
-
-      // Map action type to intent type
-      const intentTypeMap: Record<string, string> = {
-        'FOLLOW_UP': 'follow_up',
-        'POST_CALL': 'review',
-        'OUTREACH': 'outreach',
-        'NURTURE': 'nurture',
-      };
-      const intentType = intentTypeMap[actionItem.action_type] || null;
 
       const { data: action, error: actionError } = await supabase
         .from("actions")
@@ -199,13 +174,10 @@ async function extractAndPersistInteractions(
           action_type: actionItem.action_type,
           state: "NEW",
           description: actionItem.description,
-          due_date: scheduled.scheduledDate, // Use batch-scheduled date
+          due_date: dueDate,
           notes: actionItem.notes || null,
           auto_created: true,
           meeting_note_id: meetingNoteId,
-          source: 'meeting_note',
-          source_ref: meetingNoteId,
-          intent_type: intentType,
         })
         .select("id")
         .single();
@@ -326,7 +298,4 @@ export async function GET(
     );
   }
 }
-
-
-
 

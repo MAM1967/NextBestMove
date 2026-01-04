@@ -118,12 +118,12 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
             </p>
           )}
         </div>
-        {action.urgency_value_label && (
+        {action.next_move_score !== null && action.next_move_score !== undefined && (
           <div className="text-right">
-            <div className="text-sm font-medium text-rose-700">
-              {action.urgency_value_label}
+            <div className="text-2xl font-bold text-rose-600">
+              {Math.round(action.next_move_score)}
             </div>
-            <div className="text-xs text-gray-500">Status</div>
+            <div className="text-xs text-gray-500">Score</div>
           </div>
         )}
       </div>
@@ -157,6 +157,9 @@ export function BestActionCard({ action, loading, reason }: BestActionCardProps)
         </Link>
       </div>
 
+      {reason && (
+        <p className="mt-3 text-xs text-gray-500 italic">{reason}</p>
+      )}
     </div>
   );
 }

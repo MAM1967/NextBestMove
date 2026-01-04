@@ -272,26 +272,17 @@ export function calculateNextMoveScore(
       reasons.push("stall risk");
     }
   }
-  // Note: Value assessment should match signals matrix calculation
-  // For now, we use a simple heuristic, but the API route calculates
-  // urgency_value_label separately using the signals calculator for display
   if (value >= 10) {
     reasons.push("high value relationship");
-  } else if (value >= 5) {
-    reasons.push("medium value relationship");
-  } else {
-    reasons.push("low value relationship");
   }
   if (effortBias >= 10) {
     reasons.push("low effort");
   }
   
-  // Remove numeric score from reason (per NEX-46: remove score from UI)
-  // Keep qualitative information only
   const reason =
     reasons.length > 0
-      ? reasons.join(", ")
-      : "Standard priority";
+      ? `Score: ${total} (${reasons.join(", ")})`
+      : `Score: ${total}`;
   
   return {
     actionId: action.id,

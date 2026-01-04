@@ -19,6 +19,3 @@ export interface RelationshipSummaryResponse {
   summary: RelationshipSummary;
 }
 
-
-
-

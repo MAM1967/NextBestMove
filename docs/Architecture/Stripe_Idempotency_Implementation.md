@@ -283,6 +283,3 @@ All duplicate events are logged with warnings for monitoring. The system is prot
 - Race conditions
 - Network retries
 
-
-
-

@@ -60,26 +60,9 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
     const billingSection = page.locator('[data-testid="billing-section"], section:has-text("Billing"), section:has-text("Subscription")');
     
     // Should show Standard tier or trial status
-    // Use .first() to handle multiple matches (e.g., "Standard" text and "Start Standard Trial" button)
-    // Or be more specific - look for trial status text specifically
-    const trialStatus = page.locator('text=/14 day|trial/i').first();
-    const standardTier = page.locator('text=/Standard/i').first();
-    
-    // At least one of these should be visible (trial status or Standard tier indication)
-    const hasTrialStatus = await trialStatus.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasStandardTier = await standardTier.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (!hasTrialStatus && !hasStandardTier) {
-      // If neither is visible, check what's actually on the page
-      const pageText = await page.locator('body').textContent();
-      throw new Error(
-        `Expected to see Standard tier or trial status on billing page. ` +
-        `Page content preview: ${pageText?.substring(0, 500) || 'empty'}`
-      );
-    }
-    
-    // At least one should be visible
-    expect(hasTrialStatus || hasStandardTier).toBe(true);
+    await expect(
+      page.locator('text=/Standard|Trial|14 day/i')
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("should allow access to premium features during trial", async ({ page }) => {
@@ -132,8 +115,8 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
         .update({
           trial_ends_at: pastDate.toISOString(),
           status: "trialing",
-        } as Record<string, unknown>)
-        .eq("billing_customer_id", (billingCustomer as { id: string }).id);
+        } as any)
+        .eq("billing_customer_id", (billingCustomer as any).id);
       
       if (subError) {
         console.warn("Failed to update subscription:", subError);
@@ -219,7 +202,7 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
 
     const { error } = await adminSupabase
       .from("users")
-      .update({ tier: "free" } as Record<string, unknown>)
+      .update({ tier: "free" } as any)
       .eq("id", user.id);
     
     if (error) {
@@ -277,7 +260,7 @@ test.describe("NEX-9: Reverse Trial + Paywall", () => {
 
     const { error } = await adminSupabase
       .from("users")
-      .update({ tier: "free" } as Record<string, unknown>)
+      .update({ tier: "free" } as any)
       .eq("id", user.id);
     
     if (error) {

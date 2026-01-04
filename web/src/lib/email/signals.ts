@@ -160,6 +160,3 @@ export function extractSignals(
   };
 }
 
-
-
-

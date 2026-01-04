@@ -67,7 +67,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, linkedin_url, email, phone_number, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
+    const { name, url, notes, cadence, cadence_days, tier, preferred_channel } = body;
 
     // Validation
     if (!name) {
@@ -143,10 +143,7 @@ export async function PUT(
     // Build update object
     const updateData: {
       name: string;
-      linkedin_url?: string | null;
-      email?: string | null;
-      phone_number?: string | null;
-      url?: string | null;
+      url: string;
       notes: string | null;
       cadence?: string | null;
       cadence_days?: number | null;
@@ -155,10 +152,7 @@ export async function PUT(
       next_touch_due_at?: string | null;
     } = {
       name: name.trim(),
-      linkedin_url: linkedin_url?.trim() || null,
-      email: email?.trim() || null,
-      phone_number: phone_number?.trim() || null,
-      url: url?.trim() || null,
+      url: normalizedUrl,
       notes: notes?.trim() || null,
     };
 
