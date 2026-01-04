@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getBestAction } from "@/lib/decision-engine";
 import { calculateUrgencyValue } from "@/lib/signals/urgency-value-calculator";
+import { withResponseTime } from "@/lib/middleware/response-time";
+import { withQueryTiming } from "@/lib/utils/logger";
 
 /**
  * GET /api/decision-engine/best-action?duration=5|10|15
@@ -12,7 +14,7 @@ import { calculateUrgencyValue } from "@/lib/signals/urgency-value-calculator";
  * Query parameters:
  * - duration: Optional duration filter (5, 10, or 15 minutes). Filters actions to only those with estimated_minutes <= duration.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   try {
     const supabase = await createClient();
     
@@ -53,33 +55,47 @@ export async function GET(request: Request) {
     let action: any | null = null;
     let relationshipData: any | null = null;
     
-    const { data: actionWithLeads, error: joinError } = await supabase
-      .from("actions")
-      .select(
-        `
-        *,
-        leads (
-          id,
-          name,
-          url,
-          notes,
-          tier,
-          last_interaction_at,
-          relationship_state
-        )
-      `
-      )
-      .eq("id", bestAction.actionId)
-      .single();
+    const actionWithLeadsResult = await withQueryTiming(
+      "fetch_best_action_with_leads",
+      async () => {
+        return await supabase
+          .from("actions")
+          .select(
+            `
+            *,
+            leads (
+              id,
+              name,
+              url,
+              notes,
+              tier,
+              last_interaction_at,
+              relationship_state
+            )
+          `
+          )
+          .eq("id", bestAction.actionId)
+          .single();
+      },
+      { actionId: bestAction.actionId }
+    );
+    const { data: actionWithLeads, error: joinError } = actionWithLeadsResult;
 
     if (joinError) {
       console.warn("Error fetching best action with leads join, trying without join:", joinError);
       // Fallback: fetch action without leads join
-      const { data: actionOnly, error: actionError } = await supabase
-        .from("actions")
-        .select("*")
-        .eq("id", bestAction.actionId)
-        .single();
+      const actionOnlyResult = await withQueryTiming(
+        "fetch_best_action_fallback",
+        async () => {
+          return await supabase
+            .from("actions")
+            .select("*")
+            .eq("id", bestAction.actionId)
+            .single();
+        },
+        { actionId: bestAction.actionId, fallback: true }
+      );
+      const { data: actionOnly, error: actionError } = actionOnlyResult;
 
       if (actionError || !actionOnly) {
         console.error("Error fetching best action (both with and without join):", actionError);
@@ -93,12 +109,19 @@ export async function GET(request: Request) {
       
       // Fetch lead separately if needed
       if (action.person_id) {
-        const { data: lead } = await supabase
-          .from("leads")
-          .select("id, name, url, notes, tier, last_interaction_at, relationship_state")
-          .eq("id", action.person_id)
-          .eq("user_id", user.id)
-          .single();
+        const leadResult = await withQueryTiming(
+          "fetch_lead_for_best_action",
+          async () => {
+            return await supabase
+              .from("leads")
+              .select("id, name, url, notes, tier, last_interaction_at, relationship_state")
+              .eq("id", action.person_id)
+              .eq("user_id", user.id)
+              .single();
+          },
+          { personId: action.person_id, userId: user.id }
+        );
+        const { data: lead } = leadResult;
         
         if (lead) {
           action.leads = lead;
@@ -135,53 +158,88 @@ export async function GET(request: Request) {
           : 999; // Never interacted
 
         // Count overdue actions for this relationship
-        const { count: overdueCount } = await supabase
-          .from("actions")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("person_id", action.person_id)
-          .eq("state", "NEW")
-          .lt("due_date", new Date().toISOString().split("T")[0]);
+        const overdueCountResult = await withQueryTiming(
+          "count_overdue_actions",
+          async () => {
+            return await supabase
+              .from("actions")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("person_id", action.person_id)
+              .eq("state", "NEW")
+              .lt("due_date", new Date().toISOString().split("T")[0]);
+          },
+          { userId: user.id, personId: action.person_id }
+        );
+        const { count: overdueCount } = overdueCountResult;
 
         // Check for urgent email signals
-        const { data: recentEmails } = await supabase
-          .from("email_metadata")
-          .select("sentiment")
-          .eq("user_id", user.id)
-          .eq("person_id", action.person_id)
-          .gte("received_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-          .order("received_at", { ascending: false })
-          .limit(5);
+        const recentEmailsResult = await withQueryTiming(
+          "fetch_recent_email_sentiment",
+          async () => {
+            return await supabase
+              .from("email_metadata")
+              .select("sentiment")
+              .eq("user_id", user.id)
+              .eq("person_id", action.person_id)
+              .gte("received_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+              .order("received_at", { ascending: false })
+              .limit(5);
+          },
+          { userId: user.id, personId: action.person_id }
+        );
+        const { data: recentEmails } = recentEmailsResult;
 
         const hasUrgentEmailSentiment =
           recentEmails?.some((e) => e.sentiment === "urgent") || false;
 
         // Check for open loops
-        const { data: emailsWithOpenLoops } = await supabase
-          .from("email_metadata")
-          .select("open_loops")
-          .eq("user_id", user.id)
-          .eq("person_id", action.person_id)
-          .not("open_loops", "is", null)
-          .gte("received_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-          .limit(1);
+        const emailsWithOpenLoopsResult = await withQueryTiming(
+          "check_open_loops",
+          async () => {
+            return await supabase
+              .from("email_metadata")
+              .select("open_loops")
+              .eq("user_id", user.id)
+              .eq("person_id", action.person_id)
+              .not("open_loops", "is", null)
+              .gte("received_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+              .limit(1);
+          },
+          { userId: user.id, personId: action.person_id }
+        );
+        const { data: emailsWithOpenLoops } = emailsWithOpenLoopsResult;
 
         const hasOpenLoops = (emailsWithOpenLoops?.length || 0) > 0;
 
         // Calculate response rate (simplified - count actions with REPLIED state)
-        const { count: totalActions } = await supabase
-          .from("actions")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("person_id", action.person_id)
-          .in("state", ["DONE", "REPLIED", "SENT"]);
+        const totalActionsResult = await withQueryTiming(
+          "count_total_actions",
+          async () => {
+            return await supabase
+              .from("actions")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("person_id", action.person_id)
+              .in("state", ["DONE", "REPLIED", "SENT"]);
+          },
+          { userId: user.id, personId: action.person_id }
+        );
+        const { count: totalActions } = totalActionsResult;
 
-        const { count: repliedActions } = await supabase
-          .from("actions")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("person_id", action.person_id)
-          .eq("state", "REPLIED");
+        const repliedActionsResult = await withQueryTiming(
+          "count_replied_actions",
+          async () => {
+            return await supabase
+              .from("actions")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("person_id", action.person_id)
+              .eq("state", "REPLIED");
+          },
+          { userId: user.id, personId: action.person_id }
+        );
+        const { count: repliedActions } = repliedActionsResult;
 
         const responseRate =
           (totalActions || 0) > 0 ? (repliedActions || 0) / (totalActions || 1) : 0;
@@ -229,3 +287,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withResponseTime(handler);

@@ -9,6 +9,7 @@ import {
 import { runDecisionEngine } from "@/lib/decision-engine";
 import { assignActionLane } from "@/lib/decision-engine/lanes";
 import { computeRelationshipStates } from "@/lib/decision-engine/state";
+import { withQueryTiming } from "@/lib/utils/logger";
 
 type CapacityLevel = "micro" | "light" | "standard" | "heavy" | "default";
 
@@ -151,20 +152,34 @@ export async function generateDailyPlanForUser(
 ): Promise<{ success: boolean; error?: string; dailyPlan?: any }> {
   try {
     // Check if plan already exists for this date
-    const { data: existingPlan } = await supabase
-      .from("daily_plans")
-      .select("id, capacity_override, override_reason")
-      .eq("user_id", userId)
-      .eq("date", date)
-      .maybeSingle();
+    const existingPlanResult = await withQueryTiming(
+      "check_existing_plan",
+      async () => {
+        return await supabase
+          .from("daily_plans")
+          .select("id, capacity_override, override_reason")
+          .eq("user_id", userId)
+          .eq("date", date)
+          .maybeSingle();
+      },
+      { userId, date }
+    );
+    const { data: existingPlan } = existingPlanResult;
 
     // If plan exists and has actions (full plan), don't regenerate
     if (existingPlan) {
-      const { data: planActions } = await supabase
-        .from("daily_plan_actions")
-        .select("id")
-        .eq("daily_plan_id", existingPlan.id)
-        .limit(1);
+      const planActionsResult = await withQueryTiming(
+        "check_plan_actions",
+        async () => {
+          return await supabase
+            .from("daily_plan_actions")
+            .select("id")
+            .eq("daily_plan_id", existingPlan.id)
+            .limit(1);
+        },
+        { planId: existingPlan.id }
+      );
+      const { data: planActions } = planActionsResult;
       
       // If plan has actions, it's a complete plan - don't regenerate
       if (planActions && planActions.length > 0) {
@@ -174,11 +189,18 @@ export async function generateDailyPlanForUser(
     }
 
     // Get user preference for weekends and timezone
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("exclude_weekends, timezone")
-      .eq("id", userId)
-      .single();
+    const userProfileResult = await withQueryTiming(
+      "get_user_profile",
+      async () => {
+        return await supabase
+          .from("users")
+          .select("exclude_weekends, timezone")
+          .eq("id", userId)
+          .single();
+      },
+      { userId }
+    );
+    const { data: userProfile } = userProfileResult;
 
     const excludeWeekends = userProfile?.exclude_weekends ?? false;
     const userTimezone = userProfile?.timezone || "America/New_York"; // Default fallback
@@ -288,40 +310,54 @@ export async function generateDailyPlanForUser(
     let actionsError: any = null;
     
     // First try with leads join using explicit relationship name
-    const { data: actionsWithLeads, error: joinError } = await supabase
-      .from("actions")
-      .select(
-        `
-        *,
-        leads!actions_person_id_fkey (
-          id,
-          name,
-          linkedin_url,
-          email,
-          phone_number,
-          url,
-          notes,
-          created_at
-        )
-      `
-      )
-      .eq("user_id", userId)
-      .in("state", ["NEW", "SNOOZED"])
-      .lte("due_date", date)
-      .order("due_date", { ascending: true })
-      .order("created_at", { ascending: false });
+    const actionsWithLeadsResult = await withQueryTiming(
+      "fetch_candidate_actions_with_leads",
+      async () => {
+        return await supabase
+          .from("actions")
+          .select(
+            `
+            *,
+            leads!actions_person_id_fkey (
+              id,
+              name,
+              linkedin_url,
+              email,
+              phone_number,
+              url,
+              notes,
+              created_at
+            )
+          `
+          )
+          .eq("user_id", userId)
+          .in("state", ["NEW", "SNOOZED"])
+          .lte("due_date", date)
+          .order("due_date", { ascending: true })
+          .order("created_at", { ascending: false });
+      },
+      { userId, date, actionCount: "unknown" }
+    );
+    const { data: actionsWithLeads, error: joinError } = actionsWithLeadsResult;
     
     if (joinError) {
       console.warn("Error fetching actions with leads join, trying without join:", joinError);
       // Fallback: fetch actions without leads join
-      const { data: actionsOnly, error: actionsOnlyError } = await supabase
-        .from("actions")
-        .select("*")
-        .eq("user_id", userId)
-        .in("state", ["NEW", "SNOOZED"])
-        .lte("due_date", date)
-        .order("due_date", { ascending: true })
-        .order("created_at", { ascending: false });
+      const actionsOnlyResult = await withQueryTiming(
+        "fetch_candidate_actions_fallback",
+        async () => {
+          return await supabase
+            .from("actions")
+            .select("*")
+            .eq("user_id", userId)
+            .in("state", ["NEW", "SNOOZED"])
+            .lte("due_date", date)
+            .order("due_date", { ascending: true })
+            .order("created_at", { ascending: false });
+        },
+        { userId, date, fallback: true }
+      );
+      const { data: actionsOnly, error: actionsOnlyError } = actionsOnlyResult;
       
       if (actionsOnlyError) {
         console.error("Error fetching candidate actions (both with and without join):", actionsOnlyError);
@@ -335,11 +371,18 @@ export async function generateDailyPlanForUser(
             .filter((id): id is string => id !== null);
           
           if (leadIds.length > 0) {
-            const { data: leads } = await supabase
-              .from("leads")
-              .select("id, name, url, notes, created_at")
-              .eq("user_id", userId)
-              .in("id", leadIds);
+            const leadsResult = await withQueryTiming(
+              "fetch_leads_for_actions",
+              async () => {
+                return await supabase
+                  .from("leads")
+                  .select("id, name, url, notes, created_at")
+                  .eq("user_id", userId)
+                  .in("id", leadIds);
+              },
+              { userId, leadCount: leadIds.length }
+            );
+            const { data: leads } = leadsResult;
             
             // Attach leads to actions
             if (leads) {

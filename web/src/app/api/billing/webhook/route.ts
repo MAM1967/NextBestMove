@@ -15,6 +15,11 @@ export const maxDuration = 30; // Allow up to 30 seconds for webhook processing 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  // Track webhook processing time for monitoring
+  const startTime = Date.now();
+  let eventId: string | undefined;
+  let eventType: string | undefined;
+
   // Wrap everything in try-catch to ensure we always return a response
   try {
     // Get raw body as text (required for Stripe signature verification)
@@ -55,11 +60,14 @@ export async function POST(request: Request) {
         signature,
         webhookSecret
       );
+      eventId = event.id;
+      eventType = event.type;
     } catch (err: any) {
       logWebhookEvent("Webhook signature verification failed", {
         status: "error",
         webhookType: "stripe",
         error: err.message,
+        processingTimeMs: Date.now() - startTime,
       });
       // Return 400 for signature verification failures (don't retry)
       return NextResponse.json(
@@ -226,21 +234,36 @@ export async function POST(request: Request) {
         .eq("stripe_event_id", event.id)
         .is("processed_at", null); // Only update if not already processed
 
+      const processingTime = Date.now() - startTime;
+      
       logWebhookEvent("Webhook processed successfully", {
         eventId: event.id,
         webhookType: "stripe",
         eventType: event.type,
         status: "success",
+        processingTimeMs: processingTime,
       });
+
+      // Log slow processing (> 5 seconds) as warning
+      if (processingTime > 5000) {
+        logWarn("Webhook processing took longer than expected", {
+          eventId: event.id,
+          eventType: event.type,
+          processingTimeMs: processingTime,
+        });
+      }
 
       // Always return 200 for successful processing
       return NextResponse.json({ received: true }, { status: 200 });
     } catch (error: any) {
+      const processingTime = Date.now() - startTime;
+      
       logError("Error processing webhook", error, {
         eventId: event.id,
         eventType: event.type,
         errorMessage: error?.message,
         errorStack: error?.stack,
+        processingTimeMs: processingTime,
       });
       // Return 500 so Stripe retries the webhook
       return NextResponse.json(
@@ -250,9 +273,14 @@ export async function POST(request: Request) {
     }
   } catch (outerError: any) {
     // Catch any errors in the outer try-catch (e.g., reading request body, headers)
+    const processingTime = Date.now() - startTime;
+    
     logError("Fatal error in webhook handler", outerError, {
       errorMessage: outerError?.message,
       errorStack: outerError?.stack,
+      eventId,
+      eventType,
+      processingTimeMs: processingTime,
     });
     // Return 500 so Stripe retries
     return NextResponse.json(

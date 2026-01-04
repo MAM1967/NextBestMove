@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { generateDailyPlanForUser } from "@/lib/plans/generate-daily-plan";
 import { canGeneratePlans } from "@/lib/billing/subscription-status";
 import { getUserTier } from "@/lib/billing/tier";
+import { logError } from "@/lib/utils/logger";
+import { withResponseTime } from "@/lib/middleware/response-time";
 
 /**
  * POST /api/daily-plans/generate - Generate a daily plan
@@ -10,16 +12,23 @@ import { getUserTier } from "@/lib/billing/tier";
  * Authenticated endpoint for users to generate their daily plan.
  * Can also regenerate by deleting existing plan first.
  */
-export async function POST(request: Request) {
+async function handler(request: Request) {
+  // Declare variables at function scope for use in catch block
+  let user: { id: string } | null = null;
+  let date: string | null = null;
+  let isInOnboarding = false;
+
   try {
     const supabase = await createClient();
     const {
-      data: { user },
+      data: { user: authUser },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!authUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    user = authUser;
 
     // Check if user is still in onboarding - allow plan generation during onboarding
     // Also get timezone for date calculation
@@ -29,7 +38,7 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single();
 
-    const isInOnboarding = !userProfile?.onboarding_completed;
+    isInOnboarding = !userProfile?.onboarding_completed;
     const userTimezone = userProfile?.timezone || "America/New_York";
 
     // If not in onboarding, check subscription status and grace period
@@ -84,7 +93,7 @@ export async function POST(request: Request) {
     // ALWAYS use user's timezone to get today's date, ignore client-provided date
     // This prevents timezone mismatches where client sends UTC date but user is in different timezone
     const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
-    const date = getTodayInTimezone(userTimezone); // Always calculate from user's timezone, ignore body.date
+    date = getTodayInTimezone(userTimezone); // Always calculate from user's timezone, ignore body.date
 
     // Check if plan already exists for this date - if so, delete it to allow regeneration
     const { data: existingPlan } = await supabase
@@ -115,6 +124,20 @@ export async function POST(request: Request) {
     const result = await generateDailyPlanForUser(supabase, user.id, date);
 
     if (!result.success) {
+      // For onboarding, return graceful error that allows user to continue
+      // Check if user is in onboarding
+      if (isInOnboarding) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: result.error || "Could not generate plan. You can continue without it.",
+            allowContinue: true,
+          },
+          { status: 200 } // Return 200 so frontend can handle gracefully
+        );
+      }
+      
+      // For non-onboarding users, return error status
       return NextResponse.json(
         { error: result.error || "Failed to generate plan" },
         { status: 400 }
@@ -126,10 +149,31 @@ export async function POST(request: Request) {
       dailyPlan: result.dailyPlan,
     });
   } catch (error) {
-    console.error("Unexpected error generating plan:", error);
+    // Log error for monitoring
+    logError("Unexpected error generating plan", error, {
+      userId: user?.id,
+      date,
+      isInOnboarding,
+    });
+
+    // For onboarding, return graceful error
+    if (isInOnboarding) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Could not generate plan right now. You can continue without it and generate it later.",
+          allowContinue: true,
+        },
+        { status: 200 } // Return 200 so frontend can handle gracefully
+      );
+    }
+
+    // For non-onboarding users, return error
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
   }
 }
+
+export const POST = withResponseTime(handler);

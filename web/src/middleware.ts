@@ -1,10 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
+import { handleCorsPreflight, applyCorsHeaders, shouldApplyCors } from "@/lib/middleware/cors";
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isApiRoute = pathname.startsWith("/api");
+  
+  // Handle CORS preflight requests (OPTIONS) for API routes
+  if (isApiRoute && request.method === "OPTIONS" && shouldApplyCors(pathname)) {
+    const corsResponse = handleCorsPreflight(request);
+    if (corsResponse) {
+      return corsResponse;
+    }
+  }
+  
   // Basic Auth protection for staging environment
   // Skip Basic Auth for API routes (webhooks, cron jobs need to work)
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
   const hostname = request.nextUrl.hostname;
   const vercelEnv = process.env.VERCEL_ENV;
   
@@ -108,6 +120,43 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Rate limiting check (applies to API routes)
+  // Must be done before Supabase client creation to avoid unnecessary work
+  if (isApiRoute) {
+    // For rate limiting, we need to check auth first to get user ID
+    // Create a temporary Supabase client to check auth
+    let userId: string | undefined;
+    
+    try {
+      const tempSupabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll() {
+              // No-op for rate limit check
+            },
+          },
+        }
+      );
+      
+      const { data: { user } } = await tempSupabase.auth.getUser();
+      userId = user?.id;
+    } catch (error) {
+      // If auth check fails, continue without user ID (will use IP-based rate limiting)
+      console.error("[Middleware] Error checking auth for rate limiting:", error);
+    }
+
+    // Check rate limit (returns null if disabled, whitelisted, or passes)
+    const rateLimitResponse = await checkRateLimit(request, userId);
+    if (rateLimitResponse) {
+      return rateLimitResponse; // Rate limit exceeded
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -168,6 +217,11 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/app";
       return NextResponse.redirect(url);
     }
+  }
+
+  // Apply CORS headers to API routes
+  if (isApiRoute && shouldApplyCors(pathname)) {
+    return applyCorsHeaders(request, supabaseResponse);
   }
 
   return supabaseResponse;

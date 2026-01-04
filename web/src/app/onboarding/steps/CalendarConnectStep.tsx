@@ -37,9 +37,17 @@ export function CalendarConnectStep({
         if (response.ok) {
           const data = await response.json();
           setIsConnected(data.connected === true);
+        } else {
+          // API error - log but don't block progression
+          console.warn("Calendar status check failed:", response.status);
+          // Default to not connected, allow user to continue
+          setIsConnected(false);
         }
       } catch (error) {
+        // Network or other errors - log but don't block progression
         console.error("Error checking calendar status:", error);
+        // Default to not connected, allow user to continue
+        setIsConnected(false);
       } finally {
         setIsChecking(false);
       }
@@ -49,8 +57,14 @@ export function CalendarConnectStep({
   }, []);
 
   const handleConnect = (provider: "google" | "outlook") => {
-    // Redirect to calendar connect endpoint with callback to onboarding
-    window.location.href = `/api/calendar/connect/${provider}?callbackUrl=/onboarding`;
+    try {
+      // Redirect to calendar connect endpoint with callback to onboarding
+      window.location.href = `/api/calendar/connect/${provider}?callbackUrl=/onboarding`;
+    } catch (error) {
+      // If redirect fails, log error but allow user to skip
+      console.error("Error initiating calendar connection:", error);
+      // User can still skip and continue
+    }
   };
 
   // If already connected, show success and allow to continue

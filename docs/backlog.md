@@ -266,6 +266,17 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
   - Estimated: 2-3 days
   - Reference: `docs/Planning/Help_FAQ_System_Plan.md`
 
+- [ ] **Tooltip System Implementation** 🔴 **SAME PRIORITY AS HELP/FAQ - JANUARY 2026**
+
+  - Add contextual tooltips throughout the app using Radix UI Tooltip
+  - Explain capacity levels, action statuses, relationship states, filter options, and complex features
+  - Phase 1: High-priority tooltips (Today, Daily Plan, Actions, Settings)
+  - Phase 2: Medium-priority tooltips (Signals, Weekly Review, Action Detail)
+  - Phase 3: Low-priority tooltips (Navigation, badges, empty states)
+  - Estimated: 2-3 days
+  - Reference: `docs/Planning/Tooltip_Implementation_Plan.md`
+  - Linear: NEX-59, NEX-60, NEX-61
+
 - [ ] **Jira Integration Form** 🔴 **HIGH PRIORITY - JANUARY 2026**
 
   - Simple form with attachment capability
@@ -336,6 +347,70 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [ ] Full QA + accessibility sweep
 - [ ] Production Stripe smoke test (checkout → webhook → paywall release)
 - [ ] Documentation cleanup & release checklist
+
+---
+
+## 🔴 Pre-Launch Readiness (BLOCKERS) - January 2026
+
+**Status:** Must complete before launch (target: January 13, 2026)  
+**Reference:** `docs/Pre_Launch_Readiness_Report.md`  
+**Implementation Plan:** `.cursor/plans/pre-launch_readiness_address_blockers_&_reach_8+_10_b717e679.plan.md`
+
+### Workstream 1: Security & Monitoring
+
+- [ ] **B-1: Application-level rate limiting** 🔴 **BLOCKER** **NEX-62**
+      _Implement rate limiting middleware with feature flag (`ENABLE_RATE_LIMITING`), generous initial limits (10x expected), whitelist critical endpoints (webhooks, health, cron), graceful degradation. Install `@upstash/ratelimit`, create `web/src/lib/middleware/rate-limit.ts`, update `web/src/middleware.ts`. Estimated: 3 hours. Safety: Feature flag disabled by default, tested on staging first._
+
+- [ ] **B-2: Environment variable audit** 🔴 **BLOCKER** **NEX-63**
+      _Audit all `NEXT_PUBLIC_*` variables to ensure no secrets exposed to client. Scan codebase, verify no secrets in client-side code, document each variable's purpose in `.env.example`, create `docs/Environment_Variables_Audit.md`. Estimated: 1.5 hours._
+
+- [ ] **B-3: Health check endpoint** 🔴 **BLOCKER** **NEX-64**
+      _Create `/api/health` endpoint for monitoring. Lightweight implementation (<100ms), non-blocking checks, read-only operations. Check database connectivity, Stripe API connectivity, critical environment variables. Return status (healthy/degraded/unhealthy) with detailed checks. File: `web/src/app/api/health/route.ts`. Estimated: 2 hours._
+
+- [ ] **B-4: Automated monitoring alerts** 🔴 **BLOCKER** **NEX-65**
+      _Configure GlitchTip alerts for critical errors: error rate thresholds (>50 errors/hour initially), webhook failures, cron job failures, database connection failures. Enhance `web/src/lib/utils/logger.ts` with alert thresholds. Create `docs/Operations/Monitoring_Alerts.md` runbook. Estimated: 5 hours._
+
+- [ ] **H-1: CORS configuration** 🟠 **HIGH PRIORITY** **NEX-71**
+      _Add explicit CORS headers to API routes with safe defaults. Preserve existing behavior (allow all if not configured), only restrict if explicitly enabled via `ENABLE_CORS_RESTRICTION`. File: `web/src/lib/middleware/cors.ts`. Estimated: 1 hour._
+
+### Workstream 2: Operations & Critical Path
+
+- [ ] **B-5: Rollback procedures documentation** 🔴 **BLOCKER** **NEX-66**
+      _Document deployment rollback procedures: Vercel rollback (dashboard + CLI), database migration rollback, environment variable rollback (Doppler + Vercel). Create `docs/Operations/Rollback_Procedures.md`. Estimated: 2 hours._
+
+- [ ] **B-6: Database backup verification** 🔴 **BLOCKER** **NEX-67**
+      _Verify Supabase backup settings, test restore procedure, document backup schedule and retention policy. Create test restore, verify data integrity, document steps in `docs/Operations/Backup_Restore_Procedures.md`. Set up backup monitoring alerts. Estimated: 3 hours._
+
+- [ ] **B-7: Onboarding error handling** 🔴 **BLOCKER** **NEX-68**
+      _Improve error handling in onboarding flow. Add fallback for plan generation failures (allow user to continue), add fallback for calendar connection failures (don't block onboarding), wrap in try-catch, show user-friendly messages, allow retry or skip. Files: `web/src/app/app/page.tsx`, `web/src/app/api/daily-plans/generate/route.ts`. Estimated: 2.5 hours. Safety: Preserve existing happy path, only add error handling._
+
+- [ ] **B-8: Webhook failure recovery** 🔴 **BLOCKER** **NEX-69**
+      _Document manual webhook retry process, add webhook status monitoring (track processing time, alert on failures), create webhook recovery script for missed webhooks. Verify idempotency handling. Files: `web/src/app/api/billing/webhook/route.ts`, `docs/Operations/Webhook_Recovery_Procedures.md`. Estimated: 2.5 hours._
+
+### Workstream 3: Performance & Testing
+
+- [ ] **B-9: Load testing** 🔴 **BLOCKER** **NEX-70**
+      _Set up load testing (k6/Artillery) and run tests for critical endpoints: daily plan generation (100 concurrent), action state changes (200 concurrent), weekly summary generation (50 concurrent). Document results in `docs/Testing/Load_Test_Results.md`, optimize based on findings. Use staging environment only. Estimated: 5 hours._
+
+- [ ] **H-2: Database query performance analysis** 🟠 **HIGH PRIORITY** **NEX-72**
+      _Run `EXPLAIN ANALYZE` on critical queries: daily plan generation, decision engine (best action selection), weekly summary aggregation, actions filtering. Document slow queries (>500ms) and optimization opportunities in `docs/Performance/Critical_Queries_Analysis.md`. Add query timing logs, optimize identified slow queries. Estimated: 5 hours._
+
+- [ ] **H-3: API response time monitoring** 🟠 **HIGH PRIORITY** **NEX-73**
+      _Add response time middleware (`web/src/lib/middleware/response-time.ts`), log response times for all API routes, track p50/p95/p99, set up performance dashboard (Vercel Analytics or custom), alert on slow endpoints (>1s p95). Estimated: 2 hours._
+
+- [ ] **M-3: Critical path test coverage (partial)** 🟡 **MEDIUM PRIORITY** **NEX-76**
+      _Add unit tests for critical functions: `web/src/lib/billing/webhook-handlers.ts`, `web/src/lib/plans/generate-daily-plan.ts`, `web/src/lib/billing/tier.ts`. Target 60%+ coverage for critical billing and plan generation code. Use Vitest. Estimated: 4 hours._
+
+### Parallel Tasks
+
+- [ ] **M-4: API key rotation documentation** 🟡 **MEDIUM PRIORITY** **NEX-77**
+      _Document key rotation procedures for Stripe webhook secrets, OAuth client secrets, encryption keys. File: `docs/Operations/Key_Rotation_Procedures.md`. Estimated: 2 hours._
+
+- [ ] **H-4: Weekly summary timeout handling** 🟠 **HIGH PRIORITY** **NEX-74**
+      _Review `web/src/app/api/cron/weekly-summaries/route.ts`, add batch processing for large user bases, add timeout handling and retry logic. Estimated: 2 hours._
+
+- [ ] **H-5: APM setup** 🟠 **HIGH PRIORITY** **NEX-75**
+      _Configure Vercel Analytics, add custom performance tracking, create performance dashboard. Estimated: 3 hours._
 
 ---
 

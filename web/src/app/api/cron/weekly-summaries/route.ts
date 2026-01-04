@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWeeklySummaryEmail } from "@/lib/email/notifications";
+import { withResponseTime } from "@/lib/middleware/response-time";
 
 /**
  * GET /api/cron/weekly-summaries
@@ -12,7 +13,7 @@ import { sendWeeklySummaryEmail } from "@/lib/email/notifications";
  * This endpoint is called by Vercel Cron and requires authentication via
  * the Authorization header with a secret token.
  */
-export async function GET(request: Request) {
+async function handler(request: Request) {
   try {
     // Verify cron secret - support Authorization header (Vercel Cron or cron-job.org API key), and query param (cron-job.org)
     const authHeader = request.headers.get("authorization");
@@ -177,6 +178,8 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withResponseTime(handler);
 
 /**
  * Helper function to send weekly summary email

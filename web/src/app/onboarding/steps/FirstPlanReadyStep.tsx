@@ -34,19 +34,32 @@ export function FirstPlanReadyStep({
         body: JSON.stringify({ date: today }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate plan");
+      const data = await response.json();
+
+      // Handle graceful error response (status 200 with success: false)
+      if (!response.ok || (data.success === false && !data.allowContinue)) {
+        throw new Error(data.error || "Failed to generate plan");
       }
 
-      setPlanGenerated(true);
-      router.refresh();
+      // If plan generated successfully
+      if (data.success === true) {
+        setPlanGenerated(true);
+        router.refresh();
+      } else if (data.success === false && data.allowContinue) {
+        // Graceful error - user can continue
+        setError(
+          data.error || "Could not generate plan. You can continue without it."
+        );
+        // Don't block progression - user can still continue
+      }
     } catch (error) {
+      // Network errors, JSON parse errors, etc.
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to generate plan. You can generate it later."
+          : "Failed to generate plan. You can generate it later from the Daily Plan page."
       );
+      // Don't block progression on errors - user can continue
     } finally {
       setIsGenerating(false);
     }
@@ -83,10 +96,30 @@ export function FirstPlanReadyStep({
           </p>
         </div>
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-          <p className="text-sm text-yellow-800">
-            Don&apos;t worry! You can generate your first plan from the Daily
-            Plan page anytime.
-          </p>
+          <div className="flex items-start gap-3">
+            <svg
+              className="h-5 w-5 flex-shrink-0 text-yellow-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-yellow-800">
+                Don&apos;t worry!
+              </p>
+              <p className="mt-1 text-sm text-yellow-700">
+                You can generate your first plan from the Daily Plan page anytime.
+                You can continue with onboarding now.
+              </p>
+            </div>
+          </div>
         </div>
         <div className="flex justify-end gap-3 pt-4">
           <button
