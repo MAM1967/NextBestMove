@@ -14,6 +14,10 @@ import { getDaysDifference } from "@/lib/utils/dateUtils";
 import { useActionsByLane } from "@/lib/decision-engine/hooks";
 import type { ActionWithLane } from "@/lib/decision-engine/types";
 import { ChannelNudgesList } from "../components/ChannelNudgeCard";
+import { ActionsFilterBar } from "./ActionsFilterBar";
+import { ActionsList } from "./ActionsList";
+import type { ActionStatus } from "@/lib/actions/status-mapping";
+import type { ActionSource, ActionIntentType } from "./types";
 
 export default function ActionsPage() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -35,6 +39,23 @@ export default function ActionsPage() {
   const [promiseActionId, setPromiseActionId] = useState<string | null>(null);
   const [estimatedMinutesActionId, setEstimatedMinutesActionId] = useState<string | null>(null);
   const [detailActionId, setDetailActionId] = useState<string | null>(null);
+
+  // Filter state
+  const [filters, setFilters] = useState<{
+    view: 'due' | 'relationships';
+    relationshipId: string | null;
+    dueFilter: 'overdue' | 'today' | 'next_7_days' | 'this_month' | 'none' | 'all';
+    status: ActionStatus[];
+    source: ActionSource[];
+    intentType: ActionIntentType[];
+  }>({
+    view: 'due',
+    relationshipId: null,
+    dueFilter: 'all',
+    status: ['pending', 'waiting'],
+    source: [],
+    intentType: [],
+  });
 
   useEffect(() => {
     fetchActions();
@@ -392,98 +413,6 @@ export default function ActionsPage() {
     }
   };
 
-  /**
-   * Bucket actions using decision engine lanes if available, otherwise use legacy heuristics
-   */
-  const bucketActions = (allActions: Action[]) => {
-    // If we have lane data from decision engine, use it
-    if (actionsByLane) {
-      return {
-        needsAttentionNow: actionsByLane.priority || [],
-        conversationsInMotion: actionsByLane.in_motion || [],
-        stayTopOfMind: [], // Can be populated from on_deck if needed
-        optionalBackground: actionsByLane.on_deck || [],
-      };
-    }
-
-    // Legacy fallback: use heuristics based on existing fields
-    const needsAttentionNow: Action[] = [];
-    const conversationsInMotion: Action[] = [];
-    const stayTopOfMind: Action[] = [];
-    const optionalBackground: Action[] = [];
-    const assigned = new Set<string>();
-
-    const mark = (bucket: Action[], action: Action) => {
-      bucket.push(action);
-      assigned.add(action.id);
-    };
-
-    // Determine buckets using simple heuristics based on existing fields
-    allActions.forEach((action) => {
-      if (action.state === "ARCHIVED") {
-        return;
-      }
-
-      // If action has a lane, use it directly
-      if (action.lane === "priority") {
-        mark(needsAttentionNow, action);
-        return;
-      } else if (action.lane === "in_motion") {
-        mark(conversationsInMotion, action);
-        return;
-      } else if (action.lane === "on_deck") {
-        // Split on_deck into "Stay top of mind" (NURTURE) and "Optional/background" (everything else)
-        if (action.action_type === "NURTURE") {
-          mark(stayTopOfMind, action);
-        } else {
-          mark(optionalBackground, action);
-        }
-        return;
-      }
-
-      // Legacy heuristics for actions without lanes
-      const daysDiff = getDaysDifference(action.due_date); // >0 overdue, 0 today, <0 future
-      const isCompleted =
-        action.state === "DONE" ||
-        action.state === "REPLIED" ||
-        action.state === "SENT";
-
-      // 1) Needs attention now: overdue or due today and not completed
-      if (!isCompleted && daysDiff >= 0) {
-        mark(needsAttentionNow, action);
-        return;
-      }
-
-      // 2) Conversations in motion: follow-ups and recently replied actions
-      if (
-        action.action_type === "FOLLOW_UP" ||
-        action.state === "REPLIED"
-      ) {
-        mark(conversationsInMotion, action);
-        return;
-      }
-
-      // 3) Stay top of mind: nurture/check-in type actions
-      if (action.action_type === "NURTURE") {
-        mark(stayTopOfMind, action);
-        return;
-      }
-    });
-
-    // 4) Optional / background: everything else not yet assigned
-    allActions.forEach((action) => {
-      if (!assigned.has(action.id) && action.state !== "ARCHIVED") {
-        optionalBackground.push(action);
-      }
-    });
-
-    return {
-      needsAttentionNow,
-      conversationsInMotion,
-      stayTopOfMind,
-      optionalBackground,
-    };
-  };
 
   if (loading || lanesLoading) {
     return (
@@ -509,13 +438,6 @@ export default function ActionsPage() {
     );
   }
 
-  const {
-    needsAttentionNow,
-    conversationsInMotion,
-    stayTopOfMind,
-    optionalBackground,
-  } = bucketActions(actions);
-
   return (
     <>
       <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -527,7 +449,9 @@ export default function ActionsPage() {
             <div>
               <h1 className="text-2xl font-bold text-zinc-900">Actions</h1>
               <p className="mt-1 text-sm text-zinc-600">
-                Focus on the first section. Everything else can wait.
+                {filters.view === 'due' 
+                  ? 'Process follow-ups and keep relationships moving.'
+                  : 'View actions grouped by relationship.'}
               </p>
             </div>
             <button
@@ -538,148 +462,26 @@ export default function ActionsPage() {
             </button>
           </div>
 
+          {/* Filter Bar */}
+          <ActionsFilterBar onFilterChange={setFilters} />
+
           {/* Channel Nudges - Stalled conversations */}
           <ChannelNudgesList />
 
-          {actions.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center shadow-sm">
-              <p className="text-zinc-600">No actions found.</p>
-              <p className="mt-2 text-sm text-zinc-500">
-                Actions will appear here when you have tasks to complete.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {/* Section 1: Needs attention now */}
-              <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
-                  Needs attention now
-                </h2>
-                <p className="mt-1 text-xs text-rose-800">
-                  Overdue items, due today, and reply‑needed actions. Start
-                  here.
-                </p>
-                {needsAttentionNow.length === 0 ? (
-                  <p className="mt-3 text-xs text-rose-700">
-                    Nothing urgent right now.
-                  </p>
-                ) : (
-                  <div className="mt-3 space-y-4">
-                    {needsAttentionNow.map((action) => (
-                      <UnifiedActionCard
-                        key={action.id}
-                        action={action}
-                        onComplete={handleComplete}
-                        onSnooze={(id) => setSnoozeActionId(id)}
-                        onAddNote={handleAddNote}
-                        onGotReply={handleGotReply}
-                        onViewPrompt={(action) => setViewPromptAction(action)}
-                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onSetPromise={handleSetPromise}
-                        onClick={(action) => setDetailActionId(action.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Section 2: Conversations in motion */}
-              <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
-                  Conversations in motion
-                </h2>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Follow‑ups and active threads that are already moving.
-                </p>
-                {conversationsInMotion.length === 0 ? (
-                  <p className="mt-3 text-xs text-zinc-500">
-                    No active conversations right now.
-                  </p>
-                ) : (
-                  <div className="mt-3 space-y-4">
-                    {conversationsInMotion.map((action) => (
-                      <UnifiedActionCard
-                        key={action.id}
-                        action={action}
-                        onComplete={handleComplete}
-                        onSnooze={(id) => setSnoozeActionId(id)}
-                        onAddNote={handleAddNote}
-                        onGotReply={handleGotReply}
-                        onViewPrompt={(action) => setViewPromptAction(action)}
-                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onSetPromise={handleSetPromise}
-                        onClick={(action) => setDetailActionId(action.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Section 3: Stay top of mind */}
-              <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
-                  Stay top of mind
-                </h2>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Low‑frequency touches to keep relationships warm.
-                </p>
-                {stayTopOfMind.length === 0 ? (
-                  <p className="mt-3 text-xs text-zinc-500">
-                    No nurture actions right now.
-                  </p>
-                ) : (
-                  <div className="mt-3 space-y-4">
-                    {stayTopOfMind.map((action) => (
-                      <UnifiedActionCard
-                        key={action.id}
-                        action={action}
-                        onComplete={handleComplete}
-                        onSnooze={(id) => setSnoozeActionId(id)}
-                        onAddNote={handleAddNote}
-                        onGotReply={handleGotReply}
-                        onViewPrompt={(action) => setViewPromptAction(action)}
-                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onSetPromise={handleSetPromise}
-                        onClick={(action) => setDetailActionId(action.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Section 4: Optional / background */}
-              <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700">
-                  Optional / background
-                </h2>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Content and non‑time‑sensitive actions that are nice to do.
-                </p>
-                {optionalBackground.length === 0 ? (
-                  <p className="mt-3 text-xs text-zinc-500">
-                    No optional actions right now.
-                  </p>
-                ) : (
-                  <div className="mt-3 space-y-4">
-                    {optionalBackground.map((action) => (
-                      <UnifiedActionCard
-                        key={action.id}
-                        action={action}
-                        onComplete={handleComplete}
-                        onSnooze={(id) => setSnoozeActionId(id)}
-                        onAddNote={handleAddNote}
-                        onGotReply={handleGotReply}
-                        onViewPrompt={(action) => setViewPromptAction(action)}
-                        onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
-                        onSetPromise={handleSetPromise}
-                        onClick={(action) => setDetailActionId(action.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
-          )}
+          {/* Actions List */}
+          <ActionsList
+            view={filters.view}
+            actions={actions}
+            filters={filters}
+            onComplete={handleComplete}
+            onSnooze={(id) => setSnoozeActionId(id)}
+            onAddNote={handleAddNote}
+            onGotReply={handleGotReply}
+            onViewPrompt={(action) => setViewPromptAction(action)}
+            onClick={(action) => setDetailActionId(action.id)}
+            onSetPromise={handleSetPromise}
+            onSetEstimatedMinutes={(id) => setEstimatedMinutesActionId(id)}
+          />
         </div>
       </div>
 

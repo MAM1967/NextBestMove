@@ -6,6 +6,23 @@ import { fetchGmailMessages, extractGmailMetadata } from "./gmail";
 import { fetchOutlookMessages, extractOutlookMetadata } from "./outlook";
 import type { EmailProvider } from "./providers";
 import { findNextAvailableActionDate } from "@/lib/actions/smart-scheduling";
+import { validateActionRelationship } from "@/lib/actions/validation";
+import type { ActionIntentType } from "@/app/app/actions/types";
+
+/**
+ * Map AI recommended action type to intent_type
+ */
+function mapActionTypeToIntentType(actionType: string): ActionIntentType | null {
+  const mapping: Record<string, ActionIntentType> = {
+    'FOLLOW_UP': 'follow_up',
+    'REPLY': 'reply',
+    'SCHEDULE': 'schedule',
+    'REVIEW': 'review',
+    'OUTREACH': 'outreach',
+    'NURTURE': 'nurture',
+  };
+  return mapping[actionType] || null;
+}
 
 /**
  * Create an action from an AI-recommended email signal
@@ -19,6 +36,13 @@ async function createActionFromEmailSignal(
   emailMetadataId: string
 ): Promise<string | null> {
   try {
+    // Validate relationship requirement
+    const validation = validateActionRelationship(actionType as any, personId);
+    if (!validation.valid) {
+      console.error(`[Email Ingestion] ${validation.error}`);
+      return null;
+    }
+
     const supabase = createAdminClient();
     
     // Use smart scheduling to ensure max 2 actions per day per relationship
@@ -28,6 +52,9 @@ async function createActionFromEmailSignal(
       dueDate,
       2 // Max 2 actions per day
     );
+    
+    // Map action type to intent type
+    const intentType = mapActionTypeToIntentType(actionType);
     
     const { data: action, error } = await supabase
       .from("actions")
@@ -40,6 +67,9 @@ async function createActionFromEmailSignal(
         state: "NEW",
         auto_created: true,
         notes: `Auto-created from email signal (email_metadata_id: ${emailMetadataId})`,
+        source: 'email',
+        source_ref: emailMetadataId,
+        intent_type: intentType,
       })
       .select("id")
       .single();

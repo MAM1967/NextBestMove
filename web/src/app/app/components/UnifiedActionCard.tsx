@@ -7,6 +7,7 @@ import { useState } from "react";
 import { PromiseModal } from "../actions/PromiseModal";
 import { formatPromiseDate, isPromiseOverdue } from "@/lib/utils/promiseUtils";
 import { ChannelNudge } from "./ChannelNudge";
+import { SourceBadge } from "./SourceBadge";
 
 interface UnifiedActionCardProps {
   action: Action;
@@ -448,7 +449,33 @@ export function UnifiedActionCard({
                 </span>
               )}
             </div>
+            {/* Relationship or General Business badge */}
+            {action.leads ? (
+              <div className="mt-1 text-sm text-zinc-600">
+                <span className="font-medium">{action.leads.name}</span>
+                {action.leads.url && (
+                  <span className="ml-2 text-zinc-400">
+                    {(() => {
+                      const url = action.leads.url;
+                      if (url?.startsWith("mailto:")) return "Email";
+                      if (url?.includes("linkedin.com")) return "LinkedIn";
+                      return "Link";
+                    })()}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="mt-1">
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800">
+                  General Business
+                </span>
+              </div>
+            )}
             <div className="mt-1 flex items-center gap-4 text-sm">
+              {/* Source badge */}
+              {action.source && (
+                <SourceBadge source={action.source} />
+              )}
               {(() => {
                 // Use date-fns for reliable date comparison
                 const daysDiff = getDaysDifference(action.due_date);

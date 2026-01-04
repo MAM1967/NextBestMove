@@ -182,6 +182,15 @@ async function extractAndPersistInteractions(
       const actionItem = extractionResult.actionItems[i];
       const scheduled = scheduledActions[i];
 
+      // Map action type to intent type
+      const intentTypeMap: Record<string, string> = {
+        'FOLLOW_UP': 'follow_up',
+        'POST_CALL': 'review',
+        'OUTREACH': 'outreach',
+        'NURTURE': 'nurture',
+      };
+      const intentType = intentTypeMap[actionItem.action_type] || null;
+
       const { data: action, error: actionError } = await supabase
         .from("actions")
         .insert({
@@ -194,6 +203,9 @@ async function extractAndPersistInteractions(
           notes: actionItem.notes || null,
           auto_created: true,
           meeting_note_id: meetingNoteId,
+          source: 'meeting_note',
+          source_ref: meetingNoteId,
+          intent_type: intentType,
         })
         .select("id")
         .single();
