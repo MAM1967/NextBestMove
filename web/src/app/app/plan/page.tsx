@@ -160,7 +160,15 @@ export default function DailyPlanPage() {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date().toISOString().split("T")[0];
+      // Fetch user's timezone to get correct date (same as generation)
+      const timezoneResponse = await fetch("/api/users/timezone");
+      const timezoneData = timezoneResponse.ok ? await timezoneResponse.json() : null;
+      const userTimezone = timezoneData?.timezone || "America/New_York";
+      
+      // Use user's timezone to get today's date (same as generation)
+      const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
+      const today = getTodayInTimezone(userTimezone);
+      
       const response = await fetch(`/api/daily-plans?date=${today}`);
 
       if (!response.ok) {
@@ -318,10 +326,10 @@ export default function DailyPlanPage() {
       // Track daily plan generation
       const { trackDailyPlanGenerated } = await import("@/lib/analytics/posthog");
       trackDailyPlanGenerated({
-        planId: data.plan?.id,
-        actionCount: data.plan?.action_count || 0,
-        fastWinIncluded: !!data.plan?.fast_win,
-        capacityLevel: data.plan?.capacity || "default",
+        planId: data.dailyPlan?.id,
+        actionCount: data.dailyPlan?.action_count || 0,
+        fastWinIncluded: !!data.dailyPlan?.fast_win,
+        capacityLevel: data.dailyPlan?.capacity || "default",
       });
 
       // Refresh to show the new plan

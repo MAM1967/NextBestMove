@@ -287,15 +287,18 @@ export async function generateDailyPlanForUser(
     let allCandidateActions: any[] | null = null;
     let actionsError: any = null;
     
-    // First try with leads join
+    // First try with leads join using explicit relationship name
     const { data: actionsWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
         *,
-        leads (
+        leads!actions_person_id_fkey (
           id,
           name,
+          linkedin_url,
+          email,
+          phone_number,
           url,
           notes,
           created_at
