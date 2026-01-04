@@ -19,18 +19,18 @@ export function GracePeriodBanner({ daysRemaining }: GracePeriodBannerProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-amber-900 mb-1">
-            Your trial has ended
+            Your Standard trial has ended
           </h3>
           <p className="text-sm text-amber-800 mb-3">
             {daysRemaining > 0
-              ? `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left to subscribe and keep your rhythm going. Your data is safe.`
-              : "Subscribe to resume your rhythm. Your data is safe and nothing is lost."}
+              ? `You have ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""} left to upgrade and keep automatic plans. Your data is safe.`
+              : "You're now on Free - Memory Relief. Upgrade to Standard - Decision Automation to unlock automatic daily plans, calendar-aware capacity, and AI-assisted weekly summaries."}
           </p>
           <Link
             href="/app/settings"
             className="inline-block rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition"
           >
-            Subscribe Now
+            Upgrade to Standard
           </Link>
         </div>
         <button

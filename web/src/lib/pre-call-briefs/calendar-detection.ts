@@ -29,17 +29,40 @@ const CALL_KEYWORDS = [
   "google hangouts",
   "microsoft teams",
   "zoom meeting",
+  "zoom call",
+  "teams meeting",
+  "teams call",
   "video call",
   "phone call",
   "conference call",
 ];
 
 /**
+ * Platform-specific keywords for enhanced detection
+ */
+const PLATFORM_KEYWORDS = {
+  zoom: ["zoom", "zoom meeting", "zoom call", "z/", "zoom.us"],
+  googleMeet: ["google meet", "meet.google.com", "hangouts", "google hangouts"],
+  teams: ["teams", "microsoft teams", "teams meeting", "teams call"],
+};
+
+/**
+ * Platform-specific URL patterns for video conferencing links
+ */
+const PLATFORM_URL_PATTERNS = {
+  zoom: ["zoom.us", "zoom.com", "zoom.us/j/"],
+  googleMeet: ["meet.google.com", "hangouts.google.com"],
+  teams: ["teams.microsoft.com", "teams.live.com"],
+};
+
+/**
  * Detect if a calendar event is likely a call based on video conferencing fields or title
  * 
  * Priority:
  * 1. Check if event has video conferencing link/field (most reliable)
- * 2. Check title for keywords/phrases (fallback)
+ * 2. Check for platform-specific URL patterns in link/description
+ * 3. Check title for platform-specific keywords
+ * 4. Check title for generic call keywords (fallback)
  * 
  * Users should name events with keywords like "call", "zoom", "Google Meet", "Teams" for this to work
  * if the calendar provider doesn't expose video conferencing fields.
@@ -48,12 +71,48 @@ export function isLikelyCall(event: CalendarEvent): boolean {
   // First check: Does the event have a video conferencing link/field?
   // This is the most reliable indicator - calendars automatically add these when video is enabled
   if (event.hasVideoConference === true || event.videoConferenceLink) {
+    // Also check if the link contains platform-specific patterns
+    if (event.videoConferenceLink) {
+      const linkLower = event.videoConferenceLink.toLowerCase();
+      for (const patterns of Object.values(PLATFORM_URL_PATTERNS)) {
+        if (patterns.some((pattern) => linkLower.includes(pattern))) {
+          return true;
+        }
+      }
+    }
     return true;
   }
   
-  // Fallback: Check title for keywords
+  // Second check: Check for platform-specific URL patterns in description or link
+  // (Some calendar providers may include links in description)
+  if (event.videoConferenceLink) {
+    const linkLower = event.videoConferenceLink.toLowerCase();
+    for (const patterns of Object.values(PLATFORM_URL_PATTERNS)) {
+      if (patterns.some((pattern) => linkLower.includes(pattern))) {
+        return true;
+      }
+    }
+  }
+  
+  // Third check: Check title for platform-specific keywords
   const titleLower = event.title.toLowerCase();
   
+  // Check Zoom keywords
+  if (PLATFORM_KEYWORDS.zoom.some((keyword) => titleLower.includes(keyword))) {
+    return true;
+  }
+  
+  // Check Google Meet keywords
+  if (PLATFORM_KEYWORDS.googleMeet.some((keyword) => titleLower.includes(keyword))) {
+    return true;
+  }
+  
+  // Check Teams keywords
+  if (PLATFORM_KEYWORDS.teams.some((keyword) => titleLower.includes(keyword))) {
+    return true;
+  }
+  
+  // Fourth check: Generic call keywords (fallback)
   // Check multi-word phrases first (more specific)
   const phrases = CALL_KEYWORDS.filter((keyword) => keyword.includes(" "));
   if (phrases.some((phrase) => titleLower.includes(phrase))) {
@@ -63,6 +122,45 @@ export function isLikelyCall(event: CalendarEvent): boolean {
   // Then check single words
   const singleWords = CALL_KEYWORDS.filter((keyword) => !keyword.includes(" "));
   return singleWords.some((keyword) => titleLower.includes(keyword));
+}
+
+/**
+ * Get detection confidence level for a call event
+ * 
+ * @returns "high" | "medium" | "low"
+ * - High: Video conferencing link present with platform-specific pattern
+ * - Medium: Platform-specific keyword match or video conferencing field present
+ * - Low: Generic "call" keyword match
+ */
+export function getCallDetectionConfidence(event: CalendarEvent): "high" | "medium" | "low" {
+  // High confidence: Video conferencing link with platform-specific pattern
+  if (event.videoConferenceLink) {
+    const linkLower = event.videoConferenceLink.toLowerCase();
+    for (const patterns of Object.values(PLATFORM_URL_PATTERNS)) {
+      if (patterns.some((pattern) => linkLower.includes(pattern))) {
+        return "high";
+      }
+    }
+  }
+  
+  // High confidence: Video conferencing field present
+  if (event.hasVideoConference === true) {
+    return "high";
+  }
+  
+  // Medium confidence: Platform-specific keyword match
+  const titleLower = event.title.toLowerCase();
+  const allPlatformKeywords = [
+    ...PLATFORM_KEYWORDS.zoom,
+    ...PLATFORM_KEYWORDS.googleMeet,
+    ...PLATFORM_KEYWORDS.teams,
+  ];
+  if (allPlatformKeywords.some((keyword) => titleLower.includes(keyword))) {
+    return "medium";
+  }
+  
+  // Low confidence: Generic call keyword match
+  return "low";
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ActionCard } from "../actions/ActionCard";
+import { UnifiedActionCard } from "../components/UnifiedActionCard";
 import { FollowUpFlowModal } from "../actions/FollowUpFlowModal";
 import { FollowUpSchedulingModal } from "../actions/FollowUpSchedulingModal";
 import { SnoozeActionModal } from "../actions/SnoozeActionModal";
@@ -10,8 +10,12 @@ import { PaywallOverlay } from "../components/PaywallOverlay";
 import { CelebrationBanner } from "../components/CelebrationBanner";
 import { PreCallBriefCarousel } from "../components/PreCallBriefCarousel";
 import { PreCallBriefModal } from "../components/PreCallBriefModal";
+import { CapacityOverrideControl } from "../components/CapacityOverrideControl";
+import { DurationSelector } from "../components/DurationSelector";
 import { Action } from "../actions/types";
 import type { PreCallBrief } from "@/lib/pre-call-briefs/types";
+import type { CapacityLevel } from "@/lib/plan/capacity";
+import { getCapacityLabel } from "@/lib/plan/capacity-labels";
 
 interface DailyPlan {
   id: string;
@@ -52,22 +56,67 @@ export default function DailyPlanPage() {
   const [selectedBrief, setSelectedBrief] = useState<PreCallBrief | null>(null);
   const [showBriefModal, setShowBriefModal] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [capacityOverride, setCapacityOverride] = useState<CapacityLevel | null>(null);
+  const [capacityOverrideReason, setCapacityOverrideReason] = useState<string | null>(null);
+  const [defaultCapacityOverride, setDefaultCapacityOverride] = useState<CapacityLevel | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSubscriptionStatus();
     fetchDailyPlan();
     fetchWeeklyFocus();
     fetchPreCallBriefs();
-    // Set formatted date on client side only to avoid hydration mismatch
-    setFormattedDate(
-      new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    );
+    fetchCapacityOverride();
+    fetchFormattedDate();
   }, []);
+
+  const fetchFormattedDate = async () => {
+    try {
+      // Fetch user's timezone from database
+      const response = await fetch("/api/users/timezone");
+      if (!response.ok) {
+        throw new Error("Failed to fetch timezone");
+      }
+      const data = await response.json();
+      const userTimezone = data.timezone || "America/New_York";
+
+      // Format date using user's timezone (not browser timezone)
+      const { formatInTimeZone } = await import("date-fns-tz");
+      const now = new Date();
+      const formatted = formatInTimeZone(now, userTimezone, "EEEE, MMMM d, yyyy");
+      setFormattedDate(formatted);
+    } catch (error) {
+      console.error("Error fetching formatted date:", error);
+      // Fallback to browser timezone if API fails
+      setFormattedDate(
+        new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      );
+    }
+  };
+
+  const fetchCapacityOverride = async () => {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const response = await fetch(`/api/plan/capacity-override?date=${today}`);
+      if (response.ok) {
+        const data = (await response.json()) as {
+          dailyOverride?: CapacityLevel | null;
+          dailyOverrideReason?: string | null;
+          defaultOverride?: CapacityLevel | null;
+        };
+        setCapacityOverride(data.dailyOverride || null);
+        setCapacityOverrideReason(data.dailyOverrideReason || null);
+        setDefaultCapacityOverride(data.defaultOverride || null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch capacity override:", err);
+    }
+  };
 
   const fetchSubscriptionStatus = async () => {
     try {
@@ -111,7 +160,15 @@ export default function DailyPlanPage() {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date().toISOString().split("T")[0];
+      // Fetch user's timezone to get correct date (same as generation)
+      const timezoneResponse = await fetch("/api/users/timezone");
+      const timezoneData = timezoneResponse.ok ? await timezoneResponse.json() : null;
+      const userTimezone = timezoneData?.timezone || "America/New_York";
+      
+      // Use user's timezone to get today's date (same as generation)
+      const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
+      const today = getTodayInTimezone(userTimezone);
+      
       const response = await fetch(`/api/daily-plans?date=${today}`);
 
       if (!response.ok) {
@@ -206,7 +263,21 @@ export default function DailyPlanPage() {
 
       if (data.success && data.briefs) {
         // Transform briefs to match our type
-        const briefs: PreCallBrief[] = data.briefs.map((b: any) => ({
+        const briefs: PreCallBrief[] = data.briefs.map((b: {
+          id?: string;
+          calendarEventId: string;
+          eventTitle: string;
+          eventStart: string;
+          personPinId?: string | null;
+          leadId?: string | null;
+          personName?: string | null;
+          briefContent: string;
+          lastInteractionDate?: string | null;
+          followUpCount?: number;
+          nextStepSuggestions?: string[];
+          userNotes?: string | null;
+          hasVideoConference?: boolean;
+        }) => ({
           id: b.id,
           calendarEventId: b.calendarEventId,
           eventTitle: b.eventTitle,
@@ -232,11 +303,12 @@ export default function DailyPlanPage() {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date().toISOString().split("T")[0];
+      // Don't send date - let server calculate it from user's timezone
+      // This prevents timezone mismatches
       const response = await fetch("/api/daily-plans/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: today }),
+        body: JSON.stringify({}), // Empty body - server will calculate date from user's timezone
       });
 
       if (!response.ok) {
@@ -248,6 +320,17 @@ export default function DailyPlanPage() {
         }
         throw new Error(data.error || "Failed to generate plan");
       }
+
+      const data = await response.json();
+      
+      // Track daily plan generation
+      const { trackDailyPlanGenerated } = await import("@/lib/analytics/posthog");
+      trackDailyPlanGenerated({
+        planId: data.dailyPlan?.id,
+        actionCount: data.dailyPlan?.action_count || 0,
+        fastWinIncluded: !!data.dailyPlan?.fast_win,
+        capacityLevel: data.dailyPlan?.capacity || "default",
+      });
 
       // Refresh to show the new plan
       await fetchDailyPlan();
@@ -263,6 +346,15 @@ export default function DailyPlanPage() {
   ) => {
     try {
       const state = completionType === "sent" ? "SENT" : "DONE";
+      
+      // Find the action to get its type and check if it's a Fast Win
+      const allActions = [
+        ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
+        ...(dailyPlan?.actions || []),
+      ];
+      const action = allActions.find((a) => a.id === actionId);
+      const isFastWin = action?.action_type === "FAST_WIN";
+      
       const response = await fetch(`/api/actions/${actionId}/state`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -277,6 +369,21 @@ export default function DailyPlanPage() {
           throw new Error("Failed to complete action");
         }
         throw new Error(data.error || "Failed to complete action");
+      }
+
+      // Track action completion
+      const { trackActionCompleted, trackFastWinCompleted } = await import("@/lib/analytics/posthog");
+      if (isFastWin) {
+        trackFastWinCompleted({
+          actionId,
+          actionType: action?.action_type,
+        });
+      } else {
+        trackActionCompleted({
+          actionId,
+          actionType: action?.action_type,
+          actionState: state,
+        });
       }
 
       // Refresh the plan to update progress
@@ -314,13 +421,19 @@ export default function DailyPlanPage() {
     }
   };
 
-  const handleGotReply = (actionId: string) => {
+  const handleGotReply = async (actionId: string) => {
     const allActions = [
       ...(dailyPlan?.fast_win ? [dailyPlan.fast_win] : []),
       ...(dailyPlan?.actions || []),
     ];
     const action = allActions.find((a) => a.id === actionId);
     if (action) {
+      // Track "Got Reply" event
+      const { trackGotReply } = await import("@/lib/analytics/posthog");
+      trackGotReply({
+        actionId,
+        actionType: action.action_type,
+      });
       setFollowUpFlowAction(action);
     }
   };
@@ -449,7 +562,19 @@ export default function DailyPlanPage() {
   const actions = dailyPlan?.actions || [];
   const fastWin = dailyPlan?.fast_win;
   // Fast win is already excluded from actions array in API, but filter just to be safe
-  const regularActions = actions.filter((a) => a.id !== fastWin?.id);
+  let regularActions = actions.filter((a) => a.id !== fastWin?.id);
+  
+  // Filter by duration if selected
+  if (selectedDuration !== null) {
+    regularActions = regularActions.filter((action) => {
+      if (!action.estimated_minutes) return false;
+      return action.estimated_minutes <= selectedDuration;
+    });
+    // Also filter fast win if it doesn't match duration
+    if (fastWin && fastWin.estimated_minutes && fastWin.estimated_minutes > selectedDuration) {
+      // Don't show fast win if it exceeds selected duration
+    }
+  }
 
   // Include fast win in counts for progress calculation
   const allActionsInPlan = [...(fastWin ? [fastWin] : []), ...actions];
@@ -493,6 +618,106 @@ export default function DailyPlanPage() {
             </button>
           )}
         </div>
+
+        {/* Daily Capacity Card */}
+        {dailyPlan && (
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="space-y-4">
+              {/* Determine effective capacity: manual override OR actual capacity used (includes adaptive recovery) */}
+              {(() => {
+                const effectiveCapacity: CapacityLevel | null = capacityOverride || 
+                  (dailyPlan.capacity && dailyPlan.capacity !== "default" 
+                    ? (dailyPlan.capacity as CapacityLevel) 
+                    : null);
+                return (
+                  <CapacityOverrideControl
+                    date={new Date().toISOString().split("T")[0]}
+                    currentOverride={effectiveCapacity}
+                    currentOverrideReason={capacityOverrideReason}
+                    onOverrideChange={() => {
+                      fetchCapacityOverride();
+                      // Optionally regenerate plan when override changes
+                      // handleGeneratePlan();
+                    }}
+                    showLabel={true}
+                    compact={false}
+                  />
+                );
+              })()}
+              
+              {/* Show capacity details - different messages for Auto vs Adaptive Recovery vs Manual Override */}
+              {(() => {
+                // If there's a manual override, show override message
+                if (capacityOverride) {
+                  return (
+                    <div className="rounded-lg bg-zinc-50 p-3 text-sm">
+                      <p className="text-zinc-700">
+                        <span className="font-medium">
+                          {getCapacityLabel(capacityOverride)}
+                        </span>{" "}
+                        capacity is set at{" "}
+                        <span className="font-semibold">
+                          {totalCount} task{totalCount !== 1 ? "s" : ""}
+                        </span>
+                        {capacityOverrideReason && (
+                          <span className="text-zinc-500"> ({capacityOverrideReason})</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                }
+                
+                // If adaptive recovery was applied (capacity is micro/light but no manual override and not user default)
+                // We know it's adaptive recovery if:
+                // - dailyPlan.capacity is micro/light
+                // - No manual override (capacityOverride is null)
+                // - Not user's default (defaultCapacityOverride !== dailyPlan.capacity)
+                const isAdaptiveRecovery = 
+                  (dailyPlan.capacity === "micro" || dailyPlan.capacity === "light") &&
+                  !capacityOverride &&
+                  defaultCapacityOverride !== dailyPlan.capacity;
+                
+                if (isAdaptiveRecovery) {
+                  return (
+                    <div className="rounded-lg bg-blue-50 p-3 text-sm">
+                      <p className="text-blue-900">
+                        <span className="font-medium">
+                          {getCapacityLabel(dailyPlan.capacity || null)}
+                        </span>{" "}
+                        ({totalCount} task{totalCount !== 1 ? "s" : ""}) - easing back into your routine
+                      </p>
+                    </div>
+                  );
+                }
+                
+                // If capacity is truly auto (from calendar or default)
+                if (dailyPlan.capacity && dailyPlan.capacity !== "default") {
+                  return (
+                    <div className="rounded-lg bg-zinc-50 p-3 text-sm">
+                      <p className="text-zinc-700">
+                        <span className="font-medium">Auto Capacity</span> is set at{" "}
+                        <span className="font-semibold">
+                          {totalCount} task{totalCount !== 1 ? "s" : ""}
+                        </span>{" "}
+                        based on {dailyPlan.free_minutes || 0} minutes of availability today.
+                      </p>
+                    </div>
+                  );
+                }
+                
+                return null;
+              })()}
+              
+              {/* Duration Filter */}
+              <div className="border-t border-zinc-200 pt-4">
+                <DurationSelector
+                  selectedDuration={selectedDuration}
+                  onDurationChange={setSelectedDuration}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Message (Inline) */}
         {error && (
@@ -631,10 +856,7 @@ export default function DailyPlanPage() {
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
-                    {dailyPlan.capacity === "light" && "Light capacity"}
-                    {dailyPlan.capacity === "micro" && "Micro capacity"}
-                    {dailyPlan.capacity === "heavy" && "Heavy capacity"}
-                    {dailyPlan.capacity === "standard" && "Calendar-based capacity"}
+                    {getCapacityLabel(dailyPlan.capacity || null)}
                   </span>
                 )}
               </div>
@@ -678,16 +900,14 @@ export default function DailyPlanPage() {
                 Under 5 minutes
               </span>
             </div>
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm">
-              <ActionCard
-                action={fastWin}
-                onComplete={handleActionComplete}
-                onSnooze={(id) => setSnoozeActionId(id)}
-                onAddNote={handleAddNote}
-                onGotReply={handleGotReply}
-                onSetPromise={handleSetPromise}
-              />
-            </div>
+            <UnifiedActionCard
+              action={fastWin}
+              onComplete={handleActionComplete}
+              onSnooze={(id) => setSnoozeActionId(id)}
+              onAddNote={handleAddNote}
+              onGotReply={handleGotReply}
+              onSetPromise={handleSetPromise}
+            />
           </div>
         )}
 
@@ -697,9 +917,9 @@ export default function DailyPlanPage() {
             <h2 className="text-xl font-semibold text-zinc-900">
               Your Actions
             </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {regularActions.map((action) => (
-                <ActionCard
+                <UnifiedActionCard
                   key={action.id}
                   action={action}
                   onComplete={handleActionComplete}

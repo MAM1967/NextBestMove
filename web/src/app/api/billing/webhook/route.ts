@@ -785,6 +785,29 @@ async function handleInvoicePaymentFailed(
       throw new Error(`Failed to update subscription: ${updateError.message}`);
     }
 
+    // On first payment failure, immediately downgrade user to Free tier
+    if (isFirstFailure) {
+      const user = (existingSubscription.billing_customers as any)?.users;
+      if (user?.id) {
+        try {
+          const { updateUserTier } = await import("@/lib/billing/tier");
+          await updateUserTier(supabase, user.id);
+          logBillingEvent("User downgraded to Free tier (payment failure)", {
+            userId: user.id,
+            subscriptionId,
+            invoiceId: invoice.id,
+          });
+        } catch (tierError) {
+          logError("Failed to downgrade user to Free tier on payment failure", tierError, {
+            userId: user.id,
+            subscriptionId,
+            invoiceId: invoice.id,
+          });
+          // Don't throw - tier update failure shouldn't fail the webhook
+        }
+      }
+    }
+
     // Send Day 0 email immediately on first failure
     if (isFirstFailure) {
       const user = (existingSubscription.billing_customers as any)?.users;

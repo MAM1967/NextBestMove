@@ -15,6 +15,7 @@ interface ActionListRowProps {
   onGotReply?: (actionId: string) => void;
   onViewPrompt?: (action: Action) => void;
   onSetEstimatedMinutes?: (actionId: string) => void;
+  onClick?: (actionId: string) => void;
   /**
    * Visual variant tied to the section/bucket the action is rendered in.
    * purely presentational – no behavior changes.
@@ -114,6 +115,7 @@ export function ActionListRow({
   onGotReply,
   onViewPrompt,
   onSetEstimatedMinutes,
+  onClick,
   variant,
 }: ActionListRowProps) {
   const verb = getVerbForAction(action);
@@ -183,7 +185,11 @@ export function ActionListRow({
   };
 
   return (
-    <div className={`${baseContainerClasses} ${variantContainerClass}`}>
+    <div 
+      data-testid="action-row"
+      className={`${baseContainerClasses} ${variantContainerClass} ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={() => onClick && onClick(action.id)}
+    >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm">
@@ -274,7 +280,7 @@ export function ActionListRow({
       </div>
 
       {/* Lightweight actions – text buttons to keep cognitive load low */}
-      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-500" onClick={(e) => e.stopPropagation()}>
         {!isCompleted && (
           <>
             <button

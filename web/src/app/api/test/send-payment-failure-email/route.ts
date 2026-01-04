@@ -11,11 +11,19 @@ import { logError, logInfo } from "@/lib/utils/logger";
  * This is for testing purposes only - should be disabled in production
  */
 export async function POST(request: NextRequest) {
-  // Simple auth check - require a secret token for production testing
-  const authHeader = request.headers.get("authorization");
-  const testSecret = process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET;
+  // Detect staging environment (same logic as email system)
+  const isStaging = 
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.NEXT_PUBLIC_APP_URL?.includes("staging.nextbestmove.app") ||
+    process.env.NEXT_PUBLIC_ENVIRONMENT === "staging";
   
-  if (process.env.NODE_ENV === "production") {
+  // Simple auth check - require a secret token for production testing
+  // Skip auth in staging/preview environments
+  const authHeader = request.headers.get("authorization");
+  const testSecret = (process.env.TEST_ENDPOINT_SECRET || process.env.CRON_SECRET)?.trim().replace(/\r?\n/g, '');
+  
+  // Only require auth in production (not staging/preview)
+  if (!isStaging && process.env.NODE_ENV === "production") {
     if (!testSecret) {
       return NextResponse.json(
         { error: "Test endpoint not configured for production" },
@@ -23,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const providedSecret = authHeader?.replace("Bearer ", "") || 
-                          new URL(request.url).searchParams.get("secret");
+    const providedSecret = (authHeader?.replace("Bearer ", "") || 
+                          new URL(request.url).searchParams.get("secret"))?.trim();
     
     if (providedSecret !== testSecret) {
       return NextResponse.json(

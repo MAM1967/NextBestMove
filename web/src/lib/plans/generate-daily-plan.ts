@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getCapacityForDate } from "@/lib/calendar/capacity";
+import { getCapacityWithOverrides } from "@/lib/plan/capacity";
 import {
   hasLowCompletionPattern,
   isInactive2To6Days,
@@ -153,13 +153,24 @@ export async function generateDailyPlanForUser(
     // Check if plan already exists for this date
     const { data: existingPlan } = await supabase
       .from("daily_plans")
-      .select("id")
+      .select("id, capacity_override, override_reason")
       .eq("user_id", userId)
       .eq("date", date)
       .maybeSingle();
 
+    // If plan exists and has actions (full plan), don't regenerate
     if (existingPlan) {
-      return { success: false, error: "Plan already exists for this date" };
+      const { data: planActions } = await supabase
+        .from("daily_plan_actions")
+        .select("id")
+        .eq("daily_plan_id", existingPlan.id)
+        .limit(1);
+      
+      // If plan has actions, it's a complete plan - don't regenerate
+      if (planActions && planActions.length > 0) {
+        return { success: false, error: "Plan already exists for this date" };
+      }
+      // If plan exists but has no actions, it might just have an override - we'll regenerate
     }
 
     // Get user preference for weekends and timezone
@@ -173,41 +184,31 @@ export async function generateDailyPlanForUser(
     const userTimezone = userProfile?.timezone || "America/New_York"; // Default fallback
 
     // Check if date is a weekend in the user's timezone
-    // Parse date string (YYYY-MM-DD) and create date at noon to avoid timezone edge cases
-    const dateParts = date.split("-").map(Number);
-    const planYear = dateParts[0];
-    const planMonth = dateParts[1];
-    const planDay = dateParts[2];
+    // Use the same utility function that's used elsewhere for consistency
+    const { getDayOfWeekForDate, isDateWeekend } = await import("@/lib/utils/dateUtils");
     
-    // Create date object for the given date (at noon UTC to avoid DST issues)
-    const dateAtNoonUTC = new Date(Date.UTC(planYear, planMonth - 1, planDay, 12, 0, 0));
+    // DEBUG: Log the date calculation for troubleshooting
+    console.log(`[generateDailyPlan] Date: ${date}, Timezone: ${userTimezone}`);
     
-    // Get day of week using user's timezone
-    // Use a date formatter to get the day name, then convert to day number
-    const dayName = new Intl.DateTimeFormat("en-US", {
-      timeZone: userTimezone,
-      weekday: "long",
-    }).format(dateAtNoonUTC);
+    // Check if the date is a weekend using the utility function
+    // This ensures we use the same logic as getTodayInTimezone
+    const isWeekend = isDateWeekend(date, userTimezone);
+    const dayOfWeek = getDayOfWeekForDate(date, userTimezone);
     
-    // Get day of week number (0 = Sunday, 6 = Saturday) using user's timezone
-    // We need to format a known date to establish the pattern, then use it
-    const dayOfWeekStr = new Intl.DateTimeFormat("en-US", {
-      timeZone: userTimezone,
-      weekday: "long",
-    }).format(dateAtNoonUTC);
+    // DEBUG: Log the weekend check result
+    console.log(`[generateDailyPlan] Day of week: ${dayOfWeek}, Is weekend: ${isWeekend}`);
     
-    // Convert day name to day number (0 = Sunday, 6 = Saturday)
-    const dayNames: Record<string, number> = {
-      Sunday: 0,
-      Monday: 1,
-      Tuesday: 2,
-      Wednesday: 3,
-      Thursday: 4,
-      Friday: 5,
-      Saturday: 6,
+    // Get day name for the error message
+    const dayNames: Record<number, string> = {
+      0: "Sunday",
+      1: "Monday",
+      2: "Tuesday",
+      3: "Wednesday",
+      4: "Thursday",
+      5: "Friday",
+      6: "Saturday",
     };
-    const dayOfWeek = dayNames[dayName] ?? 1; // Default to Monday if not found
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const dayName = dayNames[dayOfWeek] || "day";
 
     // If weekend and user excludes weekends, skip with helpful message
     if (isWeekend && excludeWeekends) {
@@ -217,59 +218,61 @@ export async function generateDailyPlanForUser(
       };
     }
 
-    // Calculate capacity from calendar (or use default)
-    let capacityInfo = await getCapacityForDate(supabase, userId, date);
+    // Calculate capacity with overrides (checks manual override > user default > calendar)
+    let capacityInfo = await getCapacityWithOverrides(supabase, userId, date);
     let capacityLevel = capacityInfo.level;
-    let actionCount = capacityInfo.actionsPerDay;
+    let actionCount = capacityInfo.actionCount;
 
-    // Adaptive Recovery Logic: Override capacity based on user patterns
-    const [lowCompletion, inactive2To6, inactive7Plus, highStreak] = await Promise.all([
-      hasLowCompletionPattern(supabase, userId),
-      isInactive2To6Days(supabase, userId),
-      isInactive7PlusDays(supabase, userId),
-      hasHighCompletionStreak(supabase, userId),
-    ]);
-
+    // Declare adaptiveReason at function scope so it's accessible later
     let adaptiveReason: string | null = null;
 
-    // Case 1: 7+ days inactive → Micro plan (1-2 actions)
-    if (inactive7Plus) {
-      capacityLevel = "micro";
-      actionCount = 2;
-      adaptiveReason = "comeback";
-    }
-    // Case 1b: 2-6 days inactive (Day 2-6 streak break) → Micro plan (2 actions)
-    else if (inactive2To6) {
-      capacityLevel = "micro";
-      actionCount = 2;
-      adaptiveReason = "streak_break";
-    }
-    // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
-    else if (lowCompletion) {
-      capacityLevel = "light";
-      actionCount = 3;
-      adaptiveReason = "low_completion";
-    }
-    // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
-    else if (highStreak) {
-      // Boost to heavy if they're consistently completing (from any base capacity)
-      // If already heavy, keep it; otherwise boost from standard/light to heavy
-      if (capacityLevel !== "heavy") {
-        capacityLevel = "heavy";
-        actionCount = 8;
-        adaptiveReason = "high_streak";
+    // Adaptive Recovery Logic: Override capacity based on user patterns
+    // BUT: Only apply if there's no manual override (manual override takes precedence)
+    if (capacityInfo.source !== "override") {
+      const [lowCompletion, inactive2To6, inactive7Plus, highStreak] = await Promise.all([
+        hasLowCompletionPattern(supabase, userId),
+        isInactive2To6Days(supabase, userId),
+        isInactive7PlusDays(supabase, userId),
+        hasHighCompletionStreak(supabase, userId),
+      ]);
+
+      // Case 1: 7+ days inactive → Micro plan (1-2 actions)
+      if (inactive7Plus) {
+        capacityLevel = "micro";
+        actionCount = 2;
+        adaptiveReason = "comeback";
+      }
+      // Case 1b: 2-6 days inactive (Day 2-6 streak break) → Micro plan (2 actions)
+      else if (inactive2To6) {
+        capacityLevel = "micro";
+        actionCount = 2;
+        adaptiveReason = "streak_break";
+      }
+      // Case 2: Low completion pattern (3+ days < 50%) → Light plan (3-4 actions)
+      else if (lowCompletion) {
+        capacityLevel = "light";
+        actionCount = 3;
+        adaptiveReason = "low_completion";
+      }
+      // Case 3: High completion streak (7+ days > 80%) → Can increase capacity
+      else if (highStreak) {
+        // Boost to heavy if they're consistently completing (from any base capacity)
+        // If already heavy, keep it; otherwise boost from standard/light to heavy
+        if (capacityLevel !== "heavy") {
+          capacityLevel = "heavy";
+          actionCount = 8;
+          adaptiveReason = "high_streak";
+        }
       }
     }
 
     // For backward compatibility, calculate freeMinutes (approximate)
     let freeMinutes: number | null = null;
-    if (capacityInfo.source === "calendar") {
-      // Approximate: capacity levels map to free minutes ranges
-      if (capacityLevel === "micro") freeMinutes = 15;
-      else if (capacityLevel === "light") freeMinutes = 45;
-      else if (capacityLevel === "standard") freeMinutes = 90;
-      else if (capacityLevel === "heavy") freeMinutes = 240;
-    }
+    // Approximate: capacity levels map to free minutes ranges
+    if (capacityLevel === "micro") freeMinutes = 15;
+    else if (capacityLevel === "light") freeMinutes = 45;
+    else if (capacityLevel === "standard") freeMinutes = 90;
+    else if (capacityLevel === "heavy") freeMinutes = 240;
 
     // Fetch candidate actions (NEW or SNOOZED due today or in past)
     // Parse date string to avoid timezone issues (same fix as client-side)
@@ -284,15 +287,18 @@ export async function generateDailyPlanForUser(
     let allCandidateActions: any[] | null = null;
     let actionsError: any = null;
     
-    // First try with leads join
+    // First try with leads join using explicit relationship name
     const { data: actionsWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
         *,
-        leads (
+        leads!actions_person_id_fkey (
           id,
           name,
+          linkedin_url,
+          email,
+          phone_number,
           url,
           notes,
           created_at
@@ -444,6 +450,8 @@ export async function generateDailyPlanForUser(
                 description: `Reach out to ${lead.name}`,
                 notes: `Auto-created from daily plan generation on ${new Date().toLocaleDateString()}`,
                 auto_created: true,
+                source: 'system',
+                intent_type: 'outreach',
               })
               .select()
               .single();
@@ -503,17 +511,33 @@ export async function generateDailyPlanForUser(
     const planDate = new Date(date);
     planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     
-    const decisionResult = await runDecisionEngine(supabase, userId, {
-      persist: true, // Persist lane and score to database
-      referenceDate: planDate,
-    });
+    console.log(`[generateDailyPlan] Running decision engine for ${candidateActions.length} actions`);
+    let decisionResult;
+    try {
+      decisionResult = await runDecisionEngine(supabase, userId, {
+        persist: true, // Persist lane and score to database
+        referenceDate: planDate,
+      });
+      console.log(`[generateDailyPlan] Decision engine completed, scored ${decisionResult.scoredActions.length} actions`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error running decision engine:", error);
+      return { success: false, error: `Failed to run decision engine: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Compute relationship states for lane assignment
-    const relationshipStates = await computeRelationshipStates(
-      supabase,
-      userId,
-      planDate
-    );
+    console.log(`[generateDailyPlan] Computing relationship states`);
+    let relationshipStates;
+    try {
+      relationshipStates = await computeRelationshipStates(
+        supabase,
+        userId,
+        planDate
+      );
+      console.log(`[generateDailyPlan] Relationship states computed for ${relationshipStates.size} relationships`);
+    } catch (error) {
+      console.error("[generateDailyPlan] Error computing relationship states:", error);
+      return { success: false, error: `Failed to compute relationship states: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
 
     // Score and sort actions using decision engine
     const { assignRelationshipLane } = await import("@/lib/decision-engine/lanes");
@@ -595,22 +619,60 @@ export async function generateDailyPlanForUser(
       focusStatement = "You're on a roll! Here's your plan for today.";
     }
 
-    // Create daily_plan record
-    const { data: dailyPlan, error: planError } = await supabase
-      .from("daily_plans")
-      .insert({
-        user_id: userId,
-        date,
-        focus_statement: focusStatement,
-        capacity: capacityLevel,
-        free_minutes: freeMinutes,
-      })
-      .select()
-      .single();
+    // Create or update daily_plan record
+    // If plan exists (with just override), update it; otherwise create new
+    console.log(`[generateDailyPlan] Creating/updating daily plan:`, {
+      existingPlan: existingPlan?.id || null,
+      date,
+      capacityLevel,
+      actionCount,
+      selectedActionsCount: selectedActions.length,
+      fastWin: fastWin ? fastWin.action.id : null,
+    });
+    
+    let dailyPlan;
+    if (existingPlan) {
+      // Update existing plan (preserve override if it exists)
+      const { data: updatedPlan, error: updateError } = await supabase
+        .from("daily_plans")
+        .update({
+          focus_statement: focusStatement,
+          capacity: capacityLevel,
+          free_minutes: freeMinutes,
+          // Preserve existing override if it exists
+          capacity_override: existingPlan.capacity_override || null,
+          override_reason: existingPlan.override_reason || null,
+        })
+        .eq("id", existingPlan.id)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error("Error updating daily plan:", updateError);
+        return { success: false, error: "Failed to update daily plan" };
+      }
+      dailyPlan = updatedPlan;
+      console.log(`[generateDailyPlan] Updated existing plan:`, dailyPlan.id);
+    } else {
+      // Create new plan
+      const { data: newPlan, error: planError } = await supabase
+        .from("daily_plans")
+        .insert({
+          user_id: userId,
+          date,
+          focus_statement: focusStatement,
+          capacity: capacityLevel,
+          free_minutes: freeMinutes,
+        })
+        .select()
+        .single();
 
-    if (planError) {
-      console.error("Error creating daily plan:", planError);
-      return { success: false, error: "Failed to create daily plan" };
+      if (planError) {
+        console.error("Error creating daily plan:", planError);
+        return { success: false, error: "Failed to create daily plan" };
+      }
+      dailyPlan = newPlan;
+      console.log(`[generateDailyPlan] Created new plan:`, dailyPlan.id);
     }
 
     // Create daily_plan_actions records
@@ -638,6 +700,7 @@ export async function generateDailyPlanForUser(
     }
 
     if (planActions.length > 0) {
+      console.log(`[generateDailyPlan] Creating ${planActions.length} plan actions`);
       const { error: planActionsError } = await supabase
         .from("daily_plan_actions")
         .insert(planActions);
@@ -648,7 +711,15 @@ export async function generateDailyPlanForUser(
         await supabase.from("daily_plans").delete().eq("id", dailyPlan.id);
         return { success: false, error: "Failed to create plan actions" };
       }
+      console.log(`[generateDailyPlan] Successfully created ${planActions.length} plan actions`);
+    } else {
+      console.warn(`[generateDailyPlan] No plan actions to create (planActions.length = 0)`);
     }
+
+    console.log(`[generateDailyPlan] Plan generation completed successfully:`, {
+      planId: dailyPlan.id,
+      actionCount: planActions.length,
+    });
 
     return {
       success: true,

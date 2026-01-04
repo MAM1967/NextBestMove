@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getCapacityLabel } from "@/lib/plan/capacity-labels";
 
 type CalendarEvent = {
   id: string;
@@ -90,15 +91,8 @@ export function CalendarEventsView() {
   }
 
   // Get capacity label based on capacity level and actual suggested action count
-  const getCapacityLabel = (capacity: string, actionCount: number): string => {
-    const capacityNames: Record<string, string> = {
-      micro: "Micro",
-      light: "Light",
-      standard: "Standard",
-      heavy: "Heavy",
-      default: "Default",
-    };
-    const name = capacityNames[capacity] || "Default";
+  const getCapacityLabelForDay = (capacity: string, actionCount: number): string => {
+    const name = getCapacityLabel(capacity);
     if (actionCount === 0) {
       return `${name} (0 actions)`;
     } else if (actionCount === 1) {
@@ -167,7 +161,7 @@ export function CalendarEventsView() {
                     )}
                   </div>
                   <span className="text-xs font-medium text-zinc-600">
-                    {getCapacityLabel(day.capacity, day.suggestedActionCount)}
+                    {getCapacityLabelForDay(day.capacity, day.suggestedActionCount)}
                   </span>
                 </div>
 

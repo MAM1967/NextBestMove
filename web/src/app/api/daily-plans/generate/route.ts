@@ -22,13 +22,15 @@ export async function POST(request: Request) {
     }
 
     // Check if user is still in onboarding - allow plan generation during onboarding
+    // Also get timezone for date calculation
     const { data: userProfile } = await supabase
       .from("users")
-      .select("onboarding_completed")
+      .select("onboarding_completed, timezone")
       .eq("id", user.id)
       .single();
 
     const isInOnboarding = !userProfile?.onboarding_completed;
+    const userTimezone = userProfile?.timezone || "America/New_York";
 
     // If not in onboarding, check subscription status and grace period
     if (!isInOnboarding) {
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
         if (!await canGeneratePlans(subscriptionStatus, trialEndsAt, userTier)) {
           return NextResponse.json(
             { 
-              error: "Your trial has ended. Subscribe to continue generating daily plans.",
+              error: "Your Standard trial has ended. Upgrade to Standard to unlock automatic daily plans, or use manual planning on the Free tier.",
               gracePeriod: true 
             },
             { status: 403 }
@@ -77,9 +79,12 @@ export async function POST(request: Request) {
         }
       }
     }
-
+    
     const body = await request.json();
-    const date = body.date || new Date().toISOString().split("T")[0];
+    // ALWAYS use user's timezone to get today's date, ignore client-provided date
+    // This prevents timezone mismatches where client sends UTC date but user is in different timezone
+    const { getTodayInTimezone } = await import("@/lib/utils/dateUtils");
+    const date = getTodayInTimezone(userTimezone); // Always calculate from user's timezone, ignore body.date
 
     // Check if plan already exists for this date - if so, delete it to allow regeneration
     const { data: existingPlan } = await supabase

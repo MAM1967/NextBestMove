@@ -42,6 +42,10 @@ export interface EmailMetadata {
   updated_at: string;
 }
 
+export type Sentiment = "positive" | "neutral" | "negative" | "urgent";
+export type Intent = "question" | "request" | "follow_up" | "introduction" | "meeting_request" | "proposal" | "complaint" | "other";
+export type ActionType = "OUTREACH" | "FOLLOW_UP" | "NURTURE" | "CALL_PREP" | "POST_CALL" | "CONTENT" | "FAST_WIN";
+
 export interface EmailSignals {
   relationship_id: string | null;
   relationship_name?: string | null;
@@ -51,5 +55,27 @@ export interface EmailSignals {
   recent_open_loops: string[];
   unread_count: number;
   recent_labels: string[];
+  // AI-powered fields
+  last_email_sentiment: Sentiment | null;
+  last_email_intent: Intent | null;
+  recommended_action_type: ActionType | null;
+  recommended_action_description: string | null;
+  recommended_due_date: string | null;
+  // Comprehensive signal fields
+  thread_summary_1l?: string | null;
+  thread_summary_detail?: string | null;
+  primary_category?: string | null;
+  secondary_categories?: string[] | null;
+  suggested_next_actions?: string[] | null;
+  attachments?: Array<{ filename: string; type: string; reason: string }> | null;
+  links?: Array<{ url: string; label: string }> | null;
+  relationship_signal?: {
+    signal_type: string;
+    strength: "Low" | "Medium" | "High";
+    evidence: string[];
+  } | null;
 }
+
+
+
 

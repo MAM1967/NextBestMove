@@ -23,10 +23,32 @@ export async function submitFeedback(
     return { error: "Please select a reason for cancellation." };
   }
 
+  // Get user's canceled subscription if exists
+  const { data: billingCustomer } = await supabase
+    .from("billing_customers")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  let subscriptionId: string | null = null;
+  if (billingCustomer) {
+    const { data: subscription } = await supabase
+      .from("billing_subscriptions")
+      .select("id")
+      .eq("billing_customer_id", billingCustomer.id)
+      .eq("status", "canceled")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    subscriptionId = subscription?.id || null;
+  }
+
   const { error } = await supabase.from("cancellation_feedback").insert({
     user_id: user.id,
-    reason,
+    cancellation_reason: reason,
+    reason, // Keep for backward compatibility
     additional_feedback: additionalFeedback || null,
+    subscription_id: subscriptionId,
   });
 
   if (error) {

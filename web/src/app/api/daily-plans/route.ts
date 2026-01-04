@@ -42,22 +42,7 @@ export async function GET(request: Request) {
     // Fetch actions for this plan
     const { data: planActions, error: actionsError } = await supabase
       .from("daily_plan_actions")
-      .select(
-        `
-        action_id,
-        is_fast_win,
-        position,
-        actions (
-          *,
-          leads (
-            id,
-            name,
-            url,
-            notes
-          )
-        )
-      `
-      )
+      .select("action_id, is_fast_win, position")
       .eq("daily_plan_id", dailyPlan.id)
       .order("position", { ascending: true });
 
@@ -69,19 +54,68 @@ export async function GET(request: Request) {
       );
     }
 
-    // Transform the data
+    // Fetch action details separately
     const actions: any[] = [];
     let fastWin: any = null;
 
-    if (planActions) {
+    if (planActions && planActions.length > 0) {
+      const actionIds = planActions.map((pa) => pa.action_id);
+      
+      // Fetch all actions
+      const { data: actionsData, error: actionsDataError } = await supabase
+        .from("actions")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("id", actionIds);
+
+      if (actionsDataError) {
+        console.error("Error fetching action details:", actionsDataError);
+        return NextResponse.json(
+          { error: "Failed to fetch action details" },
+          { status: 500 }
+        );
+      }
+
+      // Create a map of action_id -> action data
+      const actionsMap = new Map(
+        (actionsData || []).map((action) => [action.id, action])
+      );
+
+      // Fetch leads for actions that have person_id
+      const personIds = [
+        ...new Set(
+          (actionsData || [])
+            .map((a) => a.person_id)
+            .filter((id): id is string => id !== null)
+        ),
+      ];
+
+      let leadsMap = new Map<string, any>();
+      if (personIds.length > 0) {
+        const { data: leadsData } = await supabase
+          .from("leads")
+          .select("id, name, linkedin_url, email, phone_number, url, notes")
+          .eq("user_id", user.id)
+          .in("id", personIds);
+
+        if (leadsData) {
+          leadsMap = new Map(leadsData.map((lead) => [lead.id, lead]));
+        }
+      }
+
+      // Transform the data
       for (const planAction of planActions) {
-        const actionData = planAction.actions as any;
+        const actionData = actionsMap.get(planAction.action_id);
         if (actionData) {
+          const lead = actionData.person_id
+            ? leadsMap.get(actionData.person_id)
+            : null;
+
           const action = {
             ...actionData,
-            leads: actionData.leads || [], // Use leads property name after migration
+            leads: lead ? [lead] : null, // Match expected format
           };
-          
+
           if (planAction.is_fast_win) {
             fastWin = action;
           } else {

@@ -299,6 +299,25 @@ export async function generateWeeklySummaryForUser(
       });
     }
 
+    // Generate and store analytics insights
+    try {
+      const { generateInsights, storeInsights } = await import(
+        "@/lib/analytics/insights"
+      );
+      const insights = await generateInsights(
+        supabase,
+        userId,
+        weekStartStr,
+        weekEndDate.toISOString().split("T")[0]
+      );
+      if (insights.length > 0) {
+        await storeInsights(supabase, userId, insights);
+      }
+    } catch (insightsError) {
+      // Don't fail summary generation if insights fail
+      console.error("Error generating insights:", insightsError);
+    }
+
     return { success: true, summary };
   } catch (error) {
     console.error("Weekly summary generation error:", error);

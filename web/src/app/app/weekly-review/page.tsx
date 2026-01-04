@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { GenerateSummaryButton } from "./GenerateSummaryButton";
 import { CopyPromptButton } from "./CopyPromptButton";
 
@@ -237,6 +238,8 @@ export default async function WeeklyReviewPage() {
           </div>
         </div>
       )}
+
+      {/* Deeper Insights removed from UI per NEX-53 (kept in database) */}
 
       {/* Footer */}
       <div className="border-t border-zinc-200 pt-6 text-center">

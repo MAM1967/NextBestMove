@@ -19,7 +19,10 @@ export interface Lead {
   id: string;
   user_id: string;
   name: string;
-  url: string;
+  url?: string | null; // Legacy field - kept for backward compatibility
+  linkedin_url?: string | null; // LinkedIn profile URL (used by signals)
+  email?: string | null; // Email address (used by signals for email monitoring)
+  phone_number?: string | null; // Phone number (for future SMS support)
   notes?: string | null;
   status: LeadStatus;
   snooze_until?: string | null;
@@ -45,11 +48,17 @@ export interface Lead {
 export interface LeadBasic {
   id: string;
   name: string;
-  url: string;
+  url?: string | null; // Legacy field
+  linkedin_url?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
   notes?: string | null;
   // Optional fields that may be included for channel awareness and nudges
   preferred_channel?: PreferredChannel;
   last_interaction_at?: string | null;
   cadence_days?: number | null;
+  // Relationship state machine fields (NEX-46)
+  relationship_state?: "UNENGAGED" | "ACTIVE_CONVERSATION" | "OPPORTUNITY" | "WARM_BUT_PASSIVE" | "DORMANT" | null;
+  state_updated_at?: string | null;
 }
 

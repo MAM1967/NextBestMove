@@ -51,16 +51,10 @@ export function GlobalRollup() {
 
   return (
     <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50 p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3">
         <h3 className="text-sm font-semibold text-orange-900">
           ⚠️ Top Overdue Relationships
         </h3>
-        <Link
-          href="/app/leads"
-          className="text-xs font-medium text-orange-700 hover:text-orange-900 hover:underline"
-        >
-          View all →
-        </Link>
       </div>
       <div className="space-y-2">
         {overdueRelationships.slice(0, 5).map((item) => {
@@ -107,4 +101,7 @@ export function GlobalRollup() {
     </div>
   );
 }
+
+
+
 

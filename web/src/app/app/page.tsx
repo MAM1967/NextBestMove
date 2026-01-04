@@ -8,7 +8,8 @@ import { BillingAlertBannerClient } from "./components/BillingAlertBannerClient"
 import { PaymentFailureModalClient } from "./components/PaymentFailureModalClient";
 import { GlobalRollup } from "./components/GlobalRollup";
 import { ChannelNudgesList } from "./components/ChannelNudgeCard";
-import { DurationSelectorClient } from "./components/DurationSelectorClient";
+import { BestActionCardClient } from "./components/BestActionCardClient";
+import { getTodayInTimezone, isWeekendInTimezone } from "@/lib/utils/dateUtils";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -26,7 +27,7 @@ export default async function TodayPage() {
   const { data: userProfile } = await supabase
     .from("users")
     .select(
-      "onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone"
+      "onboarding_completed, streak_count, exclude_weekends, calendar_connected, timezone, default_capacity_override"
     )
     .eq("id", user.id)
     .single();
@@ -89,18 +90,18 @@ export default async function TodayPage() {
     }
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // Get today's date in user's timezone (not browser/server timezone)
+  const userTimezone = userProfile?.timezone || "America/New_York";
+  const today = getTodayInTimezone(userTimezone);
 
-  // Check if today is a weekend
-  const todayDate = new Date();
-  const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 6 = Saturday
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  // Check if today is a weekend in user's timezone
+  const isWeekend = isWeekendInTimezone(userTimezone);
   const excludeWeekends = userProfile?.exclude_weekends ?? false;
 
   // Fetch today's daily plan
   const { data: dailyPlan } = await supabase
     .from("daily_plans")
-    .select("*")
+    .select("*, capacity_override")
     .eq("user_id", user.id)
     .eq("date", today)
     .single();
@@ -180,8 +181,15 @@ export default async function TodayPage() {
     (calendarConnections && calendarConnections.length > 0) ||
     calendarConnected;
 
+  // Determine if we should show "Auto" based on user's default setting
+  // If user's default_capacity_override is null (Auto) and there's no daily override, show "Auto"
+  const userDefaultIsAuto = userProfile?.default_capacity_override === null;
+  const hasDailyOverride = dailyPlan?.capacity_override !== null;
+  const shouldShowAuto = userDefaultIsAuto && !hasDailyOverride && hasActiveCalendarConnection;
+
   // Fetch next calendar event to show time until next event
   let timeUntilNextEvent = "Calendar not connected";
+  let todayEventCount = 0;
 
   if (hasActiveCalendarConnection) {
     try {
@@ -212,20 +220,43 @@ export default async function TodayPage() {
               auth: oauth2Client,
             });
 
+            // Get today's date range in user's timezone
+            const todayStr = new Intl.DateTimeFormat("en-CA", {
+              timeZone: userTimezone,
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(now);
+            const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+            const todayStart = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 0, 0, 0));
+            const todayEnd = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 23, 59, 59));
+
             const response = await calendar.events.list({
               calendarId: "primary",
-              timeMin: now.toISOString(),
+              timeMin: todayStart.toISOString(),
               timeMax: new Date(
                 now.getTime() + 7 * 24 * 60 * 60 * 1000
               ).toISOString(), // Next 7 days to catch all-day events
               timeZone: userTimezone,
               singleEvents: true,
               orderBy: "startTime",
-              maxResults: 20,
+              maxResults: 50,
             });
 
-            // Find first event (timed or all-day)
+            // Count events for today and find first event
             for (const item of response.data.items || []) {
+              // Check if event is today
+              let isToday = false;
+              if (item.start?.dateTime) {
+                const eventStart = new Date(item.start.dateTime);
+                isToday = eventStart >= todayStart && eventStart <= todayEnd;
+              } else if (item.start?.date) {
+                const eventDateStr = item.start.date;
+                isToday = eventDateStr === todayStr;
+              }
+              if (isToday) {
+                todayEventCount++;
+              }
               if (item.start?.dateTime) {
                 // Timed event
                 const eventStart = new Date(item.start.dateTime);
@@ -280,20 +311,50 @@ export default async function TodayPage() {
               },
             });
 
+            // Get today's date range in user's timezone
+            const todayStr = new Intl.DateTimeFormat("en-CA", {
+              timeZone: userTimezone,
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            }).format(now);
+            const [todayYear, todayMonth, todayDay] = todayStr.split("-").map(Number);
+            const todayStart = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 0, 0, 0));
+            const todayEnd = new Date(Date.UTC(todayYear, todayMonth - 1, todayDay, 23, 59, 59));
+
             const response = await client
               .api("/me/calendar/calendarView")
               .query({
-                startDateTime: now.toISOString(),
+                startDateTime: todayStart.toISOString(),
                 endDateTime: new Date(
                   now.getTime() + 7 * 24 * 60 * 60 * 1000
                 ).toISOString(),
               })
               .header("Prefer", `outlook.timezone="${userTimezone}"`)
-              .top(20)
+              .top(50)
               .get();
 
-            // Find first event (timed or all-day)
+            // Count events for today and find first event
             for (const item of response.value || []) {
+              // Check if event is today
+              if (item.start?.dateTime) {
+                const eventStart = new Date(item.start.dateTime);
+                const isToday = eventStart >= todayStart && eventStart <= todayEnd;
+                if (isToday) {
+                  todayEventCount++;
+                }
+              } else if (item.isAllDay) {
+                // All-day event - check if date matches today
+                const eventDateStr = new Intl.DateTimeFormat("en-CA", {
+                  timeZone: userTimezone,
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                }).format(new Date(item.start.dateTime));
+                if (eventDateStr === todayStr) {
+                  todayEventCount++;
+                }
+              }
               if (item.start?.dateTime) {
                 const eventStart = new Date(item.start.dateTime);
                 const isAllDay = item.isAllDay || false;
@@ -514,14 +575,10 @@ export default async function TodayPage() {
         </p>
       </header>
 
-      {/* Best Action - Single clear next move, with duration selector */}
-      <DurationSelectorClient />
+      {/* Best Action - Single clear next move */}
+      <BestActionCardClient />
 
-      {/* Global Rollup - Top overdue items across relationships */}
-      <GlobalRollup />
-
-      <ChannelNudgesList />
-
+      {/* Executive Summary - 4 key metrics */}
       <section className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
           <h2 className="text-sm font-medium text-zinc-900">Suggested focus</h2>
@@ -531,123 +588,73 @@ export default async function TodayPage() {
           </p>
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-medium text-zinc-900">
-            Time until next event
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600">{timeUntilNextEvent}</p>
-          {freeMinutes !== null && (
-            <p className="mt-1 text-xs text-zinc-500">
-              {freeMinutes} minutes available today
-            </p>
+          <h2 className="text-sm font-medium text-zinc-900">Calendar</h2>
+          {hasActiveCalendarConnection ? (
+            <>
+              <p className="mt-1 text-sm text-zinc-600">
+                {todayEventCount} event{todayEventCount !== 1 ? "s" : ""} today
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{timeUntilNextEvent}</p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-zinc-600">Not connected</p>
           )}
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-medium text-zinc-900">Consecutive days</h2>
-          <p className="mt-1 text-2xl font-semibold text-zinc-900">
-            🔥 {userProfile?.streak_count ?? 0}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">
-            day{userProfile?.streak_count !== 1 ? "s" : ""}
+          <h2 className="text-sm font-medium text-zinc-900">Capacity</h2>
+          <p className="mt-1 text-sm font-semibold text-zinc-900">
+            {shouldShowAuto
+              ? "Auto"
+              : capacity === "micro"
+              ? "Micro"
+              : capacity === "light"
+              ? "Light"
+              : capacity === "standard"
+              ? "Standard"
+              : capacity === "heavy"
+              ? "Heavy"
+              : "Default"}
           </p>
         </div>
       </section>
 
+      {/* Today's Plan Summary - Compact view */}
       <section className="rounded-xl border border-zinc-200 bg-white p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-zinc-900">
-            Today&apos;s plan
-          </h2>
-          {dailyPlan && (
-            <Link
-              href="/app/plan"
-              className="text-xs font-medium text-purple-700 hover:text-purple-800 hover:underline"
-            >
-              View full plan →
-            </Link>
-          )}
-        </div>
-
-        {!dailyPlan && (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            {isWeekend && excludeWeekends ? (
-              <>
-                <p className="text-sm text-amber-800 mb-2">
-                  Plans aren&apos;t generated on weekends based on your
-                  preferences.
-                </p>
-                <p className="text-xs text-amber-700">
-                  You can change this setting in your account preferences if
-                  you&apos;d like to receive plans on weekends.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-amber-800 mb-3">
-                  No plan generated for today yet.
-                </p>
-                <Link
-                  href="/app/plan"
-                  className="inline-block rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-                >
-                  Generate Daily Plan
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-
-        {dailyPlan && totalActions === 0 && (
-          <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-sm text-zinc-600">
-              Your plan has been generated but no actions are available yet. Add
-              some relationships to get started.
-            </p>
-          </div>
-        )}
-
-        {dailyPlan && totalActions > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-600">Progress</span>
-              <span className="font-semibold text-zinc-900">
-                {completedCount} of {totalActions} completed
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
-              <div
-                className="h-full bg-purple-600 transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, Math.max(0, progressPercentage))}%`,
-                }}
-              />
-            </div>
-            {fastWinCount > 0 && fastWinDescription && (
-              <div className="mt-3 rounded-lg border-2 border-purple-200 bg-purple-50 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-900">
-                    FAST WIN
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium text-zinc-900">
+              Today&apos;s plan
+            </h2>
+            {dailyPlan ? (
+              <p className="mt-1 text-sm text-zinc-600">
+                {totalActions} action{totalActions !== 1 ? "s" : ""} planned today
+                {completedCount > 0 && (
+                  <span className="ml-2">
+                    ({completedCount} completed)
                   </span>
-                </div>
-                <p className="text-sm text-zinc-700">{fastWinDescription}</p>
-              </div>
-            )}
-            {regularActionCount > 0 && (
-              <div className="mt-3">
-                <p className="text-xs font-medium text-zinc-500 mb-2">
-                  {regularActionCount} regular action
-                  {regularActionCount !== 1 ? "s" : ""}
-                </p>
-                <Link
-                  href="/app/plan"
-                  className="text-sm text-purple-700 hover:text-purple-800 hover:underline"
-                >
-                  View all actions →
-                </Link>
-              </div>
+                )}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-zinc-600">
+                {isWeekend && excludeWeekends
+                  ? "Plans aren't generated on weekends"
+                  : "No plan generated yet"}
+              </p>
             )}
           </div>
-        )}
+          <Link
+            href="/app/plan"
+            className="text-sm font-medium text-purple-700 hover:text-purple-800 hover:underline"
+          >
+            {dailyPlan ? "View full plan →" : "Generate plan →"}
+          </Link>
+        </div>
       </section>
+
+      {/* Global Rollup - Top overdue items across relationships */}
+      <GlobalRollup />
+
+      <ChannelNudgesList />
     </div>
   );
 }

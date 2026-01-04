@@ -14,6 +14,8 @@ import { EmailPreferencesSection } from "./EmailPreferencesSection";
 import { AccountDeletionSection } from "./AccountDeletionSection";
 import { AccountOverviewSection } from "./AccountOverviewSection";
 import { VoiceLearningSection } from "./VoiceLearningSection";
+import { DefaultCapacitySection } from "./DefaultCapacitySection";
+import type { CapacityLevel } from "@/lib/plan/capacity";
 
 type SearchParams = Promise<{ calendar?: string }>;
 
@@ -120,7 +122,7 @@ export default async function SettingsPage({
     supabase
       .from("users")
       .select(
-        "email, name, timezone, work_start_time, work_end_time, time_format_preference, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed"
+        "email, name, timezone, work_start_time, work_end_time, time_format_preference, streak_count, calendar_connected, exclude_weekends, ai_provider, ai_api_key_encrypted, ai_model, email_morning_plan, email_fast_win_reminder, email_follow_up_alerts, email_weekly_summary, email_unsubscribed, default_capacity_override"
       )
       .eq("id", user.id)
       .single(),
@@ -166,7 +168,7 @@ export default async function SettingsPage({
 
     if (activeSubscription) {
       subscriptionData = activeSubscription;
-      const planType = (activeSubscription.metadata as any)?.plan_type;
+      const planType = (activeSubscription.metadata as Record<string, unknown>)?.plan_type;
       isPremium = planType === "premium";
     } else {
       // If no active/trialing, get the most recent one (including canceled)
@@ -266,6 +268,14 @@ export default async function SettingsPage({
                   excludeWeekends={profile?.exclude_weekends ?? false}
                 />
               </div>
+            </div>
+            <div className="border-t border-zinc-200 pt-4">
+              <DefaultCapacitySection
+                initialDefault={
+                  (profile?.default_capacity_override as CapacityLevel | null) ||
+                  null
+                }
+              />
             </div>
           </div>
         </SectionCard>

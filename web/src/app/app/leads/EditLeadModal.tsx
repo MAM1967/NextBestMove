@@ -8,7 +8,7 @@ import {
   validateCadenceDays,
 } from "@/lib/leads/relationship-status";
 import { NotesSummary } from "./NotesSummary";
-import { Signals } from "./Signals";
+import { RelationshipSignals } from "./[id]/RelationshipSignals";
 import { MeetingNotes } from "./MeetingNotes";
 
 interface EditLeadModalProps {
@@ -19,7 +19,10 @@ interface EditLeadModalProps {
     leadId: string,
     leadData: {
       name: string;
-      url: string;
+      linkedin_url?: string | null;
+      email?: string | null;
+      phone_number?: string | null;
+      url?: string | null;
       notes?: string;
       cadence?: RelationshipCadence | null;
       cadence_days?: number | null;
@@ -37,6 +40,9 @@ export function EditLeadModal({
 }: EditLeadModalProps) {
   const [formData, setFormData] = useState({
     name: "",
+    linkedin_url: "",
+    email: "",
+    phone_number: "",
     url: "",
     notes: "",
     cadence: "" as RelationshipCadence | "",
@@ -46,20 +52,38 @@ export function EditLeadModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [notesSummaryRefreshTrigger, setNotesSummaryRefreshTrigger] = useState(0);
 
-  // Helper to strip mailto: prefix for display
-  const stripMailto = (url: string): string => {
+  // Helper to extract email from legacy mailto: URL
+  const extractEmailFromUrl = (url: string | null | undefined): string => {
+    if (!url) return "";
     if (url.startsWith("mailto:")) {
       return url.substring(7);
     }
-    return url;
+    return "";
+  };
+
+  // Helper to check if URL is LinkedIn
+  const isLinkedInUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    return url.includes("linkedin.com");
   };
 
   useEffect(() => {
     if (lead) {
+      // Extract email from legacy url field if email field is empty
+      const emailFromUrl = lead.email || extractEmailFromUrl(lead.url);
+      // Extract LinkedIn URL from legacy url field if linkedin_url is empty
+      const linkedinFromUrl = lead.linkedin_url || (isLinkedInUrl(lead.url) ? lead.url : "");
+      // Keep non-LinkedIn URLs in url field
+      const otherUrl = (!isLinkedInUrl(lead.url) && !lead.url?.startsWith("mailto:")) ? lead.url : "";
+      
       setFormData({
         name: lead.name,
-        url: stripMailto(lead.url), // Show email without mailto: prefix
+        linkedin_url: linkedinFromUrl || "",
+        email: emailFromUrl || "",
+        phone_number: lead.phone_number || "",
+        url: otherUrl || "",
         notes: lead.notes || "",
         cadence: (lead.cadence || "") as RelationshipCadence | "",
         cadence_days: lead.cadence_days || null,
@@ -72,23 +96,23 @@ export function EditLeadModal({
 
   if (!isOpen || !lead) return null;
 
-  // Helper function to normalize URL (auto-add mailto: for emails)
-  const normalizeUrl = (url: string): string => {
+  // Validate email format
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
+  // Validate LinkedIn URL format
+  const isValidLinkedInUrl = (url: string): boolean => {
     const trimmed = url.trim();
-    // If it looks like an email address, prepend mailto:
-    if (
-      trimmed.includes("@") &&
-      !trimmed.startsWith("http://") &&
-      !trimmed.startsWith("https://") &&
-      !trimmed.startsWith("mailto:")
-    ) {
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (emailRegex.test(trimmed)) {
-        return `mailto:${trimmed}`;
-      }
-    }
-    return trimmed;
+    return trimmed.includes("linkedin.com") && 
+           (trimmed.startsWith("https://") || trimmed.startsWith("http://"));
+  };
+
+  // Validate phone number format (basic - for future SMS support)
+  const isValidPhoneNumber = (phone: string): boolean => {
+    const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+    return phoneRegex.test(phone.trim()) && phone.trim().replace(/\D/g, "").length >= 10;
   };
 
   const validate = () => {
@@ -96,18 +120,35 @@ export function EditLeadModal({
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     }
-    if (!formData.url.trim()) {
-      newErrors.url = "URL or email is required";
-    } else {
-      const normalized = normalizeUrl(formData.url);
-      if (
-        !normalized.startsWith("https://") &&
-        !normalized.startsWith("http://") &&
-        !normalized.startsWith("mailto:")
-      ) {
-        newErrors.url =
-          "Please enter a valid URL (https://...) or email address";
-      }
+    
+    // At least one contact method should be provided (LinkedIn, email, or phone)
+    const hasLinkedIn = formData.linkedin_url.trim().length > 0;
+    const hasEmail = formData.email.trim().length > 0;
+    const hasPhone = formData.phone_number.trim().length > 0;
+    const hasUrl = formData.url.trim().length > 0;
+    
+    if (!hasLinkedIn && !hasEmail && !hasPhone && !hasUrl) {
+      newErrors.contact = "Please provide at least one contact method (LinkedIn URL, email, or phone number)";
+    }
+    
+    // Validate LinkedIn URL if provided
+    if (hasLinkedIn && !isValidLinkedInUrl(formData.linkedin_url)) {
+      newErrors.linkedin_url = "Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/...)";
+    }
+    
+    // Validate email if provided
+    if (hasEmail && !isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    // Validate phone if provided
+    if (hasPhone && !isValidPhoneNumber(formData.phone_number)) {
+      newErrors.phone_number = "Please enter a valid phone number";
+    }
+    
+    // Validate URL if provided (for non-LinkedIn URLs like CRM links)
+    if (hasUrl && !formData.url.startsWith("https://") && !formData.url.startsWith("http://")) {
+      newErrors.url = "Please enter a valid URL (https://...)";
     }
     
     // Validate cadence_days if cadence is set (and not ad_hoc)
@@ -132,7 +173,6 @@ export function EditLeadModal({
 
     setLoading(true);
     try {
-      const normalizedUrl = normalizeUrl(formData.url);
       // Get cadence_days - use default if not specified and cadence is not ad_hoc
       let cadenceDays = formData.cadence_days;
       if (formData.cadence && formData.cadence !== "ad_hoc" && !cadenceDays) {
@@ -141,7 +181,10 @@ export function EditLeadModal({
       
       await onSave(lead.id, {
         name: formData.name.trim(),
-        url: normalizedUrl,
+        linkedin_url: formData.linkedin_url.trim() || null,
+        email: formData.email.trim() || null,
+        phone_number: formData.phone_number.trim() || null,
+        url: formData.url.trim() || null,
         notes: formData.notes.trim() || undefined,
         cadence: formData.cadence || null,
         cadence_days: formData.cadence === "ad_hoc" ? null : cadenceDays,
@@ -149,6 +192,10 @@ export function EditLeadModal({
         preferred_channel: formData.preferred_channel === "" ? null : (formData.preferred_channel as PreferredChannel),
       });
       setErrors({});
+      // Trigger NotesSummary refresh if notes were changed
+      if (formData.notes.trim() !== (lead.notes || "")) {
+        setNotesSummaryRefreshTrigger((prev) => prev + 1);
+      }
       onClose();
     } catch (error) {
       setErrors({
@@ -222,28 +269,89 @@ export function EditLeadModal({
 
           <div>
             <label
-              htmlFor="edit-url"
+              htmlFor="edit-linkedin_url"
               className="block text-sm font-medium text-zinc-900"
             >
-              URL or Email
+              LinkedIn URL (optional)
             </label>
             <input
+              id="edit-linkedin_url"
+              type="url"
+              value={formData.linkedin_url}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, linkedin_url: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="https://linkedin.com/in/..."
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              LinkedIn profile URL. Used by signals to monitor LinkedIn activity.
+            </p>
+            {errors.linkedin_url && (
+              <p className="mt-1 text-xs text-red-600">{errors.linkedin_url}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-email"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Email (optional)
+            </label>
+            <input
+              id="edit-email"
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="name@example.com"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Email address. Used by signals to monitor email communications.
+            </p>
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-phone_number"
+              className="block text-sm font-medium text-zinc-900"
+            >
+              Phone Number (optional)
+            </label>
+            <input
+              id="edit-phone_number"
+              type="tel"
+              value={formData.phone_number}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, phone_number: e.target.value }))
+              }
+              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              placeholder="+1 (555) 123-4567"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Phone number for SMS communication (future feature).
+            </p>
+            {errors.phone_number && (
+              <p className="mt-1 text-xs text-red-600">{errors.phone_number}</p>
+            )}
+          </div>
+
+          {/* Other URL field removed from UI but kept in database */}
+          <div className="hidden">
+            <input
               id="edit-url"
-              type="text"
-              value={formData.url}
+              type="url"
+              value={formData.url || ""}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, url: e.target.value }))
               }
-              className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-              placeholder="https://linkedin.com/in/... or name@example.com"
-              required
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              Enter a LinkedIn profile URL, CRM link, or email address
-            </p>
-            {errors.url && (
-              <p className="mt-1 text-xs text-red-600">{errors.url}</p>
-            )}
           </div>
 
           <div>
@@ -251,7 +359,7 @@ export function EditLeadModal({
               htmlFor="edit-notes"
               className="block text-sm font-medium text-zinc-900"
             >
-              Notes (optional)
+              Relationship Notes
             </label>
             <textarea
               id="edit-notes"
@@ -417,21 +525,24 @@ export function EditLeadModal({
         {/* Notes Summary Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <NotesSummary relationshipId={lead.id} />
+            <NotesSummary relationshipId={lead.id} refreshTrigger={notesSummaryRefreshTrigger} />
           </div>
         )}
 
         {/* Meeting Notes Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <MeetingNotes leadId={lead.id} />
+            <MeetingNotes 
+              leadId={lead.id} 
+              onNotesSaved={() => setNotesSummaryRefreshTrigger((prev) => prev + 1)}
+            />
           </div>
         )}
 
         {/* Signals Section */}
         {lead && (
           <div className="mt-6 border-t border-zinc-200 pt-6">
-            <Signals leadId={lead.id} />
+            <RelationshipSignals relationshipId={lead.id} />
           </div>
         )}
       </div>
