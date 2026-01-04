@@ -254,6 +254,9 @@ export async function GET(request: Request) {
             auto_created: true,
             notes: `Call with ${matchedLead.name} scheduled for ${new Date(event.start).toLocaleString()}`,
             description: `Prepare for call with ${matchedLead.name}`,
+            source: 'calendar',
+            source_ref: event.id,
+            intent_type: 'schedule',
           });
 
           if (createError) {

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { validateActionRelationship } from "@/lib/actions/validation";
 
 // GET /api/actions - List actions for the authenticated user
 export async function GET(request: Request) {
@@ -17,6 +18,8 @@ export async function GET(request: Request) {
     const state = searchParams.get("state"); // Optional filter: NEW, SENT, REPLIED, SNOOZED, DONE, ARCHIVED
     const dueDate = searchParams.get("due_date"); // Optional filter by due date
     const personId = searchParams.get("person_id"); // Optional filter by person
+    const source = searchParams.get("source"); // Optional filter by source
+    const intentType = searchParams.get("intent_type"); // Optional filter by intent_type
 
     // Try with leads join first, fallback to without if it fails (RLS might block the join)
     let actions: any[] | null = null;
@@ -51,6 +54,14 @@ export async function GET(request: Request) {
       query = query.eq("person_id", personId);
     }
 
+    if (source) {
+      query = query.eq("source", source);
+    }
+
+    if (intentType) {
+      query = query.eq("intent_type", intentType);
+    }
+
     const { data: dataWithLeads, error: joinError } = await query;
 
     if (joinError) {
@@ -73,6 +84,14 @@ export async function GET(request: Request) {
 
       if (personId) {
         fallbackQuery = fallbackQuery.eq("person_id", personId);
+      }
+
+      if (source) {
+        fallbackQuery = fallbackQuery.eq("source", source);
+      }
+
+      if (intentType) {
+        fallbackQuery = fallbackQuery.eq("intent_type", intentType);
       }
 
       const { data: actionsOnly, error: actionsError } = await fallbackQuery;
@@ -144,6 +163,9 @@ export async function POST(request: Request) {
       due_date,
       notes,
       auto_created,
+      source,
+      source_ref,
+      intent_type,
     } = body;
 
     // Validate required fields
@@ -171,6 +193,15 @@ export async function POST(request: Request) {
             ", "
           )}`,
         },
+        { status: 400 }
+      );
+    }
+
+    // Validate relationship requirement
+    const validation = validateActionRelationship(action_type, person_id);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
         { status: 400 }
       );
     }
@@ -255,6 +286,9 @@ export async function POST(request: Request) {
         due_date,
         notes: notes || null,
         auto_created: auto_created === true, // Default to false if not provided
+        source: source || 'manual', // Default to 'manual' for user-created actions
+        source_ref: source_ref || null,
+        intent_type: intent_type || null,
       })
       .select(
         `

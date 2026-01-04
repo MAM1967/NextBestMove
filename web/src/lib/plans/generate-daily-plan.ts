@@ -447,6 +447,8 @@ export async function generateDailyPlanForUser(
                 description: `Reach out to ${lead.name}`,
                 notes: `Auto-created from daily plan generation on ${new Date().toLocaleDateString()}`,
                 auto_created: true,
+                source: 'system',
+                intent_type: 'outreach',
               })
               .select()
               .single();

@@ -239,6 +239,9 @@ export async function GET(request: Request) {
             auto_created: true,
             notes: `Call with ${matchedLead.name} ended on ${new Date(event.end).toLocaleString()}`,
             description: `Follow up after call with ${matchedLead.name}`,
+            source: 'calendar',
+            source_ref: event.id,
+            intent_type: 'review',
           });
 
           if (createError) {
