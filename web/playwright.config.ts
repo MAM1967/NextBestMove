@@ -13,6 +13,8 @@ export default defineConfig({
     "**/node_modules/**",
     "**/tests/unit/**",
     "**/tests/integration/**",
+    // Only exclude dev test files in CI, allow them locally for development
+    ...(process.env.CI ? ["**/*-dev.spec.ts"] : []),
   ],
   fullyParallel: false, // Run sequentially to avoid email rate limits
   forbidOnly: !!process.env.CI,

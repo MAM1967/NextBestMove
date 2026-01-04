@@ -26,7 +26,7 @@ interface TopOverdueAction {
 interface OverdueRelationship {
   id: string;
   name: string;
-  nextTouchDueAt: string;
+  nextTouchDueAt: string | null;
   daysOverdue: number;
 }
 
@@ -142,7 +142,7 @@ export function GlobalRollup() {
               {rollup.overdueRelationships.map((rel) => (
                 <Link
                   key={rel.id}
-                  href={`/app/leads?edit=${rel.id}`}
+                  href={`/app/leads?editId=${rel.id}`}
                   className="block rounded-md border border-orange-200 bg-orange-50 p-3 text-sm transition-colors hover:bg-orange-100"
                 >
                   <div className="flex items-start justify-between">
@@ -153,7 +153,7 @@ export function GlobalRollup() {
                       </div>
                     </div>
                     <div className="ml-4 text-right text-xs text-orange-600">
-                      {formatDateForDisplay(rel.nextTouchDueAt.split("T")[0])}
+                      {rel.nextTouchDueAt ? formatDateForDisplay(rel.nextTouchDueAt.split("T")[0]) : "N/A"}
                     </div>
                   </div>
                 </Link>
@@ -175,4 +175,7 @@ export function GlobalRollup() {
     </div>
   );
 }
+
+
+
 

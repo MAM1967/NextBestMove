@@ -118,7 +118,7 @@ export async function canGeneratePlans(
   }
   
   const status = getSubscriptionStatus(subscriptionStatus, trialEndsAt);
-  // Grace period is read-only, so only trialing and active can generate
+  // Trial expiration downgrades to Free tier (not read-only), so only trialing and active can generate
   return status === "trialing" || status === "active";
 }
 
@@ -131,7 +131,7 @@ export function canGeneratePlansSync(
   trialEndsAt: string | null | undefined
 ): boolean {
   const status = getSubscriptionStatus(subscriptionStatus, trialEndsAt);
-  // Grace period is read-only, so only trialing and active can generate
+  // Trial expiration downgrades to Free tier (not read-only), so only trialing and active can generate
   return status === "trialing" || status === "active";
 }
 

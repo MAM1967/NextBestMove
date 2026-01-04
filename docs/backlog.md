@@ -157,7 +157,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Past-due & cancellation banners** ✅ (dashboard alerts with billing portal CTA. Completed - BillingAlertBanner component created and integrated into dashboard.)
 - [x] **Adaptive recovery & celebration flows** ✅ (low completion micro-plan, 7+ day comeback, high completion boost. Completed and tested - all Group 3 tests passed: low completion detection, 7+ day inactivity comeback plan, high completion streak boost, celebration banner, Day 2-6 micro mode auto-enable, Day 3 email, Day 7 billing pause detection.)
 - [x] **Content Ideas list page** ✅ (saved prompts CRUD + empty state. Page created with filtering, copy, archive, and delete functionality.)
-- [x] **Trial expiration & read-only grace period** ✅ (Day 15-21: read-only mode, banner messaging, subscription prompts. Completed and tested - grace period banner, read-only mode, and subscription prompts working.)
+- [x] **Trial expiration & Free tier downgrade** ✅ (Day 15: downgrade to Free tier, banner messaging, upgrade prompts. Completed and tested - Free tier banner, upgrade prompts working. Note: Payment failures still use read-only mode, but trial expiration downgrades to Free tier.)
 - [x] **Trial reminders** ✅ (Day 12 + Day 14 email via Resend + push notifications. Completed and tested - cron job configured, emails sent correctly.)
 - [x] **Plan upgrade triggers** ✅ (Lead limit hit, pattern detection access, pre-call brief prompts, content engine prompts. Completed and tested - lead limit detection working, upgrade modal appears correctly, API enforcement in place. All Group 4.1 tests passed.)
 - [x] **Streak break detection & recovery** ✅ (Day 1-3 push notifications, Micro Mode on Day 2, personal email via Resend on Day 3, billing pause offer on Day 7. Completed - cron job detects streak breaks, sends Day 3 recovery email, Day 7 billing pause offer for active subscribers, tracks notifications in metadata to prevent duplicates. Day 2 Micro Mode handled by plan generation. Day 1 push notification logged (infrastructure not yet implemented). See `docs/Testing/Group5_Streak_Break_Recovery_Testing_Guide.md` for test plan.)
@@ -186,7 +186,7 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Add per-relationship "Notes Summary" that surfaces at-a-glance: last/next interaction dates, pending/post-call action items, research topics, and momentum-directed tasks. Implement as a structured rollup over existing Interaction/Action/Insight entities and surface in Relationship detail and a global dashboard rollup._
 
 - [x] **Meeting notes / transcript ingestion (manual v1)** ✅ **NEX-13**
-      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording._
+      _Allow users to attach meeting notes or transcripts to Relationships, run extraction to create structured action items and insights, and feed those into the decision engine and Notes Summary. Starts as manual upload; no automatic recording. **Enhancement:** Implemented batch scheduling (`scheduleMultipleActions`) to efficiently schedule multiple actions at once, ensuring proper spacing (max 2 per day) when multiple actions are extracted from meeting notes._
 
 - [x] **Multi-calendar awareness (read-only) - Backend** ✅ **NEX-14**
       _Backend support for multiple connected calendars (e.g., multiple Google/Outlook accounts), aggregate free/busy, and display confidence levels ("based on 3 calendars"). Capacity logic and pre-call briefs use aggregated availability. SQL migration completed successfully._
@@ -198,9 +198,12 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
       _Track preferred channel per relationship (LinkedIn / email / text / other) and detect stalled conversations. Suggest appropriate escalation ("move to email", "ask for call") inside Today and Actions, based on inactivity and cadence._
 
 - [x] **Adopt idempotency everywhere for Stripe billing flows** ✅ **NEX-16**
-      _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
+       _Audit all Stripe touchpoints (checkout, subscription updates, invoice handling, payment failures, win-back flows, manual retries) and enforce idempotency at both the API and webhook layers. In a recent test account, two charges were added to the same account 23 minutes apart; strengthening idempotency is the primary defense. Ensure webhook handlers are safe to replay, use stable idempotency keys or database guards, and add logging/alerts when duplicate or conflicting events are detected and gracefully skipped._
 
-- [x] **Fix Weekly Summary date calculation** ✅  
+- [ ] **Setup Admin Account with Premium Access (No Payment)** 🔴 **NEX-54**
+       _Create a clean admin account for internal use with premium access but no payment required. Email: `michael.mcdermott@nextbestmove.app`. Should have premium plan access (unlimited leads + premium features), bypass payment checks, and be usable for testing and internal use. Implementation: Add `is_admin` flag to `users` table, modify subscription checks to allow admin accounts, create account manually or via admin script, ensure admin accounts bypass paywall._
+
+- [x] **Fix Weekly Summary date calculation** ✅
        _Fixed weekly summary past week calculation bug (was showing 2 weeks behind, then showing current week instead of previous week). Updated cron job, test endpoint, and generate endpoint to correctly calculate previous week's Sunday (Sunday-Saturday week structure). If today is Sunday, previous week's Sunday is 7 days ago. If today is Monday-Saturday, previous week's Sunday is (dayOfWeek + 7) days ago. Created SQL script `scripts/fix-weekly-summary-dates.sql` to delete old summaries with incorrect dates. Verified working - now correctly shows "Week of Dec 7-13, 2025" instead of current week._
 
 - [x] **Fix account overview email to use login credentials** ✅  
@@ -209,6 +212,39 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 - [x] **Fix calendar_connected trigger to handle DELETE operations** ✅  
        _Fixed database trigger `update_user_calendar_status()` to properly handle DELETE operations. The original trigger only used `NEW.user_id` which doesn't exist on DELETE - now correctly uses `OLD.user_id` for DELETE and `NEW.user_id` for INSERT/UPDATE. This ensures the `calendar_connected` flag updates correctly when calendars are disconnected. Migration: `supabase/migrations/202512160001_fix_calendar_connected_trigger.sql`_  
        ⚠️ **PRODUCTION DEPLOYMENT PENDING:** This migration has been applied to staging only. Must be applied to production database before deploying calendar disconnect fixes to production.
+
+- [ ] **Relationship State Machine Implementation** 🔴 **NEX-46**
+       _Implement relationship state machine based on Decision Engine refinement document. States: UNENGAGED, ACTIVE_CONVERSATION, OPPORTUNITY, WARM_BUT_PASSIVE, DORMANT. Add database field, detection logic, transition rules, and UI components. Database: Add `relationship_state` enum and column to `leads` table, add `state_updated_at` timestamp. Logic: Auto-detect state from actions, emails, signals; enforce valid action types per state; handle state transitions. UI: Display current state in ActionDetailModal, show state transition options, update state based on actions/emails._
+
+- [ ] **Today Page UI Improvements** 🔴 **NEX-47**
+       _Refine Today page for better overview and consistency. Remove duration filter (move to Daily Plan), replace numeric score with qualitative urgency/value labels (matches Signals 2x2 matrix), replace "Today's Plan" section with compact summary + link, fix overdue relationships counter (ensure consistency across pages), add calendar event count and time until next event, show capacity level (Auto/Micro/Light/Standard/Heavy), simplify layout: keep Best Action, overdue counts, calendar info, capacity._
+
+- [ ] **Unified Action Card Component** 🔴 **NEX-48**
+       _Create unified action card component to ensure consistent look/feel across all pages (Today, Daily Plan, Actions). Create `UnifiedActionCard.tsx` component matching Actions page design, replace `ActionCard`, `ActionListRow`, and `DurationFilteredActionCard` instances, ensure same styling, buttons, state badges, and information hierarchy everywhere, test responsive design._
+
+- [ ] **Relationships Page Improvements** 🔴 **NEX-50**
+       _Enhance Relationships page with better email signals, notes organization, and UI cleanup. Remove "View all" link from Top Overdue Relationships card, fix overdue relationship card click to use same view/edit screen, improve email signals: show AI insights, attachment prompts, follow-up topics, rename "Notes (Optional)" to "Relationship Notes" or merge with Meeting Notes, remove "Other URL" field from UI (keep in database), enhance Notes Summary: AI-organized topics from notes + emails, last discussion per topic, action items per topic, pending/overdue status, remove Momentum and Trend from Notes Summary (keep Interactions and Last 30 days)._
+
+- [ ] **Actions Page Redesign - System-Created Actions & Unified Design** 🔴 **NEX-55**
+       _Complete redesign of Actions page based on refined PRD. Add source attribution (email, meeting_note, calendar, manual, system), add intent_type field, implement Due View and Relationships View, add comprehensive filtering (status, source, intent, relationship, due date), ensure unified action card design across Today/Daily Plan/Actions pages, add system-created action logic from signals. Support relationship-optional actions (CONTENT, general business tasks) - keep lead_id nullable, enforce relationship requirement at application level based on action_type. Database: Add source, source_ref, intent_type columns. UI: ActionsFilterBar, ActionsList, RelationshipGroupHeader, SectionHeader. See `docs/PRD/Actions_PRD_Refined.md` for complete specification._
+
+- [ ] **Action Source Attribution & System Creation** 🔴 **NEX-56**
+       _Implement action source tracking and system-created actions. Database: Add source enum (email, linkedin, calendar, meeting_note, manual, system), source_ref TEXT, intent_type enum. Keep lead_id nullable to support relationship-optional actions (CONTENT, general business tasks). Backend: Update email signal ingestion to create actions with source='email', update meeting notes processing to create actions with source='meeting_note', update calendar integration to create actions with source='calendar', update decision engine to set source='system', add application-level validation to enforce relationship requirement for FOLLOW_UP/OUTREACH/CALL_PREP/POST_CALL. UI: Show source badge on UnifiedActionCard, add source filter to Actions page. Backfill existing actions: auto_created=true → source='system', auto_created=false → source='manual'._
+
+- [ ] **Unified Action Card - Source & Status Enhancements** 🔴 **NEX-57**
+       _Enhance UnifiedActionCard to show source attribution and status mapping. Add source badge (Email, Meeting Note, Calendar, etc.), add status filter mapping (Pending/Acknowledged/Deferred/Completed → NEW/SENT/SNOOZED/DONE/REPLIED), update status buttons to use new labels, ensure consistent design across Today/Daily Plan/Actions pages. Handle relationship-optional actions: Show "General Business" badge when lead_id is null (instead of relationship anchor). Status buttons: Complete (DONE/REPLIED), Acknowledge (SENT), Defer (SNOOZED). Source badge: Color-coded by source type, shows on all action cards._
+
+- [ ] **Actions Page - Due View & Relationships View** 🔴 **NEX-58**
+       _Implement Actions page with two views: Due View (default) and Relationships View. Due View: Group by Overdue → Today → Upcoming → Later → No due date, relationship-linked actions first, then general business actions, sort by due date then created date. Relationships View: Group by relationship (only relationship-linked actions), general business actions appear in separate "General Business" section, show max 3 actions per relationship, sort by earliest due action. Components: ActionsPage, ActionsFilterBar (sticky), ActionsList, RelationshipGroupHeader, SectionHeader. Filter bar: ViewToggle, RelationshipFilter, DueFilter, StatusFilter, SourceFilter, IntentFilter. Route: /app/actions. See `docs/PRD/Actions_PRD_Refined.md` for complete specification._
+
+- [ ] **Actions Page Improvements** 🔴 **NEX-51**
+       _Refine Actions page to remove CRM features and add relationship state tracking. Move relationship name to top of ActionDetailModal, remove Deal Progression section from UI (keep in database), add relationship state machine UI to ActionDetailModal, add action completion tracking: "Next call calendered", "Replied to email with topics", "Got response" with notes, "Close" button creates new action if needed, moves notes forward, updates relationship state._
+
+- [ ] **Signals 2x2 Urgency/Value Matrix** 🔴 **NEX-52**
+       _Implement 2x2 urgency/value matrix on Signals page to visualize relationship priorities. Calculate urgency: days since last interaction + overdue actions + email signals. Calculate value: tier + response rate + deal potential. Create 2x2 matrix UI with four quadrants (Low/Low, Low/High, High/Low, High/High), group relationships by quadrant, display relationship cards in each group, update Best Action to use same qualitative labels (matches Signals quadrant)._
+
+- [ ] **Setup Admin Account with Premium Access (No Payment)** 🔴 **NEX-54**
+       _Create a clean admin account for internal use with premium access but no payment required. Email: `michael.mcdermott@nextbestmove.app`. Should have premium plan access (unlimited leads + premium features), bypass payment checks, and be usable for testing and internal use. Implementation: Add `is_admin` flag to `users` table, modify subscription checks to allow admin accounts, create account manually or via admin script, ensure admin accounts bypass paywall._
 
 ---
 
@@ -242,25 +278,34 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
        _Automatically enrich pre-call briefs with company information, news, and SEC filings. Extract company domain from email/LinkedIn URL, fetch company details (name, industry, size), recent news/press releases, and SEC 10Q filings for public companies. Display in pre-call briefs to provide "junior analyst"-level prep. Gate behind Premium plan. Reference: `docs/Features/Company_Research_Enrichment.md`_
 - [ ] **Design token compliance (incremental)** ⏱ **POST-LAUNCH**  
        _Fix design token violations incrementally over 2-4 weeks. Replace hardcoded colors, spacing, and border radius values with design tokens. Add missing tokens (radius.none, success-green-dark, fast-win-accent-hover). Fix ~498 violations across ActionCard, PriorityIndicator, settings pages, and onboarding flow. Estimated: 8-10 hours total, 2-3 hours/week. Reference: `docs/Planning/Design_Token_Compliance_Estimate.md`_
-- [ ] Manual "Busy / Light day" capacity override
-- [ ] Action detail modal / history view
+- [x] **Manual "Busy / Light day" capacity override** ✅ **NEX-22**
+      _Allow users to manually override their daily capacity calculation to indicate a busy or light day. UI control to set daily capacity override, override affects daily plan generation, can be set per day or as a default preference._
+
+- [ ] **Daily Plan Page Improvements** 🟡 **NEX-49**
+       _Improve Daily Plan page consistency and functionality. Move duration filter (5min/10min/15min) to Daily Capacity card, show "Auto Capacity is set at X number of tasks based on availability" when Auto selected, unify Fast Win card design with action cards, replace action cards with UnifiedActionCard component._
+
+- [ ] **Weekly Reviews - Remove CRM Features** 🟡 **NEX-53**
+       _Remove CRM-like features from Weekly Reviews page to align with NextBestMove positioning. Remove "Deeper Insights" section from UI, remove deal progression references, keep database fields but hide from UI._
+- [x] **Action detail modal / history view** ✅ **NEX-23**
+       _Create a detailed view for actions showing full history, notes, and related interactions. Modal or page showing action details, display action history (state changes, dates), show related notes and interactions, link to related relationship/lead._
 - [ ] Additional login providers (Apple, LinkedIn, etc.)
-- [ ] Deeper analytics (deal progression metric, more insights)
-- [ ] Notification delivery channels (email/push) beyond toggles
+- [x] **Deeper analytics (deal progression metric, more insights)** ✅ **NEX-25**
+      _Enhance analytics with deal progression tracking and additional insights beyond current weekly summaries. Deal progression metric, additional insights and analytics, enhanced reporting capabilities._
+- [x] **Notification delivery channels (email/push) beyond toggles** ✅ **NEX-26**
+      _Expand notification system to support multiple delivery channels with granular control. Support for push notifications (beyond email), granular channel preferences per notification type, delivery method selection (email, push, both)._
 - [ ] Pricing page UI (Standard vs Premium comparison, annual savings, clear value props)
-- [ ] Billing pause feature (30-day pause for users inactive 7+ days)
-- [ ] **Cancellation feedback analytics page**  
+- [x] **Cancellation feedback analytics page** ✅ **NEX-29**
        _Admin/internal page to view and analyze cancellation feedback from win-back campaign. Display cancellation reasons breakdown (pie/bar chart), read individual feedback responses, filter by date range, export data. Helps identify product improvement opportunities and common churn reasons. Accessible only to admins/service role._
-- [ ] **Enhanced pre-call brief detection for video conferencing**  
+- [x] **Enhanced pre-call brief detection for video conferencing** ✅ **NEX-30**
        _Improve calendar event detection to recognize Zoom, Google Meet, Microsoft Teams meetings (not just "call"). Update detection logic to check for platform-specific keywords and phrases. Document event naming best practices for users (e.g., "Call with John", "Zoom with Sarah", "Google Meet: Project Review"). This ensures pre-call briefs work for all types of online meetings, not just phone calls._
 
-- [ ] **POST_CALL auto-generation**  
+- [x] **POST_CALL auto-generation** ✅ **NEX-31**
        _Automatically create POST_CALL actions when calendar events (calls) end. Real-time creation when call ends, detect ended calls from calendar events, match to leads, create action immediately. Requires calendar event detection and real-time processing. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
-- [ ] **CALL_PREP auto-generation**  
+- [x] **CALL_PREP auto-generation** ✅ **NEX-32**
        _Automatically create CALL_PREP actions 24 hours before detected calls. Hourly cron with timezone filtering, detect calls 24 hours in advance, match calendar events to leads, create action day before call. Requires hourly cron with timezone awareness. Estimated: 4-6 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
-- [ ] **NURTURE auto-generation**  
+- [x] **NURTURE auto-generation** ✅ **NEX-33**
        _Automatically create NURTURE actions for leads that haven't been contacted in 21+ days. Daily cron to detect stale leads, create actions (max 3 per day), prioritize by engagement history, handle returning users gracefully. Estimated: 3-4 hours. Reference: `docs/Planning/Action_Auto_Generation_Strategy.md`_
 
 - [ ] **CONTENT action conversion from weekly summaries**  
@@ -274,6 +319,15 @@ Use the checkboxes to track progress (✅ = done, 🔄 = in progress, ⏱ = bloc
 
 - [ ] **Code Refactor: Align Internal Code with New Language** 🟡 **LOWER PRIORITY P2 - POST-LANGUAGE-REFACTOR**  
        _Refactor internal code (API endpoints, TypeScript types, variable names, function names) to align with new UI language. This is a follow-up to the user-facing language refactor. Scope: API endpoint names (e.g., `/api/leads` → `/api/relationships`), TypeScript types, variable names, internal comments. No changes to database schema. Estimated: 2-3 days. Reference: `docs/Planning/UI_Language_Refactor_Plan.md` (Part 2). Priority: P2 - can be done after user-facing language is stable._
+
+- [ ] **Multiple email account support (like multi-calendar)** 🟡 **P2 - POST-LAUNCH**  
+       _Allow users to connect multiple email accounts (Gmail and/or Outlook), similar to multi-calendar support (NEX-14, NEX-17). Enables users managing multiple email addresses to aggregate all email signals in one place. Backend: Update ingestion to process all active connections, update signals aggregation. UI: Show list of connected accounts in Settings, allow connecting/disconnecting individual accounts. Estimated: 4-6 hours. Reference: Multi-calendar implementation pattern. Linear: NEX-40_
+
+- [ ] **AI-Powered Email Signal Extraction (Full Body Analysis)** 🔴 **HIGH PRIORITY - IMMEDIATE**  
+       _Replace rule-based email signal extraction with AI-powered analysis using gpt-4o-mini. Extract full email body (not just snippet), add sentiment analysis (positive/neutral/negative/urgent), add intent classification (question/request/follow_up/introduction/meeting_request/proposal/complaint/other), improve accuracy of topic/ask/open loop extraction. Use existing AI infrastructure with gpt-4o-mini model. Estimated: 8-16 hours (1-2 days). Linear: NEX-42_
+
+- [ ] **Email Attachment Capture & Analysis** 🟡 **P2 - POST-LAUNCH**  
+       _Capture attachment metadata (filename, MIME type, size) from Gmail/Outlook emails. Store in database, display in Signals UI, use attachment context to enhance signal extraction (e.g., "attached proposal" → open loop). Future: Extract text from PDFs, analyze spreadsheet data. Estimated: 6-8 hours. Linear: NEX-43_
 
 ---
 

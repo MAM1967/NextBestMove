@@ -10,6 +10,8 @@ import { WeekendPreferenceStep } from "./steps/WeekendPreferenceStep";
 import { WeeklyFocusStep } from "./steps/WeeklyFocusStep";
 import { FirstPlanReadyStep } from "./steps/FirstPlanReadyStep";
 import { StartFreeTrialStep } from "./steps/StartFreeTrialStep";
+import { trackOnboardingCompleted } from "@/lib/analytics/posthog";
+import { createClient } from "@/lib/supabase/client";
 
 export type OnboardingStep =
   | "welcome"
@@ -187,6 +189,30 @@ export function OnboardingFlow() {
       });
 
       if (response.ok) {
+        // Track onboarding completion
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Get user profile to check for leads and calendar connection
+          const { data: profile } = await supabase
+            .from("users")
+            .select("id, calendar_connected")
+            .eq("id", user.id)
+            .single();
+          
+          // Count leads
+          const { count: leadsCount } = await supabase
+            .from("leads")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", user.id);
+          
+          trackOnboardingCompleted(user.id, {
+            leadsCreated: leadsCount || 0,
+            calendarConnected: profile?.calendar_connected || false,
+            workingHoursSet: true, // Assume set if they got this far
+          });
+        }
+        
         clearSavedStep();
         router.push("/app");
         router.refresh();

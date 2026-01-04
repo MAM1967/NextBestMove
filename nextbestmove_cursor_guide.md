@@ -218,7 +218,7 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
 ./scripts/deploy-staging.sh [optional commit message]
 ```
 
-**Workflow (5 steps):**
+**Workflow (6 steps):**
 
 1. **TypeScript Type Check** - Runs `npm run type-check` in `web/` directory
 
@@ -236,13 +236,22 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
    - Syncs all secrets from Doppler `stg` config to Vercel Preview environment
    - **Blocks deployment if sync fails**
 
-4. **Git Commit** - Automatically stages and commits uncommitted changes
+4. **Capture Current Branch** - **CRITICAL STEP** - Captures current branch and commits before switching
 
-   - Uses provided commit message or defaults to "Deploy to staging"
-   - Warns if not on `staging` branch (but allows override with confirmation)
+   - Commits any uncommitted changes on current branch first
+   - Remembers current branch name for later merge
+   - **Prevents "no differences" PR issue**
 
-5. **Git Push** - Pushes to `origin/staging`
-   - Triggers Vercel automatic deployment
+5. **Create Deployment Branch** - Creates feature branch from staging and merges current branch
+
+   - Switches to `staging` branch and pulls latest
+   - Creates new `deploy/staging-{timestamp}` branch
+   - **Merges current branch's commits into deployment branch** (if different from staging)
+   - Ensures deployment branch has both latest staging AND our changes
+
+6. **Git Push** - Pushes deployment branch to origin
+   - Provides PR link for review
+   - After PR merge, Vercel automatically deploys from staging branch
    - Deploys to `https://staging.nextbestmove.app`
 
 **Example:**
@@ -257,7 +266,7 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
 ./scripts/deploy-production.sh [optional commit message]
 ```
 
-**Workflow (4 steps with safety confirmation):**
+**Workflow (6 steps with safety confirmation):**
 
 1. **Safety Confirmation** - Requires typing "yes" to proceed
 
@@ -276,13 +285,22 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
    - Syncs all secrets from Doppler `prd` config to Vercel Production environment
    - **Blocks deployment if sync fails**
 
-5. **Git Commit** - Automatically stages and commits uncommitted changes
+5. **Capture Current Branch** - **CRITICAL STEP** - Captures current branch and commits before switching
 
-   - Uses provided commit message or defaults to "Deploy to production"
-   - Warns if not on `main` branch (but allows override with confirmation)
+   - Commits any uncommitted changes on current branch first
+   - Remembers current branch name for later merge
+   - **Prevents "no differences" PR issue**
 
-6. **Git Push** - Pushes to `origin/main`
-   - Triggers Vercel automatic deployment
+6. **Create Deployment Branch** - Creates feature branch from main and merges current branch
+
+   - Switches to `main` branch and pulls latest
+   - Creates new `deploy/production-{timestamp}` branch
+   - **Merges current branch's commits into deployment branch** (if different from main)
+   - Ensures deployment branch has both latest main AND our changes
+
+7. **Git Push** - Pushes deployment branch to origin
+   - Provides PR link for review
+   - After PR merge, Vercel automatically deploys from main branch
    - Deploys to `https://nextbestmove.app`
 
 **Example:**
@@ -298,8 +316,11 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
 - ✅ **Check TypeScript errors locally** - Run `npm run type-check` in `web/` before deploying
 - ✅ **Verify Doppler sync** - Check that environment variables are correctly synced
 - ✅ **Monitor Vercel dashboard** - Watch for build/deployment errors after push
+- ✅ **Verify PR shows differences** - If PR shows "no differences", the deployment script didn't merge your branch correctly
 - ❌ **Never push directly** - Always use the deployment scripts
 - ❌ **Never skip type checks** - Fix TypeScript errors before deploying
+
+**⚠️ Critical Fix (2026-01-02):** The deployment scripts now include a critical step that merges your current branch's commits into the deployment branch. This prevents the "no differences" PR issue. See `docs/Development/Deployment_Script_Fix.md` for details.
 
 **Database Migrations:**
 
@@ -404,6 +425,12 @@ NextBestMove/
 - Prettier (via ESLint)
 
 ### Best Practices
+
+**File Modification:**
+
+- **ALWAYS read files first** - Check the current state of a file before modifying it
+- Never assume file contents - Read the file to understand its current structure and content
+- This prevents errors from mismatched search/replace operations and ensures changes align with existing code
 
 **Error Handling:**
 

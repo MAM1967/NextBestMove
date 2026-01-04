@@ -11,35 +11,53 @@ import { formatDateForDisplay } from "@/lib/utils/dateUtils";
 
 interface NotesSummaryProps {
   relationshipId: string;
+  refreshTrigger?: number; // Increment this to trigger a refresh
 }
 
-export function NotesSummary({ relationshipId }: NotesSummaryProps) {
+export function NotesSummary({ relationshipId, refreshTrigger }: NotesSummaryProps) {
   const [summary, setSummary] = useState<NotesSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSummary = async () => {
+  const fetchSummary = async (isUpdate = false) => {
+    if (isUpdate) {
+      setUpdating(true);
+    } else {
       setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/leads/${relationshipId}/notes-summary`);
-        if (!response.ok) {
-          throw new Error("Failed to load notes summary");
-        }
-        const data = await response.json();
-        setSummary(data.summary);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load summary");
-      } finally {
-        setLoading(false);
+    }
+    setError(null);
+    try {
+      const response = await fetch(`/api/leads/${relationshipId}/notes-summary`);
+      if (!response.ok) {
+        throw new Error("Failed to load notes summary");
       }
-    };
+      const data = await response.json();
+      setSummary(data.summary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load summary");
+    } finally {
+      setLoading(false);
+      setUpdating(false);
+    }
+  };
 
+  useEffect(() => {
     if (relationshipId) {
       fetchSummary();
     }
   }, [relationshipId]);
+
+  // Auto-refresh when refreshTrigger changes (e.g., after notes are saved)
+  useEffect(() => {
+    if (relationshipId && refreshTrigger && refreshTrigger > 0) {
+      // Small delay to allow database to update
+      const timeoutId = setTimeout(() => {
+        fetchSummary(true);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [relationshipId, refreshTrigger]);
 
   if (loading) {
     return (
@@ -65,7 +83,12 @@ export function NotesSummary({ relationshipId }: NotesSummaryProps) {
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6">
-      <h3 className="mb-4 text-lg font-semibold text-zinc-900">Notes Summary</h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-zinc-900">Notes Summary</h3>
+        {updating && (
+          <span className="text-xs text-zinc-500 italic">Updating...</span>
+        )}
+      </div>
 
       <div className="space-y-6">
         {/* Interaction Metrics */}
@@ -218,4 +241,7 @@ export function NotesSummary({ relationshipId }: NotesSummaryProps) {
     </div>
   );
 }
+
+
+
 

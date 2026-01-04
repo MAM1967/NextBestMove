@@ -646,6 +646,500 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 
 ---
 
+## ESLint and Linting Best Practices
+
+### Lesson: Never Use `any` Type - Use Proper Type Alternatives
+
+**Problem:** Using `any` type defeats the purpose of TypeScript and causes `@typescript-eslint/no-explicit-any` errors. We fixed 13 such errors across the codebase, which required significant refactoring.
+
+**Solution:** Always use proper TypeScript types instead of `any`. Here are the correct alternatives:
+
+**1. Use `unknown` for truly unknown types:**
+
+```typescript
+// ❌ Wrong - using any
+function handleError(error: any) {
+  console.log(error.message); // No type safety
+}
+
+// ✅ Correct - using unknown with type guards
+function handleError(error: unknown) {
+  if (error instanceof Error) {
+    console.log(error.message); // Type-safe
+  } else if (typeof error === "string") {
+    console.log(error);
+  } else {
+    console.log("Unknown error:", error);
+  }
+}
+```
+
+**2. Use `Record<string, unknown>` for object types:**
+
+```typescript
+// ❌ Wrong - using any
+function processData(data: any) {
+  return data.someProperty;
+}
+
+// ✅ Correct - using Record for object types
+function processData(data: Record<string, unknown>) {
+  if (typeof data.someProperty === "string") {
+    return data.someProperty;
+  }
+  return null;
+}
+```
+
+**3. Use explicit type assertions with proper types:**
+
+```typescript
+// ❌ Wrong - using any
+const customerId = (billingCustomer as any).id;
+
+// ✅ Correct - using explicit type assertion
+const customerId = (billingCustomer as { id: string }).id;
+
+// ✅ Even better - define a proper type
+type BillingCustomerWithId = {
+  id: string;
+  // ... other known properties
+};
+const customerId = (billingCustomer as BillingCustomerWithId).id;
+```
+
+**4. Use intersection types for extending types:**
+
+```typescript
+// ❌ Wrong - using any
+const metadata = (subscription.metadata as any).someKey;
+
+// ✅ Correct - using Record<string, unknown>
+const metadata = (subscription.metadata as Record<string, unknown>).someKey;
+```
+
+**5. Use proper function parameter types:**
+
+```typescript
+// ❌ Wrong - using any
+function processParams(params: any, result: any) {
+  // ...
+}
+
+// ✅ Correct - using proper types
+function processParams(
+  params: Record<string, unknown>,
+  result: unknown
+) {
+  // Type-safe access with guards
+  if (typeof params.key === "string") {
+    // ...
+  }
+}
+```
+
+**6. Use proper array element types:**
+
+```typescript
+// ❌ Wrong - using any
+insights.map((insight: any) => insight.text);
+
+// ✅ Correct - using proper type
+insights.map((insight: { text: string }) => insight.text);
+
+// ✅ Even better - define a proper type
+type Insight = {
+  text: string;
+  // ... other properties
+};
+insights.map((insight: Insight) => insight.text);
+```
+
+### Lesson: Understanding ESLint Flat Config Override Order
+
+**Problem:** ESLint flat config requires overrides to be placed **LAST** in the config array to take precedence. We initially tried to disable `@typescript-eslint/no-explicit-any` for `next.config.ts` but it didn't work because the override was in the wrong position.
+
+**Solution:** In ESLint flat config, rule overrides must come **after** the base configs they're overriding.
+
+**Example:**
+
+```javascript
+// ❌ Wrong - override comes before base config
+export default defineConfig([
+  {
+    files: ["next.config.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  ...nextVitals,
+  ...nextTs, // This overrides the previous config!
+]);
+
+// ✅ Correct - override comes LAST
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([...]),
+  // IMPORTANT: Put this LAST so it overrides rules from nextTs
+  {
+    files: ["next.config.ts", "**/next.config.ts", "./next.config.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+]);
+```
+
+**Key Principles:**
+
+1. **Base configs first** - Spread base configs (`...nextVitals`, `...nextTs`) at the beginning
+2. **Overrides last** - Put file-specific overrides at the end of the array
+3. **Multiple file patterns** - Use multiple patterns to catch all variations: `["next.config.ts", "**/next.config.ts", "./next.config.ts"]`
+4. **Test the override** - Run `npm run lint -- --print-config next.config.ts` to verify the rule is disabled
+
+### Lesson: When `any` is Legitimately Needed (Configuration Files)
+
+**Problem:** Some files (like `next.config.ts`) legitimately need `any` due to complex type inference from Next.js config types and dynamic environment variable access.
+
+**Solution:** Use ESLint overrides to disable the rule for specific files, but document why and ensure types are safe via assertions.
+
+**Example:**
+
+```typescript
+// next.config.ts
+// Configuration file with complex type inference. Types are safe via assertions.
+
+// ✅ Use typed helper to centralize env access
+const typedEnv = {
+  NEXT_PUBLIC_SUPABASE_URL: (envLocal["NEXT_PUBLIC_SUPABASE_URL"] ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL) as string | undefined,
+  // ... other env vars with proper type assertions
+} as const;
+
+// ✅ Use type assertions, not any
+const config: NextConfig = {
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL: typedEnv.NEXT_PUBLIC_SUPABASE_URL,
+  },
+};
+```
+
+**ESLint Config:**
+
+```javascript
+// eslint.config.mjs
+{
+  files: ["next.config.ts", "**/next.config.ts", "./next.config.ts"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+  },
+}
+```
+
+**Best Practices for Configuration Files:**
+
+1. **Document why** - Add comments explaining why `any` is needed
+2. **Use type assertions** - Use `as string | undefined` instead of `any`
+3. **Centralize access** - Create typed helpers (like `typedEnv`) to minimize `any` usage
+4. **Override in ESLint** - Disable the rule only for specific files, not globally
+5. **Verify safety** - Ensure types are safe via assertions even if ESLint allows `any`
+
+### Lesson: Always Run Lint Checks Before Committing
+
+**Problem:** Linting errors can accumulate across commits, making it difficult to identify which changes introduced errors. We had to fix 13 `@typescript-eslint/no-explicit-any` errors that accumulated over time.
+
+**Solution:** Run lint checks before every commit and set up automated checks.
+
+**Pre-Commit Checklist:**
+
+1. **Run lint locally:**
+   ```bash
+   npm run lint
+   ```
+
+2. **Run type check:**
+   ```bash
+   npm run type-check  # or: tsc --noEmit
+   ```
+
+3. **Fix all errors before committing:**
+   - Don't commit with linting errors
+   - Don't disable rules to "fix" errors (fix the root cause)
+   - Use proper types instead of `any`
+
+**Automated Checks:**
+
+```json
+// package.json
+{
+  "scripts": {
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "check": "npm run type-check && npm run lint"
+  }
+}
+```
+
+**Pre-Commit Hook (using husky):**
+
+```bash
+# .husky/pre-commit
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+npm run check
+```
+
+**CI/CD Integration:**
+
+```yaml
+# .github/workflows/ci.yml
+- name: Run linting
+  run: npm run lint
+
+- name: Run type check
+  run: npm run type-check
+```
+
+### Lesson: Type-Safe Error Handling Patterns
+
+**Problem:** Error handling often leads to `any` usage when catching errors or processing error responses.
+
+**Solution:** Use proper error types and type guards.
+
+**Example:**
+
+```typescript
+// ❌ Wrong - using any for errors
+try {
+  await someOperation();
+} catch (error: any) {
+  console.log(error.message);
+}
+
+// ✅ Correct - using unknown with type guards
+try {
+  await someOperation();
+} catch (error: unknown) {
+  if (error instanceof Error) {
+    console.log(error.message);
+  } else {
+    console.log("Unknown error:", error);
+  }
+}
+
+// ✅ Better - create error handler utility
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return "An unknown error occurred";
+}
+
+try {
+  await someOperation();
+} catch (error: unknown) {
+  console.log(getErrorMessage(error));
+}
+```
+
+**API Error Response Handling:**
+
+```typescript
+// ❌ Wrong - using any
+const errorData: any = await response.json();
+
+// ✅ Correct - using Record<string, unknown>
+const errorData = (await response.json()) as Record<string, unknown>;
+if (typeof errorData.message === "string") {
+  console.log(errorData.message);
+}
+```
+
+### Lesson: Type-Safe Data Transformation Patterns
+
+**Problem:** Transforming data from APIs or databases often leads to `any` usage when the shape is unknown.
+
+**Solution:** Use proper types and type guards for data transformation.
+
+**Example:**
+
+```typescript
+// ❌ Wrong - using any for transformation
+function transformData(data: any): ProcessedData {
+  return {
+    id: data.id,
+    name: data.name,
+  };
+}
+
+// ✅ Correct - using proper types with validation
+type RawData = {
+  id: string;
+  name: string;
+  // ... other properties
+};
+
+type ProcessedData = {
+  id: string;
+  name: string;
+};
+
+function transformData(data: unknown): ProcessedData | null {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "id" in data &&
+    "name" in data &&
+    typeof (data as { id: unknown }).id === "string" &&
+    typeof (data as { name: unknown }).name === "string"
+  ) {
+    return {
+      id: (data as { id: string }).id,
+      name: (data as { name: string }).name,
+    };
+  }
+  return null;
+}
+```
+
+### Common Patterns to Avoid `any`
+
+**1. Map/Filter Operations:**
+
+```typescript
+// ❌ Wrong
+items.map((item: any) => item.property);
+
+// ✅ Correct
+items.map((item: { property: string }) => item.property);
+
+// ✅ Better - define type
+type Item = { property: string };
+items.map((item: Item) => item.property);
+```
+
+**2. Function Parameters:**
+
+```typescript
+// ❌ Wrong
+function process(data: any) { }
+
+// ✅ Correct
+function process(data: Record<string, unknown>) { }
+
+// ✅ Better - define interface
+interface ProcessData {
+  key: string;
+  value: unknown;
+}
+function process(data: ProcessData) { }
+```
+
+**3. API Responses:**
+
+```typescript
+// ❌ Wrong
+const response: any = await fetch(url).then(r => r.json());
+
+// ✅ Correct
+const response = (await fetch(url).then(r => r.json())) as {
+  data: unknown;
+  status: string;
+};
+
+// ✅ Better - use Zod or similar for validation
+import { z } from "zod";
+const ResponseSchema = z.object({
+  data: z.unknown(),
+  status: z.string(),
+});
+const response = ResponseSchema.parse(await fetch(url).then(r => r.json()));
+```
+
+### ESLint Configuration Best Practices
+
+**1. Use File-Specific Overrides, Not Global Disables:**
+
+```javascript
+// ❌ Wrong - disabling globally
+export default defineConfig([
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off", // Too broad!
+    },
+  },
+]);
+
+// ✅ Correct - file-specific override
+export default defineConfig([
+  ...nextTs,
+  {
+    files: ["next.config.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off", // Only for config files
+    },
+  },
+]);
+```
+
+**2. Document Override Reasons:**
+
+```javascript
+// ✅ Good - explains why
+{
+  // Configuration file with complex type inference. Types are safe via assertions.
+  files: ["next.config.ts"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+  },
+}
+```
+
+**3. Test Override Effectiveness:**
+
+```bash
+# Verify rule is disabled for specific file
+npm run lint -- --print-config next.config.ts | grep "no-explicit-any"
+```
+
+### Prevention Checklist
+
+Before writing code, ask:
+
+- [ ] Can I use `unknown` instead of `any`?
+- [ ] Can I use `Record<string, unknown>` for objects?
+- [ ] Can I define a proper interface/type?
+- [ ] Can I use type assertions with specific types?
+- [ ] Do I need type guards for safe access?
+- [ ] Is this a configuration file that legitimately needs `any`?
+
+Before committing, verify:
+
+- [ ] `npm run lint` passes
+- [ ] `npm run type-check` passes
+- [ ] No `any` types in new code (except documented exceptions)
+- [ ] All error handling uses `unknown` with type guards
+- [ ] All API responses have proper types
+
+### Summary: Type Safety Hierarchy
+
+When you need flexibility, use this hierarchy (most to least safe):
+
+1. **Specific types** (`string`, `number`, `User`, etc.) - Best
+2. **Union types** (`string | number`) - Good
+3. **Generic types** (`Array<T>`, `Promise<T>`) - Good
+4. **Record types** (`Record<string, unknown>`) - Acceptable for objects
+5. **Unknown** (`unknown`) - Acceptable with type guards
+6. **Any** (`any`) - **Only for configuration files with ESLint override**
+
+---
+
 ## Future Considerations
 
 - Consider creating a shared types file for commonly used extended types (e.g., `StripeInvoiceWithSubscription`)
@@ -655,3 +1149,6 @@ const priceId = getEnvVar("STRIPE_PRICE_ID_STANDARD_MONTHLY");
 - Document any third-party library type limitations in this file
 - Regular type audits to catch duplicate definitions and inconsistencies
 - Add timezone testing to CI/CD pipeline to catch date-related bugs
+- Regular ESLint audits to catch `any` usage before it accumulates
+- Add linting to pre-commit hooks to prevent committing errors
+- Create type utilities library for common patterns (error handling, API responses, etc.)

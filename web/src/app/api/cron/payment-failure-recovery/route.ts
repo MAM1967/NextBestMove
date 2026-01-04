@@ -7,8 +7,7 @@ import { logInfo, logError } from "@/lib/utils/logger";
  * Cron job to handle payment failure recovery flow
  * Runs daily to check for users in payment failure recovery stages:
  * - Day 3: Send email + mark for modal display
- * - Day 7: Enter read-only mode
- * - Day 14: Archive account (soft delete)
+ * - Day 7: Send final reminder email
  * 
  * Expected to be called by cron-job.org or similar service
  */
@@ -84,8 +83,7 @@ export async function GET(request: Request) {
     }
 
     let day3Emails = 0;
-    let day7ReadOnly = 0;
-    let day14Archived = 0;
+    let day7Emails = 0;
     let errors = 0;
 
     for (const subscription of failedSubscriptions) {
@@ -162,38 +160,14 @@ export async function GET(request: Request) {
           }
         }
 
-        // Day 7: Enter read-only mode (similar to grace period)
-        // This is handled by subscription status check - past_due status already blocks plan generation
-        // We just need to ensure the status remains past_due and log it
+        // Day 7: Send final reminder email (user is on Free tier)
         if (daysSinceFailure === 7) {
-          // Status is already past_due, but we can add metadata to track read-only mode
           const currentMetadata = (subscription as any).metadata || {};
           const today = now.toISOString().split("T")[0]; // YYYY-MM-DD format
           const lastEmailSentDate = currentMetadata?.day7_email_sent_date;
 
           // Only send email if not already sent today (prevent duplicates)
           if (lastEmailSentDate !== today) {
-            // Update metadata first (for tracking)
-            const { error: updateError } = await supabase
-              .from("billing_subscriptions")
-              .update({
-                metadata: {
-                  ...currentMetadata,
-                  payment_failure_read_only_mode: true,
-                  payment_failure_read_only_since: now.toISOString(),
-                },
-              })
-              .eq("id", subscription.id);
-
-            if (updateError) {
-              logError("Failed to update metadata for Day 7 read-only mode", updateError, {
-                userId: user.id,
-                subscriptionId: subscription.id,
-                context: "payment_failure_recovery_cron",
-              });
-              throw updateError;
-            }
-
             // Send email (with error handling)
             try {
               await sendPaymentFailureEmail({
@@ -202,26 +176,26 @@ export async function GET(request: Request) {
                 daysSinceFailure: 7,
               });
 
-              // Only mark email as sent if it succeeded
+              // Mark email as sent
               await supabase
                 .from("billing_subscriptions")
                 .update({
                   metadata: {
                     ...currentMetadata,
-                    payment_failure_read_only_mode: true,
-                    payment_failure_read_only_since: now.toISOString(),
                     day7_email_sent_date: today,
                   },
                 })
                 .eq("id", subscription.id);
 
-              logInfo("Payment failure Day 7 - read-only mode activated and email sent", {
+              logInfo("Payment failure Day 7 email sent", {
                 userId: user.id,
                 subscriptionId: subscription.id,
                 daysSinceFailure,
                 email: user.email,
                 context: "payment_failure_recovery_cron",
               });
+
+              day7Emails++;
             } catch (emailError) {
               logError("Failed to send Day 7 payment failure email", emailError, {
                 userId: user.id,
@@ -230,10 +204,8 @@ export async function GET(request: Request) {
                 daysSinceFailure,
                 context: "payment_failure_recovery_cron",
               });
-              // Don't throw - read-only mode is still activated even if email fails
+              // Don't throw - continue processing other subscriptions
             }
-
-            day7ReadOnly++;
           } else {
             logInfo("Payment failure Day 7 email already sent today, skipping", {
               userId: user.id,
@@ -245,86 +217,8 @@ export async function GET(request: Request) {
           }
         }
 
-        // Day 14: Archive account (soft delete - mark subscription as canceled, archive user data)
-        if (daysSinceFailure === 14) {
-          // Update subscription to canceled
-          const currentMetadata = (subscription as any).metadata || {};
-          const today = now.toISOString().split("T")[0]; // YYYY-MM-DD format
-          const lastEmailSentDate = currentMetadata?.day14_email_sent_date;
-
-          // Only send email if not already sent today (prevent duplicates)
-          // But always update status to canceled if it's Day 14
-          if (lastEmailSentDate !== today) {
-            const { error: updateError } = await supabase
-              .from("billing_subscriptions")
-              .update({
-                status: "canceled",
-                metadata: {
-                  ...currentMetadata,
-                  archived_at: now.toISOString(),
-                  archived_reason: "payment_failure_14_days",
-                  day14_email_sent_date: today,
-                },
-              })
-              .eq("id", subscription.id);
-
-            if (updateError) {
-              logError("Failed to archive subscription on Day 14", updateError, {
-                userId: user.id,
-                subscriptionId: subscription.id,
-                context: "payment_failure_recovery_cron",
-              });
-              throw updateError;
-            }
-
-            await sendPaymentFailureEmail({
-              to: user.email,
-              userName: user.name || "there",
-              daysSinceFailure: 14,
-            });
-
-            logInfo("Payment failure Day 14 - account archived", {
-              userId: user.id,
-              subscriptionId: subscription.id,
-              daysSinceFailure,
-              context: "payment_failure_recovery_cron",
-            });
-
-            day14Archived++;
-          } else {
-            // Still update status if not already canceled, but skip email
-            if (subscription.status !== "canceled") {
-              const { error: updateError } = await supabase
-                .from("billing_subscriptions")
-                .update({
-                  status: "canceled",
-                  metadata: {
-                    ...currentMetadata,
-                    archived_at: now.toISOString(),
-                    archived_reason: "payment_failure_14_days",
-                  },
-                })
-                .eq("id", subscription.id);
-
-              if (updateError) {
-                logError("Failed to archive subscription on Day 14", updateError, {
-                  userId: user.id,
-                  subscriptionId: subscription.id,
-                  context: "payment_failure_recovery_cron",
-                });
-                throw updateError;
-              }
-            }
-
-            logInfo("Payment failure Day 14 email already sent today, skipping", {
-              userId: user.id,
-              subscriptionId: subscription.id,
-              daysSinceFailure,
-              lastEmailSentDate,
-              context: "payment_failure_recovery_cron",
-            });
-          }
-        }
+        // Day 14: No longer sending email or archiving - users stay on Free tier
+        // Removed Day 14 logic per user request - Free tier is available forever
       } catch (error) {
         logError("Error processing payment failure recovery", error, {
           userId: user.id,
@@ -340,8 +234,7 @@ export async function GET(request: Request) {
       success: true,
       processed: failedSubscriptions.length,
       day3Emails,
-      day7ReadOnly,
-      day14Archived,
+      day7Emails,
       errors,
     });
   } catch (error) {

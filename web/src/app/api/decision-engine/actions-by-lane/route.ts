@@ -43,7 +43,10 @@ export async function GET(request: Request) {
     );
 
     // Fetch all candidate actions
-    const { data: actions, error: actionsError } = await supabase
+    // Try with leads join first, fallback to without if it fails (RLS might block the join)
+    let actions: any[] | null = null;
+    
+    const { data: actionsWithLeads, error: joinError } = await supabase
       .from("actions")
       .select(
         `
@@ -59,12 +62,50 @@ export async function GET(request: Request) {
       .eq("user_id", user.id)
       .in("state", ["NEW", "SENT", "SNOOZED"]);
 
-    if (actionsError) {
-      console.error("Error fetching actions:", actionsError);
-      return NextResponse.json(
-        { error: "Failed to fetch actions" },
-        { status: 500 }
-      );
+    if (joinError) {
+      console.warn("Error fetching actions with leads join, trying without join:", joinError);
+      // Fallback: fetch actions without leads join
+      const { data: actionsOnly, error: actionsError } = await supabase
+        .from("actions")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("state", ["NEW", "SENT", "SNOOZED"]);
+
+      if (actionsError) {
+        console.error("Error fetching actions (both with and without join):", actionsError);
+        return NextResponse.json(
+          { error: "Failed to fetch actions" },
+          { status: 500 }
+        );
+      }
+
+      actions = actionsOnly;
+      
+      // Fetch leads separately for each action if needed
+      if (actions && actions.length > 0) {
+        const leadIds = actions
+          .map(a => a.person_id)
+          .filter((id): id is string => id !== null);
+        
+        if (leadIds.length > 0) {
+          const { data: leads } = await supabase
+            .from("leads")
+            .select("id, name, url, notes")
+            .eq("user_id", user.id)
+            .in("id", leadIds);
+          
+          // Attach leads to actions
+          if (leads) {
+            const leadsMap = new Map(leads.map(l => [l.id, l]));
+            actions = actions.map(action => ({
+              ...action,
+              leads: action.person_id ? leadsMap.get(action.person_id) || null : null
+            }));
+          }
+        }
+      }
+    } else {
+      actions = actionsWithLeads;
     }
 
     // Group actions by lane

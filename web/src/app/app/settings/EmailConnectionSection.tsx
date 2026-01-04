@@ -85,13 +85,18 @@ export function EmailConnectionSection({
         method: "POST",
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        alert(`Email sync complete! ${data.message || "Emails synced successfully."}`);
         router.refresh();
       } else {
-        alert("Failed to sync email. Please try again.");
+        console.error("Email sync error:", data);
+        alert(`Failed to sync email: ${data.error || data.details || "Unknown error"}`);
       }
-    } catch {
-      alert("Failed to sync email. Please try again.");
+    } catch (error) {
+      console.error("Email sync exception:", error);
+      alert(`Failed to sync email: ${error instanceof Error ? error.message : "Network error"}`);
     } finally {
       setIsRefreshing(false);
     }

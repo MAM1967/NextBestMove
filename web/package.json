@@ -38,6 +38,7 @@
     "next": "16.0.10",
     "openai": "^6.9.1",
     "openid-client": "^6.8.1",
+    "posthog-js": "^1.310.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.5.1",

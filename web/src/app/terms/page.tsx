@@ -58,7 +58,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="mb-3 text-xl font-semibold text-zinc-900">5. Trial Expiration</h2>
             <p className="text-zinc-600">
-              If your trial ends and you do not subscribe, your account enters a 7-day read-only mode. You may view data but cannot generate new actions. Data remains stored until deleted by you.
+              If your Standard trial ends and you do not upgrade, your account will be downgraded to the Free tier. You can still use manual planning and basic features, but automatic daily plans and calendar-aware capacity require Standard - Decision Automation. Data remains stored until deleted by you.
             </p>
           </section>
 
