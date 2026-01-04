@@ -322,6 +322,35 @@ The deployment scripts run critical checks (TypeScript, design lint) and sync en
 
 **⚠️ Critical Fix (2026-01-02):** The deployment scripts now include a critical step that merges your current branch's commits into the deployment branch. This prevents the "no differences" PR issue. See `docs/Development/Deployment_Script_Fix.md` for details.
 
+**⚠️ Git Worktree Conflict Handling (2026-01-04):** The deployment scripts now automatically detect and handle Git worktree conflicts. When `main` or `staging` branches are checked out in another worktree (common with Cursor IDE), the scripts will:
+- Detect the worktree conflict automatically
+- Use `git ls-remote` to fetch the exact commit hash from the remote
+- Create the deployment branch directly from the commit hash (bypassing the worktree restriction)
+- Continue with the normal deployment workflow
+
+This prevents errors like:
+```
+fatal: 'main' is already used by worktree at '/path/to/worktree'
+```
+
+**When this happens:**
+- Cursor IDE uses Git worktrees for its internal operations
+- Multiple terminal sessions trying to checkout the same branch
+- CI/CD environments that use worktrees
+
+**What the scripts do:**
+1. Attempt normal `git checkout main` or `git checkout staging`
+2. If it fails with a worktree error, automatically fall back to commit hash method
+3. Fetch the exact commit hash from remote: `git ls-remote origin refs/heads/main`
+4. Create the deployment branch from the commit hash: `git checkout -b deploy/... $COMMIT_HASH`
+5. Continue with normal merge and push workflow
+
+The scripts handle this transparently - no manual intervention needed. You'll see a warning message like:
+```
+⚠️  Cannot checkout main (likely worktree conflict). Using commit hash instead...
+📌 Using main commit: abc123def456...
+```
+
 **Database Migrations:**
 
 - Location: `supabase/migrations/`

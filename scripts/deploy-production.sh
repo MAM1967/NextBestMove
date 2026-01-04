@@ -79,14 +79,36 @@ fi
 # Ensure main is up to date
 echo "📥 Updating main branch..."
 git fetch origin main
-git checkout main
-git pull origin main
+
+# Handle worktree conflicts: if main is checked out in another worktree,
+# use commit hash instead of checking out the branch
+if ! git checkout main 2>/dev/null; then
+    echo "⚠️  Cannot checkout main (likely worktree conflict). Using commit hash instead..."
+    MAIN_COMMIT=$(git ls-remote origin refs/heads/main | cut -f1)
+    if [ -z "$MAIN_COMMIT" ]; then
+        echo "❌ Failed to fetch main commit hash. Aborting deployment."
+        exit 1
+    fi
+    echo "📌 Using main commit: $MAIN_COMMIT"
+    MAIN_REF="$MAIN_COMMIT"
+else
+    git pull origin main
+    MAIN_REF="main"
+fi
 
 # Create a unique branch name
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BRANCH_NAME="deploy/production-${TIMESTAMP}"
 echo "🌿 Creating branch: $BRANCH_NAME"
-git checkout -b "$BRANCH_NAME"
+
+# Create branch from main (using commit hash if worktree conflict occurred)
+if [ "$MAIN_REF" != "main" ]; then
+    # Using commit hash - create branch directly from it
+    git checkout -b "$BRANCH_NAME" "$MAIN_REF"
+else
+    # Normal case - create branch from main
+    git checkout -b "$BRANCH_NAME"
+fi
 
 # CRITICAL STEP: If we were on a different branch, merge its commits into deployment branch
 if [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "$BRANCH_NAME" ]; then
